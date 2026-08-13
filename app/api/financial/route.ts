@@ -14,9 +14,9 @@ function getTagValue(xml: string, tag: string) {
 
 async function findCorpCode(apiKey: string, stockCode: string) {
   const response = await fetch(
-    `https://opendart.fss.or.kr/api/corpCode.xml?crtfc_key=${apiKey}`,
-    { cache: "force-cache" }
-  );
+  `https://opendart.fss.or.kr/api/corpCode.xml?crtfc_key=${apiKey}`,
+  { cache: "no-store" }
+);
 
   if (!response.ok) {
     throw new Error("DART 기업코드 파일을 불러오지 못했습니다.");
