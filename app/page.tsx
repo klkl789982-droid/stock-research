@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LineChart,
   Line,
@@ -18,10 +18,36 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [searchedStock, setSearchedStock] = useState<string | null>(null);
 const [activeTab, setActiveTab] = useState<string | null>(null);
+const [realtimePrice, setRealtimePrice] = useState<number | null>(null);
 const [stockInfo, setStockInfo] = useState<any>(null);
 const [priceInfo, setPriceInfo] = useState<any>(null);
 const [priceHistory, setPriceHistory] = useState<any[]>([]);
 const [financialInfo, setFinancialInfo] = useState<any>(null);
+const [loading, setLoading] = useState(false);
+useEffect(() => {
+  if (!stockInfo) return;
+
+  const stockCode = stockInfo.srtnCd.replace(/^A/, "");
+
+  const interval = setInterval(async () => {
+    try {
+      const response = await fetch(
+        `/api/realtime?code=${stockCode}`
+      );
+
+      const data = await response.json();
+
+      setRealtimePrice(data.price);
+
+      console.log("5초 갱신 현재가:", data.price);
+    } catch (error) {
+      console.error("실시간 가격 갱신 오류:", error);
+    }
+  }, 5000);
+
+  return () => clearInterval(interval);
+
+}, [stockInfo]);
   const formatEok = (value: number | null | undefined) => {
   if (value === null || value === undefined) return "-";
 
@@ -30,8 +56,9 @@ const [financialInfo, setFinancialInfo] = useState<any>(null);
   })}억`;
 };
 async function handleSearch() {
+  
   if (query.trim() === "") return;
-
+setLoading(true);
   try {
     const response = await fetch(
       `/api/stock?query=${encodeURIComponent(query)}`
@@ -40,32 +67,41 @@ async function handleSearch() {
     const data = await response.json();
 
     if (data.items && data.items.length > 0) {
-  setStockInfo(data.items[0]);
-  setSearchedStock(data.items[0].itmsNm);
+      const exactMatch = data.items.find(
+  (item: any) => item.itmsNm === query.trim()
+);
 
-  const stockCode = data.items[0].srtnCd.replace(/^A/, "");
+const selectedItem = exactMatch ?? data.items[0];
+ setStockInfo(selectedItem);
+setSearchedStock(selectedItem.itmsNm);
 
-  const priceResponse = await fetch(
-    `/api/price?code=${stockCode}`
-  );
+const stockCode = selectedItem.srtnCd.replace(/^A/, "");
 
-  const priceData = await priceResponse.json();
+const [
+ priceResponse,
+ financialResponse,
+ realtimeResponse
+] = await Promise.all([
+ fetch(`/api/price?code=${stockCode}`),
+ fetch(`/api/financial?code=${stockCode}`),
+ fetch(`/api/realtime?code=${stockCode}`)
+]);
 
-  if (priceData.items && priceData.items.length > 0) {
+const priceData = await priceResponse.json();
+const financialData = await financialResponse.json();
+const realtimeData = await realtimeResponse.json();
+
+setRealtimePrice(realtimeData.price);
+console.log("실시간 현재가:", realtimeData.price);
+if (priceData.items && priceData.items.length > 0) {
   setPriceInfo(priceData.items[0]);
   setPriceHistory(priceData.items);
+}
 
-  const financialResponse = await fetch(
-    `/api/financial?code=${stockCode}`
-  );
-
-  const financialData = await financialResponse.json();
-
-  if (financialData.success) {
-    setFinancialInfo(financialData);
-  } else {
-    setFinancialInfo(null);
-  }
+if (financialData.success) {
+  setFinancialInfo(financialData);
+} else {
+  setFinancialInfo(null);
 }
 } else {
       alert("종목을 찾을 수 없습니다.");
@@ -74,6 +110,9 @@ async function handleSearch() {
     console.error(error);
     alert("검색 중 오류가 발생했습니다.");
   }
+  finally {
+  setLoading(false);
+}
 }
 const ma5 =
   priceHistory.length >= 5
@@ -137,7 +176,17 @@ const ma60 =
         .slice(0, 60)
         .reduce((sum, item) => sum + Number(item.clpr), 0) / 60
     : null;
+const ma60Prev =
+  priceHistory.length >= 61
+    ? priceHistory
+        .slice(1, 61)
+        .reduce((sum, item) => sum + Number(item.clpr), 0) / 60
+    : null;
 
+const ma60Slope =
+  ma60 !== null && ma60Prev !== null
+    ? ((ma60 - ma60Prev) / ma60Prev) * 100
+    : null;
 const ma120 =
   priceHistory.length >= 120
     ? priceHistory
@@ -234,6 +283,20 @@ const histogram =
   macd !== null && signal !== null
     ? macd - signal
     : null;
+    const prevMacd =
+  macdSeries.length >= 2
+    ? macdSeries[macdSeries.length - 2]
+    : null;
+
+const prevSignal =
+  signalSeries.length >= 2
+    ? signalSeries[signalSeries.length - 2]
+    : null;
+
+const prevHistogram =
+  prevMacd !== null && prevSignal !== null
+    ? prevMacd - prevSignal
+    : null;
     console.log("최근 MACD 10개:", macdSeries.slice(-10));
 console.log("현재 MACD / Signal / Histogram:", macd, signal, histogram);
 const momentum20 =
@@ -245,6 +308,48 @@ const momentum20 =
         100
       )
     : null;
+    const momentum5 =
+  priceHistory.length >= 5
+    ? (
+        ((Number(priceHistory[0].clpr) -
+          Number(priceHistory[4].clpr)) /
+          Number(priceHistory[4].clpr)) *
+        100
+      )
+    : null;
+    const dailyReturn =
+  priceHistory.length >= 2
+    ? (
+        ((Number(priceHistory[0].clpr) -
+          Number(priceHistory[1].clpr)) /
+          Number(priceHistory[1].clpr)) *
+        100
+      )
+    : null;
+    const recent3DailyReturns =
+  priceHistory.length >= 4
+    ? [0, 1, 2].map((i) => {
+        const current = Number(priceHistory[i].clpr);
+        const previous = Number(priceHistory[i + 1].clpr);
+
+        return ((current - previous) / previous) * 100;
+      })
+    : [];
+
+const hadRecentSurge =
+  recent3DailyReturns.some(
+    (value) => value > 15
+  );
+    const momentum60 =
+  priceHistory.length >= 60
+    ? (
+        ((Number(priceHistory[0].clpr) -
+          Number(priceHistory[59].clpr)) /
+          Number(priceHistory[59].clpr)) *
+        100
+      )
+    : null;
+  
     const avgVolume20 =
   priceHistory.length >= 20
     ? priceHistory
@@ -456,7 +561,388 @@ const debtRatio =
   Number(financialInfo.equity) !== 0
     ? (Number(financialInfo.liabilities) / Number(financialInfo.equity)) * 100
     : null;
+const marketCap =
+  priceInfo?.mrktTotAmt != null
+    ? Number(priceInfo.mrktTotAmt)
+    : null;
 
+const per =
+  marketCap !== null &&
+  financialInfo?.netIncome != null &&
+  Number(financialInfo.netIncome) > 0
+    ? marketCap / Number(financialInfo.netIncome)
+    : null;
+
+const pbr =
+  marketCap !== null &&
+  financialInfo?.equity != null &&
+  Number(financialInfo.equity) > 0
+    ? marketCap / Number(financialInfo.equity)
+    : null;
+    const operatingMargin =
+  financialInfo?.revenue != null &&
+  financialInfo?.operatingProfit != null &&
+  Number(financialInfo.revenue) !== 0
+    ? (Number(financialInfo.operatingProfit) /
+        Number(financialInfo.revenue)) *
+      100
+    : null;
+
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(Math.max(value, min), max);
+// 수익성 25점
+const roeScore =
+  roe !== null
+    ? clamp((roe / 20) * 15, 0, 15)
+    : 0;
+
+const operatingMarginScore =
+  operatingMargin !== null
+    ? clamp((operatingMargin / 15) * 10, 0, 10)
+    : 0;
+
+const profitabilityScore =
+  roeScore + operatingMarginScore;
+
+
+// 성장성 25점
+const revenueGrowthScore =
+  financialInfo?.revenueCagr != null
+    ? clamp((financialInfo.revenueCagr / 20) * 12.5, 0, 12.5)
+    : 0;
+
+const operatingGrowthScore =
+  financialInfo?.operatingProfitCagr != null
+    ? clamp(
+        (financialInfo.operatingProfitCagr / 20) * 12.5,
+        0,
+        12.5
+      )
+    : 0;
+
+const growthScore =
+  revenueGrowthScore + operatingGrowthScore;
+
+
+// 재무안정성 25점
+const debtScore =
+  debtRatio !== null
+    ? clamp(15 - (debtRatio / 200) * 15, 0, 15)
+    : 0;
+
+const interestScore =
+  financialInfo?.interestCoverage != null
+    ? clamp(
+        (financialInfo.interestCoverage / 10) * 10,
+        0,
+        10
+      )
+    : 0;
+
+const stabilityScore =
+  debtScore + interestScore;
+
+
+// 가치평가 25점
+const perScore =
+  per !== null && per > 0
+    ? clamp(15 - ((per - 5) / 35) * 15, 0, 15)
+    : 0;
+
+const pbrScore =
+  pbr !== null && pbr > 0
+    ? clamp(10 - ((pbr - 0.5) / 4.5) * 10, 0, 10)
+    : 0;
+
+const valuationScore =
+  perScore + pbrScore;
+
+
+// 총점
+const totalScore = Math.round(
+  profitabilityScore +
+  growthScore +
+  stabilityScore +
+  valuationScore
+);
+
+const targetPer =
+  totalScore >= 80
+    ? 20
+    : totalScore >= 65
+    ? 15
+    : totalScore >= 50
+    ? 12
+    : totalScore >= 35
+    ? 8
+    : 5;
+const currentPrice =
+  priceInfo?.clpr != null
+    ? Number(priceInfo.clpr)
+    : null;
+
+const eps =
+  currentPrice != null &&
+  per != null &&
+  per > 0
+    ? currentPrice / per
+    : null;
+const fairPrice =
+  eps != null
+    ? eps * targetPer
+    : null;
+
+const valuationGap =
+  fairPrice != null &&
+  currentPrice != null &&
+  currentPrice > 0
+    ? ((fairPrice - currentPrice) / currentPrice) * 100
+    : null;
+const scoreMomentum = (value: number | null) => {
+  if (value == null) return 0;
+
+  if (value >= 30) return 100;
+  if (value >= 20) return 85;
+  if (value >= 10) return 65;
+  if (value >= 0) return 40;
+  if (value >= -10) return 20;
+
+  return 0;
+};
+
+const momentumScore =
+  momentum20 != null && momentum60 != null
+    ? scoreMomentum(momentum20) * 0.4 +
+      scoreMomentum(momentum60) * 0.6
+    : scoreMomentum(momentum20);
+
+const volumeScore =
+  volumeRatio == null
+    ? 0
+    : volumeRatio >= 300
+    ? 100
+    : volumeRatio >= 200
+    ? 95
+    : volumeRatio >= 150
+    ? 80
+    : volumeRatio >= 100
+    ? 60
+    : volumeRatio >= 80
+    ? 40
+    : volumeRatio >= 50
+    ? 25
+    : 10;
+const volumeDirectionFactor =
+  momentum20 == null
+    ? 1
+    : momentum20 > 3
+    ? 1.0
+    : momentum20 > -3
+    ? 0.7
+    : 0.3;
+const adjustedVolumeScore =
+  volumeScore * volumeDirectionFactor;
+const normalizedMacd =
+  histogram != null &&
+  atr14 != null &&
+  atr14 > 0
+    ? histogram / atr14
+    : null;
+
+let macdScore =
+  normalizedMacd == null
+    ? 0
+    : normalizedMacd > 0.2
+    ? 100
+    : normalizedMacd > 0.1
+    ? 80
+    : normalizedMacd >= 0
+    ? 60
+    : normalizedMacd >= -0.1
+    ? 40
+    : normalizedMacd >= -0.2
+    ? 20
+    : 0;
+
+// Histogram 방향 보정
+if (histogram != null && prevHistogram != null) {
+  // 음수 → 양수 전환: 상승 모멘텀 전환
+  if (prevHistogram < 0 && histogram > 0) {
+    macdScore += 15;
+  }
+
+  // 아직 음수지만 전일보다 개선
+  else if (
+    histogram < 0 &&
+    histogram > prevHistogram
+  ) {
+    macdScore += 8;
+  }
+
+  // 양수권에서 추가 확대
+  else if (
+    histogram > 0 &&
+    histogram > prevHistogram
+  ) {
+    macdScore += 10;
+  }
+
+  // 양수지만 힘이 약해지는 중
+  else if (
+    histogram > 0 &&
+    histogram < prevHistogram
+  ) {
+    macdScore -= 10;
+  }
+}
+
+// 최종 MACD 점수는 0~100 제한
+macdScore = Math.max(
+  0,
+  Math.min(100, macdScore)
+);
+
+const rsiScore =
+  rsi14 == null
+    ? 0
+    : rsi14 >= 60 && rsi14 <= 70
+    ? 100
+    : rsi14 >= 50
+    ? 85
+    : rsi14 >= 40
+    ? 60
+    : rsi14 >= 30
+    ? 40
+    : 20;
+
+const high52Score =
+  position52w == null
+    ? 0
+    : position52w >= 90
+    ? 100
+    : position52w >= 80
+    ? 70
+    : position52w >= 70
+    ? 50
+    : position52w >= 50
+    ? 30
+    : 10;
+    let trendScore = 0;
+
+if (
+  currentPrice !== null &&
+  ma20 !== null &&
+  currentPrice > ma20
+) {
+  trendScore += 25;
+}
+
+if (
+  ma20 !== null &&
+  ma60 !== null &&
+  ma20 > ma60
+) {
+  trendScore += 25;
+}
+
+if (
+  ma60 !== null &&
+  ma120 !== null &&
+  ma60 > ma120
+) {
+  trendScore += 25;
+}
+
+if (
+  ma20Slope !== null &&
+  ma20Slope > 0
+) {
+  trendScore += 15;
+}
+
+if (
+  ma60Slope !== null &&
+  ma60Slope > 0
+) {
+  trendScore += 10;
+}
+console.log("패널티 확인", {
+  rsi14,
+  atrPercent,
+  ma20Distance,
+  volatility20,
+});
+let penalty = 0;
+const penaltyReasons: string[] = [];
+let surgePenalty = 0;
+let surgeReason = "";
+
+if (dailyReturn !== null && dailyReturn > 15) {
+  surgePenalty = 10;
+  surgeReason = "당일 급등 -10점";
+} else if (hadRecentSurge) {
+  surgePenalty = 7;
+  surgeReason = "최근 3일 내 급등 -7점";
+} else if (momentum5 !== null && momentum5 > 30) {
+  surgePenalty = 5;
+  surgeReason = "최근 5일 급등 -5점";
+}
+
+penalty += surgePenalty;
+
+if (surgeReason) {
+  penaltyReasons.push(surgeReason);
+}
+
+if (rsi14 !== null && rsi14 > 80) {
+  penalty += 5;
+  penaltyReasons.push("RSI 과열 -5점");
+}
+
+if (atrPercent !== null && atrPercent > 15) {
+  penalty += 5;
+  penaltyReasons.push("ATR 과열 -5점");
+}
+
+if (ma20Distance !== null && ma20Distance > 30) {
+  penalty += 5;
+  penaltyReasons.push("20일선 이격도 과열 -5점");
+}
+
+if (volatility20 !== null && volatility20 > 15) {
+  penalty += 5;
+  penaltyReasons.push("20일 변동성 과열 -5점");
+}
+
+let reversalBonus = 0;
+
+if (
+  rsi14 != null &&
+  rsi14 >= 50 &&
+  histogram != null &&
+  histogram > 0 &&
+  currentPrice != null &&
+  ma20 != null &&
+  currentPrice > ma20 &&
+  !hadRecentSurge &&
+  (momentum5 == null || momentum5 <= 30)
+) {
+  reversalBonus = 10;
+}
+const technicalScore =
+  momentumScore * 0.25 +
+  trendScore * 0.20 +
+  adjustedVolumeScore * 0.20 +
+  macdScore * 0.15 +
+  rsiScore * 0.10 +
+  high52Score * 0.10;
+
+const finalTechnicalScore =
+  Math.round(
+    technicalScore +
+    reversalBonus -
+    penalty
+  );
 return (
     <main className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-md px-5 py-16">
@@ -470,18 +956,25 @@ return (
 
         <div className="mt-10 flex gap-2">
           <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="종목명을 검색하세요"
-            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-4 text-gray-900 outline-none"
-          />
+  type="text"
+  value={query}
+  onChange={(e) => setQuery(e.target.value)}
+  onKeyDown={(e) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  }}
+  disabled={loading}
+  placeholder="종목명을 검색하세요"
+  className="w-full rounded-xl border border-gray-300 px-4"
+/>
 
           <button
   onClick={handleSearch}
-  className="whitespace-nowrap rounded-xl bg-gray-900 px-5 py-4 font-medium text-white"
+  disabled={loading}
+  className="whitespace-nowrap rounded-xl bg-gray-900 px-5 py-4 font-medium text-white disabled:opacity-40"
 >
-  검색
+  {loading ? "Loading..." : "검색"}
 </button>
         </div>
 
@@ -517,9 +1010,22 @@ return (
 
     <div className="mt-3 space-y-2 text-sm text-gray-700">
       <div className="flex justify-between">
-        <span>최근 종가</span>
-        <span>{Number(priceInfo.clpr).toLocaleString()}원</span>
-      </div>
+  <span>현재가</span>
+  <span>
+    {(
+  realtimePrice ??
+  (priceInfo?.clpr ? Number(priceInfo.clpr) : 0)
+).toLocaleString()}원
+  </span>
+</div>
+<div className="flex justify-between">
+  <span>전일 종가</span>
+  <span>
+    {priceInfo?.clpr
+  ? Number(priceInfo.clpr).toLocaleString()
+  : "-"}원
+  </span>
+</div>
 
       <div className="flex justify-between">
         <span>전일 대비</span>
@@ -600,7 +1106,133 @@ return (
     <h2 className="mt-1 text-xl font-bold text-gray-900">
       기업 분석
     </h2>
+<div className="mt-6 rounded-xl border border-gray-200 p-4">
+  <div className="flex items-end justify-between">
+    <div>
+      <p className="text-sm text-gray-500">종합 투자지표</p>
+      <div className="mt-1 flex items-end gap-1">
+        <span
+  className={`text-3xl font-bold ${
+    finalTechnicalScore >= 85
+  ? "text-green-600"
+  : finalTechnicalScore >= 70
+  ? "text-blue-600"
+  : finalTechnicalScore >= 50
+  ? "text-cyan-600"
+  : finalTechnicalScore >= 30
+  ? "text-orange-600"
+  : "text-red-600"
+  }`}
+>
+  {totalScore}
+</span>
+        <span className="mb-1 text-sm text-gray-500">
+          / 100
+        </span>
+      </div>
+    </div>
 
+    <div
+  className={`rounded-full px-3 py-1 text-sm font-semibold ${
+    totalScore >= 80
+      ? "bg-green-100 text-green-700"
+      : totalScore >= 65
+      ? "bg-blue-100 text-blue-700"
+      : totalScore >= 50
+      ? "bg-yellow-100 text-yellow-700"
+      : totalScore >= 35
+      ? "bg-orange-100 text-orange-700"
+      : "bg-red-100 text-red-700"
+  }`}
+>
+  {totalScore >= 80
+    ? "🟢 관심 종목"
+    : totalScore >= 65
+    ? "🔵 양호"
+    : totalScore >= 50
+    ? "🟡 중립"
+    : totalScore >= 35
+    ? "🟠 주의"
+    : "🔴 위험"}
+</div>
+  </div>
+
+  <div className="mt-4 space-y-2 text-sm">
+    <div className="flex justify-between">
+      <span>수익성</span>
+      <span>{profitabilityScore.toFixed(1)} / 25</span>
+    </div>
+
+    <div className="flex justify-between">
+      <span>성장성</span>
+      <span>{growthScore.toFixed(1)} / 25</span>
+    </div>
+
+    <div className="flex justify-between">
+      <span>재무안정성</span>
+      <span>{stabilityScore.toFixed(1)} / 25</span>
+    </div>
+
+    <div className="flex justify-between">
+      <span>가치평가</span>
+      <span>{valuationScore.toFixed(1)} / 25</span>
+    </div>
+  </div>
+</div>
+<div className="mt-4 rounded-xl border border-gray-200 p-4">
+  <h3 className="font-semibold text-gray-900">
+    적정주가 분석
+  </h3>
+
+  <div className="mt-3 space-y-2 text-sm">
+    <div className="flex justify-between">
+  <span>현재가</span>
+  <span>
+    {(realtimePrice ?? Number(priceInfo.clpr)).toLocaleString()}원
+  </span>
+</div>
+    <div className="flex justify-between">
+      <span>적정주가</span>
+      <span>
+        {fairPrice != null
+          ? `${Math.round(fairPrice).toLocaleString()}원`
+          : "-"}
+      </span>
+    </div>
+
+    <div className="flex justify-between">
+      <span>괴리율</span>
+      <span>
+        {valuationGap != null
+          ? `${valuationGap.toFixed(1)}%`
+          : "-"}
+      </span>
+    </div>
+
+    <div className="flex justify-between">
+      <span>평가</span>
+      <span
+  className={`rounded-full px-2 py-1 text-xs font-semibold ${
+    valuationGap == null
+      ? ""
+      : valuationGap >= 20
+      ? "bg-green-100 text-green-700"
+      : valuationGap <= -20
+      ? "bg-red-100 text-red-700"
+      : "bg-yellow-100 text-yellow-700"
+  }`}
+>
+  {valuationGap == null
+    ? "-"
+    : valuationGap >= 20
+    ? "🟢 저평가"
+    : valuationGap <= -20
+    ? "🔴 고평가"
+    : "🟡 적정"}
+</span>
+    </div>
+  </div>
+</div>
     <section className="mt-8">
   <h3 className="font-semibold text-gray-900">가치평가</h3>
 
@@ -614,6 +1246,15 @@ return (
       <span>영업이익</span>
       <span>{formatEok(financialInfo?.operatingProfit)}</span>
     </div>
+    <div className="flex justify-between">
+  <span>PER</span>
+  <span>{per !== null ? `${per.toFixed(2)}배` : "-"}</span>
+</div>
+
+<div className="flex justify-between">
+  <span>PBR</span>
+  <span>{pbr !== null ? `${pbr.toFixed(2)}배` : "-"}</span>
+</div>
   </div>
 </section>
 
@@ -645,19 +1286,31 @@ return (
 
   <div className="mt-3 space-y-2 text-sm">
     <div className="flex justify-between">
-      <span>매출 CAGR</span>
-      <span>-</span>
-    </div>
+  <span>매출 CAGR</span>
+  <span>
+    {financialInfo?.revenueCagr != null
+      ? `${financialInfo.revenueCagr.toFixed(1)}%`
+      : "-"}
+  </span>
+</div>
 
     <div className="flex justify-between">
-      <span>영업이익 CAGR</span>
-      <span>-</span>
-    </div>
+  <span>영업이익 CAGR</span>
+  <span>
+    {financialInfo?.operatingProfitCagr != null
+      ? `${financialInfo.operatingProfitCagr.toFixed(1)}%`
+      : "-"}
+  </span>
+</div>
 
     <div className="flex justify-between">
-      <span>EPS CAGR</span>
-      <span>-</span>
-    </div>
+  <span>EPS CAGR</span>
+  <span>
+    {financialInfo?.epsCagr != null
+      ? `${financialInfo.epsCagr.toFixed(1)}%`
+      : "-"}
+  </span>
+</div>
   </div>
 </section>
 <section className="mt-8">
@@ -673,15 +1326,19 @@ return (
 </span>
     </div>
 
-    <div className="flex justify-between">
-      <span>이자보상배율</span>
-      <span>-</span>
-    </div>
+   <div className="flex justify-between">
+  <span>이자보상배율</span>
+  <span>
+    {financialInfo?.interestCoverage != null
+      ? `${financialInfo.interestCoverage.toFixed(1)}배`
+      : "-"}
+  </span>
+</div>
 
     <div className="flex justify-between">
-      <span>FCF</span>
-      <span>-</span>
-    </div>
+  <span>FCF</span>
+  <span>{formatEok(financialInfo?.fcf)}</span>
+</div>
   </div>
 </section>
 <section className="mt-8 border-t border-gray-100 pt-6">
@@ -745,7 +1402,94 @@ return (
       </button>
 
 </div>
+<div className="mt-6 rounded-xl border border-gray-200 p-4">
+  <div className="flex items-end justify-between">
+    <div>
+      <p className="text-sm text-gray-500">기술적 강도</p>
+      <div className="mt-1 flex items-end gap-1">
+        <span
+          className={`text-3xl font-bold ${
+            finalTechnicalScore >= 85
+              ? "text-green-600"
+              : finalTechnicalScore >= 75
+              ? "text-blue-600"
+              : finalTechnicalScore >= 60
+              ? "text-cyan-600"
+              : finalTechnicalScore >= 40
+              ? "text-yellow-600"
+              : "text-red-600"
+          }`}
+        >
+          {finalTechnicalScore}
+        </span>
 
+        <span className="mb-1 text-sm text-gray-500">
+          / 100
+        </span>
+      </div>
+    </div>
+
+    <div className="text-sm font-semibold">
+      {finalTechnicalScore >= 85
+  ? "매우 강함"
+  : finalTechnicalScore >= 70
+  ? "강세"
+  : finalTechnicalScore >= 50
+  ? "양호"
+  : finalTechnicalScore >= 30
+  ? "반등 시도"
+  : "약세"}
+    </div>
+  </div>
+
+  <div className="mt-4 space-y-2 text-sm">
+    <div className="flex justify-between">
+      <span>가격 모멘텀</span>
+      <span>{momentumScore.toFixed(0)} / 100</span>
+    </div>
+
+    <div className="flex justify-between">
+      <span>이동평균 추세</span>
+      <span>{trendScore.toFixed(0)} / 100</span>
+    </div>
+
+    <div className="flex justify-between">
+      <span>거래량</span>
+      <span>{adjustedVolumeScore.toFixed(0)} / 100</span>
+    </div>
+
+    <div className="flex justify-between">
+      <span>MACD</span>
+      <span>{macdScore.toFixed(0)} / 100</span>
+    </div>
+
+    <div className="flex justify-between">
+      <span>RSI</span>
+      <span>{rsiScore.toFixed(0)} / 100</span>
+    </div>
+
+    <div className="flex justify-between">
+      <span>52주 위치</span>
+      <span>{high52Score.toFixed(0)} / 100</span>
+    </div>
+
+    <div className="mt-3 border-t border-gray-100 pt-3 flex justify-between font-medium">
+      <span>과열 패널티</span>
+      <span>{penalty > 0 ? `-${penalty}점` : "0점"}</span>
+    </div>
+    <div className="mt-2 space-y-1 text-xs text-gray-500">
+  {penaltyReasons.length > 0 ? (
+    penaltyReasons.map((reason, index) => (
+      <div key={index}>
+        • {reason}
+      </div>
+    ))
+  ) : (
+    <div>• 과열 조건 없음</div>
+  )}
+</div>
+  </div>
+</div>
 <div className="mt-6 h-80 rounded-xl border border-gray-200 bg-white p-4">
   <ResponsiveContainer width="100%" height="100%">
     <LineChart data={chartData}>

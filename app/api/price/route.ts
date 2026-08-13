@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     const data = await response.json();
 
     const items = data?.response?.body?.items?.item ?? [];
-
+console.log("최근 가격 데이터:", items.slice(0, 5));
     return NextResponse.json({
       code,
       items,
