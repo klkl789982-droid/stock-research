@@ -51,11 +51,17 @@ console.log("최근 가격 데이터:", items.slice(0, 5));
       items,
     });
   } catch (error) {
-    console.error(error);
+  console.error("PRICE API 실제 오류:", error);
 
-    return NextResponse.json(
-      { error: "주식시세 처리 중 오류가 발생했습니다." },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(
+    {
+      error: "주식시세 처리 중 오류가 발생했습니다.",
+      detail:
+        error instanceof Error
+          ? error.message
+          : String(error),
+    },
+    { status: 500 }
+  );
+}
 }

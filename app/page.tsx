@@ -18,9 +18,17 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [searchedStock, setSearchedStock] = useState<string | null>(null);
 const [activeTab, setActiveTab] = useState<string | null>(null);
-const [realtimePrice, setRealtimePrice] = useState<number | null>(null);
+const [realtimePrice, setRealtimePrice] = useState<{
+  price: number;
+  change: number;
+  rate: number;
+  volume: number;
+  high: number;
+  low: number;
+} | null>(null);
 const [stockInfo, setStockInfo] = useState<any>(null);
 const [priceInfo, setPriceInfo] = useState<any>(null);
+const [investorData, setInvestorData] = useState<any>(null);
 const [priceHistory, setPriceHistory] = useState<any[]>([]);
 const [financialInfo, setFinancialInfo] = useState<any>(null);
 const [loading, setLoading] = useState(false);
@@ -37,9 +45,24 @@ useEffect(() => {
 
       const data = await response.json();
 
-      setRealtimePrice(data.price);
+if (!response.ok) {
+  console.error("실시간 API 오류:", data);
+  
+  return;
+}
 
-      console.log("5초 갱신 현재가:", data.price);
+if (
+  data.price === undefined ||
+  data.rate === undefined ||
+  data.volume === undefined ||
+  data.change === undefined
+) {
+  console.error("실시간 데이터 형식 오류:", data);
+  return;
+}
+
+setRealtimePrice(data);
+console.log("5초 갱신 데이터:", data);
     } catch (error) {
       console.error("실시간 가격 갱신 오류:", error);
     }
@@ -48,6 +71,35 @@ useEffect(() => {
   return () => clearInterval(interval);
 
 }, [stockInfo]);
+useEffect(() => {
+  if (!stockInfo) return;
+
+  const stockCode = stockInfo.srtnCd.replace(/^A/, "");
+
+  const fetchInvestorData = async () => {
+    try {
+      const response = await fetch(
+        `/api/investor?code=${stockCode}`
+      );
+
+      if (!response.ok) {
+  const errorData = await response.json();
+
+  console.error("수급 API 오류:", response.status, errorData);
+  return;
+}
+
+      const data = await response.json();
+
+      setInvestorData(data);
+      console.log("수급 데이터:", data);
+    } catch (error) {
+      console.error("수급 데이터 조회 오류:", error);
+    }
+  };
+
+  fetchInvestorData();
+}, [stockInfo])
   const formatEok = (value: number | null | undefined) => {
   if (value === null || value === undefined) return "-";
 
@@ -89,13 +141,24 @@ const [
 
 const priceData = await priceResponse.json();
 const financialData = await financialResponse.json();
-const realtimeData = await realtimeResponse.json();
+console.log("가격 API 원본:", priceData);
+if (!realtimeResponse.ok) {
+  console.error(
+    "실시간 API 실패",
+    realtimeResponse.status
+  );
+} else {
+  const realtimeData = await realtimeResponse.json();
 
-setRealtimePrice(realtimeData.price);
-console.log("실시간 현재가:", realtimeData.price);
+  setRealtimePrice(realtimeData);
+  console.log("실시간 데이터:", realtimeData);
+}
+
 if (priceData.items && priceData.items.length > 0) {
   setPriceInfo(priceData.items[0]);
   setPriceHistory(priceData.items);
+
+  console.log("priceHistory 개수:", priceData.items.length);
 }
 
 if (financialData.success) {
@@ -114,24 +177,41 @@ if (financialData.success) {
   setLoading(false);
 }
 }
+const liveCurrentPrice =
+  realtimePrice?.price ??
+  (priceHistory.length > 0 ? Number(priceHistory[0].clpr) : null);
+
+const liveCurrentVolume =
+  realtimePrice?.volume ??
+  (priceHistory.length > 0 ? Number(priceHistory[0].trqu) : null);
+
+const livePrices =
+  priceHistory.length > 0
+    ? [
+        liveCurrentPrice ?? Number(priceHistory[0].clpr),
+        ...priceHistory.slice(1).map((item) => Number(item.clpr)),
+      ]
+    : [];
+
+const liveCloses =
+  priceHistory.length > 0
+    ? [
+        liveCurrentPrice ?? Number(priceHistory[0].clpr),
+        ...priceHistory.map((item) => Number(item.clpr)),
+      ]
+    : [];
 const ma5 =
-  priceHistory.length >= 5
-    ? priceHistory
-        .slice(0, 5)
-        .reduce((sum, item) => sum + Number(item.clpr), 0) / 5
+  livePrices.length >= 5
+    ? livePrices.slice(0, 5).reduce((sum, v) => sum + v, 0) / 5
     : null;
 
 const ma20 =
-  priceHistory.length >= 20
-    ? priceHistory
-        .slice(0, 20)
-        .reduce((sum, item) => sum + Number(item.clpr), 0) / 20
+  livePrices.length >= 20
+    ? livePrices.slice(0, 20).reduce((sum, v) => sum + v, 0) / 20
     : null;
 const ma20Prev =
-  priceHistory.length >= 21
-    ? priceHistory
-        .slice(1, 21)
-        .reduce((sum, item) => sum + Number(item.clpr), 0) / 20
+  livePrices.length >= 21
+    ? livePrices.slice(1, 21).reduce((sum, v) => sum + v, 0) / 20
     : null;
 
 const ma20Slope =
@@ -171,16 +251,12 @@ const highLowDirection =
       }`
     : "-";
 const ma60 =
-  priceHistory.length >= 60
-    ? priceHistory
-        .slice(0, 60)
-        .reduce((sum, item) => sum + Number(item.clpr), 0) / 60
+  livePrices.length >= 60
+    ? livePrices.slice(0, 60).reduce((sum, v) => sum + v, 0) / 60
     : null;
 const ma60Prev =
-  priceHistory.length >= 61
-    ? priceHistory
-        .slice(1, 61)
-        .reduce((sum, item) => sum + Number(item.clpr), 0) / 60
+  livePrices.length >= 61
+    ? livePrices.slice(1, 61).reduce((sum, v) => sum + v, 0) / 60
     : null;
 
 const ma60Slope =
@@ -188,27 +264,25 @@ const ma60Slope =
     ? ((ma60 - ma60Prev) / ma60Prev) * 100
     : null;
 const ma120 =
-  priceHistory.length >= 120
-    ? priceHistory
-        .slice(0, 120)
-        .reduce((sum, item) => sum + Number(item.clpr), 0) / 120
+  livePrices.length >= 120
+    ? livePrices.slice(0, 120).reduce((sum, v) => sum + v, 0) / 120
     : null;
 
 const ma200 =
-  priceHistory.length >= 200
-    ? priceHistory
-        .slice(0, 200)
-        .reduce((sum, item) => sum + Number(item.clpr), 0) / 200
+  livePrices.length >= 200
+    ? livePrices.slice(0, 200).reduce((sum, v) => sum + v, 0) / 200
     : null;
-const rsi14 =
-  priceHistory.length >= 15
+
+    const rsi14 =
+  liveCloses.length >= 15
     ? (() => {
         let gains = 0;
         let losses = 0;
 
         for (let i = 0; i < 14; i++) {
-          const current = Number(priceHistory[i].clpr);
-          const previous = Number(priceHistory[i + 1].clpr);
+          const current = liveCloses[i];
+          const previous = liveCloses[i + 1];
+
           const change = current - previous;
 
           if (change > 0) {
@@ -249,9 +323,14 @@ const rsi14 =
   return result;
 }
 
-const closes = priceHistory
+const historicalCloses = priceHistory
   .map((item) => Number(item.clpr))
   .reverse();
+
+const closes =
+  realtimePrice?.price != null
+    ? [...historicalCloses, realtimePrice.price]
+    : historicalCloses;
 
 const ema12Series = calculateEMAArray(closes, 12);
 const ema26Series = calculateEMAArray(closes, 26);
@@ -299,41 +378,43 @@ const prevHistogram =
     : null;
     console.log("최근 MACD 10개:", macdSeries.slice(-10));
 console.log("현재 MACD / Signal / Histogram:", macd, signal, histogram);
-const momentum20 =
-  priceHistory.length >= 20
+
+  const momentum20 =
+  liveCurrentPrice !== null && priceHistory.length >= 19
     ? (
-        ((Number(priceHistory[0].clpr) -
-          Number(priceHistory[19].clpr)) /
-          Number(priceHistory[19].clpr)) *
-        100
-      )
+        (liveCurrentPrice - Number(priceHistory[18].clpr)) /
+        Number(priceHistory[18].clpr)
+      ) * 100
     : null;
     const momentum5 =
-  priceHistory.length >= 5
+  liveCurrentPrice !== null && priceHistory.length >= 4
     ? (
-        ((Number(priceHistory[0].clpr) -
-          Number(priceHistory[4].clpr)) /
-          Number(priceHistory[4].clpr)) *
-        100
-      )
+        (liveCurrentPrice - Number(priceHistory[3].clpr)) /
+        Number(priceHistory[3].clpr)
+      ) * 100
     : null;
     const dailyReturn =
-  priceHistory.length >= 2
+  liveCurrentPrice !== null && priceHistory.length >= 1
     ? (
-        ((Number(priceHistory[0].clpr) -
-          Number(priceHistory[1].clpr)) /
-          Number(priceHistory[1].clpr)) *
-        100
-      )
+        (liveCurrentPrice - Number(priceHistory[0].clpr)) /
+        Number(priceHistory[0].clpr)
+      ) * 100
     : null;
     const recent3DailyReturns =
-  priceHistory.length >= 4
-    ? [0, 1, 2].map((i) => {
-        const current = Number(priceHistory[i].clpr);
-        const previous = Number(priceHistory[i + 1].clpr);
+  liveCurrentPrice !== null && priceHistory.length >= 3
+    ? [
+        ((liveCurrentPrice - Number(priceHistory[0].clpr)) /
+          Number(priceHistory[0].clpr)) *
+          100,
 
-        return ((current - previous) / previous) * 100;
-      })
+        ((Number(priceHistory[0].clpr) - Number(priceHistory[1].clpr)) /
+          Number(priceHistory[1].clpr)) *
+          100,
+
+        ((Number(priceHistory[1].clpr) - Number(priceHistory[2].clpr)) /
+          Number(priceHistory[2].clpr)) *
+          100,
+      ]
     : [];
 
 const hadRecentSurge =
@@ -341,13 +422,11 @@ const hadRecentSurge =
     (value) => value > 15
   );
     const momentum60 =
-  priceHistory.length >= 60
+  liveCurrentPrice !== null && priceHistory.length >= 59
     ? (
-        ((Number(priceHistory[0].clpr) -
-          Number(priceHistory[59].clpr)) /
-          Number(priceHistory[59].clpr)) *
-        100
-      )
+        (liveCurrentPrice - Number(priceHistory[58].clpr)) /
+        Number(priceHistory[58].clpr)
+      ) * 100
     : null;
   
     const avgVolume20 =
@@ -358,8 +437,8 @@ const hadRecentSurge =
     : null;
 
 const volumeRatio =
-  avgVolume20 !== null && priceHistory.length > 0
-    ? (Number(priceHistory[0].trqu) / avgVolume20) * 100
+  avgVolume20 !== null && liveCurrentVolume !== null
+    ? (liveCurrentVolume / avgVolume20) * 100
     : null;
     const obv =
   priceHistory.length >= 2
@@ -368,6 +447,7 @@ const volumeRatio =
 
         let value = 0;
 
+        // 과거 확정 일봉 OBV
         for (let i = 1; i < ordered.length; i++) {
           const currentClose = Number(ordered[i].clpr);
           const previousClose = Number(ordered[i - 1].clpr);
@@ -377,6 +457,21 @@ const volumeRatio =
             value += currentVolume;
           } else if (currentClose < previousClose) {
             value -= currentVolume;
+          }
+        }
+
+        // 오늘 실시간 가격 + 실시간 누적 거래량 반영
+        if (
+          liveCurrentPrice !== null &&
+          liveCurrentVolume !== null &&
+          priceHistory.length > 0
+        ) {
+          const previousClose = Number(priceHistory[0].clpr);
+
+          if (liveCurrentPrice > previousClose) {
+            value += liveCurrentVolume;
+          } else if (liveCurrentPrice < previousClose) {
+            value -= liveCurrentVolume;
           }
         }
 
@@ -414,12 +509,12 @@ const score =
   (momentum20 !== null && momentum20 > 0 ? 1 : 0) +
   (ma20Slope !== null && ma20Slope > 0 ? 1 : 0);
   const atr14 =
-  priceHistory.length >= 15
+  priceHistory.length >= 14
     ? (() => {
         const ordered = [...priceHistory].reverse();
-
         const trueRanges: number[] = [];
 
+        // 과거 확정 일봉의 True Range
         for (let i = 1; i < ordered.length; i++) {
           const high = Number(ordered[i].hipr);
           const low = Number(ordered[i].lopr);
@@ -434,18 +529,36 @@ const score =
           trueRanges.push(tr);
         }
 
+        // 오늘 실시간 True Range 추가
+        if (
+          realtimePrice?.high != null &&
+          realtimePrice?.low != null &&
+          priceHistory.length > 0
+        ) {
+          const prevClose = Number(priceHistory[0].clpr);
+
+          const liveTR = Math.max(
+            realtimePrice.high - realtimePrice.low,
+            Math.abs(realtimePrice.high - prevClose),
+            Math.abs(realtimePrice.low - prevClose)
+          );
+
+          trueRanges.push(liveTR);
+        }
+
         const recent14 = trueRanges.slice(-14);
 
-    
-        return (
-          recent14.reduce((sum, value) => sum + value, 0) /
-          recent14.length
-        );
+        return recent14.length === 14
+          ? recent14.reduce((sum, value) => sum + value, 0) / 14
+          : null;
       })()
     : null;
-    const atrPercent =
-  atr14 !== null && priceInfo !== null && Number(priceInfo.clpr) > 0
-    ? (atr14 / Number(priceInfo.clpr)) * 100
+
+const atrPercent =
+  atr14 !== null &&
+  liveCurrentPrice !== null &&
+  liveCurrentPrice > 0
+    ? (atr14 / liveCurrentPrice) * 100
     : null;
     const volatility20 =
   priceHistory.length >= 21
@@ -473,33 +586,40 @@ const score =
       })()
     : null;
     const ma20Distance =
-  priceInfo !== null &&
-  ma20 !== null &&
+  liveCurrentPrice !== null &&
+  ma20 != null &&
   ma20 > 0
-    ? ((Number(priceInfo.clpr) - ma20) / ma20) * 100
+    ? ((liveCurrentPrice - ma20) / ma20) * 100
     : null;
     const high52w =
   priceHistory.length > 0
-    ? Math.max(...priceHistory.map((item) => Number(item.hipr)))
+    ? Math.max(
+        ...priceHistory.map((item) => Number(item.hipr)),
+        realtimePrice?.high ?? 0
+      )
     : null;
-
 const low52w =
   priceHistory.length > 0
-    ? Math.min(...priceHistory.map((item) => Number(item.lopr)))
+    ? Math.min(
+        ...priceHistory.map((item) => Number(item.lopr)),
+        realtimePrice?.low ?? Number.MAX_SAFE_INTEGER
+      )
     : null;
 
 const position52w =
-  priceInfo !== null &&
-  high52w !== null &&
-  low52w !== null &&
+  liveCurrentPrice !== null &&
+  high52w != null &&
+  low52w != null &&
   high52w > low52w
-    ? ((Number(priceInfo.clpr) - low52w) / (high52w - low52w)) * 100
+    ? ((liveCurrentPrice - low52w) /
+       (high52w - low52w)) * 100
     : null;
     const drawdown52w =
-  priceInfo !== null &&
-  high52w !== null &&
+  liveCurrentPrice !== null &&
+  high52w != null &&
   high52w > 0
-    ? ((Number(priceInfo.clpr) - high52w) / high52w) * 100
+    ? ((liveCurrentPrice - high52w) /
+       high52w) * 100
     : null;
    const chartSource = priceHistory
   .slice(0, 120)
@@ -717,21 +837,17 @@ const momentumScore =
     : scoreMomentum(momentum20);
 
 const volumeScore =
-  volumeRatio == null
+  volumeRatio === null
     ? 0
-    : volumeRatio >= 300
-    ? 100
-    : volumeRatio >= 200
-    ? 95
-    : volumeRatio >= 150
-    ? 80
-    : volumeRatio >= 100
-    ? 60
-    : volumeRatio >= 80
-    ? 40
-    : volumeRatio >= 50
-    ? 25
-    : 10;
+    : Math.min(
+        100,
+        Math.max(
+          0,
+          volumeRatio >= 100
+            ? 60 + (volumeRatio - 100) * 0.2
+            : volumeRatio * 0.6
+        )
+      );
 const volumeDirectionFactor =
   momentum20 == null
     ? 1
@@ -740,8 +856,10 @@ const volumeDirectionFactor =
     : momentum20 > -3
     ? 0.7
     : 0.3;
-const adjustedVolumeScore =
-  volumeScore * volumeDirectionFactor;
+const adjustedVolumeScore = Math.min(
+  100,
+  Math.max(0, volumeScore * volumeDirectionFactor)
+);
 const normalizedMacd =
   histogram != null &&
   atr14 != null &&
@@ -750,51 +868,35 @@ const normalizedMacd =
     : null;
 
 let macdScore =
-  normalizedMacd == null
+  normalizedMacd === null
     ? 0
-    : normalizedMacd > 0.2
-    ? 100
-    : normalizedMacd > 0.1
-    ? 80
-    : normalizedMacd >= 0
-    ? 60
-    : normalizedMacd >= -0.1
-    ? 40
-    : normalizedMacd >= -0.2
-    ? 20
-    : 0;
+    : Math.min(
+        100,
+        Math.max(
+          0,
+          50 + normalizedMacd * 250
+        )
+      );
 
-// Histogram 방향 보정
-if (histogram != null && prevHistogram != null) {
-  // 음수 → 양수 전환: 상승 모멘텀 전환
-  if (prevHistogram < 0 && histogram > 0) {
-    macdScore += 15;
-  }
+// Histogram 방향도 연속형으로 반영
+if (
+  histogram !== null &&
+  prevHistogram !== null &&
+  atr14 !== null &&
+  atr14 > 0
+) {
+  const histogramChange =
+    (histogram - prevHistogram) / atr14;
 
-  // 아직 음수지만 전일보다 개선
-  else if (
-    histogram < 0 &&
-    histogram > prevHistogram
-  ) {
-    macdScore += 8;
-  }
+  const histogramAdjustment =
+    Math.min(
+      15,
+      Math.max(-15, histogramChange * 200)
+    );
 
-  // 양수권에서 추가 확대
-  else if (
-    histogram > 0 &&
-    histogram > prevHistogram
-  ) {
-    macdScore += 10;
-  }
-
-  // 양수지만 힘이 약해지는 중
-  else if (
-    histogram > 0 &&
-    histogram < prevHistogram
-  ) {
-    macdScore -= 10;
-  }
+  macdScore += histogramAdjustment;
 }
+
 
 // 최종 MACD 점수는 0~100 제한
 macdScore = Math.max(
@@ -805,15 +907,13 @@ macdScore = Math.max(
 const rsiScore =
   rsi14 == null
     ? 0
-    : rsi14 >= 60 && rsi14 <= 70
-    ? 100
-    : rsi14 >= 50
-    ? 85
-    : rsi14 >= 40
-    ? 60
-    : rsi14 >= 30
-    ? 40
-    : 20;
+    : Math.max(
+        0,
+        Math.min(
+          100,
+          100 - Math.abs(rsi14 - 65) * 3
+        )
+      );
 
 const high52Score =
   position52w == null
@@ -829,43 +929,68 @@ const high52Score =
     : 10;
     let trendScore = 0;
 
+// 1) 현재가가 20일선 위에 얼마나 있는가: 최대 25점
 if (
   currentPrice !== null &&
   ma20 !== null &&
-  currentPrice > ma20
+  ma20 > 0
 ) {
-  trendScore += 25;
+  const distance =
+    ((currentPrice - ma20) / ma20) * 100;
+
+  trendScore += Math.min(
+    25,
+    Math.max(0, distance * 1.5)
+  );
 }
 
+// 2) 20일선이 60일선보다 얼마나 위에 있는가: 최대 25점
 if (
   ma20 !== null &&
   ma60 !== null &&
-  ma20 > ma60
+  ma60 > 0
 ) {
-  trendScore += 25;
+  const spread2060 =
+    ((ma20 - ma60) / ma60) * 100;
+
+  trendScore += Math.min(
+    25,
+    Math.max(0, spread2060 * 4)
+  );
 }
 
+// 3) 60일선이 120일선보다 얼마나 위에 있는가: 최대 25점
 if (
   ma60 !== null &&
   ma120 !== null &&
-  ma60 > ma120
+  ma120 > 0
 ) {
-  trendScore += 25;
+  const spread60120 =
+    ((ma60 - ma120) / ma120) * 100;
+
+  trendScore += Math.min(
+    25,
+    Math.max(0, spread60120 * 4)
+  );
 }
 
-if (
-  ma20Slope !== null &&
-  ma20Slope > 0
-) {
-  trendScore += 15;
+// 4) 20일선 상승 기울기: 최대 15점
+if (ma20Slope !== null) {
+  trendScore += Math.min(
+    15,
+    Math.max(0, ma20Slope * 15)
+  );
 }
 
-if (
-  ma60Slope !== null &&
-  ma60Slope > 0
-) {
-  trendScore += 10;
+// 5) 60일선 상승 기울기: 최대 10점
+if (ma60Slope !== null) {
+  trendScore += Math.min(
+    10,
+    Math.max(0, ma60Slope * 15)
+  );
 }
+
+trendScore = Math.min(100, Math.max(0, trendScore));
 console.log("패널티 확인", {
   rsi14,
   atrPercent,
@@ -929,6 +1054,17 @@ if (
 ) {
   reversalBonus = 10;
 }
+console.log("기술점수 구성:", {
+  momentumScore,
+  trendScore,
+  adjustedVolumeScore,
+  macdScore,
+  rsiScore,
+  high52Score,
+  reversalBonus,
+  penalty,
+});
+
 const technicalScore =
   momentumScore * 0.25 +
   trendScore * 0.20 +
@@ -938,11 +1074,14 @@ const technicalScore =
   high52Score * 0.10;
 
 const finalTechnicalScore =
-  Math.round(
-    technicalScore +
-    reversalBonus -
-    penalty
+  Number(
+    (
+      technicalScore +
+      reversalBonus -
+      penalty
+    ).toFixed(2)
   );
+  
 return (
     <main className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-md px-5 py-16">
@@ -1012,16 +1151,18 @@ return (
       <div className="flex justify-between">
   <span>현재가</span>
   <span>
-    {(
-  realtimePrice ??
-  (priceInfo?.clpr ? Number(priceInfo.clpr) : 0)
-).toLocaleString()}원
-  </span>
+  {(
+    realtimePrice?.price ??
+    (priceInfo?.clpr ? Number(priceInfo.clpr) : 0)
+  ).toLocaleString()}원
+</span>
 </div>
 <div className="flex justify-between">
   <span>전일 종가</span>
   <span>
-    {priceInfo?.clpr
+    {realtimePrice
+  ? (realtimePrice.price - realtimePrice.change).toLocaleString()
+  : priceInfo?.clpr
   ? Number(priceInfo.clpr).toLocaleString()
   : "-"}원
   </span>
@@ -1029,17 +1170,32 @@ return (
 
       <div className="flex justify-between">
         <span>전일 대비</span>
-        <span>{Number(priceInfo.vs).toLocaleString()}원</span>
+        <span>
+  {(
+    realtimePrice?.change ??
+    (priceInfo?.vs ? Number(priceInfo.vs) : 0)
+  ).toLocaleString()}원
+</span>
       </div>
 
       <div className="flex justify-between">
   <span>등락률</span>
-  <span>{Number(priceInfo.fltRt).toFixed(2)}%</span>
+  <span>
+  {(
+    realtimePrice?.rate ??
+    (priceInfo?.fltRt ? Number(priceInfo.fltRt) : 0)
+  ).toFixed(2)}%
+</span>
 </div>
 
       <div className="flex justify-between">
         <span>거래량</span>
-        <span>{Number(priceInfo.trqu).toLocaleString()}주</span>
+        <span>
+  {(
+    realtimePrice?.volume ??
+    (priceInfo?.trqu ? Number(priceInfo.trqu) : 0)
+  ).toLocaleString()}주
+</span>
       </div>
       <div className="flex justify-between">
   <span>시가총액</span>
@@ -1055,12 +1211,22 @@ return (
 
       <div className="flex justify-between">
         <span>고가</span>
-        <span>{Number(priceInfo.hipr).toLocaleString()}원</span>
+        <span>
+  {(
+    realtimePrice?.high ??
+    (priceInfo?.hipr ? Number(priceInfo.hipr) : 0)
+  ).toLocaleString()}원
+</span>
       </div>
 
       <div className="flex justify-between">
         <span>저가</span>
-        <span>{Number(priceInfo.lopr).toLocaleString()}원</span>
+        <span>
+  {(
+    realtimePrice?.low ??
+    (priceInfo?.lopr ? Number(priceInfo.lopr) : 0)
+  ).toLocaleString()}원
+</span>
       </div>
 
       <div className="flex justify-between">
@@ -1106,6 +1272,59 @@ return (
     <h2 className="mt-1 text-xl font-bold text-gray-900">
       기업 분석
     </h2>
+   {realtimePrice &&
+  realtimePrice.price !== undefined &&
+  realtimePrice.rate !== undefined &&
+  realtimePrice.volume !== undefined &&
+  realtimePrice.change !== undefined && (
+  <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div className="rounded-xl border border-gray-200 p-3">
+      <p className="text-xs text-gray-500">현재가</p>
+      <p className="mt-1 text-lg font-bold text-gray-900">
+        {realtimePrice.price.toLocaleString()}원
+      </p>
+    </div>
+
+    <div className="rounded-xl border border-gray-200 p-3">
+      <p className="text-xs text-gray-500">등락률</p>
+      <p
+        className={`mt-1 text-lg font-bold ${
+          realtimePrice.rate > 0
+            ? "text-red-600"
+            : realtimePrice.rate < 0
+            ? "text-blue-600"
+            : "text-gray-900"
+        }`}
+      >
+        {realtimePrice.rate > 0 ? "+" : ""}
+        {realtimePrice.rate}%
+      </p>
+    </div>
+
+    <div className="rounded-xl border border-gray-200 p-3">
+      <p className="text-xs text-gray-500">거래량</p>
+      <p className="mt-1 text-lg font-bold text-gray-900">
+        {realtimePrice.volume.toLocaleString()}주
+      </p>
+    </div>
+
+    <div className="rounded-xl border border-gray-200 p-3">
+      <p className="text-xs text-gray-500">전일 대비</p>
+      <p
+        className={`mt-1 text-lg font-bold ${
+          realtimePrice.change > 0
+            ? "text-red-600"
+            : realtimePrice.change < 0
+            ? "text-blue-600"
+            : "text-gray-900"
+        }`}
+      >
+        {realtimePrice.change > 0 ? "+" : ""}
+        {realtimePrice.change.toLocaleString()}원
+      </p>
+    </div>
+  </div>
+)}
 <div className="mt-6 rounded-xl border border-gray-200 p-4">
   <div className="flex items-end justify-between">
     <div>
@@ -1130,6 +1349,7 @@ return (
           / 100
         </span>
       </div>
+  
     </div>
 
     <div
@@ -1188,7 +1408,10 @@ return (
     <div className="flex justify-between">
   <span>현재가</span>
   <span>
-    {(realtimePrice ?? Number(priceInfo.clpr)).toLocaleString()}원
+    {(
+  realtimePrice?.price ??
+  (priceInfo?.clpr ? Number(priceInfo.clpr) : 0)
+).toLocaleString()}원
   </span>
 </div>
     <div className="flex justify-between">
@@ -1445,34 +1668,59 @@ return (
   <div className="mt-4 space-y-2 text-sm">
     <div className="flex justify-between">
       <span>가격 모멘텀</span>
-      <span>{momentumScore.toFixed(0)} / 100</span>
+      <span>{momentumScore.toFixed(2)} / 100</span>
     </div>
 
     <div className="flex justify-between">
       <span>이동평균 추세</span>
-      <span>{trendScore.toFixed(0)} / 100</span>
+      <span>{trendScore.toFixed(2)} / 100</span>
     </div>
 
     <div className="flex justify-between">
       <span>거래량</span>
-      <span>{adjustedVolumeScore.toFixed(0)} / 100</span>
+      <span>{adjustedVolumeScore.toFixed(2)} / 100</span>
     </div>
 
     <div className="flex justify-between">
       <span>MACD</span>
-      <span>{macdScore.toFixed(0)} / 100</span>
+      <span>{macdScore.toFixed(2)} / 100</span>
     </div>
 
     <div className="flex justify-between">
       <span>RSI</span>
-      <span>{rsiScore.toFixed(0)} / 100</span>
+      <span>{rsiScore.toFixed(2)} / 100</span>
     </div>
 
     <div className="flex justify-between">
       <span>52주 위치</span>
-      <span>{high52Score.toFixed(0)} / 100</span>
+      <span>{high52Score.toFixed(2)} / 100</span>
     </div>
+<div className="flex justify-between">
+  <span>외국인 수급</span>
+  <span>
+    {investorData
+      ? investorData.foreignNetBuyQty.toLocaleString()
+      : "-"}
+  </span>
+</div>
 
+<div className="flex justify-between">
+  <span>기관 수급</span>
+  <span>
+    {investorData
+      ? investorData.institutionNetBuyQty.toLocaleString()
+      : "-"}
+  </span>
+</div>
+
+<div className="flex justify-between">
+  <span>종합 수급</span>
+  <span>
+    {investorData
+      ? investorData.totalNetBuyQty.toLocaleString()
+      : "-"}
+  </span>
+</div>
     <div className="mt-3 border-t border-gray-100 pt-3 flex justify-between font-medium">
       <span>과열 패널티</span>
       <span>{penalty > 0 ? `-${penalty}점` : "0점"}</span>
