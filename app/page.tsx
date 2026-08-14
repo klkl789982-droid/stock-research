@@ -147,11 +147,20 @@ if (priceData.items && priceData.items.length > 0) {
 
   console.log("priceHistory 개수:", priceData.items.length);
 }
-
-const financialResponse =
-  await fetch(`/api/financial?code=${stockCode}`);
-
-const financialData = await financialResponse.json();
+setLoading(false);
+fetch(`/api/financial?code=${stockCode}`)
+  .then((response) => response.json())
+  .then((financialData) => {
+    if (financialData.success) {
+      setFinancialInfo(financialData);
+    } else {
+      setFinancialInfo(null);
+    }
+  })
+  .catch((error) => {
+    console.error("재무 데이터 조회 오류:", error);
+    setFinancialInfo(null);
+  });
 if (!realtimeResponse.ok) {
   console.error(
     "실시간 API 실패",
@@ -165,11 +174,6 @@ if (!realtimeResponse.ok) {
 }
 
 
-if (financialData.success) {
-  setFinancialInfo(financialData);
-} else {
-  setFinancialInfo(null);
-}
 } else {
       alert("종목을 찾을 수 없습니다.");
     }
