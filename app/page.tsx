@@ -130,15 +130,15 @@ setSearchedStock(selectedItem.itmsNm);
 const stockCode = selectedItem.srtnCd.replace(/^A/, "");
 
 const [
- priceResponse,
- financialResponse,
- realtimeResponse
+  priceResponse,
+  realtimeResponse
 ] = await Promise.all([
- fetch(`/api/price?code=${stockCode}`),
- fetch(`/api/financial?code=${stockCode}`),
- fetch(`/api/realtime?code=${stockCode}`)
+  fetch(`/api/price?code=${stockCode}`),
+  fetch(`/api/realtime?code=${stockCode}`)
 ]);
 
+const financialResponse =
+  await fetch(`/api/financial?code=${stockCode}`);
 const priceData = await priceResponse.json();
 const financialData = await financialResponse.json();
 console.log("가격 API 원본:", priceData);
@@ -1081,7 +1081,9 @@ const finalTechnicalScore =
       penalty
     ).toFixed(2)
   );
-  
+
+const isTechnicalLoading = priceHistory.length < 50;
+
 return (
     <main className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-md px-5 py-16">
@@ -1630,25 +1632,33 @@ return (
     <div>
       <p className="text-sm text-gray-500">기술적 강도</p>
       <div className="mt-1 flex items-end gap-1">
-        <span
-          className={`text-3xl font-bold ${
-            finalTechnicalScore >= 85
-              ? "text-green-600"
-              : finalTechnicalScore >= 75
-              ? "text-blue-600"
-              : finalTechnicalScore >= 60
-              ? "text-cyan-600"
-              : finalTechnicalScore >= 40
-              ? "text-yellow-600"
-              : "text-red-600"
-          }`}
-        >
-          {finalTechnicalScore}
-        </span>
+        {isTechnicalLoading ? (
+  <span className="text-lg text-gray-500">
+    계산 중...
+  </span>
+) : (
+  <span
+    className={`text-3xl font-bold ${
+      finalTechnicalScore >= 85
+        ? "text-green-600"
+        : finalTechnicalScore >= 75
+        ? "text-blue-600"
+        : finalTechnicalScore >= 60
+        ? "text-cyan-600"
+        : finalTechnicalScore >= 40
+        ? "text-yellow-600"
+        : "text-red-600"
+    }`}
+  >
+    {finalTechnicalScore}
+  </span>
+)}
 
-        <span className="mb-1 text-sm text-gray-500">
-          / 100
-        </span>
+        {!isTechnicalLoading && (
+  <span className="mb-1 text-sm text-gray-500">
+    / 100
+  </span>
+)}
       </div>
     </div>
 
