@@ -1239,13 +1239,16 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
       </div>
 
       <div className="flex justify-between">
-        <span>시세 기준일</span>
-        <span>
-          {priceInfo.basDt
-            ? `${priceInfo.basDt.slice(0, 4)}-${priceInfo.basDt.slice(4, 6)}-${priceInfo.basDt.slice(6, 8)}`
-            : "-"}
-        </span>
-      </div>
+  <span>시세 기준</span>
+  <span>
+    {new Date().toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    })}{" "}
+    실시간
+  </span>
+</div>
     </div>
   </div>
 )}
