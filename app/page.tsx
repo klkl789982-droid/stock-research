@@ -1111,8 +1111,7 @@ return (
   }}
   disabled={loading}
   placeholder="종목명을 검색하세요"
-  className="w-full rounded-xl border border-gray-300 px-4"
-/>
+className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-black placeholder:text-gray-400"/>
 
           <button
   onClick={handleSearch}
@@ -1284,17 +1283,21 @@ return (
   realtimePrice.volume !== undefined &&
   realtimePrice.change !== undefined && (
   <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
-    <div className="rounded-xl border border-gray-200 p-3">
+    <div className="rounded-xl border border-gray-200 p-4">
       <p className="text-xs text-gray-500">현재가</p>
-      <p className="mt-1 text-lg font-bold text-gray-900">
-        {realtimePrice.price.toLocaleString()}원
-      </p>
+      <p className="mt-1 text-2xl font-bold text-gray-900">
+  {realtimePrice.price.toLocaleString()}
+</p>
+
+<p className="text-xs text-gray-500">
+  원
+</p>
     </div>
 
-    <div className="rounded-xl border border-gray-200 p-3">
+    <div className="rounded-xl border border-gray-200 p-4">
       <p className="text-xs text-gray-500">등락률</p>
       <p
-        className={`mt-1 text-lg font-bold ${
+  className={`mt-1 text-2xl font-bold ${
           realtimePrice.rate > 0
             ? "text-red-600"
             : realtimePrice.rate < 0
@@ -1307,17 +1310,21 @@ return (
       </p>
     </div>
 
-    <div className="rounded-xl border border-gray-200 p-3">
+    <div className="rounded-xl border border-gray-200 p-4">
       <p className="text-xs text-gray-500">거래량</p>
-      <p className="mt-1 text-lg font-bold text-gray-900">
-        {realtimePrice.volume.toLocaleString()}주
-      </p>
+      <p className="mt-1 text-2xl font-bold text-gray-900">
+  {realtimePrice.volume.toLocaleString()}
+</p>
+
+<p className="text-xs text-gray-500">
+  주
+</p>
     </div>
 
-    <div className="rounded-xl border border-gray-200 p-3">
+    <div className="rounded-xl border border-gray-200 p-4">
       <p className="text-xs text-gray-500">전일 대비</p>
       <p
-        className={`mt-1 text-lg font-bold ${
+        className={`mt-1 text-2xl font-bold ${
           realtimePrice.change > 0
             ? "text-red-600"
             : realtimePrice.change < 0
