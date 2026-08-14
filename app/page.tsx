@@ -1289,7 +1289,7 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
   realtimePrice.rate !== undefined &&
   realtimePrice.volume !== undefined &&
   realtimePrice.change !== undefined && (
-  <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+  <div className="mt-4 grid grid-cols-2 gap-3">
     <div className="rounded-xl border border-gray-200 p-4">
       <p className="text-xs text-gray-500">현재가</p>
       <p className="mt-1 text-2xl font-bold text-gray-900">

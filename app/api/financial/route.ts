@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import JSZip from "jszip";
+import corpMap from "@/data/corp-map.json";
 
 type CorpItem = {
   corp_code: string;
@@ -21,46 +21,24 @@ let corpCodeCache:
       }
     >
   | null = null;
-async function findCorpCode(apiKey: string, stockCode: string) {
-  const response = await fetch(
-  `https://opendart.fss.or.kr/api/corpCode.xml?crtfc_key=${apiKey}`,
-  {next: { revalidate: 86400 }}
-);
+function findCorpCode(stockCode: string) {
+  const item = (
+    corpMap as Record<
+      string,
+      {
+        corpCode: string;
+        corpName: string;
+      }
+    >
+  )[stockCode];
 
-  if (!response.ok) {
-    throw new Error("DART 기업코드 파일을 불러오지 못했습니다.");
-  }
+  if (!item) return null;
 
-  const buffer = await response.arrayBuffer();
-
-  const zip = await JSZip.loadAsync(buffer);
-  const xmlFile = zip.file("CORPCODE.xml");
-
-  if (!xmlFile) {
-    throw new Error("CORPCODE.xml 파일을 찾지 못했습니다.");
-  }
-
-  const xml = await xmlFile.async("string");
-
-  const lists = xml.match(/<list>[\s\S]*?<\/list>/g) ?? [];
-
-  if (!corpCodeCache) {
-  corpCodeCache = {};
-
-  for (const itemXml of lists) {
-    const item: CorpItem = {
-      corp_code: getTagValue(itemXml, "corp_code"),
-      corp_name: getTagValue(itemXml, "corp_name"),
-      stock_code: getTagValue(itemXml, "stock_code"),
-    };
-
-    if (item.stock_code) {
-      corpCodeCache[item.stock_code] = item;
-    }
-  }
-}
-
-return corpCodeCache[stockCode] ?? null;
+  return {
+    corp_code: item.corpCode,
+    corp_name: item.corpName,
+    stock_code: stockCode,
+  };
 }
 
 export async function GET(request: NextRequest) {
@@ -84,7 +62,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const company = await findCorpCode(apiKey, stockCode);
+   const company = findCorpCode(stockCode);
 
     if (!company) {
       return NextResponse.json(
