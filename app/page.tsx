@@ -137,11 +137,21 @@ const [
   fetch(`/api/realtime?code=${stockCode}`)
 ]);
 
+const priceData = await priceResponse.json();
+
+console.log("가격 API 원본:", priceData);
+
+if (priceData.items && priceData.items.length > 0) {
+  setPriceInfo(priceData.items[0]);
+  setPriceHistory(priceData.items);
+
+  console.log("priceHistory 개수:", priceData.items.length);
+}
+
 const financialResponse =
   await fetch(`/api/financial?code=${stockCode}`);
-const priceData = await priceResponse.json();
+
 const financialData = await financialResponse.json();
-console.log("가격 API 원본:", priceData);
 if (!realtimeResponse.ok) {
   console.error(
     "실시간 API 실패",
@@ -154,12 +164,6 @@ if (!realtimeResponse.ok) {
   console.log("실시간 데이터:", realtimeData);
 }
 
-if (priceData.items && priceData.items.length > 0) {
-  setPriceInfo(priceData.items[0]);
-  setPriceHistory(priceData.items);
-
-  console.log("priceHistory 개수:", priceData.items.length);
-}
 
 if (financialData.success) {
   setFinancialInfo(financialData);
