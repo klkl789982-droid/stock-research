@@ -1,0 +1,140 @@
+{
+  "generatedAt": "2026-08-16T13:04:26.898Z",
+  "snapshotCount": 0,
+  "topN": 50,
+  "returnBasis": "close-to-close",
+  "mddMethod": "각 기준일 TOP50의 평균 미래수익률을 날짜순으로 복리 연결한 실험 포트폴리오의 최대낙폭",
+  "overlapWarning": "5일·20일 미래수익률 코호트는 서로 겹칠 수 있으므로 독립 표본이 아니며 통계적 유의성을 별도로 검정해야 합니다.",
+  "models": {
+    "modelA": {
+      "1d": {
+        "completedCohorts": 0,
+        "holdingObservations": 0,
+        "averageReturn": null,
+        "winRate": null,
+        "maximumDrawdown": null,
+        "cohortReturns": []
+      },
+      "5d": {
+        "completedCohorts": 0,
+        "holdingObservations": 0,
+        "averageReturn": null,
+        "winRate": null,
+        "maximumDrawdown": null,
+        "cohortReturns": []
+      },
+      "20d": {
+        "completedCohorts": 0,
+        "holdingObservations": 0,
+        "averageReturn": null,
+        "winRate": null,
+        "maximumDrawdown": null,
+        "cohortReturns": []
+      }
+    },
+    "modelB": {
+      "1d": {
+        "completedCohorts": 0,
+        "holdingObservations": 0,
+        "averageReturn": null,
+        "winRate": null,
+        "maximumDrawdown": null,
+        "cohortReturns": []
+      },
+      "5d": {
+        "completedCohorts": 0,
+        "holdingObservations": 0,
+        "averageReturn": null,
+        "winRate": null,
+        "maximumDrawdown": null,
+        "cohortReturns": []
+      },
+      "20d": {
+        "completedCohorts": 0,
+        "holdingObservations": 0,
+        "averageReturn": null,
+        "winRate": null,
+        "maximumDrawdown": null,
+        "cohortReturns": []
+      }
+    },
+    "modelC": {
+      "1d": {
+        "completedCohorts": 0,
+        "holdingObservations": 0,
+        "averageReturn": null,
+        "winRate": null,
+        "maximumDrawdown": null,
+        "cohortReturns": []
+      },
+      "5d": {
+        "completedCohorts": 0,
+        "holdingObservations": 0,
+        "averageReturn": null,
+        "winRate": null,
+        "maximumDrawdown": null,
+        "cohortReturns": []
+      },
+      "20d": {
+        "completedCohorts": 0,
+        "holdingObservations": 0,
+        "averageReturn": null,
+        "winRate": null,
+        "maximumDrawdown": null,
+        "cohortReturns": []
+      }
+    },
+    "modelD": {
+      "1d": {
+        "completedCohorts": 0,
+        "holdingObservations": 0,
+        "averageReturn": null,
+        "winRate": null,
+        "maximumDrawdown": null,
+        "cohortReturns": []
+      },
+      "5d": {
+        "completedCohorts": 0,
+        "holdingObservations": 0,
+        "averageReturn": null,
+        "winRate": null,
+        "maximumDrawdown": null,
+        "cohortReturns": []
+      },
+      "20d": {
+        "completedCohorts": 0,
+        "holdingObservations": 0,
+        "averageReturn": null,
+        "winRate": null,
+        "maximumDrawdown": null,
+        "cohortReturns": []
+      }
+    },
+    "modelE": {
+      "1d": {
+        "completedCohorts": 0,
+        "holdingObservations": 0,
+        "averageReturn": null,
+        "winRate": null,
+        "maximumDrawdown": null,
+        "cohortReturns": []
+      },
+      "5d": {
+        "completedCohorts": 0,
+        "holdingObservations": 0,
+        "averageReturn": null,
+        "winRate": null,
+        "maximumDrawdown": null,
+        "cohortReturns": []
+      },
+      "20d": {
+        "completedCohorts": 0,
+        "holdingObservations": 0,
+        "averageReturn": null,
+        "winRate": null,
+        "maximumDrawdown": null,
+        "cohortReturns": []
+      }
+    }
+  }
+}

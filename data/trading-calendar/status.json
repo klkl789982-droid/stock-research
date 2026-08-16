@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "dates": {
+    "2026-08-13": {
+      "status": "tradingDay",
+      "observedBasDt": "2026-08-13",
+      "modelSnapshot": "created",
+      "marketPriceLedger": "missing",
+      "checkedAt": "2026-08-16T00:00:00.000Z"
+    },
+    "2026-08-14": {
+      "status": "unchecked",
+      "observedBasDt": "2026-08-13",
+      "modelSnapshot": "notRequired",
+      "marketPriceLedger": "notRequired",
+      "reason": "weekdayBasDtMismatch",
+      "checkedAt": "2026-08-16T14:17:17.386Z"
+    },
+    "2026-08-15": {
+      "status": "marketClosed",
+      "observedBasDt": null,
+      "modelSnapshot": "notRequired",
+      "marketPriceLedger": "notRequired",
+      "reason": "weekend",
+      "checkedAt": "2026-08-16T14:17:26.789Z"
+    }
+  }
+}

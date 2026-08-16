@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   LineChart,
   Line,
@@ -14,6 +14,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
+import TopStocksPanel from "../components/TopStocksPanel";
 export default function Home() {
   const [query, setQuery] = useState("");
   const [searchedStock, setSearchedStock] = useState<string | null>(null);
@@ -25,6 +26,14 @@ const [realtimePrice, setRealtimePrice] = useState<{
   volume: number;
   high: number;
   low: number;
+  code: string;
+  source: "KIS";
+  priceBasis: "lastQuotedPrice";
+  asOfDate: string | null;
+  asOfTime: string | null;
+  responseAt: string;
+  marketStatus: "open" | "closed" | "unknown";
+  isRealtime: boolean;
 } | null>(null);
 const [stockInfo, setStockInfo] = useState<any>(null);
 const [priceInfo, setPriceInfo] = useState<any>(null);
@@ -32,6 +41,17 @@ const [investorData, setInvestorData] = useState<any>(null);
 const [priceHistory, setPriceHistory] = useState<any[]>([]);
 const [financialInfo, setFinancialInfo] = useState<any>(null);
 const [loading, setLoading] = useState(false);
+const [realtimeError, setRealtimeError] = useState<string | null>(null);
+const [priceError, setPriceError] = useState<string | null>(null);
+const [priceMeta, setPriceMeta] = useState<{
+  code: string;
+  source: "officialDailyPrice";
+  priceBasis: "officialDailyClose";
+  asOfDate: string;
+  closePrice: number;
+} | null>(null);
+const searchRequestIdRef = useRef(0);
+const selectedCodeRef = useRef<string | null>(null);
 useEffect(() => {
   if (!stockInfo) return;
 
@@ -47,7 +67,10 @@ useEffect(() => {
 
 if (!response.ok) {
   console.error("실시간 API 오류:", data);
-  
+  if (selectedCodeRef.current === stockCode) {
+    setRealtimePrice(null);
+    setRealtimeError(data?.error ?? "현재 시세 조회 실패");
+  }
   return;
 }
 
@@ -55,16 +78,29 @@ if (
   data.price === undefined ||
   data.rate === undefined ||
   data.volume === undefined ||
-  data.change === undefined
+  data.change === undefined ||
+  data.code !== stockCode ||
+  !Number.isFinite(data.price) ||
+  data.price <= 0
 ) {
   console.error("실시간 데이터 형식 오류:", data);
+  if (selectedCodeRef.current === stockCode) {
+    setRealtimePrice(null);
+    setRealtimeError("현재 시세 응답이 올바르지 않습니다.");
+  }
   return;
 }
 
+if (selectedCodeRef.current !== stockCode) return;
 setRealtimePrice(data);
+setRealtimeError(null);
 console.log("5초 갱신 데이터:", data);
     } catch (error) {
       console.error("실시간 가격 갱신 오류:", error);
+      if (selectedCodeRef.current === stockCode) {
+        setRealtimePrice(null);
+        setRealtimeError("현재 시세 조회 실패");
+      }
     }
   }, 5000);
 
@@ -110,6 +146,16 @@ useEffect(() => {
 async function handleSearch() {
   
   if (query.trim() === "") return;
+const requestId = ++searchRequestIdRef.current;
+selectedCodeRef.current = null;
+setRealtimePrice(null);
+setPriceInfo(null);
+setPriceHistory([]);
+setPriceMeta(null);
+setRealtimeError(null);
+setPriceError(null);
+setInvestorData(null);
+setFinancialInfo(null);
 setLoading(true);
   try {
     const response = await fetch(
@@ -117,6 +163,8 @@ setLoading(true);
     );
 
     const data = await response.json();
+    if (requestId !== searchRequestIdRef.current) return;
+    if (!response.ok) throw new Error(data?.error ?? "종목 검색에 실패했습니다.");
 
     if (data.items && data.items.length > 0) {
       const exactMatch = data.items.find(
@@ -128,6 +176,7 @@ const selectedItem = exactMatch ?? data.items[0];
 setSearchedStock(selectedItem.itmsNm);
 
 const stockCode = selectedItem.srtnCd.replace(/^A/, "");
+selectedCodeRef.current = stockCode;
 
 const [
   priceResponse,
@@ -138,19 +187,32 @@ const [
 ]);
 
 const priceData = await priceResponse.json();
+if (requestId !== searchRequestIdRef.current || selectedCodeRef.current !== stockCode) return;
 
 console.log("가격 API 원본:", priceData);
 
-if (priceData.items && priceData.items.length > 0) {
+if (!priceResponse.ok) {
+  setPriceInfo(null);
+  setPriceHistory([]);
+  setPriceMeta(null);
+  setPriceError(priceData?.error ?? "공식 종가 조회 실패");
+} else if (priceData.code === stockCode && priceData.items && priceData.items.length > 0) {
   setPriceInfo(priceData.items[0]);
   setPriceHistory(priceData.items);
+  setPriceMeta({ code: priceData.code, source: priceData.source, priceBasis: priceData.priceBasis, asOfDate: priceData.asOfDate, closePrice: priceData.closePrice });
+  setPriceError(null);
 
   console.log("priceHistory 개수:", priceData.items.length);
+} else {
+  setPriceInfo(null);
+  setPriceHistory([]);
+  setPriceMeta(null);
+  setPriceError("공식 종가 응답이 현재 종목과 일치하지 않습니다.");
 }
-setLoading(false);
 fetch(`/api/financial?code=${stockCode}`)
   .then((response) => response.json())
   .then((financialData) => {
+    if (requestId !== searchRequestIdRef.current || selectedCodeRef.current !== stockCode) return;
     if (financialData.success) {
       setFinancialInfo(financialData);
     } else {
@@ -166,10 +228,18 @@ if (!realtimeResponse.ok) {
     "실시간 API 실패",
     realtimeResponse.status
   );
+  setRealtimePrice(null);
+  setRealtimeError(`현재 시세 조회 실패 (HTTP ${realtimeResponse.status})`);
 } else {
   const realtimeData = await realtimeResponse.json();
-
-  setRealtimePrice(realtimeData);
+  if (requestId !== searchRequestIdRef.current || selectedCodeRef.current !== stockCode) return;
+  if (realtimeData.code !== stockCode || !Number.isFinite(realtimeData.price) || realtimeData.price <= 0) {
+    setRealtimePrice(null);
+    setRealtimeError("현재 시세 응답이 올바르지 않습니다.");
+  } else {
+    setRealtimePrice(realtimeData);
+    setRealtimeError(null);
+  }
   console.log("실시간 데이터:", realtimeData);
 }
 
@@ -182,7 +252,7 @@ if (!realtimeResponse.ok) {
     alert("검색 중 오류가 발생했습니다.");
   }
   finally {
-  setLoading(false);
+  if (requestId === searchRequestIdRef.current) setLoading(false);
 }
 }
 const liveCurrentPrice =
@@ -1150,7 +1220,7 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
       : ""}
   </p>
 </div>
-{priceInfo && (
+{(priceInfo || realtimePrice || priceError || realtimeError) && (
   <div className="mt-5 rounded-xl bg-gray-50 p-4">
     <p className="text-sm font-semibold text-gray-900">
       최근 시세
@@ -1158,21 +1228,26 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
 
     <div className="mt-3 space-y-2 text-sm text-gray-700">
       <div className="flex justify-between">
-  <span>현재가</span>
+  <span>{realtimePrice ? "마지막 조회가" : "최근 거래일 종가"}</span>
   <span>
-  {(
-    realtimePrice?.price ??
-    (priceInfo?.clpr ? Number(priceInfo.clpr) : 0)
-  ).toLocaleString()}원
+  {realtimePrice
+    ? `${realtimePrice.price.toLocaleString()}원`
+    : priceMeta
+    ? `${priceMeta.closePrice.toLocaleString()}원`
+    : "-"}
 </span>
 </div>
+{realtimeError && <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{realtimeError}. 이전 종목 가격을 표시하지 않습니다.</p>}
+{priceError && <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">{priceError}</p>}
+{(realtimePrice || priceInfo) && (
+<>
 <div className="flex justify-between">
   <span>전일 종가</span>
   <span>
     {realtimePrice
   ? (realtimePrice.price - realtimePrice.change).toLocaleString()
-  : priceInfo?.clpr
-  ? Number(priceInfo.clpr).toLocaleString()
+  : priceHistory[1]?.clpr
+  ? Number(priceHistory[1].clpr).toLocaleString()
   : "-"}원
   </span>
 </div>
@@ -1206,6 +1281,8 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
   ).toLocaleString()}주
 </span>
       </div>
+      {priceInfo && (
+      <>
       <div className="flex justify-between">
   <span>시가총액</span>
   <span>
@@ -1217,6 +1294,8 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
         <span>시가</span>
         <span>{Number(priceInfo.mkp).toLocaleString()}원</span>
       </div>
+      </>
+      )}
 
       <div className="flex justify-between">
         <span>고가</span>
@@ -1238,22 +1317,24 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
 </span>
       </div>
 
+</>
+)}
+
       <div className="flex justify-between">
-  <span>시세 기준</span>
+  <span>가격 기준</span>
   <span>
-    {new Date().toLocaleDateString("ko-KR", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    })}{" "}
-    실시간
+    {realtimePrice
+      ? `KIS · ${realtimePrice.asOfDate ?? "기준일 미제공"}${realtimePrice.asOfTime ? ` ${realtimePrice.asOfTime}` : ""} · ${realtimePrice.marketStatus === "closed" ? "휴장" : realtimePrice.marketStatus === "open" ? "장중" : "시장 상태 확인 불가"}`
+      : priceMeta
+      ? `${priceMeta.asOfDate} · 공식 일봉 종가`
+      : "가격 정보 없음"}
   </span>
 </div>
     </div>
   </div>
 )}
 
-            <div className="mt-6 grid grid-cols-3 gap-2">
+            <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
               <button
   onClick={() => setActiveTab("investor")}
   className="rounded-xl border border-gray-200 px-3 py-3 text-sm"
@@ -1273,6 +1354,13 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
   className="rounded-xl border border-gray-200 px-3 py-3 text-sm"
 >
   배당 분석
+</button>
+
+              <button
+  onClick={() => setActiveTab("topStocks")}
+  className="rounded-xl border border-gray-200 px-3 py-3 text-sm"
+>
+  시장 TOP 종목
 </button>
             </div>
           </div>
@@ -2235,6 +2323,7 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
     </p>
   </div>
 )}
+{activeTab === "topStocks" && searchedStock && <TopStocksPanel />}
       </div>
     </main>
   );

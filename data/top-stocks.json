@@ -1,0 +1,26 @@
+{
+  "dataMode": "sample",
+  "usage": "developmentFixtureOnly",
+  "updatedAt": "2026-08-16T06:00:00.000Z",
+  "overall": [
+    { "code": "005930", "name": "삼성전자", "market": "KOSPI", "price": 84500, "changeRate": 2.18, "technicalStrength": 92, "investmentScore": 88, "overallScore": 94 },
+    { "code": "000660", "name": "SK하이닉스", "market": "KOSPI", "price": 231000, "changeRate": 3.12, "technicalStrength": 95, "investmentScore": 84, "overallScore": 92 },
+    { "code": "005380", "name": "현대차", "market": "KOSPI", "price": 278500, "changeRate": -0.71, "technicalStrength": 81, "investmentScore": 91, "overallScore": 89 },
+    { "code": "035420", "name": "NAVER", "market": "KOSPI", "price": 214000, "changeRate": 1.42, "technicalStrength": 87, "investmentScore": 83, "overallScore": 86 },
+    { "code": "068270", "name": "셀트리온", "market": "KOSPI", "price": 198300, "changeRate": -1.05, "technicalStrength": 78, "investmentScore": 86, "overallScore": 82 }
+  ],
+  "technical": [
+    { "code": "000660", "name": "SK하이닉스", "market": "KOSPI", "price": 231000, "changeRate": 3.12, "technicalStrength": 95, "investmentScore": 84, "overallScore": 92 },
+    { "code": "005930", "name": "삼성전자", "market": "KOSPI", "price": 84500, "changeRate": 2.18, "technicalStrength": 92, "investmentScore": 88, "overallScore": 94 },
+    { "code": "035420", "name": "NAVER", "market": "KOSPI", "price": 214000, "changeRate": 1.42, "technicalStrength": 87, "investmentScore": 83, "overallScore": 86 },
+    { "code": "005380", "name": "현대차", "market": "KOSPI", "price": 278500, "changeRate": -0.71, "technicalStrength": 81, "investmentScore": 91, "overallScore": 89 },
+    { "code": "068270", "name": "셀트리온", "market": "KOSPI", "price": 198300, "changeRate": -1.05, "technicalStrength": 78, "investmentScore": 86, "overallScore": 82 }
+  ],
+  "investment": [
+    { "code": "005380", "name": "현대차", "market": "KOSPI", "price": 278500, "changeRate": -0.71, "technicalStrength": 81, "investmentScore": 91, "overallScore": 89 },
+    { "code": "005930", "name": "삼성전자", "market": "KOSPI", "price": 84500, "changeRate": 2.18, "technicalStrength": 92, "investmentScore": 88, "overallScore": 94 },
+    { "code": "068270", "name": "셀트리온", "market": "KOSPI", "price": 198300, "changeRate": -1.05, "technicalStrength": 78, "investmentScore": 86, "overallScore": 82 },
+    { "code": "000660", "name": "SK하이닉스", "market": "KOSPI", "price": 231000, "changeRate": 3.12, "technicalStrength": 95, "investmentScore": 84, "overallScore": 92 },
+    { "code": "035420", "name": "NAVER", "market": "KOSPI", "price": 214000, "changeRate": 1.42, "technicalStrength": 87, "investmentScore": 83, "overallScore": 86 }
+  ]
+}

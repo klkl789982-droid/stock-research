@@ -1,0 +1,38 @@
+{
+  "protocolId": "technical-model-validation-v1",
+  "timezone": "Asia/Seoul",
+  "periods": {
+    "train": {
+      "start": "2024-01-01",
+      "end": "2024-12-31",
+      "allowedUse": ["model-design", "factor-research", "weight-selection"]
+    },
+    "validation": {
+      "start": "2025-01-01",
+      "end": "2025-03-31",
+      "allowedUse": ["pre-registered-model-comparison", "promotion-decision"]
+    },
+    "finalHoldout": {
+      "start": "2025-07-01",
+      "end": "2025-09-30",
+      "allowedUse": ["final-evaluation-only"],
+      "sealed": true
+    }
+  },
+  "walkForward": {
+    "enabled": true,
+    "windows": [
+      {
+        "windowId": "wf-001",
+        "train": { "start": "2024-01-01", "end": "2024-12-31" },
+        "validation": { "start": "2025-01-01", "end": "2025-03-31" }
+      },
+      {
+        "windowId": "wf-002",
+        "train": { "start": "2024-04-01", "end": "2025-03-31" },
+        "validation": { "start": "2025-04-01", "end": "2025-06-30" }
+      }
+    ]
+  },
+  "notes": "예시 기간입니다. 실제 데이터 수집 범위 확정 후 새 protocolId로 별도 등록하고 과거 실험의 기간 복사본은 변경하지 않습니다."
+}

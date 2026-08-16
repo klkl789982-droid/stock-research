@@ -6,7 +6,20 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "universe:build": "node --env-file=.env.local scripts/build-universe.mjs",
+    "technical:validate": "node --env-file=.env.local scripts/validate-technical-sample.mjs",
+    "technical:compare": "node --env-file=.env.local scripts/compare-technical-models.mjs",
+    "history:snapshot": "node --env-file=.env.local scripts/create-daily-model-snapshot.mjs",
+    "snapshot:create": "node --env-file=.env.local scripts/create-daily-model-snapshot.mjs",
+    "history:analyze": "node scripts/analyze-model-history.mjs",
+    "history:resolve": "node scripts/resolve-history-returns.mjs",
+    "history:test": "node scripts/test-future-return-resolver.mjs",
+    "history:daily": "node --env-file=.env.local scripts/run-daily-history.mjs",
+    "history:calendar-test": "node scripts/test-trading-calendar-status.mjs",
+    "model:register": "node scripts/register-model-version.mjs",
+    "experiment:create": "node scripts/create-model-experiment.mjs",
+    "validation:readiness": "node scripts/check-model-validation-readiness.mjs"
   },
   "dependencies": {
     "jszip": "^3.10.1",

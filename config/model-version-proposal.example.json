@@ -1,0 +1,15 @@
+{
+  "modelId": "B",
+  "version": "v2",
+  "status": "experimental",
+  "formulaDescription": "변경할 공식의 사전 설명",
+  "hypothesis": "MA 계열 중복 신호를 줄이면 과열 종목 상위 노출이 감소할 것이다.",
+  "expectedBenefit": "5일 평균수익률을 유지하면서 MDD가 감소할 것이다.",
+  "knownRisk": "추세 초기 구간을 지나치게 낮게 평가할 수 있다.",
+  "evaluationMetrics": ["future5dReturn", "winRate", "MDD"],
+  "changeReason": "검증 전에 기록한 변경 이유",
+  "changedFrom": "B-v1",
+  "validationStartDate": null,
+  "validationEndDate": null,
+  "notes": "결과 확인 전 작성"
+}

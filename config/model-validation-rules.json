@@ -1,0 +1,34 @@
+{
+  "rulesVersion": "v1",
+  "warnOnly": true,
+  "minimumTradingDays": 60,
+  "minimumStockObservations": 1000,
+  "minimumMarketRegimes": 2,
+  "requiredPreRegistrationFields": [
+    "hypothesis",
+    "expectedBenefit",
+    "knownRisk",
+    "evaluationMetrics"
+  ],
+  "allowedEvaluationMetrics": [
+    "averageReturn",
+    "medianReturn",
+    "winRate",
+    "excessReturn",
+    "MDD",
+    "future1dReturn",
+    "future5dReturn",
+    "future20dReturn"
+  ],
+  "topN": [10, 20, 50],
+  "horizons": ["1d", "5d", "20d"],
+  "markets": ["ALL", "KOSPI", "KOSDAQ"],
+  "regimes": ["ALL", "bull", "sideways", "correction", "bear"],
+  "allowedDecisions": ["keep", "reject", "promote", "needsMoreData"],
+  "finalHoldoutPolicy": {
+    "allowModelDesign": false,
+    "allowWeightSelection": false,
+    "requireRecordedAccess": true,
+    "recommendedMaximumEvaluationsPerVersion": 1
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "experimentId": "exp-B-v1-wf-001",
+  "modelVersion": "B-v1",
+  "hypothesis": "Trend Strength 상위군은 전체 Universe보다 20일 평균수익률이 높을 것이다.",
+  "expectedBenefit": "TOP20의 20일 초과수익률이 양수일 것이다.",
+  "knownRisk": "강한 시장 추세에 결과가 종속될 수 있다.",
+  "evaluationMetrics": ["averageReturn", "medianReturn", "winRate", "excessReturn", "MDD"],
+  "walkForwardWindowIds": ["wf-001", "wf-002"],
+  "notes": "결과 열람 전에 생성"
+}

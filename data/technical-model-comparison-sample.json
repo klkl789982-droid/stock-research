@@ -1,0 +1,1699 @@
+{
+  "generatedAt": "2026-08-16T12:48:41.917Z",
+  "dataMode": "daily-close-fallback",
+  "realtimeError": "KIS 토큰 발급 실패: 403",
+  "hypotheses": {
+    "trend": "MA structure 35%, persistence 25%, momentum 20%, MACD 10%, 52-week position 10%",
+    "entry": "price action 25%, volume confirmation 20%, short momentum 20%, RSI/MACD turning 20%, MA integrity 15%, capped risk penalty",
+    "combined": "trendStrength * entryStrength / 100"
+  },
+  "statistics": {
+    "modelA": {
+      "average": 61.75,
+      "median": 65.56,
+      "minimum": 17.24,
+      "maximum": 98.75,
+      "standardDeviation": 20.31,
+      "distribution": {
+        "0-20": 2,
+        "21-40": 3,
+        "41-60": 6,
+        "61-80": 13,
+        "81-100": 6
+      }
+    },
+    "modelB": {
+      "average": 58.95,
+      "median": 59.52,
+      "minimum": 19.85,
+      "maximum": 88.6,
+      "standardDeviation": 19.29,
+      "distribution": {
+        "0-20": 1,
+        "21-40": 4,
+        "41-60": 10,
+        "61-80": 9,
+        "81-100": 6
+      }
+    },
+    "modelC": {
+      "average": 36.49,
+      "median": 50.53,
+      "minimum": 0,
+      "maximum": 71.82,
+      "standardDeviation": 26.84,
+      "distribution": {
+        "0-20": 11,
+        "21-40": 2,
+        "41-60": 11,
+        "61-80": 6,
+        "81-100": 0
+      }
+    },
+    "modelD": {
+      "average": 22.01,
+      "median": 23.32,
+      "minimum": 0,
+      "maximum": 61.8,
+      "standardDeviation": 18.24,
+      "distribution": {
+        "0-20": 13,
+        "21-40": 13,
+        "41-60": 3,
+        "61-80": 1,
+        "81-100": 0
+      }
+    }
+  },
+  "cases": {
+    "highAToLowD": [
+      {
+        "code": "073240",
+        "name": "금호타이어",
+        "technicalStrength": 98.75,
+        "trendStrength": 86.05,
+        "entryStrength": 71.82,
+        "combinedTechnicalScore": 61.8,
+        "dailyChangeRate": 9.7,
+        "modelARank": 1,
+        "modelDRank": 1,
+        "rankChange": 0,
+        "riskFlags": {
+          "overbought": false,
+          "sharpDailyDrop": false,
+          "highVolumeSelloff": false,
+          "shortTermTrendBreak": false,
+          "extendedFromMA20": true
+        }
+      },
+      {
+        "code": "119850",
+        "name": "지엔씨에너지",
+        "technicalStrength": 90.13,
+        "trendStrength": 88.6,
+        "entryStrength": 62.44,
+        "combinedTechnicalScore": 55.32,
+        "dailyChangeRate": 14.94,
+        "modelARank": 2,
+        "modelDRank": 2,
+        "rankChange": 0,
+        "riskFlags": {
+          "overbought": false,
+          "sharpDailyDrop": false,
+          "highVolumeSelloff": false,
+          "shortTermTrendBreak": false,
+          "extendedFromMA20": true
+        }
+      },
+      {
+        "code": "010060",
+        "name": "OCI홀딩스",
+        "technicalStrength": 76.56,
+        "trendStrength": 70.04,
+        "entryStrength": 60.03,
+        "combinedTechnicalScore": 42.05,
+        "dailyChangeRate": 8.59,
+        "modelARank": 7,
+        "modelDRank": 4,
+        "rankChange": 3,
+        "riskFlags": {
+          "overbought": false,
+          "sharpDailyDrop": false,
+          "highVolumeSelloff": false,
+          "shortTermTrendBreak": false,
+          "extendedFromMA20": true
+        }
+      },
+      {
+        "code": "181710",
+        "name": "NHN",
+        "technicalStrength": 74.34,
+        "trendStrength": 84.14,
+        "entryStrength": 46.11,
+        "combinedTechnicalScore": 38.8,
+        "dailyChangeRate": 8.81,
+        "modelARank": 10,
+        "modelDRank": 5,
+        "rankChange": 5,
+        "riskFlags": {
+          "overbought": true,
+          "sharpDailyDrop": false,
+          "highVolumeSelloff": false,
+          "shortTermTrendBreak": false,
+          "extendedFromMA20": true
+        }
+      },
+      {
+        "code": "033240",
+        "name": "자화전자",
+        "technicalStrength": 71.89,
+        "trendStrength": 56.42,
+        "entryStrength": 65.25,
+        "combinedTechnicalScore": 36.81,
+        "dailyChangeRate": 11.42,
+        "modelARank": 12,
+        "modelDRank": 6,
+        "rankChange": 6,
+        "riskFlags": {
+          "overbought": false,
+          "sharpDailyDrop": false,
+          "highVolumeSelloff": false,
+          "shortTermTrendBreak": false,
+          "extendedFromMA20": true
+        }
+      },
+      {
+        "code": "000490",
+        "name": "대동",
+        "technicalStrength": 74.73,
+        "trendStrength": 60.37,
+        "entryStrength": 58.55,
+        "combinedTechnicalScore": 35.35,
+        "dailyChangeRate": 9.42,
+        "modelARank": 8,
+        "modelDRank": 8,
+        "rankChange": 0,
+        "riskFlags": {
+          "overbought": false,
+          "sharpDailyDrop": false,
+          "highVolumeSelloff": false,
+          "shortTermTrendBreak": false,
+          "extendedFromMA20": true
+        }
+      },
+      {
+        "code": "009150",
+        "name": "삼성전기",
+        "technicalStrength": 82.75,
+        "trendStrength": 62.64,
+        "entryStrength": 54.95,
+        "combinedTechnicalScore": 34.42,
+        "dailyChangeRate": 12.58,
+        "modelARank": 3,
+        "modelDRank": 9,
+        "rankChange": -6,
+        "riskFlags": {
+          "overbought": false,
+          "sharpDailyDrop": false,
+          "highVolumeSelloff": false,
+          "shortTermTrendBreak": false,
+          "extendedFromMA20": true
+        }
+      },
+      {
+        "code": "006340",
+        "name": "대원전선",
+        "technicalStrength": 80.41,
+        "trendStrength": 86.37,
+        "entryStrength": 37.61,
+        "combinedTechnicalScore": 32.48,
+        "dailyChangeRate": -5.74,
+        "modelARank": 5,
+        "modelDRank": 10,
+        "rankChange": -5,
+        "riskFlags": {
+          "overbought": false,
+          "sharpDailyDrop": true,
+          "highVolumeSelloff": false,
+          "shortTermTrendBreak": false,
+          "extendedFromMA20": false
+        }
+      },
+      {
+        "code": "100790",
+        "name": "미래에셋벤처투자",
+        "technicalStrength": 72.67,
+        "trendStrength": 55.13,
+        "entryStrength": 56.95,
+        "combinedTechnicalScore": 31.4,
+        "dailyChangeRate": 8.39,
+        "modelARank": 11,
+        "modelDRank": 11,
+        "rankChange": 0,
+        "riskFlags": {
+          "overbought": false,
+          "sharpDailyDrop": false,
+          "highVolumeSelloff": false,
+          "shortTermTrendBreak": false,
+          "extendedFromMA20": true
+        }
+      },
+      {
+        "code": "051900",
+        "name": "LG생활건강",
+        "technicalStrength": 80.26,
+        "trendStrength": 87.17,
+        "entryStrength": 23.1,
+        "combinedTechnicalScore": 20.14,
+        "dailyChangeRate": -3.34,
+        "modelARank": 6,
+        "modelDRank": 17,
+        "rankChange": -11,
+        "riskFlags": {
+          "overbought": false,
+          "sharpDailyDrop": false,
+          "highVolumeSelloff": false,
+          "shortTermTrendBreak": true,
+          "extendedFromMA20": false
+        }
+      },
+      {
+        "code": "002990",
+        "name": "금호건설",
+        "technicalStrength": 80.47,
+        "trendStrength": 76.02,
+        "entryStrength": 11.3,
+        "combinedTechnicalScore": 8.59,
+        "dailyChangeRate": -3.75,
+        "modelARank": 4,
+        "modelDRank": 20,
+        "rankChange": -16,
+        "riskFlags": {
+          "overbought": false,
+          "sharpDailyDrop": false,
+          "highVolumeSelloff": true,
+          "shortTermTrendBreak": false,
+          "extendedFromMA20": true
+        }
+      },
+      {
+        "code": "257720",
+        "name": "실리콘투",
+        "technicalStrength": 71.33,
+        "trendStrength": 66.53,
+        "entryStrength": 11.27,
+        "combinedTechnicalScore": 7.5,
+        "dailyChangeRate": -9.83,
+        "modelARank": 13,
+        "modelDRank": 21,
+        "rankChange": -8,
+        "riskFlags": {
+          "overbought": false,
+          "sharpDailyDrop": true,
+          "highVolumeSelloff": true,
+          "shortTermTrendBreak": false,
+          "extendedFromMA20": false
+        }
+      },
+      {
+        "code": "079650",
+        "name": "서산",
+        "technicalStrength": 74.38,
+        "trendStrength": 69.81,
+        "entryStrength": 1.65,
+        "combinedTechnicalScore": 1.15,
+        "dailyChangeRate": -16.56,
+        "modelARank": 9,
+        "modelDRank": 23,
+        "rankChange": -14,
+        "riskFlags": {
+          "overbought": false,
+          "sharpDailyDrop": true,
+          "highVolumeSelloff": true,
+          "shortTermTrendBreak": false,
+          "extendedFromMA20": true
+        }
+      }
+    ],
+    "lowAToHighD": [],
+    "highTrendLowEntry": [
+      {
+        "code": "006340",
+        "name": "대원전선",
+        "technicalStrength": 80.41,
+        "trendStrength": 86.37,
+        "entryStrength": 37.61,
+        "combinedTechnicalScore": 32.48,
+        "dailyChangeRate": -5.74,
+        "modelARank": 5,
+        "modelDRank": 10,
+        "rankChange": -5,
+        "riskFlags": {
+          "overbought": false,
+          "sharpDailyDrop": true,
+          "highVolumeSelloff": false,
+          "shortTermTrendBreak": false,
+          "extendedFromMA20": false
+        }
+      },
+      {
+        "code": "051900",
+        "name": "LG생활건강",
+        "technicalStrength": 80.26,
+        "trendStrength": 87.17,
+        "entryStrength": 23.1,
+        "combinedTechnicalScore": 20.14,
+        "dailyChangeRate": -3.34,
+        "modelARank": 6,
+        "modelDRank": 17,
+        "rankChange": -11,
+        "riskFlags": {
+          "overbought": false,
+          "sharpDailyDrop": false,
+          "highVolumeSelloff": false,
+          "shortTermTrendBreak": true,
+          "extendedFromMA20": false
+        }
+      },
+      {
+        "code": "002990",
+        "name": "금호건설",
+        "technicalStrength": 80.47,
+        "trendStrength": 76.02,
+        "entryStrength": 11.3,
+        "combinedTechnicalScore": 8.59,
+        "dailyChangeRate": -3.75,
+        "modelARank": 4,
+        "modelDRank": 20,
+        "rankChange": -16,
+        "riskFlags": {
+          "overbought": false,
+          "sharpDailyDrop": false,
+          "highVolumeSelloff": true,
+          "shortTermTrendBreak": false,
+          "extendedFromMA20": true
+        }
+      },
+      {
+        "code": "483650",
+        "name": "달바글로벌",
+        "technicalStrength": 56.78,
+        "trendStrength": 73.27,
+        "entryStrength": 0,
+        "combinedTechnicalScore": 0,
+        "dailyChangeRate": -9.92,
+        "modelARank": 20,
+        "modelDRank": 26,
+        "rankChange": -6,
+        "riskFlags": {
+          "overbought": false,
+          "sharpDailyDrop": true,
+          "highVolumeSelloff": true,
+          "shortTermTrendBreak": true,
+          "extendedFromMA20": false
+        }
+      }
+    ],
+    "highEntryLowTrend": [],
+    "fallingWithHighA": [
+      {
+        "code": "006340",
+        "name": "대원전선",
+        "technicalStrength": 80.41,
+        "trendStrength": 86.37,
+        "entryStrength": 37.61,
+        "combinedTechnicalScore": 32.48,
+        "dailyChangeRate": -5.74,
+        "modelARank": 5,
+        "modelDRank": 10,
+        "rankChange": -5,
+        "riskFlags": {
+          "overbought": false,
+          "sharpDailyDrop": true,
+          "highVolumeSelloff": false,
+          "shortTermTrendBreak": false,
+          "extendedFromMA20": false
+        }
+      },
+      {
+        "code": "051900",
+        "name": "LG생활건강",
+        "technicalStrength": 80.26,
+        "trendStrength": 87.17,
+        "entryStrength": 23.1,
+        "combinedTechnicalScore": 20.14,
+        "dailyChangeRate": -3.34,
+        "modelARank": 6,
+        "modelDRank": 17,
+        "rankChange": -11,
+        "riskFlags": {
+          "overbought": false,
+          "sharpDailyDrop": false,
+          "highVolumeSelloff": false,
+          "shortTermTrendBreak": true,
+          "extendedFromMA20": false
+        }
+      },
+      {
+        "code": "002990",
+        "name": "금호건설",
+        "technicalStrength": 80.47,
+        "trendStrength": 76.02,
+        "entryStrength": 11.3,
+        "combinedTechnicalScore": 8.59,
+        "dailyChangeRate": -3.75,
+        "modelARank": 4,
+        "modelDRank": 20,
+        "rankChange": -16,
+        "riskFlags": {
+          "overbought": false,
+          "sharpDailyDrop": false,
+          "highVolumeSelloff": true,
+          "shortTermTrendBreak": false,
+          "extendedFromMA20": true
+        }
+      },
+      {
+        "code": "257720",
+        "name": "실리콘투",
+        "technicalStrength": 71.33,
+        "trendStrength": 66.53,
+        "entryStrength": 11.27,
+        "combinedTechnicalScore": 7.5,
+        "dailyChangeRate": -9.83,
+        "modelARank": 13,
+        "modelDRank": 21,
+        "rankChange": -8,
+        "riskFlags": {
+          "overbought": false,
+          "sharpDailyDrop": true,
+          "highVolumeSelloff": true,
+          "shortTermTrendBreak": false,
+          "extendedFromMA20": false
+        }
+      },
+      {
+        "code": "079650",
+        "name": "서산",
+        "technicalStrength": 74.38,
+        "trendStrength": 69.81,
+        "entryStrength": 1.65,
+        "combinedTechnicalScore": 1.15,
+        "dailyChangeRate": -16.56,
+        "modelARank": 9,
+        "modelDRank": 23,
+        "rankChange": -14,
+        "riskFlags": {
+          "overbought": false,
+          "sharpDailyDrop": true,
+          "highVolumeSelloff": true,
+          "shortTermTrendBreak": false,
+          "extendedFromMA20": true
+        }
+      }
+    ],
+    "overheatedWithHighD": []
+  },
+  "results": [
+    {
+      "code": "073240",
+      "name": "금호타이어",
+      "market": "KOSPI",
+      "currentPrice": 8140,
+      "dailyChangeRate": 9.7,
+      "technicalStrength": 98.75,
+      "trendStrength": 86.05,
+      "entryStrength": 71.82,
+      "combinedTechnicalScore": 61.8,
+      "rsi": 67.54,
+      "momentum": 39.15,
+      "volumeRatio": 224.46,
+      "position52w": 91.38,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": false,
+        "highVolumeSelloff": false,
+        "shortTermTrendBreak": false,
+        "extendedFromMA20": true
+      },
+      "riskPenalty": 10,
+      "trendComponents": {
+        "structure": 27.92,
+        "persistence": 21.25,
+        "momentum": 20,
+        "macdConfirmation": 7.75,
+        "rangePosition": 9.14
+      },
+      "entryComponents": {
+        "priceAction": 15.47,
+        "volumeConfirmation": 20,
+        "shortMomentum": 16.8,
+        "turning": 14.55,
+        "shortTermIntegrity": 15
+      },
+      "modelARank": 1,
+      "modelDRank": 1,
+      "rankChange": 0
+    },
+    {
+      "code": "119850",
+      "name": "지엔씨에너지",
+      "market": "KOSDAQ",
+      "currentPrice": 55400,
+      "dailyChangeRate": 14.94,
+      "technicalStrength": 90.13,
+      "trendStrength": 88.6,
+      "entryStrength": 62.44,
+      "combinedTechnicalScore": 55.32,
+      "rsi": 59.17,
+      "momentum": 63.18,
+      "volumeRatio": 138.59,
+      "position52w": 93.44,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": false,
+        "highVolumeSelloff": false,
+        "shortTermTrendBreak": false,
+        "extendedFromMA20": true
+      },
+      "riskPenalty": 10,
+      "trendComponents": {
+        "structure": 28.52,
+        "persistence": 22.5,
+        "momentum": 20,
+        "macdConfirmation": 8.24,
+        "rangePosition": 9.34
+      },
+      "entryComponents": {
+        "priceAction": 12.29,
+        "volumeConfirmation": 14.86,
+        "shortMomentum": 14.79,
+        "turning": 15.5,
+        "shortTermIntegrity": 15
+      },
+      "modelARank": 2,
+      "modelDRank": 2,
+      "rankChange": 0
+    },
+    {
+      "code": "332570",
+      "name": "PS일렉트로닉스",
+      "market": "KOSDAQ",
+      "currentPrice": 11160,
+      "dailyChangeRate": 29.92,
+      "technicalStrength": 63.73,
+      "trendStrength": 86.69,
+      "entryStrength": 59.8,
+      "combinedTechnicalScore": 51.84,
+      "rsi": 69.53,
+      "momentum": 93.08,
+      "volumeRatio": 398.28,
+      "position52w": 68.57,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": false,
+        "highVolumeSelloff": false,
+        "shortTermTrendBreak": false,
+        "extendedFromMA20": true
+      },
+      "riskPenalty": 10,
+      "trendComponents": {
+        "structure": 26.08,
+        "persistence": 23.75,
+        "momentum": 20,
+        "macdConfirmation": 10,
+        "rangePosition": 6.86
+      },
+      "entryComponents": {
+        "priceAction": 16,
+        "volumeConfirmation": 20,
+        "shortMomentum": 2.26,
+        "turning": 16.54,
+        "shortTermIntegrity": 15
+      },
+      "modelARank": 17,
+      "modelDRank": 3,
+      "rankChange": 14
+    },
+    {
+      "code": "010060",
+      "name": "OCI홀딩스",
+      "market": "KOSPI",
+      "currentPrice": 278000,
+      "dailyChangeRate": 8.59,
+      "technicalStrength": 76.56,
+      "trendStrength": 70.04,
+      "entryStrength": 60.03,
+      "combinedTechnicalScore": 42.05,
+      "rsi": 55.63,
+      "momentum": 43.08,
+      "volumeRatio": 110.46,
+      "position52w": 58.86,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": false,
+        "highVolumeSelloff": false,
+        "shortTermTrendBreak": false,
+        "extendedFromMA20": true
+      },
+      "riskPenalty": 10,
+      "trendComponents": {
+        "structure": 21.66,
+        "persistence": 12.5,
+        "momentum": 20,
+        "macdConfirmation": 10,
+        "rangePosition": 5.89
+      },
+      "entryComponents": {
+        "priceAction": 17.02,
+        "volumeConfirmation": 12.05,
+        "shortMomentum": 14.75,
+        "turning": 13.84,
+        "shortTermIntegrity": 12.37
+      },
+      "modelARank": 7,
+      "modelDRank": 4,
+      "rankChange": 3
+    },
+    {
+      "code": "181710",
+      "name": "NHN",
+      "market": "KOSPI",
+      "currentPrice": 66700,
+      "dailyChangeRate": 8.81,
+      "technicalStrength": 74.34,
+      "trendStrength": 84.14,
+      "entryStrength": 46.11,
+      "combinedTechnicalScore": 38.8,
+      "rsi": 81.63,
+      "momentum": 78.34,
+      "volumeRatio": 322.84,
+      "position52w": 95.24,
+      "riskFlags": {
+        "overbought": true,
+        "sharpDailyDrop": false,
+        "highVolumeSelloff": false,
+        "shortTermTrendBreak": false,
+        "extendedFromMA20": true
+      },
+      "riskPenalty": 20,
+      "trendComponents": {
+        "structure": 28.37,
+        "persistence": 16.25,
+        "momentum": 20,
+        "macdConfirmation": 10,
+        "rangePosition": 9.52
+      },
+      "entryComponents": {
+        "priceAction": 16.2,
+        "volumeConfirmation": 20,
+        "shortMomentum": 2.58,
+        "turning": 12.33,
+        "shortTermIntegrity": 15
+      },
+      "modelARank": 10,
+      "modelDRank": 5,
+      "rankChange": 5
+    },
+    {
+      "code": "033240",
+      "name": "자화전자",
+      "market": "KOSPI",
+      "currentPrice": 30250,
+      "dailyChangeRate": 11.42,
+      "technicalStrength": 71.89,
+      "trendStrength": 56.42,
+      "entryStrength": 65.25,
+      "combinedTechnicalScore": 36.81,
+      "rsi": 65.04,
+      "momentum": 21.73,
+      "volumeRatio": 296.25,
+      "position52w": 31.45,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": false,
+        "highVolumeSelloff": false,
+        "shortTermTrendBreak": false,
+        "extendedFromMA20": true
+      },
+      "riskPenalty": 10,
+      "trendComponents": {
+        "structure": 14.58,
+        "persistence": 10,
+        "momentum": 18.69,
+        "macdConfirmation": 10,
+        "rangePosition": 3.15
+      },
+      "entryComponents": {
+        "priceAction": 15.25,
+        "volumeConfirmation": 20,
+        "shortMomentum": 8.58,
+        "turning": 16.42,
+        "shortTermIntegrity": 15
+      },
+      "modelARank": 12,
+      "modelDRank": 6,
+      "rankChange": 6
+    },
+    {
+      "code": "475150",
+      "name": "SK이터닉스",
+      "market": "KOSPI",
+      "currentPrice": 57100,
+      "dailyChangeRate": 8.35,
+      "technicalStrength": 47.03,
+      "trendStrength": 62.08,
+      "entryStrength": 59.15,
+      "combinedTechnicalScore": 36.72,
+      "rsi": 32.8,
+      "momentum": 9.81,
+      "volumeRatio": 92.93,
+      "position52w": 56.59,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": false,
+        "highVolumeSelloff": false,
+        "shortTermTrendBreak": false,
+        "extendedFromMA20": false
+      },
+      "riskPenalty": 0,
+      "trendComponents": {
+        "structure": 24.25,
+        "persistence": 13.75,
+        "momentum": 13.92,
+        "macdConfirmation": 4.5,
+        "rangePosition": 5.66
+      },
+      "entryComponents": {
+        "priceAction": 14.18,
+        "volumeConfirmation": 10.29,
+        "shortMomentum": 10.97,
+        "turning": 11.09,
+        "shortTermIntegrity": 12.63
+      },
+      "modelARank": 25,
+      "modelDRank": 7,
+      "rankChange": 18
+    },
+    {
+      "code": "000490",
+      "name": "대동",
+      "market": "KOSPI",
+      "currentPrice": 8480,
+      "dailyChangeRate": 9.42,
+      "technicalStrength": 74.73,
+      "trendStrength": 60.37,
+      "entryStrength": 58.55,
+      "combinedTechnicalScore": 35.35,
+      "rsi": 72.73,
+      "momentum": 26.76,
+      "volumeRatio": 926.55,
+      "position52w": 36.84,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": false,
+        "highVolumeSelloff": false,
+        "shortTermTrendBreak": false,
+        "extendedFromMA20": true
+      },
+      "riskPenalty": 10,
+      "trendComponents": {
+        "structure": 16.69,
+        "persistence": 10,
+        "momentum": 20,
+        "macdConfirmation": 10,
+        "rangePosition": 3.68
+      },
+      "entryComponents": {
+        "priceAction": 10.96,
+        "volumeConfirmation": 20,
+        "shortMomentum": 8.59,
+        "turning": 14,
+        "shortTermIntegrity": 15
+      },
+      "modelARank": 8,
+      "modelDRank": 8,
+      "rankChange": 0
+    },
+    {
+      "code": "009150",
+      "name": "삼성전기",
+      "market": "KOSPI",
+      "currentPrice": 1503000,
+      "dailyChangeRate": 12.58,
+      "technicalStrength": 82.75,
+      "trendStrength": 62.64,
+      "entryStrength": 54.95,
+      "combinedTechnicalScore": 34.42,
+      "rsi": 56.52,
+      "momentum": 17.7,
+      "volumeRatio": 130.62,
+      "position52w": 59.99,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": false,
+        "highVolumeSelloff": false,
+        "shortTermTrendBreak": false,
+        "extendedFromMA20": true
+      },
+      "riskPenalty": 10,
+      "trendComponents": {
+        "structure": 22.06,
+        "persistence": 7.5,
+        "momentum": 17.08,
+        "macdConfirmation": 10,
+        "rangePosition": 6
+      },
+      "entryComponents": {
+        "priceAction": 12.49,
+        "volumeConfirmation": 14.06,
+        "shortMomentum": 5.99,
+        "turning": 17.41,
+        "shortTermIntegrity": 15
+      },
+      "modelARank": 3,
+      "modelDRank": 9,
+      "rankChange": -6
+    },
+    {
+      "code": "006340",
+      "name": "대원전선",
+      "market": "KOSPI",
+      "currentPrice": 15110,
+      "dailyChangeRate": -5.74,
+      "technicalStrength": 80.41,
+      "trendStrength": 86.37,
+      "entryStrength": 37.61,
+      "combinedTechnicalScore": 32.48,
+      "rsi": 54.69,
+      "momentum": 23.55,
+      "volumeRatio": 103.53,
+      "position52w": 70.4,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": true,
+        "highVolumeSelloff": false,
+        "shortTermTrendBreak": false,
+        "extendedFromMA20": false
+      },
+      "riskPenalty": 15,
+      "trendComponents": {
+        "structure": 30.87,
+        "persistence": 21.25,
+        "momentum": 19.42,
+        "macdConfirmation": 7.8,
+        "rangePosition": 7.04
+      },
+      "entryComponents": {
+        "priceAction": 3.35,
+        "volumeConfirmation": 8.65,
+        "shortMomentum": 16.09,
+        "turning": 12.35,
+        "shortTermIntegrity": 12.18
+      },
+      "modelARank": 5,
+      "modelDRank": 10,
+      "rankChange": -5
+    },
+    {
+      "code": "100790",
+      "name": "미래에셋벤처투자",
+      "market": "KOSDAQ",
+      "currentPrice": 17570,
+      "dailyChangeRate": 8.39,
+      "technicalStrength": 72.67,
+      "trendStrength": 55.13,
+      "entryStrength": 56.95,
+      "combinedTechnicalScore": 31.4,
+      "rsi": 67.02,
+      "momentum": 24.52,
+      "volumeRatio": 716.3,
+      "position52w": 18.01,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": false,
+        "highVolumeSelloff": false,
+        "shortTermTrendBreak": false,
+        "extendedFromMA20": true
+      },
+      "riskPenalty": 10,
+      "trendComponents": {
+        "structure": 13.53,
+        "persistence": 10,
+        "momentum": 19.81,
+        "macdConfirmation": 10,
+        "rangePosition": 1.8
+      },
+      "entryComponents": {
+        "priceAction": 7.11,
+        "volumeConfirmation": 20,
+        "shortMomentum": 10.16,
+        "turning": 14.68,
+        "shortTermIntegrity": 15
+      },
+      "modelARank": 11,
+      "modelDRank": 11,
+      "rankChange": 0
+    },
+    {
+      "code": "027360",
+      "name": "아주IB투자",
+      "market": "KOSDAQ",
+      "currentPrice": 4585,
+      "dailyChangeRate": 29.89,
+      "technicalStrength": 50.14,
+      "trendStrength": 51.08,
+      "entryStrength": 59.5,
+      "combinedTechnicalScore": 30.39,
+      "rsi": 71.29,
+      "momentum": 35.65,
+      "volumeRatio": 364.73,
+      "position52w": 14.81,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": false,
+        "highVolumeSelloff": false,
+        "shortTermTrendBreak": false,
+        "extendedFromMA20": true
+      },
+      "riskPenalty": 10,
+      "trendComponents": {
+        "structure": 14.6,
+        "persistence": 5,
+        "momentum": 20,
+        "macdConfirmation": 10,
+        "rangePosition": 1.48
+      },
+      "entryComponents": {
+        "priceAction": 16,
+        "volumeConfirmation": 20,
+        "shortMomentum": 2,
+        "turning": 16.5,
+        "shortTermIntegrity": 15
+      },
+      "modelARank": 23,
+      "modelDRank": 12,
+      "rankChange": 11
+    },
+    {
+      "code": "187660",
+      "name": "페니트리움바이오",
+      "market": "KOSDAQ",
+      "currentPrice": 4920,
+      "dailyChangeRate": 13.1,
+      "technicalStrength": 65.49,
+      "trendStrength": 49.19,
+      "entryStrength": 60.57,
+      "combinedTechnicalScore": 29.79,
+      "rsi": 55.62,
+      "momentum": 19.56,
+      "volumeRatio": 250.98,
+      "position52w": 22.88,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": false,
+        "highVolumeSelloff": false,
+        "shortTermTrendBreak": false,
+        "extendedFromMA20": true
+      },
+      "riskPenalty": 10,
+      "trendComponents": {
+        "structure": 14.08,
+        "persistence": 5,
+        "momentum": 17.83,
+        "macdConfirmation": 10,
+        "rangePosition": 2.29
+      },
+      "entryComponents": {
+        "priceAction": 12.22,
+        "volumeConfirmation": 20,
+        "shortMomentum": 6.96,
+        "turning": 16.39,
+        "shortTermIntegrity": 15
+      },
+      "modelARank": 16,
+      "modelDRank": 13,
+      "rankChange": 3
+    },
+    {
+      "code": "425420",
+      "name": "티에프이",
+      "market": "KOSDAQ",
+      "currentPrice": 38600,
+      "dailyChangeRate": 11.24,
+      "technicalStrength": 65.63,
+      "trendStrength": 41.68,
+      "entryStrength": 60.38,
+      "combinedTechnicalScore": 25.17,
+      "rsi": 59.23,
+      "momentum": 2.25,
+      "volumeRatio": 310.09,
+      "position52w": 27.86,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": false,
+        "highVolumeSelloff": false,
+        "shortTermTrendBreak": false,
+        "extendedFromMA20": true
+      },
+      "riskPenalty": 10,
+      "trendComponents": {
+        "structure": 13,
+        "persistence": 5,
+        "momentum": 10.9,
+        "macdConfirmation": 10,
+        "rangePosition": 2.79
+      },
+      "entryComponents": {
+        "priceAction": 11.03,
+        "volumeConfirmation": 20,
+        "shortMomentum": 6.31,
+        "turning": 18.03,
+        "shortTermIntegrity": 15
+      },
+      "modelARank": 15,
+      "modelDRank": 14,
+      "rankChange": 1
+    },
+    {
+      "code": "240810",
+      "name": "원익IPS",
+      "market": "KOSDAQ",
+      "currentPrice": 120000,
+      "dailyChangeRate": 7.62,
+      "technicalStrength": 61.92,
+      "trendStrength": 40.85,
+      "entryStrength": 59.15,
+      "combinedTechnicalScore": 24.16,
+      "rsi": 59.24,
+      "momentum": -14.71,
+      "volumeRatio": 86.81,
+      "position52w": 57.77,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": false,
+        "highVolumeSelloff": false,
+        "shortTermTrendBreak": false,
+        "extendedFromMA20": true
+      },
+      "riskPenalty": 10,
+      "trendComponents": {
+        "structure": 15.96,
+        "persistence": 5,
+        "momentum": 4.12,
+        "macdConfirmation": 10,
+        "rangePosition": 5.78
+      },
+      "entryComponents": {
+        "priceAction": 21.08,
+        "volumeConfirmation": 9.68,
+        "shortMomentum": 5.22,
+        "turning": 18.17,
+        "shortTermIntegrity": 15
+      },
+      "modelARank": 18,
+      "modelDRank": 15,
+      "rankChange": 3
+    },
+    {
+      "code": "402340",
+      "name": "SK스퀘어",
+      "market": "KOSPI",
+      "currentPrice": 1117000,
+      "dailyChangeRate": 9.08,
+      "technicalStrength": 50.07,
+      "trendStrength": 38.21,
+      "entryStrength": 58.82,
+      "combinedTechnicalScore": 22.48,
+      "rsi": 50.39,
+      "momentum": -7.84,
+      "volumeRatio": 92.83,
+      "position52w": 47.91,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": false,
+        "highVolumeSelloff": false,
+        "shortTermTrendBreak": false,
+        "extendedFromMA20": false
+      },
+      "riskPenalty": 0,
+      "trendComponents": {
+        "structure": 16.61,
+        "persistence": 1.25,
+        "momentum": 6.86,
+        "macdConfirmation": 8.7,
+        "rangePosition": 4.79
+      },
+      "entryComponents": {
+        "priceAction": 12.53,
+        "volumeConfirmation": 10.28,
+        "shortMomentum": 5.85,
+        "turning": 16.63,
+        "shortTermIntegrity": 13.53
+      },
+      "modelARank": 24,
+      "modelDRank": 16,
+      "rankChange": 8
+    },
+    {
+      "code": "051900",
+      "name": "LG생활건강",
+      "market": "KOSPI",
+      "currentPrice": 303500,
+      "dailyChangeRate": -3.34,
+      "technicalStrength": 80.26,
+      "trendStrength": 87.17,
+      "entryStrength": 23.1,
+      "combinedTechnicalScore": 20.14,
+      "rsi": 70.68,
+      "momentum": 23.12,
+      "volumeRatio": 133.36,
+      "position52w": 74.21,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": false,
+        "highVolumeSelloff": false,
+        "shortTermTrendBreak": true,
+        "extendedFromMA20": false
+      },
+      "riskPenalty": 10,
+      "trendComponents": {
+        "structure": 27.1,
+        "persistence": 25,
+        "momentum": 19.25,
+        "macdConfirmation": 8.39,
+        "rangePosition": 7.42
+      },
+      "entryComponents": {
+        "priceAction": 7.89,
+        "volumeConfirmation": 5.66,
+        "shortMomentum": 3.78,
+        "turning": 7.92,
+        "shortTermIntegrity": 7.85
+      },
+      "modelARank": 6,
+      "modelDRank": 17,
+      "rankChange": -11
+    },
+    {
+      "code": "032830",
+      "name": "삼성생명",
+      "market": "KOSPI",
+      "currentPrice": 291500,
+      "dailyChangeRate": -3.64,
+      "technicalStrength": 31.95,
+      "trendStrength": 33.81,
+      "entryStrength": 44.72,
+      "combinedTechnicalScore": 15.12,
+      "rsi": 43.61,
+      "momentum": -11.93,
+      "volumeRatio": 126.81,
+      "position52w": 43.68,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": false,
+        "highVolumeSelloff": false,
+        "shortTermTrendBreak": false,
+        "extendedFromMA20": false
+      },
+      "riskPenalty": 0,
+      "trendComponents": {
+        "structure": 14.54,
+        "persistence": 1.25,
+        "momentum": 5.23,
+        "macdConfirmation": 8.42,
+        "rangePosition": 4.37
+      },
+      "entryComponents": {
+        "priceAction": 4.24,
+        "volumeConfirmation": 6.32,
+        "shortMomentum": 15.07,
+        "turning": 11.54,
+        "shortTermIntegrity": 7.56
+      },
+      "modelARank": 26,
+      "modelDRank": 18,
+      "rankChange": 8
+    },
+    {
+      "code": "950160",
+      "name": "코오롱티슈진",
+      "market": "KOSDAQ",
+      "currentPrice": 25600,
+      "dailyChangeRate": 19.91,
+      "technicalStrength": 17.87,
+      "trendStrength": 19.85,
+      "entryStrength": 59.94,
+      "combinedTechnicalScore": 11.9,
+      "rsi": 74.93,
+      "momentum": -58.78,
+      "volumeRatio": 123.17,
+      "position52w": 10.27,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": false,
+        "highVolumeSelloff": false,
+        "shortTermTrendBreak": false,
+        "extendedFromMA20": false
+      },
+      "riskPenalty": 0,
+      "trendComponents": {
+        "structure": 7.58,
+        "persistence": 1.25,
+        "momentum": 0,
+        "macdConfirmation": 10,
+        "rangePosition": 1.03
+      },
+      "entryComponents": {
+        "priceAction": 14.25,
+        "volumeConfirmation": 13.32,
+        "shortMomentum": 2,
+        "turning": 15.83,
+        "shortTermIntegrity": 14.55
+      },
+      "modelARank": 29,
+      "modelDRank": 19,
+      "rankChange": 10
+    },
+    {
+      "code": "002990",
+      "name": "금호건설",
+      "market": "KOSPI",
+      "currentPrice": 14370,
+      "dailyChangeRate": -3.75,
+      "technicalStrength": 80.47,
+      "trendStrength": 76.02,
+      "entryStrength": 11.3,
+      "combinedTechnicalScore": 8.59,
+      "rsi": 64.92,
+      "momentum": 31.83,
+      "volumeRatio": 418.19,
+      "position52w": 74.15,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": false,
+        "highVolumeSelloff": true,
+        "shortTermTrendBreak": false,
+        "extendedFromMA20": true
+      },
+      "riskPenalty": 25,
+      "trendComponents": {
+        "structure": 32.35,
+        "persistence": 6.25,
+        "momentum": 20,
+        "macdConfirmation": 10,
+        "rangePosition": 7.41
+      },
+      "entryComponents": {
+        "priceAction": 3.78,
+        "volumeConfirmation": 0,
+        "shortMomentum": 2,
+        "turning": 15.52,
+        "shortTermIntegrity": 15
+      },
+      "modelARank": 4,
+      "modelDRank": 20,
+      "rankChange": -16
+    },
+    {
+      "code": "257720",
+      "name": "실리콘투",
+      "market": "KOSDAQ",
+      "currentPrice": 40800,
+      "dailyChangeRate": -9.83,
+      "technicalStrength": 71.33,
+      "trendStrength": 66.53,
+      "entryStrength": 11.27,
+      "combinedTechnicalScore": 7.5,
+      "rsi": 60.07,
+      "momentum": 13.18,
+      "volumeRatio": 287.74,
+      "position52w": 41.71,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": true,
+        "highVolumeSelloff": true,
+        "shortTermTrendBreak": false,
+        "extendedFromMA20": false
+      },
+      "riskPenalty": 30,
+      "trendComponents": {
+        "structure": 20.84,
+        "persistence": 16.25,
+        "momentum": 15.27,
+        "macdConfirmation": 10,
+        "rangePosition": 4.17
+      },
+      "entryComponents": {
+        "priceAction": 2.14,
+        "volumeConfirmation": 0,
+        "shortMomentum": 16.27,
+        "turning": 11.56,
+        "shortTermIntegrity": 11.31
+      },
+      "modelARank": 13,
+      "modelDRank": 21,
+      "rankChange": -8
+    },
+    {
+      "code": "037460",
+      "name": "삼지전자",
+      "market": "KOSDAQ",
+      "currentPrice": 36100,
+      "dailyChangeRate": -8.84,
+      "technicalStrength": 53.97,
+      "trendStrength": 58.39,
+      "entryStrength": 11.64,
+      "combinedTechnicalScore": 6.8,
+      "rsi": 55.66,
+      "momentum": 3,
+      "volumeRatio": 136.57,
+      "position52w": 47.01,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": true,
+        "highVolumeSelloff": false,
+        "shortTermTrendBreak": true,
+        "extendedFromMA20": false
+      },
+      "riskPenalty": 25,
+      "trendComponents": {
+        "structure": 17.49,
+        "persistence": 15,
+        "momentum": 11.2,
+        "macdConfirmation": 10,
+        "rangePosition": 4.7
+      },
+      "entryComponents": {
+        "priceAction": 4.57,
+        "volumeConfirmation": 5.34,
+        "shortMomentum": 8.8,
+        "turning": 11.2,
+        "shortTermIntegrity": 6.74
+      },
+      "modelARank": 21,
+      "modelDRank": 22,
+      "rankChange": -1
+    },
+    {
+      "code": "079650",
+      "name": "서산",
+      "market": "KOSDAQ",
+      "currentPrice": 5240,
+      "dailyChangeRate": -16.56,
+      "technicalStrength": 74.38,
+      "trendStrength": 69.81,
+      "entryStrength": 1.65,
+      "combinedTechnicalScore": 1.15,
+      "rsi": 62.81,
+      "momentum": 28.12,
+      "volumeRatio": 159.65,
+      "position52w": 50.87,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": true,
+        "highVolumeSelloff": true,
+        "shortTermTrendBreak": false,
+        "extendedFromMA20": true
+      },
+      "riskPenalty": 35,
+      "trendComponents": {
+        "structure": 31.29,
+        "persistence": 3.75,
+        "momentum": 20,
+        "macdConfirmation": 9.69,
+        "rangePosition": 5.09
+      },
+      "entryComponents": {
+        "priceAction": 0.38,
+        "volumeConfirmation": 3.04,
+        "shortMomentum": 7,
+        "turning": 11.69,
+        "shortTermIntegrity": 14.55
+      },
+      "modelARank": 9,
+      "modelDRank": 23,
+      "rankChange": -14
+    },
+    {
+      "code": "001290",
+      "name": "상상인증권",
+      "market": "KOSPI",
+      "currentPrice": 1027,
+      "dailyChangeRate": -6.21,
+      "technicalStrength": 69.99,
+      "trendStrength": 60.8,
+      "entryStrength": 0,
+      "combinedTechnicalScore": 0,
+      "rsi": 66.63,
+      "momentum": 34.78,
+      "volumeRatio": 192.24,
+      "position52w": 36.82,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": true,
+        "highVolumeSelloff": true,
+        "shortTermTrendBreak": true,
+        "extendedFromMA20": true
+      },
+      "riskPenalty": 35,
+      "trendComponents": {
+        "structure": 18.37,
+        "persistence": 8.75,
+        "momentum": 20,
+        "macdConfirmation": 10,
+        "rangePosition": 3.68
+      },
+      "entryComponents": {
+        "priceAction": 1.88,
+        "volumeConfirmation": 0,
+        "shortMomentum": 2.22,
+        "turning": 9.58,
+        "shortTermIntegrity": 7.5
+      },
+      "modelARank": 14,
+      "modelDRank": 24,
+      "rankChange": -10
+    },
+    {
+      "code": "018290",
+      "name": "브이티",
+      "market": "KOSDAQ",
+      "currentPrice": 13380,
+      "dailyChangeRate": -9.29,
+      "technicalStrength": 61.62,
+      "trendStrength": 58.66,
+      "entryStrength": 0,
+      "combinedTechnicalScore": 0,
+      "rsi": 62.43,
+      "momentum": 13.2,
+      "volumeRatio": 192.79,
+      "position52w": 10.63,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": true,
+        "highVolumeSelloff": true,
+        "shortTermTrendBreak": true,
+        "extendedFromMA20": false
+      },
+      "riskPenalty": 35,
+      "trendComponents": {
+        "structure": 17.31,
+        "persistence": 15,
+        "momentum": 15.28,
+        "macdConfirmation": 10,
+        "rangePosition": 1.06
+      },
+      "entryComponents": {
+        "priceAction": 1.05,
+        "volumeConfirmation": 0,
+        "shortMomentum": 5.59,
+        "turning": 8.86,
+        "shortTermIntegrity": 7.54
+      },
+      "modelARank": 19,
+      "modelDRank": 25,
+      "rankChange": -6
+    },
+    {
+      "code": "483650",
+      "name": "달바글로벌",
+      "market": "KOSPI",
+      "currentPrice": 236000,
+      "dailyChangeRate": -9.92,
+      "technicalStrength": 56.78,
+      "trendStrength": 73.27,
+      "entryStrength": 0,
+      "combinedTechnicalScore": 0,
+      "rsi": 48.66,
+      "momentum": 13.19,
+      "volumeRatio": 293.92,
+      "position52w": 71.82,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": true,
+        "highVolumeSelloff": true,
+        "shortTermTrendBreak": true,
+        "extendedFromMA20": false
+      },
+      "riskPenalty": 35,
+      "trendComponents": {
+        "structure": 25.71,
+        "persistence": 20,
+        "momentum": 15.28,
+        "macdConfirmation": 5.1,
+        "rangePosition": 7.18
+      },
+      "entryComponents": {
+        "priceAction": 1.53,
+        "volumeConfirmation": 0,
+        "shortMomentum": 6.31,
+        "turning": 9.29,
+        "shortTermIntegrity": 4.58
+      },
+      "modelARank": 20,
+      "modelDRank": 26,
+      "rankChange": -6
+    },
+    {
+      "code": "272110",
+      "name": "케이엔제이",
+      "market": "KOSDAQ",
+      "currentPrice": 28000,
+      "dailyChangeRate": -8.79,
+      "technicalStrength": 52.25,
+      "trendStrength": 44.94,
+      "entryStrength": 0,
+      "combinedTechnicalScore": 0,
+      "rsi": 54.26,
+      "momentum": -2.44,
+      "volumeRatio": 204.82,
+      "position52w": 43.34,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": true,
+        "highVolumeSelloff": true,
+        "shortTermTrendBreak": true,
+        "extendedFromMA20": false
+      },
+      "riskPenalty": 35,
+      "trendComponents": {
+        "structure": 10.33,
+        "persistence": 11.25,
+        "momentum": 9.02,
+        "macdConfirmation": 10,
+        "rangePosition": 4.33
+      },
+      "entryComponents": {
+        "priceAction": 3.28,
+        "volumeConfirmation": 0,
+        "shortMomentum": 7.09,
+        "turning": 11.35,
+        "shortTermIntegrity": 6.39
+      },
+      "modelARank": 22,
+      "modelDRank": 27,
+      "rankChange": -5
+    },
+    {
+      "code": "031330",
+      "name": "에스에이엠티",
+      "market": "KOSDAQ",
+      "currentPrice": 9690,
+      "dailyChangeRate": -17.46,
+      "technicalStrength": 30.61,
+      "trendStrength": 41.76,
+      "entryStrength": 0,
+      "combinedTechnicalScore": 0,
+      "rsi": 48.41,
+      "momentum": -8.33,
+      "volumeRatio": 220.87,
+      "position52w": 39.96,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": true,
+        "highVolumeSelloff": true,
+        "shortTermTrendBreak": true,
+        "extendedFromMA20": false
+      },
+      "riskPenalty": 35,
+      "trendComponents": {
+        "structure": 13.6,
+        "persistence": 7.5,
+        "momentum": 6.67,
+        "macdConfirmation": 10,
+        "rangePosition": 4
+      },
+      "entryComponents": {
+        "priceAction": 2.86,
+        "volumeConfirmation": 0,
+        "shortMomentum": 3.84,
+        "turning": 8.62,
+        "shortTermIntegrity": 2.99
+      },
+      "modelARank": 27,
+      "modelDRank": 28,
+      "rankChange": -1
+    },
+    {
+      "code": "015760",
+      "name": "한국전력",
+      "market": "KOSPI",
+      "currentPrice": 33100,
+      "dailyChangeRate": -6.63,
+      "technicalStrength": 27.53,
+      "trendStrength": 35.31,
+      "entryStrength": 0,
+      "combinedTechnicalScore": 0,
+      "rsi": 39.55,
+      "momentum": -2.79,
+      "volumeRatio": 364.52,
+      "position52w": 2.93,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": true,
+        "highVolumeSelloff": true,
+        "shortTermTrendBreak": true,
+        "extendedFromMA20": false
+      },
+      "riskPenalty": 35,
+      "trendComponents": {
+        "structure": 9.57,
+        "persistence": 10,
+        "momentum": 8.88,
+        "macdConfirmation": 6.56,
+        "rangePosition": 0.29
+      },
+      "entryComponents": {
+        "priceAction": 3.78,
+        "volumeConfirmation": 0,
+        "shortMomentum": 3.93,
+        "turning": 5.85,
+        "shortTermIntegrity": 2.56
+      },
+      "modelARank": 28,
+      "modelDRank": 29,
+      "rankChange": -1
+    },
+    {
+      "code": "035900",
+      "name": "JYP Ent.",
+      "market": "KOSDAQ",
+      "currentPrice": 40850,
+      "dailyChangeRate": -11.2,
+      "technicalStrength": 17.24,
+      "trendStrength": 22.51,
+      "entryStrength": 0,
+      "combinedTechnicalScore": 0,
+      "rsi": 40,
+      "momentum": -12.43,
+      "volumeRatio": 597.82,
+      "position52w": 0.42,
+      "riskFlags": {
+        "overbought": false,
+        "sharpDailyDrop": true,
+        "highVolumeSelloff": true,
+        "shortTermTrendBreak": true,
+        "extendedFromMA20": false
+      },
+      "riskPenalty": 35,
+      "trendComponents": {
+        "structure": 4.42,
+        "persistence": 6.25,
+        "momentum": 5.03,
+        "macdConfirmation": 6.77,
+        "rangePosition": 0.04
+      },
+      "entryComponents": {
+        "priceAction": 0.19,
+        "volumeConfirmation": 0,
+        "shortMomentum": 0,
+        "turning": 4.87,
+        "shortTermIntegrity": 0.24
+      },
+      "modelARank": 30,
+      "modelDRank": 30,
+      "rankChange": 0
+    }
+  ]
+}
