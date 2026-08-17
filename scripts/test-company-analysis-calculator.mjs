@@ -1,0 +1,10 @@
+import assert from "node:assert/strict"; import { calculateCompanyAnalysis } from "../lib/company-analysis-v1.mjs";
+const financial={fiscalPeriodEnd:"2025-12-31",filingDate:"2026-03-20",receiptNumber:"202603200001",fsDivision:"CFS",accounts:{revenue:1000,operatingProfit:150,netIncome:100,assets:1500,liabilities:500,equity:500,revenueCagr:20,operatingProfitCagr:20,interestCoverage:10}};
+const base={financial,analysisAsOfDate:"2026-08-17",priceAsOfDate:"2026-08-17",marketCap:5000,priceBasis:"exactDateOfficialMarketCap"}; const normal=calculateCompanyAnalysis(base);
+assert.equal(normal.totalScore,68); assert.equal(normal.financialMetrics.roe,20); assert.equal(normal.financialMetrics.per,50); assert.equal(normal.fsDivision,"CFS"); assert.deepEqual(normal,calculateCompanyAnalysis({...base,kisLastQuotedPrice:999999}));
+assert.equal(calculateCompanyAnalysis({...base,financial:{...financial,fsDivision:"OFS"}}).fsDivision,"OFS");
+assert.deepEqual(calculateCompanyAnalysis({...base,analysisAsOfDate:"2026-01-01"}).ineligibleReasons,["futureFiling"]);
+const zeroEquity=calculateCompanyAnalysis({...base,financial:{...financial,accounts:{...financial.accounts,equity:0}}}); assert.equal(zeroEquity.financialMetrics.roe,null); assert.equal(zeroEquity.financialMetrics.pbr,null); assert.equal(zeroEquity.eligible,false);
+const loss=calculateCompanyAnalysis({...base,financial:{...financial,accounts:{...financial.accounts,netIncome:-10}}}); assert.equal(loss.financialMetrics.per,null); assert.equal(loss.componentScores.valuation,null);
+assert.equal(calculateCompanyAnalysis({...base,marketCap:null}).valuationStatus,"missingMarketCap"); assert.equal(calculateCompanyAnalysis({...base,priceAsOfDate:"2026-08-16"}).valuationStatus,"priceDateMismatch");
+console.log("company-analysis-v1 characterization·point-in-time 테스트 통과");
