@@ -21,6 +21,8 @@
     "history:calendar-test": "node scripts/test-trading-calendar-status.mjs",
     "data:quality-test": "node scripts/test-market-data-quality-validator.mjs",
     "data:normalization-test": "node scripts/test-market-data-normalization.mjs",
+    "data:eod-request-test": "node scripts/test-public-eod-request.mjs",
+    "data:eod-boundary-diagnosis": "node --env-file=.env.local scripts/diagnose-public-eod-date-boundary.mjs",
     "snapshot:quality-test": "node scripts/test-snapshot-quality-pipeline.mjs",
     "ui:top-stocks-test": "node scripts/test-top-stocks-ui.mjs",
     "kis:token-test": "node scripts/test-kis-token-manager.mjs",

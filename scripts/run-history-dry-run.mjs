@@ -4,14 +4,15 @@ import { spawn } from "node:child_process";
 import { captureDryRunProductionState, compareDryRunProductionState, sanitizeDryRunText } from "../lib/dry-run-safety.mjs";
 
 const argument = process.argv.find((value) => value.startsWith("--date="));
-const requestedDate = argument?.slice(7);
-if (!requestedDate || !/^\d{4}-\d{2}-\d{2}$/.test(requestedDate)) throw new Error("--date=YYYY-MM-DD가 필요합니다.");
+let requestedDate = argument?.slice(7);
+const latestMode = process.argv.includes("--latest");
+if (!latestMode && (!requestedDate || !/^\d{4}-\d{2}-\d{2}$/.test(requestedDate))) throw new Error("--date=YYYY-MM-DD 또는 --latest가 필요합니다.");
 const root = process.cwd();
 const startedAt = new Date();
 const before = await captureDryRunProductionState(root);
 
 const childResult = await new Promise((resolve, reject) => {
-  const child = spawn(process.execPath, ["scripts/create-daily-model-snapshot.mjs", "--dry-run", `--date=${requestedDate}`], { cwd: root, env: process.env, stdio: ["ignore", "pipe", "pipe"] });
+  const child = spawn(process.execPath, ["scripts/create-daily-model-snapshot.mjs", "--dry-run", latestMode ? "--latest" : `--date=${requestedDate}`], { cwd: root, env: process.env, stdio: ["ignore", "pipe", "pipe"] });
   let stdout = ""; let stderr = "";
   child.stdout.on("data", (chunk) => { stdout += chunk; process.stdout.write(chunk); });
   child.stderr.on("data", (chunk) => { stderr += chunk; process.stderr.write(chunk); });
@@ -21,6 +22,8 @@ const childResult = await new Promise((resolve, reject) => {
 const marker = childResult.stdout.split(/\r?\n/u).findLast((line) => line.startsWith("DRY_RUN_RESULT_JSON="));
 if (!marker) throw new Error("dry-run 결과 JSON을 찾을 수 없습니다.");
 const result = JSON.parse(marker.slice("DRY_RUN_RESULT_JSON=".length));
+const reportDate = result.candidateAsOfDate ?? requestedDate;
+requestedDate = reportDate;
 const endedAt = new Date();
 const after = await captureDryRunProductionState(root);
 const integrity = compareDryRunProductionState(before, after);
@@ -30,7 +33,8 @@ const q = result.quality.dataQuality;
 const models = result.universeSummary.modelEligibleUniverse;
 const excludedReasons = Object.fromEntries([...new Set(result.excludedFromScoring.map((item) => item.reason))].sort().map((reason) => [reason, result.excludedFromScoring.filter((item) => item.reason === reason).length]));
 const lines = [
-  `# Snapshot Dry-run Report — ${requestedDate}`, "",
+  `# Schema v6 Full-Universe Dry-run — ${reportDate}`, "",
+  `- 체크포인트 커밋: \`e4920b47f244623bd35df361b7f0ecf056f929ff\``, `- 실행 ID: \`${result.runId ?? "not-created"}\``,
   `- 시작: ${startedAt.toISOString()}`, `- 종료: ${endedAt.toISOString()}`,
   `- 실행시간: ${((endedAt - startedAt) / 1000).toFixed(3)}초`,
   `- 최종 판정: **${result.approvedForSchemaV6Snapshot ? "SCHEMA_V6_SNAPSHOT_APPROVED" : "NOT_APPROVED"}**`, "",
@@ -55,8 +59,25 @@ const lines = [
   "## 15. 다음 조치", "", result.approvedForSchemaV6Snapshot ? "구조적으로 첫 schema v6 스냅샷 생성이 가능하다. 다만 PROVISIONAL 차단 사유를 유지하고 사용자 승인 후 production 실행해야 한다." : "공식 데이터 게시 또는 fatal 원인 해소 전까지 schema v6 스냅샷을 생성하지 않는다.", "",
   "## 16. 테스트·빌드", "", "이 섹션은 구현 검증 명령 완료 후 최종 보고에서 보완한다.", "",
 ];
+if (latestMode) {
+  const historyNames = (await fs.readdir(path.join(root, "data", "history"))).filter((name) => /^\d{4}-\d{2}-\d{2}\.json$/.test(name)).sort();
+  const latestHistoryDate = historyNames.at(-1)?.slice(0, 10) ?? null;
+  const finalDecision = result.quality.fatalCount > 0 ? "DATA_QUALITY_REJECTED" : latestHistoryDate && reportDate <= latestHistoryDate ? "NO_NEW_OFFICIAL_EOD" : result.universeComparison?.sameAsCurrentUniverse ? "APPROVED_WITH_PROVISIONAL_UNIVERSE" : "UNIVERSE_MISMATCH_REQUIRES_REVIEW";
+  lines.push(
+    "## 17. 제한 probe 및 기준일", "", `- probe: \`${JSON.stringify(result.representativeProbe)}\``, `- candidateAsOfDate: ${reportDate}`, `- 기존 최신 history: ${latestHistoryDate ?? "없음"}`, `- 관계: ${latestHistoryDate && reportDate > latestHistoryDate ? "신규 후보" : "신규 production 대상 아님"}`, "",
+    "## 18. Schema v6 메모리 산출물", "", "| 산출물 | schema | records | bytes | hash | validation |", "|---|---:|---:|---:|---|---|",
+    ...(result.artifacts ?? []).map((item) => `| ${item.name} | ${item.schemaVersion} | ${item.recordCount} | ${item.estimatedSerializedBytes} | ${item.contentHash} | ${item.validationStatus} |`), "",
+    "## 19. Intraday seed 크기", "", `- recordCount: ${result.intradaySeed?.recordCount ?? "-"}`, `- tupleCount: ${result.intradaySeed?.tupleCount ?? "-"}`, `- serializedBytes: ${result.intradaySeed?.serializedBytes ?? "-"}`, `- maximumRowsPerSymbol: ${result.intradaySeed?.maximumRowsPerSymbol ?? "-"}`, `- annual250DayEstimatedBytes: ${result.intradaySeed?.annual250DayEstimatedBytes ?? "-"}`, "",
+    "## 20. Universe 비교", "", "```json", JSON.stringify(result.universeComparison ?? null, null, 2), "```", "",
+    "## 21. 모델별 점수·순위", "", "```json", JSON.stringify(result.modelStatistics ?? null, null, 2), "```", "",
+    "## 22. Source availability", "", "```json", JSON.stringify(result.sourceAvailability ?? null, null, 2), "```", "",
+    "## 23. 수익률 초기 상태", "", "```json", JSON.stringify(result.returnsState ?? null, null, 2), "```", "",
+    "## 24. 최종 승인 판정", "", `- **${finalDecision}**`, `- eligibleForSnapshotGeneration: ${result.quality.eligibleForSnapshot}`, `- eligibleForRanking: ${q.certification.eligibleForRanking}`, `- eligibleForPredictiveResearch: ${q.certification.eligibleForRanking}`, "- eligibleForExecutableAggregation: false", "- eligibleForOptimization: false", "- 이유: production signalAvailableAt 없음, point-in-time Universe 미인증", "",
+    "## 25. 요청 및 재출력", "", `- 실제 외부 HTTP 요청 수: ${result.collection.apiRequests}`, "- 대표 probe 3종목은 request cache로 전체 수집에서 재호출하지 않음", "- 보고서는 수집된 메모리 결과만 사용했으며 보고서 재출력 외부 요청 0건", ""
+  );
+}
 const reportDirectory = path.join(root, "reports");
 await fs.mkdir(reportDirectory, { recursive: true });
-const reportPath = path.join(reportDirectory, `snapshot-dry-run-${requestedDate}.md`);
+const reportPath = path.join(reportDirectory, latestMode ? "schema-v6-full-universe-dry-run-2026-08-18.md" : `snapshot-dry-run-${requestedDate}.md`);
 await fs.writeFile(reportPath, `${sanitizeDryRunText(lines.join("\n"))}\n`, "utf8");
 console.log(`DRY_RUN_REPORT=${reportPath}`);

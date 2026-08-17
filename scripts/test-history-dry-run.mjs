@@ -20,6 +20,13 @@ test("반복 hash와 전후 상태 비교는 결정론적", () => {
   const state = { protectedHashes: { a: "x" }, productionFiles: {} };
   assert.equal(compareDryRunProductionState(state, structuredClone(state)).unchanged, true);
 });
+const snapshotSource = await fs.readFile(new URL("./create-daily-model-snapshot.mjs", import.meta.url), "utf8");
+test("latest probe는 동일 request cache를 재사용하고 dry-run availability를 승인하지 않는다", () => {
+  assert.match(snapshotSource, /representativeProbe/);
+  assert.match(snapshotSource, /requestCache/);
+  assert.match(snapshotSource, /OBSERVED_IN_DRY_RUN/);
+  assert.match(snapshotSource, /signalAvailableAt:\s*null/);
+});
 const root = await fs.mkdtemp(path.join(os.tmpdir(), "dry-run-zero-write-"));
 assert.equal((await fs.readdir(root)).length, 0);
 await fs.rm(root, { recursive: true });

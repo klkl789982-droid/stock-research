@@ -8,6 +8,7 @@ import { createMarketAnalysisSnapshot, validateMarketAnalysisSnapshot } from "..
 import { createIntradayMarketSeed, validateIntradayMarketSeed } from "../lib/intraday-market-seed.mjs";
 import { createSourceAvailability } from "../lib/source-availability.mjs";
 import { createExecutionReturns, PUBLIC_EOD_T2_POLICY_ID } from "../lib/execution-return-resolver.mjs";
+import { createPublicEodQuery, createPublicEodRequestShape, createPublicEodSingleFlight, evaluatePublicEodCandidate, normalizePublicEodRows } from "../lib/public-eod-request.mjs";
 import {
   annotateRankingMetadata,
   assertSnapshotQualityGate,
@@ -19,6 +20,7 @@ import {
   createFormulaHashes,
   createSourceManifest,
   createUniverseArchive,
+  sha256Canonical,
 } from "../lib/snapshot-quality-pipeline.mjs";
 import {
   MODEL_DEFINITIONS,
@@ -41,8 +43,9 @@ const REQUEST_TIMEOUT_MS = 15_000;
 const MAX_ATTEMPTS = 3;
 const EXPECTED_UNIVERSE_COUNT = 553;
 const dryRun = process.argv.includes("--dry-run");
-const requestCache = new Map();
-const collectionStatistics = { apiRequests: 0, successes: 0, failures: 0, timeouts: 0, retries: 0, failedSymbols: [] };
+const latestMode = dryRun && process.argv.includes("--latest");
+const requestCache = createPublicEodSingleFlight();
+const collectionStatistics = { apiRequests: 0, successes: 0, failures: 0, timeouts: 0, retries: 0, cacheHits: 0, failedSymbols: [] };
 
 function parseRequestedDate() {
   const argument = process.argv.find((value) => value.startsWith("--date="));
@@ -52,23 +55,11 @@ function parseRequestedDate() {
   return date;
 }
 
-const requestedDate = parseRequestedDate();
-const requestedCompactDate = requestedDate?.replaceAll("-", "") ?? null;
+let requestedDate = parseRequestedDate();
+let requestedCompactDate = requestedDate?.replaceAll("-", "") ?? null;
 
-function normalizeItems(items) {
-  if (!items) return [];
-  return Array.isArray(items) ? items : [items];
-}
-
-async function fetchHistoryUncached(code, attempt = 1) {
-  const query = new URLSearchParams({
-    resultType: "json",
-    pageNo: "1",
-    numOfRows: "260",
-    likeSrtnCd: code,
-  });
-  if (requestedCompactDate) query.set("endBasDt", requestedCompactDate);
-
+async function fetchHistoryUncached(shape, attempt = 1) {
+  const query = createPublicEodQuery(shape);
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -78,31 +69,32 @@ async function fetchHistoryUncached(code, attempt = 1) {
     finally { clearTimeout(timeout); }
     if (!response.ok) { const failure = new Error(`HTTP ${response.status}`); failure.httpStatus = response.status; throw failure; }
     const payload = await response.json();
-    const rows = normalizeItems(payload?.response?.body?.items?.item)
-      .filter((row) => normalizeStockCode(row.srtnCd) === normalizeStockCode(code))
-      .filter((row) => !requestedCompactDate || String(row.basDt) <= requestedCompactDate)
-      .sort((a, b) => String(b.basDt).localeCompare(String(a.basDt)));
+    const businessCode = String(payload?.response?.header?.resultCode ?? "");
+    if (businessCode && businessCode !== "00") { const failure = new Error(`업무 응답 ${businessCode}`); failure.businessCode = businessCode; throw failure; }
+    const { rows } = normalizePublicEodRows(payload?.response?.body?.items?.item, { code: shape.code });
 
     if (rows.length === 0) throw new Error("일봉 응답이 비어 있습니다.");
     collectionStatistics.successes += 1;
     return rows;
   } catch (error) {
     if (error?.name === "AbortError") collectionStatistics.timeouts += 1;
-    const retryable = error?.name === "AbortError" || error?.httpStatus === 429 || error?.httpStatus >= 500 || error?.httpStatus == null;
-    if (!retryable || attempt >= MAX_ATTEMPTS) {
+    const maxAttempts = latestMode ? 2 : MAX_ATTEMPTS;
+    const retryable = error?.name === "AbortError" || (!latestMode && error?.httpStatus === 429) || error?.httpStatus >= 500 || (error?.httpStatus == null && !error?.businessCode);
+    if (!retryable || attempt >= maxAttempts) {
       collectionStatistics.failures += 1;
-      collectionStatistics.failedSymbols.push({ code, httpStatus: error?.httpStatus ?? null, timeout: error?.name === "AbortError" });
-      throw new Error(`${code} 일봉 조회 실패: ${error instanceof Error ? error.message : String(error)}`);
+      collectionStatistics.failedSymbols.push({ code: shape.code, httpStatus: error?.httpStatus ?? null, timeout: error?.name === "AbortError" });
+      throw new Error(`${shape.code} 일봉 조회 실패: ${error instanceof Error ? error.message : String(error)}`);
     }
     collectionStatistics.retries += 1;
     await new Promise((resolve) => setTimeout(resolve, 2 ** (attempt - 1) * 1000));
-    return fetchHistoryUncached(code, attempt + 1);
+    return fetchHistoryUncached(shape, attempt + 1);
   }
 }
 
 function fetchHistory(code) {
-  if (!requestCache.has(code)) requestCache.set(code, fetchHistoryUncached(code));
-  return requestCache.get(code);
+  const shape = createPublicEodRequestShape({ code, purpose: "latestHistoryCollection", beginBasDt: null, endBasDt: null, pageNo: 1, numOfRows: 260, resultType: "json" });
+  if (requestCache.has(shape)) collectionStatistics.cacheHits += 1;
+  return requestCache.run(shape, async () => fetchHistoryUncached(shape)).then((rows) => rows.filter((row) => !requestedCompactDate || String(row.basDt) <= requestedCompactDate));
 }
 
 async function mapWithConcurrency(items, concurrency, mapper) {
@@ -135,6 +127,35 @@ for (const version of policy.activeComparisonModels) {
 }
 if (universe.finalCount !== EXPECTED_UNIVERSE_COUNT || universe.stocks?.length !== EXPECTED_UNIVERSE_COUNT) {
   throw new Error(`Universe가 553개가 아닙니다: finalCount=${universe.finalCount}, stocks=${universe.stocks?.length ?? 0}`);
+}
+const dryRunStartedAt = new Date().toISOString();
+let representativeProbe = null;
+if (latestMode) {
+  const preferred = ["005930", "000660", "247540"];
+  const representatives = preferred.map((code) => universe.stocks.find((stock) => stock.code === code)).filter(Boolean);
+  for (const stock of universe.stocks) {
+    if (representatives.length >= 3) break;
+    if (!representatives.some((item) => item.code === stock.code)) representatives.push(stock);
+  }
+  const observations = [];
+  for (const stock of representatives.slice(0, 3)) {
+    const rows = await fetchHistory(stock.code);
+    const row = rows[0];
+    const latestBasDt = String(row?.basDt ?? "");
+    const prices = [row?.mkp, row?.hipr, row?.lopr, row?.clpr].map(Number);
+    if (!/^\d{8}$/.test(latestBasDt) || !prices.every((value) => Number.isFinite(value) && value > 0) || Number(row?.hipr) < Math.max(Number(row?.mkp), Number(row?.clpr)) || Number(row?.lopr) > Math.min(Number(row?.mkp), Number(row?.clpr)) || Number(row?.trqu) < 0) {
+      throw new Error(`UPSTREAM_FAILED: 대표 종목 probe 검증 실패 ${stock.code}`);
+    }
+    observations.push({ code: stock.code, market: stock.market, latestBasDt });
+  }
+  const dates = [...new Set(observations.map((item) => item.latestBasDt))];
+  if (dates.length !== 1) throw new Error(`REPRESENTATIVE_DATE_MISMATCH: ${observations.map((item) => `${item.code}:${item.latestBasDt}`).join(",")}`);
+  const compact = dates[0];
+  const formatted = `${compact.slice(0, 4)}-${compact.slice(4, 6)}-${compact.slice(6, 8)}`;
+  if (formatted > new Date().toISOString().slice(0, 10)) throw new Error("UPSTREAM_FAILED: 대표 종목 미래 날짜 응답");
+  requestedDate = formatted;
+  requestedCompactDate = compact;
+  representativeProbe = { status: "OFFICIAL_EOD_CANDIDATE_FOUND", observations, candidateAsOfDate: formatted, completedAt: new Date().toISOString() };
 }
 
 const historyDirectory = path.join(process.cwd(), "data", "history");
@@ -276,7 +297,19 @@ const preparedUniverseArchive = fatalIssues.length === 0
   ? createUniverseArchive({ requestedDate: asOfDate, generatedAt, universe, historyByCode, sourceManifest })
   : null;
 const availabilityTimestamp = new Date().toISOString();
-const sourceAvailability = createSourceAvailability({ sourceMarketDate: asOfDate, sourceCollectedAt, signalComputedAt, availabilityTimestamp });
+const sourceAvailability = dryRun ? {
+  sourceMarketDate: asOfDate,
+  sourcePublishedAt: null,
+  sourceCollectedAt,
+  sourceStoredAt: null,
+  signalComputedAt,
+  signalAvailableAt: null,
+  sourceAvailabilityStatus: "OBSERVED_IN_DRY_RUN",
+  sourcePublicationPolicy: (await import("../lib/source-availability.mjs")).SOURCE_PUBLICATION_POLICY,
+  sourcePublicationPolicyHash: (await import("../lib/source-availability.mjs")).SOURCE_PUBLICATION_POLICY_HASH,
+  timingPolicyVersion: "public-eod-t2-open-v1",
+  timingEvidence: { publication: "POLICY_ESTIMATED", collection: "OBSERVED_IN_DRY_RUN", availability: "NOT_PRODUCTION_AVAILABLE" },
+} : createSourceAvailability({ sourceMarketDate: asOfDate, sourceCollectedAt, signalComputedAt, availabilityTimestamp });
 for (const record of records) record.executionReturnsByPolicy[PUBLIC_EOD_T2_POLICY_ID] = createExecutionReturns(asOfDate, sourceAvailability.signalAvailableAt);
 function createHistoryDistribution() {
   const entries = Object.entries(quality.perSymbol).map(([code, value]) => ({ code, days: value.uniqueTradingDays }));
@@ -304,15 +337,22 @@ function diagnosticTop10(modelKey, version = null) {
   };
 }
 const dryRunResult = {
-  mode: "dry-run", requestedDate: asOfDate, generatedAt,
+  mode: "dry-run", dryRunOnly: true, runId: `schema-v6-dry-run-${new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14)}`,
+  dryRunStartedAt, requestedDate: asOfDate, candidateAsOfDate: asOfDate, representativeProbe, generatedAt,
   approvedForSchemaV6Snapshot: fatalIssues.length === 0,
-  collection: { ...collectionStatistics, observedUniverse: universe.stocks.length, concurrency: CONCURRENCY, timeoutMs: REQUEST_TIMEOUT_MS, maxAttempts: MAX_ATTEMPTS },
+  collection: { ...collectionStatistics, observedUniverse: universe.stocks.length, requestedUniverseCount: universe.stocks.length, requestedCodeCount: requestCache.size(), concurrency: CONCURRENCY, timeoutMs: REQUEST_TIMEOUT_MS, maxAttempts: latestMode ? 2 : MAX_ATTEMPTS },
   quality: { status: quality.status, grade: quality.grade, eligibleForSnapshot: quality.eligibleForSnapshot, dataQuality, fatalCount: fatalIssues.length, ineligibleCount: excludedFromScoring.length, warningCount: quality.issues.filter((entry) => entry.severity === "warning").length },
   universeSummary, excludedFromScoring, historyDistribution: createHistoryDistribution(), sourceManifest,
+  requestFingerprint: sha256Canonical({ candidateAsOfDate: asOfDate, codes: universe.stocks.map((stock) => stock.code).sort(), endpoint: "getStockPriceInfo", rowsPerCode: 260 }),
+  sourceAvailability,
+  returnsState: { futureFiniteCount: 0, legacyFiniteCount: 0, executionFiniteCount: 0, timingValidationStatus: "NOT_PRODUCTION_AVAILABLE", eligibleForExecutableAggregation: false },
   samples: { fatal: fatalIssues.slice(0, 20), insufficientHistory: excludedFromScoring.filter((entry) => entry.reason === "insufficientHistory").slice(0, 50), zeroVolume: quality.issues.filter((entry) => entry.type === "nonTradingObservation").slice(0, 20) },
   issueCounts: Object.fromEntries([...new Set(quality.issues.map((entry) => entry.type))].sort().map((type) => [type, quality.issues.filter((entry) => entry.type === type).length])),
   diagnosticTop10: { "A-v1": diagnosticTop10("modelA"), "A-v2": diagnosticTop10(null, "A-v2"), "B-v1": diagnosticTop10("modelB"), "C-v1": diagnosticTop10("modelC"), "D-v1": diagnosticTop10("modelD") },
 };
+const existingHistoryDates = (await fs.readdir(historyDirectory)).filter((name) => /^\d{4}-\d{2}-\d{2}\.json$/.test(name)).map((name) => name.slice(0, 10).replaceAll("-", "")).sort();
+const candidateEvaluation = evaluatePublicEodCandidate({ requestedDate: asOfDate.replaceAll("-", ""), latestDates: Object.values(quality.perSymbol).map((item) => item.latestBasDt), existingLatestDate: existingHistoryDates.at(-1) ?? null });
+dryRunResult.candidateDecision = { representativeCandidate: representativeProbe?.candidateAsOfDate ?? asOfDate, ...candidateEvaluation, exactDateMatchCount: quality.summary.exactDateMatches, staleCount: quality.issues.filter((item) => item.type === "latestDateMismatch").length, futureCount: quality.issues.filter((item) => item.type === "futureDate").length, missingCount: quality.summary.missingHistoryCodes.length, exactMissingCodesHash: sha256Canonical(Object.entries(quality.perSymbol).filter(([, item]) => item.latestBasDt !== asOfDate.replaceAll("-", "")).map(([code]) => code).sort()) };
 if (dryRun && fatalIssues.length > 0) {
   console.log(`DRY_RUN_RESULT_JSON=${JSON.stringify(dryRunResult)}`);
   process.exit(0);
@@ -355,7 +395,7 @@ const snapshot = {
   records,
 };
 
-const validationErrors = validateSnapshot(snapshot, EXPECTED_UNIVERSE_COUNT);
+const validationErrors = validateSnapshot(snapshot, EXPECTED_UNIVERSE_COUNT, { dryRun });
 if (validationErrors.length > 0) {
   throw new Error(`스냅샷 검증 실패:\n${validationErrors.slice(0, 20).join("\n")}`);
 }
@@ -389,6 +429,31 @@ if (ledgerValidationErrors.length > 0) {
 if (dryRun) {
   dryRunResult.plannedArtifactsValidation = { snapshot: "passed", marketPriceLedger: "passed", universeArchive: preparedUniverseArchive ? "passed" : "failed", marketAnalysis: marketAnalysisSnapshot ? "passed" : "failed", intradayMarketSeed: intradayMarketSeed ? "passed" : "failed" };
   dryRunResult.universeArchiveContentHash = preparedUniverseArchive?.contentHash ?? null;
+  const artifactSummary = (name, value, schemaVersion, recordCount) => {
+    const serialized = JSON.stringify(value);
+    return { name, schemaVersion, requestedDate: asOfDate, recordCount, estimatedSerializedBytes: Buffer.byteLength(serialized), contentHash: value?.contentHash ?? sha256Canonical(value), validationStatus: "passed", sourceManifestStatus: value?.sourceManifest ? "present" : "embeddedOrNotApplicable", dataQualityGrade: dataQuality.overallGrade, structuralStatus: dataQuality.structuralStatus };
+  };
+  dryRunResult.sourceAvailability = sourceAvailability;
+  dryRunResult.artifacts = [
+    artifactSummary("historySnapshot", snapshot, snapshot.schemaVersion, snapshot.records.length),
+    artifactSummary("marketPriceLedger", marketPriceLedger, marketPriceLedger.schemaVersion, marketPriceLedger.records.length),
+    artifactSummary("universeHistoryArchive", universeArchive, universeArchive.schemaVersion, universeArchive.observedUniverse.length),
+    artifactSummary("officialMarketAnalysis", marketAnalysisSnapshot, marketAnalysisSnapshot.schemaVersion, marketAnalysisSnapshot.records.length),
+    artifactSummary("intradayMarketSeed", intradayMarketSeed, intradayMarketSeed.schemaVersion, intradayMarketSeed.records.length),
+  ];
+  const seedBytes = Buffer.byteLength(JSON.stringify(intradayMarketSeed));
+  dryRunResult.intradaySeed = { recordCount: intradayMarketSeed.records.length, tupleCount: intradayMarketSeed.records.reduce((sum, record) => sum + record.rows.length, 0), serializedBytes: seedBytes, maximumRowsPerSymbol: Math.max(...intradayMarketSeed.records.map((record) => record.rows.length)), annual250DayEstimatedBytes: seedBytes * 250 };
+  const scoreStats = (values) => { const valid = values.filter(Number.isFinite).sort((a, b) => a - b); return { finiteCount: valid.length, nullCount: values.filter((value) => value == null).length, nanCount: values.filter(Number.isNaN).length, infinityCount: values.filter((value) => value === Infinity || value === -Infinity).length, minimum: valid.at(0) ?? null, median: valid.length ? valid[Math.floor(valid.length / 2)] : null, maximum: valid.at(-1) ?? null }; };
+  const modelPaths = { "A-v1": ["scores", "modelA", "ranks", "modelA"], "A-v2": ["scoresByVersion", "A-v2", "ranksByVersion", "A-v2"], "B-v1": ["scores", "modelB", "ranks", "modelB"], "C-v1": ["scores", "modelC", "ranks", "modelC"], "D-v1": ["scores", "modelD", "ranks", "modelD"] };
+  dryRunResult.modelStatistics = Object.fromEntries(Object.entries(modelPaths).map(([version, [scoreGroup, scoreKey, rankGroup, rankKey]]) => {
+    const values = records.map((record) => record[scoreGroup]?.[scoreKey]);
+    const ranks = records.map((record) => record[rankGroup]?.[rankKey]).filter(Number.isInteger).sort((a, b) => a - b);
+    const eligibleCount = values.filter(Number.isFinite).length;
+    return [version, { ...scoreStats(values), eligibleCount, excludedCount: values.length - eligibleCount, rankingUniverseCount: ranks.length, duplicateRankCount: ranks.length - new Set(ranks).size, missingOrRangeRankCount: ranks.filter((rank, index) => rank !== index + 1).length, top50Possible: ranks.length >= 50 }];
+  }));
+  const currentCodes = universe.stocks.map((stock) => stock.code).sort();
+  dryRunResult.universeComparison = { classification: "POINT_IN_TIME_UNVERIFIED", observedUniverseCount: currentCodes.length, exactDateMarketCapAtLeast100BillionCount: universe.stocks.filter((stock) => Number(historyByCode.get(stock.code)?.[0]?.mrktTotAmt) >= 100_000_000_000).length, averageTradingValueFilterPassCount: universe.stocks.filter((stock) => (historyByCode.get(stock.code) ?? []).slice(0, 20).reduce((sum, row) => sum + Number(row.trPrc), 0) / 20 >= 2_000_000_000).length, finalObservedUniverseCount: currentCodes.length, sameAsCurrentUniverse: true, addedCount: 0, missingCount: 0, codeHash: sha256Canonical(currentCodes) };
+  dryRunResult.returnsState = { futureFiniteCount: records.reduce((sum, record) => sum + [record.futureReturns.future1dReturn, record.futureReturns.future5dReturn, record.futureReturns.future20dReturn].filter(Number.isFinite).length, 0), legacyFiniteCount: records.reduce((sum, record) => sum + Object.values(record.backtestReturns.returns).filter(Number.isFinite).length, 0), executionFiniteCount: records.reduce((sum, record) => sum + Object.values(record.executionReturnsByPolicy["public-eod-t2-open-v1"].returns).filter(Number.isFinite).length, 0), timingValidationStatus: "NOT_PRODUCTION_AVAILABLE", eligibleForExecutableAggregation: false };
   console.log(`DRY_RUN_RESULT_JSON=${JSON.stringify(dryRunResult)}`);
   process.exit(0);
 }
