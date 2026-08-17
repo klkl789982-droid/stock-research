@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import JSZip from "jszip";
+import { normalizeStockCode } from "../lib/stock-code.mjs";
 
 const serviceKey = process.env.DATA_GO_KR_SERVICE_KEY;
 
@@ -141,7 +142,7 @@ async function downloadAndParseMaster(config) {
       const tail = line.slice(-config.tailLength);
 
       return {
-        code: prefix.slice(0, 9).trim().replace(/^A/, ""),
+        code: normalizeStockCode(prefix.slice(0, 9).trim()),
         isinCode: prefix.slice(9, 21).trim(),
         name: prefix.slice(21).trim(),
         market: config.market,
@@ -222,7 +223,7 @@ const priceRows = await fetchAllPages(STOCK_PRICE_URL, {
 const pricesByCode = new Map();
 
 for (const row of priceRows) {
-  const code = String(row.srtnCd ?? "").replace(/^A/, "");
+  const code = normalizeStockCode(row.srtnCd);
   if (!allStockCodes.has(code)) continue;
 
   const rows = pricesByCode.get(code) ?? [];

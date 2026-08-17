@@ -151,3 +151,19 @@ npm run history:analyze
 The snapshot command currently makes one 260-row public-data request per
 Universe stock. It deliberately uses official daily closes rather than live
 quotes so every stock shares a reproducible timestamp.
+# Model A Champion–Challenger 정책
+
+Model A-v1에서 최종 점수가 100을 초과하거나 0 미만이 될 수 있는 범위 오류가 발견되었다. A-v1은 이미 생성된 신호와 향후 성과의 재현성을 보존하기 위해 수정하지 않는다. `scores.modelA`, `ranks.modelA`, `modelDefinitions.A`, `topLists.modelA`는 계속 A-v1을 의미한다.
+
+A-v2는 별도의 bounded technical-strength challenger다. A-v1과 동일한 factor 정규화, 가중치, reversal bonus, penalty를 사용하며 최종 처리만 다음과 같이 다르다.
+
+```text
+rawScore = technicalScore + reversalBonus - penalty
+finalScore = clamp(rawScore, 0, 100)
+```
+
+`rawScore`는 clamp하지 않고 감사 및 동점 처리용으로 저장한다. A-v2 순위는 `finalScore` 내림차순, `rawScore` 내림차순, 정규화된 6자리 종목코드 오름차순으로 정한다. 입력 배열 순서나 stable sort에 의존하지 않는다.
+
+신규 스냅샷은 A-v1 champion과 A-v2 challenger를 동일 날짜, 동일 Universe, 동일 공식 일봉으로 병렬 계산한다. A-v2의 최초 실제 저장일이 비교 시작일이며, 2026-08-13 스냅샷은 A-v2 비교 기간 이전이므로 소급 계산하거나 수정하지 않는다.
+
+A-v1/A-v2 성과 비교는 두 버전이 모두 존재하는 동일 날짜만 사용하고 동일한 T+1/T+5/T+20 미래수익률, 거래비용 및 슬리피지 가정을 적용한다. A-v1 단독 과거 기간을 A-v2 병렬 기간과 섞지 않는다. A-v2는 성과와 관계없이 자동 승격하지 않으며 `promotionStatus: notApproved`는 사용자 승인 없이 변경할 수 없다.

@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "universeFilterVersion": "v1",
+  "activeComparisonModels": ["B-v1", "C-v1"],
+  "priceAdjustmentPolicy": "unknown",
+  "corporateActionPolicy": "unknown",
+  "pointInTimeMasterCertified": false,
+  "securityStatusVerified": false,
+  "rawResponseStored": false,
+  "marketDataNormalizationVersion": "v2",
+  "maxRequestedNonTradingRatio": 0.1
+}

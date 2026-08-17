@@ -1,6 +1,6 @@
 {
   "registryVersion": 1,
-  "updatedAt": "2026-08-16T00:00:00+09:00",
+  "updatedAt": "2026-08-17T00:00:00+09:00",
   "models": [
     {
       "modelId": "A",
@@ -35,6 +35,25 @@
       "validationStartDate": null,
       "validationEndDate": null,
       "notes": "결과 기반 튜닝 전 초기 버전"
+    },
+    {
+      "modelId": "A",
+      "version": "v2",
+      "modelVersion": "A-v2",
+      "createdAt": "2026-08-17T00:00:00+09:00",
+      "status": "evaluation",
+      "role": "challenger",
+      "formulaDescription": "A-v1과 동일한 rawScore를 계산한 뒤 clamp(rawScore, 0, 100)를 적용한다.",
+      "hypothesis": "A-v1의 신호와 가중치를 보존하면서 최종 범위를 0~100으로 제한하면 점수 구간 해석 가능성이 개선된다.",
+      "expectedBenefit": "순위 신호를 최대한 보존하면서 0~100 점수 범위의 일관성을 확보한다.",
+      "knownRisk": "100점과 0점에 종목이 압축되며 rawScore tie-break가 순위에 영향을 줄 수 있다.",
+      "evaluationMetrics": ["averageReturn", "medianReturn", "winRate", "excessReturn", "MDD"],
+      "changeReason": "A-v1에서 최종 clamp 누락으로 100 초과 및 0 미만 점수가 확인됨",
+      "changedFrom": "A-v1",
+      "validationStartDate": null,
+      "validationEndDate": null,
+      "promotionStatus": "notApproved",
+      "notes": "동일 날짜·Universe·가격의 A-v1과 병렬 평가 후 사용자 승인 전에는 승격하지 않음"
     },
     {
       "modelId": "C",

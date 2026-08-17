@@ -7,8 +7,8 @@ import { classifyRequestedDate, loadTradingCalendar, updateTradingCalendarDate }
 
 const backtest = () => ({ status: "pendingEntryPrice", entry: { priceBasis: "nextTradingDayOpen", date: null, openPrice: null }, returns: { nextOpenToT1CloseReturn: null, nextOpenToT5CloseReturn: null, nextOpenToT20CloseReturn: null }, exits: { t1: { date: null, closePrice: null }, t5: { date: null, closePrice: null }, t20: { date: null, closePrice: null } }, resolution: { entryStatus: "pending", t1Status: "pending", t5Status: "pending", t20Status: "pending", reason: null } });
 const future = (value = null) => ({ future1dReturn: value, future5dReturn: null, future20dReturn: null, resolvedAt: { future1dDate: value == null ? null : "fixed", future5dDate: null, future20dDate: null } });
-const snapshot = (date, close = 100, existingFuture = null) => ({ asOfDate: date, records: [{ code: "A", closePrice: close, scores: { modelA: 1 }, ranks: { modelA: 1 }, factors: {}, riskFlags: {}, futureReturns: future(existingFuture), backtestReturns: backtest() }] });
-const ledger = (date, open = 100, close = 100) => ({ date, records: [{ code: "A", openPrice: open, closePrice: close }] });
+const snapshot = (date, close = 100, existingFuture = null) => ({ asOfDate: date, records: [{ code: "000001", closePrice: close, scores: { modelA: 1 }, ranks: { modelA: 1 }, factors: {}, riskFlags: {}, futureReturns: future(existingFuture), backtestReturns: backtest() }] });
+const ledger = (date, open = 100, close = 100) => ({ date, records: [{ code: "A000001", openPrice: open, closePrice: close }] });
 const entry = (date, overrides = {}) => ({ status: "tradingDay", observedBasDt: date, modelSnapshot: "created", marketPriceLedger: "created", checkedAt: "test", ...overrides });
 const run = (snapshots, ledgers, dates) => resolveFutureReturns(prepareSnapshots(snapshots), prepareMarketPriceLedgers(ledgers), { schemaVersion: 1, dates });
 

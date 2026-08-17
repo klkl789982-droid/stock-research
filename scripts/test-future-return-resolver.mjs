@@ -42,15 +42,15 @@ const snapshots = dates.map((date, index) => ({
   modelDefinitions: { A: "A-v1" },
   topLists: { modelA: [] },
   records: [
-    { code: "A", closePrice: index === 0 ? 100 : index === 1 ? 111 : index === 5 ? 120 : index === 20 ? 150 : 100 + index, scores: { modelA: 50 }, ranks: { modelA: 1 }, factors: {}, riskFlags: {}, futureReturns: emptyFutureReturns(), backtestReturns: emptyBacktestReturns() },
-    { code: "B", closePrice: 200 + index, scores: { modelA: 40 }, ranks: { modelA: 2 }, factors: {}, riskFlags: {}, futureReturns: emptyFutureReturns(index === 0 ? 12.345678 : null), backtestReturns: emptyBacktestReturns() },
+    { code: "000001", closePrice: index === 0 ? 100 : index === 1 ? 111 : index === 5 ? 120 : index === 20 ? 150 : 100 + index, scores: { modelA: 50 }, ranks: { modelA: 1 }, factors: {}, riskFlags: {}, futureReturns: emptyFutureReturns(), backtestReturns: emptyBacktestReturns() },
+    { code: "000002", closePrice: 200 + index, scores: { modelA: 40 }, ranks: { modelA: 2 }, factors: {}, riskFlags: {}, futureReturns: emptyFutureReturns(index === 0 ? 12.345678 : null), backtestReturns: emptyBacktestReturns() },
   ],
 }));
 const ledgers = dates.map((date, index) => ({
   date,
   records: [
-    { code: "A", openPrice: index === 1 ? 110 : 100 + index, closePrice: snapshots[index].records[0].closePrice },
-    { code: "B", openPrice: 200 + index, closePrice: 200 + index },
+    { code: "A000001", openPrice: index === 1 ? 110 : 100 + index, closePrice: snapshots[index].records[0].closePrice },
+    { code: "000002", openPrice: 200 + index, closePrice: 200 + index },
   ],
 }));
 const calendar = {
@@ -82,9 +82,9 @@ assert.equal(secondRun.changedDates.length, 0, "두 번째 실행은 변경이 �
 
 const gapSnapshots = ["2026-01-09", "2026-01-13"].map((date, index) => ({
   asOfDate: date,
-  records: [{ code: "A", closePrice: 100 + index, scores: {}, ranks: {}, factors: {}, riskFlags: {}, futureReturns: emptyFutureReturns(), backtestReturns: emptyBacktestReturns() }],
+  records: [{ code: "000001", closePrice: 100 + index, scores: {}, ranks: {}, factors: {}, riskFlags: {}, futureReturns: emptyFutureReturns(), backtestReturns: emptyBacktestReturns() }],
 }));
-const gapLedgers = ["2026-01-09", "2026-01-13"].map((date) => ({ date, records: [{ code: "A", openPrice: 100, closePrice: 100 }] }));
+const gapLedgers = ["2026-01-09", "2026-01-13"].map((date) => ({ date, records: [{ code: "000001", openPrice: 100, closePrice: 100 }] }));
 const gapCalendar = { schemaVersion: 1, dates: {
   "2026-01-09": { status: "tradingDay", modelSnapshot: "created", marketPriceLedger: "created" },
   "2026-01-12": { status: "unchecked", modelSnapshot: "notRequired", marketPriceLedger: "notRequired" },
@@ -93,6 +93,23 @@ const gapCalendar = { schemaVersion: 1, dates: {
 const gapRun = resolveFutureReturns(prepareSnapshots(gapSnapshots), prepareMarketPriceLedgers(gapLedgers), gapCalendar);
 assert.equal(gapRun.snapshots[0].records[0].backtestReturns.resolution.entryStatus, "unchecked");
 assert.equal(gapRun.snapshots[0].records[0].futureReturns.future1dReturn, null);
+
+const haltedLedgers = structuredClone(ledgers);
+haltedLedgers[1].records[0] = { code: "A000001", openPrice: null, closePrice: null, referenceClose: 111, executable: false, priceStatus: "tradingHaltOrNoTrade" };
+const haltedRun = resolveFutureReturns(prepareSnapshots(structuredClone(snapshots)), prepareMarketPriceLedgers(haltedLedgers), calendar);
+const haltedRecord = haltedRun.snapshots[0].records[0];
+assert.equal(haltedRecord.backtestReturns.resolution.entryStatus, "notExecutable");
+assert.equal(haltedRecord.backtestReturns.entry.openPrice, null);
+assert.equal(haltedRecord.backtestReturns.returns.nextOpenToT1CloseReturn, null);
+assert.equal(haltedRecord.futureReturns.future1dReturn, null, "referenceClose로 예측 수익률을 만들면 안 됩니다.");
+
+const haltedExitLedgers = structuredClone(ledgers);
+haltedExitLedgers[5].records[0] = { code: "000001", openPrice: null, closePrice: null, referenceClose: 120, executable: false, priceStatus: "tradingHaltOrNoTrade" };
+const haltedExitRun = resolveFutureReturns(prepareSnapshots(structuredClone(snapshots)), prepareMarketPriceLedgers(haltedExitLedgers), calendar);
+const haltedExitRecord = haltedExitRun.snapshots[0].records[0];
+assert.equal(haltedExitRecord.backtestReturns.resolution.t5Status, "notExecutable");
+assert.equal(haltedExitRecord.backtestReturns.returns.nextOpenToT5CloseReturn, null);
+assert.equal(haltedExitRecord.futureReturns.future5dReturn, null);
 
 console.log(JSON.stringify({
   predictiveReturns: first.records[0].futureReturns,

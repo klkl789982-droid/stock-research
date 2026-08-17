@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { classifyRequestedDate, isWeekend, updateTradingCalendarDate } from "../lib/trading-calendar-status.mjs";
+import { normalizeStockCode } from "../lib/stock-code.mjs";
 
 const PRICE_URL = "https://apis.data.go.kr/1160100/service/GetStockSecuritiesInfoService/getStockPriceInfo";
 const serviceKey = process.env.DATA_GO_KR_SERVICE_KEY;
@@ -13,7 +14,7 @@ if (!serviceKey) throw new Error("DATA_GO_KR_SERVICE_KEY가 없습니다.");
 const root = process.cwd();
 const compactDate = requestedDate.replaceAll("-", "");
 const universe = JSON.parse(await fs.readFile(path.join(root, "data", "universe.json"), "utf8"));
-const referenceCode = universe.stocks?.[0]?.code;
+const referenceCode = normalizeStockCode(universe.stocks?.[0]?.code);
 if (!referenceCode) throw new Error("상태 확인용 기준 종목이 없습니다.");
 
 const exists = async (filePath) => {
@@ -22,6 +23,7 @@ const exists = async (filePath) => {
 const artifactPaths = {
   model: path.join(root, "data", "history", `${requestedDate}.json`),
   ledger: path.join(root, "data", "market-prices", `${requestedDate}.json`),
+  universe: path.join(root, "data", "universe-history", `${requestedDate}.json`),
 };
 
 async function runScript(script, args = []) {
@@ -45,7 +47,7 @@ async function probe() {
     const raw = payload?.response?.body?.items?.item;
     const rows = Array.isArray(raw) ? raw : raw ? [raw] : [];
     const observed = rows
-      .filter((row) => String(row.srtnCd ?? "").replace(/^A/, "") === referenceCode)
+      .filter((row) => normalizeStockCode(row.srtnCd) === referenceCode)
       .map((row) => String(row.basDt ?? ""))
       .filter((value) => /^\d{8}$/u.test(value))
       .sort()
@@ -78,11 +80,13 @@ if (classification.status !== "tradingDay") {
 } else {
   let modelExists = await exists(artifactPaths.model);
   let ledgerExists = await exists(artifactPaths.ledger);
-  if (modelExists !== ledgerExists) {
+  let universeExists = await exists(artifactPaths.universe);
+  if (new Set([modelExists, ledgerExists, universeExists]).size !== 1) {
     await updateTradingCalendarDate(requestedDate, {
       status: "tradingDay", observedBasDt: requestedDate,
       modelSnapshot: modelExists ? "created" : "missing",
       marketPriceLedger: ledgerExists ? "created" : "missing", reason: "partialArtifacts",
+      universeArchive: universeExists ? "created" : "missing",
     }, root);
     throw new Error("모델 스냅샷과 가격 원장 중 하나만 존재합니다. 자동 대체하지 않습니다.");
   }
@@ -92,23 +96,27 @@ if (classification.status !== "tradingDay") {
     } catch (error) {
       modelExists = await exists(artifactPaths.model);
       ledgerExists = await exists(artifactPaths.ledger);
+      universeExists = await exists(artifactPaths.universe);
       await updateTradingCalendarDate(requestedDate, {
         status: "tradingDay", observedBasDt: requestedDate,
         modelSnapshot: modelExists ? "created" : "failed",
         marketPriceLedger: ledgerExists ? "created" : "failed", reason: "artifactCreationFailed",
+        universeArchive: universeExists ? "created" : "failed",
       }, root);
       throw error;
     }
   }
-  const [snapshot, ledger] = await Promise.all([
+  const [snapshot, ledger, universeArchive] = await Promise.all([
     fs.readFile(artifactPaths.model, "utf8").then(JSON.parse),
     fs.readFile(artifactPaths.ledger, "utf8").then(JSON.parse),
+    fs.readFile(artifactPaths.universe, "utf8").then(JSON.parse),
   ]);
-  if (snapshot.asOfDate !== requestedDate || ledger.date !== requestedDate) throw new Error("산출물 날짜가 요청 날짜와 일치하지 않습니다.");
-  if (snapshot.records?.length !== universe.finalCount || ledger.records?.length !== universe.finalCount) throw new Error("산출물 종목 수가 Universe와 일치하지 않습니다.");
+  if (snapshot.asOfDate !== requestedDate || ledger.date !== requestedDate || universeArchive.requestedDate !== requestedDate) throw new Error("산출물 날짜가 요청 날짜와 일치하지 않습니다.");
+  if (snapshot.records?.length !== universe.finalCount || ledger.records?.length < universe.finalCount || universeArchive.observedUniverse?.length !== universe.finalCount) throw new Error("산출물 종목 수가 Universe와 일치하지 않습니다.");
   await updateTradingCalendarDate(requestedDate, {
     status: "tradingDay", observedBasDt: requestedDate,
     modelSnapshot: "created", marketPriceLedger: "created", reason: null,
+    universeArchive: "created",
   }, root);
   await runScript("scripts/resolve-history-returns.mjs");
   console.log(JSON.stringify({ requestedDate, status: "tradingDay", modelSnapshot: "created", marketPriceLedger: "created", resolved: true }, null, 2));

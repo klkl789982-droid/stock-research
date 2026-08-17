@@ -52,6 +52,7 @@ const [priceMeta, setPriceMeta] = useState<{
 } | null>(null);
 const searchRequestIdRef = useRef(0);
 const selectedCodeRef = useRef<string | null>(null);
+const pageTopRef = useRef<HTMLElement | null>(null);
 useEffect(() => {
   if (!stockInfo) return;
 
@@ -143,9 +144,10 @@ useEffect(() => {
     maximumFractionDigits: 1,
   })}억`;
 };
-async function handleSearch() {
-  
-  if (query.trim() === "") return;
+async function handleSearch(selection?: { code: string; name: string }) {
+  const searchTerm = selection?.name ?? query.trim();
+  if (searchTerm === "") return;
+  if (selection) setQuery(selection.name);
 const requestId = ++searchRequestIdRef.current;
 selectedCodeRef.current = null;
 setRealtimePrice(null);
@@ -159,7 +161,7 @@ setFinancialInfo(null);
 setLoading(true);
   try {
     const response = await fetch(
-      `/api/stock?query=${encodeURIComponent(query)}`
+      `/api/stock?query=${encodeURIComponent(searchTerm)}`
     );
 
     const data = await response.json();
@@ -168,12 +170,15 @@ setLoading(true);
 
     if (data.items && data.items.length > 0) {
       const exactMatch = data.items.find(
-  (item: any) => item.itmsNm === query.trim()
+  (item: { itmsNm: string; srtnCd: string }) => selection
+    ? item.srtnCd.replace(/^A/, "") === selection.code
+    : item.itmsNm === searchTerm
 );
 
 const selectedItem = exactMatch ?? data.items[0];
  setStockInfo(selectedItem);
 setSearchedStock(selectedItem.itmsNm);
+if (selection) requestAnimationFrame(() => pageTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
 
 const stockCode = selectedItem.srtnCd.replace(/^A/, "");
 selectedCodeRef.current = stockCode;
@@ -1163,7 +1168,7 @@ const finalTechnicalScore =
 const isTechnicalLoading = priceHistory.length < 50;
 
 return (
-    <main className="min-h-screen bg-gray-50">
+    <main ref={pageTopRef} className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-md px-5 py-16">
         <h1 className="text-3xl font-bold text-gray-900">
           Stock Research
@@ -1180,7 +1185,7 @@ return (
   onChange={(e) => setQuery(e.target.value)}
   onKeyDown={(e) => {
     if (e.key === "Enter") {
-      handleSearch();
+      void handleSearch();
     }
   }}
   disabled={loading}
@@ -1188,7 +1193,7 @@ return (
 className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-black placeholder:text-gray-400"/>
 
           <button
-  onClick={handleSearch}
+  onClick={() => void handleSearch()}
   disabled={loading}
   className="whitespace-nowrap rounded-xl bg-gray-900 px-5 py-4 font-medium text-white disabled:opacity-40"
 >
@@ -2323,7 +2328,7 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
     </p>
   </div>
 )}
-{activeTab === "topStocks" && searchedStock && <TopStocksPanel />}
+{activeTab === "topStocks" && searchedStock && <TopStocksPanel onSelectStock={handleSearch} />}
       </div>
     </main>
   );
