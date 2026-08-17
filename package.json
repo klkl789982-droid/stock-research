@@ -23,6 +23,8 @@
     "data:normalization-test": "node scripts/test-market-data-normalization.mjs",
     "snapshot:quality-test": "node scripts/test-snapshot-quality-pipeline.mjs",
     "ui:top-stocks-test": "node scripts/test-top-stocks-ui.mjs",
+    "kis:token-test": "node scripts/test-kis-token-manager.mjs",
+    "kis:route-test": "node scripts/test-kis-api-routes.mjs",
     "model:a-v2-test": "node scripts/test-model-a-v2.mjs",
     "model:register": "node scripts/register-model-version.mjs",
     "experiment:create": "node scripts/create-model-experiment.mjs",

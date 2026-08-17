@@ -53,90 +53,114 @@ const [priceMeta, setPriceMeta] = useState<{
 const searchRequestIdRef = useRef(0);
 const selectedCodeRef = useRef<string | null>(null);
 const pageTopRef = useRef<HTMLElement | null>(null);
+const apiErrorMessage = (data: unknown, fallback: string) => {
+  if (!data || typeof data !== "object") return fallback;
+  const error = (data as { error?: unknown }).error;
+  if (typeof error === "string") return error;
+  if (error && typeof error === "object" && typeof (error as { message?: unknown }).message === "string") return (error as { message: string }).message;
+  return fallback;
+};
 useEffect(() => {
   if (!stockInfo) return;
 
   const stockCode = stockInfo.srtnCd.replace(/^A/, "");
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let activeController: AbortController | null = null;
+  let disposed = false;
+  let pollingBlocked = false;
+  let consecutiveFailures = 0;
 
-  const interval = setInterval(async () => {
-    try {
-      const response = await fetch(
-        `/api/realtime?code=${stockCode}`
-      );
-
-      const data = await response.json();
-
-if (!response.ok) {
-  console.error("실시간 API 오류:", data);
-  if (selectedCodeRef.current === stockCode) {
+  const clearTimer = () => {
+    if (timer) clearTimeout(timer);
+    timer = null;
+  };
+  const schedule = (delayMs: number) => {
+    clearTimer();
+    if (disposed || pollingBlocked || document.hidden || selectedCodeRef.current !== stockCode) return;
+    timer = setTimeout(poll, delayMs);
+  };
+  const fail = (message: string) => {
+    if (selectedCodeRef.current !== stockCode) return;
+    consecutiveFailures += 1;
     setRealtimePrice(null);
-    setRealtimeError(data?.error ?? "현재 시세 조회 실패");
-  }
-  return;
-}
-
-if (
-  data.price === undefined ||
-  data.rate === undefined ||
-  data.volume === undefined ||
-  data.change === undefined ||
-  data.code !== stockCode ||
-  !Number.isFinite(data.price) ||
-  data.price <= 0
-) {
-  console.error("실시간 데이터 형식 오류:", data);
-  if (selectedCodeRef.current === stockCode) {
-    setRealtimePrice(null);
-    setRealtimeError("현재 시세 응답이 올바르지 않습니다.");
-  }
-  return;
-}
-
-if (selectedCodeRef.current !== stockCode) return;
-setRealtimePrice(data);
-setRealtimeError(null);
-console.log("5초 갱신 데이터:", data);
-    } catch (error) {
-      console.error("실시간 가격 갱신 오류:", error);
-      if (selectedCodeRef.current === stockCode) {
-        setRealtimePrice(null);
-        setRealtimeError("현재 시세 조회 실패");
-      }
+    if (consecutiveFailures >= 3) {
+      pollingBlocked = true;
+      setRealtimeError(`${message} 자동 갱신을 중단했습니다.`);
+      clearTimer();
+      return;
     }
-  }, 5000);
+    setRealtimeError(message);
+    schedule(5000 * 2 ** (consecutiveFailures - 1));
+  };
+  async function poll() {
+    if (disposed || pollingBlocked || document.hidden || selectedCodeRef.current !== stockCode) return;
+    activeController = new AbortController();
+    try {
+      const response = await fetch(`/api/realtime?code=${stockCode}`, { signal: activeController.signal });
+      const data = await response.json();
+      if (!response.ok) return fail(apiErrorMessage(data, "현재 시세 조회 실패"));
+      if (data.price === undefined || data.rate === undefined || data.volume === undefined || data.change === undefined || data.code !== stockCode || !Number.isFinite(data.price) || data.price <= 0) {
+        return fail("현재 시세 응답이 올바르지 않습니다.");
+      }
+      if (selectedCodeRef.current !== stockCode) return;
+      consecutiveFailures = 0;
+      setRealtimePrice(data);
+      setRealtimeError(null);
+      schedule(5000);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      fail("현재 시세 조회 실패");
+    } finally {
+      activeController = null;
+    }
+  }
 
-  return () => clearInterval(interval);
+  const handleVisibility = () => {
+    if (document.hidden) {
+      clearTimer();
+      activeController?.abort();
+    } else if (!pollingBlocked) {
+      schedule(0);
+    }
+  };
+  document.addEventListener("visibilitychange", handleVisibility);
+  schedule(5000);
+
+  return () => {
+    disposed = true;
+    clearTimer();
+    activeController?.abort();
+    document.removeEventListener("visibilitychange", handleVisibility);
+  };
 
 }, [stockInfo]);
 useEffect(() => {
   if (!stockInfo) return;
 
   const stockCode = stockInfo.srtnCd.replace(/^A/, "");
+  const controller = new AbortController();
 
   const fetchInvestorData = async () => {
     try {
-      const response = await fetch(
-        `/api/investor?code=${stockCode}`
-      );
+      const response = await fetch(`/api/investor?code=${stockCode}`, { signal: controller.signal });
 
       if (!response.ok) {
-  const errorData = await response.json();
-
-  console.error("수급 API 오류:", response.status, errorData);
-  return;
-}
+        if (selectedCodeRef.current === stockCode) setInvestorData(null);
+        return;
+      }
 
       const data = await response.json();
-
+      if (selectedCodeRef.current !== stockCode) return;
       setInvestorData(data);
-      console.log("수급 데이터:", data);
     } catch (error) {
-      console.error("수급 데이터 조회 오류:", error);
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      if (selectedCodeRef.current === stockCode) setInvestorData(null);
     }
   };
 
-  fetchInvestorData();
-}, [stockInfo])
+  void fetchInvestorData();
+  return () => controller.abort();
+}, [stockInfo]);
   const formatEok = (value: number | null | undefined) => {
   if (value === null || value === undefined) return "-";
 
@@ -233,8 +257,9 @@ if (!realtimeResponse.ok) {
     "실시간 API 실패",
     realtimeResponse.status
   );
+  const realtimeErrorData = await realtimeResponse.json();
   setRealtimePrice(null);
-  setRealtimeError(`현재 시세 조회 실패 (HTTP ${realtimeResponse.status})`);
+  setRealtimeError(apiErrorMessage(realtimeErrorData, `현재 시세 조회 실패 (HTTP ${realtimeResponse.status})`));
 } else {
   const realtimeData = await realtimeResponse.json();
   if (requestId !== searchRequestIdRef.current || selectedCodeRef.current !== stockCode) return;

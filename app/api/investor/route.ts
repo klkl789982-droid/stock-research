@@ -1,64 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
-async function getAccessToken() {
-  const response = await fetch(
-    "https://openapi.koreainvestment.com:9443/oauth2/tokenP",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        grant_type: "client_credentials",
-        appkey: process.env.KIS_APP_KEY,
-        appsecret: process.env.KIS_APP_SECRET,
-      }),
-    }
-  );
+import { classifyKisHttpStatus, kisRequest, safeKisError } from "@/lib/kis-token-manager";
 
-  const data = await response.json();
-
-  return data.access_token;
-}
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
 
-  if (!code) {
+  if (!code || !/^[0-9A-Z]{6}$/.test(code)) {
     return NextResponse.json(
       { error: "종목코드가 필요합니다." },
       { status: 400 }
     );
   }
-  const token = await getAccessToken();
-
-console.log("조회 종목:", code);
-const apiUrl =
-  "https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/investor-trend-estimate" +
-  `?MKSC_SHRN_ISCD=${code}`;
-
-const response = await fetch(apiUrl, {
-  headers: {
-    "Content-Type": "application/json",
-    authorization: `Bearer ${token}`,
-    appkey: process.env.KIS_APP_KEY!,
-    appsecret: process.env.KIS_APP_SECRET!,
-    tr_id: "HHPTJ04160200",
-  },
-});
-
-const data = await response.json();
-
-const latest = data.output2?.[0];
-
-return NextResponse.json({
-  foreignNetBuyQty: Number(
-    latest?.frgn_fake_ntby_qty ?? 0
-  ),
-  institutionNetBuyQty: Number(
-    latest?.orgn_fake_ntby_qty ?? 0
-  ),
-  totalNetBuyQty: Number(
-    latest?.sum_fake_ntby_qty ?? 0
-  ),
-});
+  try {
+    const apiUrl = "https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/investor-trend-estimate" + `?MKSC_SHRN_ISCD=${code}`;
+    const response = await kisRequest(apiUrl, { headers: { "Content-Type": "application/json", tr_id: "HHPTJ04160200" } });
+    if (!response.ok) {
+      const safe = classifyKisHttpStatus(response.status);
+      return NextResponse.json({ error: { code: safe.code, message: safe.message } }, { status: safe.httpStatus });
+    }
+    const data = await response.json();
+    if (data.rt_cd !== "0" || !Array.isArray(data.output2) || !data.output2[0]) {
+      return NextResponse.json({ error: { code: "KIS_INVESTOR_DATA_UNAVAILABLE", message: "KIS 투자자 수급 데이터가 없습니다." } }, { status: 502 });
+    }
+    const latest = data.output2[0];
+    const foreignNetBuyQty = Number(latest.frgn_fake_ntby_qty);
+    const institutionNetBuyQty = Number(latest.orgn_fake_ntby_qty);
+    const totalNetBuyQty = Number(latest.sum_fake_ntby_qty);
+    if (![foreignNetBuyQty, institutionNetBuyQty, totalNetBuyQty].every(Number.isFinite)) {
+      return NextResponse.json({ error: { code: "KIS_INVESTOR_DATA_INVALID", message: "KIS 투자자 수급 데이터가 올바르지 않습니다." } }, { status: 502 });
+    }
+    return NextResponse.json({ code, source: "KIS", foreignNetBuyQty, institutionNetBuyQty, totalNetBuyQty });
+  } catch (error) {
+    const safe = safeKisError(error);
+    console.error("KIS 수급 처리 오류 코드:", safe.code);
+    return NextResponse.json({ error: { code: safe.code, message: safe.message } }, { status: safe.httpStatus });
+  }
 }
