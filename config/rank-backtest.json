@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "engineVersion": "rank-backtest-v1",
+  "rankBuckets": [
+    { "id": "TOP10", "type": "rank", "maxRank": 10 },
+    { "id": "TOP20", "type": "rank", "maxRank": 20 },
+    { "id": "TOP50", "type": "rank", "maxRank": 50 },
+    { "id": "TOP10_PERCENT", "type": "percentile", "maxPercentile": 0.1 },
+    { "id": "TOP20_PERCENT", "type": "percentile", "maxPercentile": 0.2 },
+    { "id": "ALL_ELIGIBLE", "type": "all" }
+  ],
+  "minimumAnnualizationSignalDates": 60,
+  "tradingDaysPerYear": 252,
+  "riskFreeRate": 0,
+  "grossReturn": true,
+  "includeProvisionalByDefault": true
+}

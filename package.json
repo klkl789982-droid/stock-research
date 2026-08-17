@@ -42,6 +42,8 @@
     "intraday:calculator-test": "node scripts/test-intraday-market-analysis.mjs",
     "intraday:api-ui-test": "node scripts/test-intraday-market-api-ui.mjs",
     "intraday:session-test": "node scripts/test-intraday-session-policy.mjs",
+    "backtest:rank": "node scripts/run-rank-backtest.mjs",
+    "backtest:rank-test": "node scripts/test-rank-backtest.mjs && node scripts/test-rank-backtest-api.mjs",
     "model:a-v2-test": "node scripts/test-model-a-v2.mjs",
     "model:register": "node scripts/register-model-version.mjs",
     "experiment:create": "node scripts/create-model-experiment.mjs",
