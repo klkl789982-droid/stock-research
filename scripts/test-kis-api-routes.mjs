@@ -7,9 +7,10 @@ const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8")
 for (const route of [realtime, investor]) {
   assert.doesNotMatch(route, /oauth2\/tokenP|function getAccessToken/u);
   assert.doesNotMatch(route, /KIS_APP_KEY|KIS_APP_SECRET/u);
-  assert.match(route, /kisRequest/u);
-  assert.match(route, /classifyKisHttpStatus/u);
 }
+assert.match(realtime, /getKisQuote/u);
+assert.match(investor, /kisRequest/u);
+assert.match(investor, /classifyKisHttpStatus/u);
 assert.doesNotMatch(investor, /fake_ntby_qty \?\? 0/u);
 assert.match(investor, /KIS_INVESTOR_DATA_UNAVAILABLE/u);
 assert.match(page, /visibilitychange/u);

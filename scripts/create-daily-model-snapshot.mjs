@@ -5,6 +5,7 @@ import { createMarketPriceLedger, validateMarketPriceLedger } from "../lib/marke
 import { normalizeModelInputRows, validateMarketDataQuality } from "../lib/market-data-quality-validator.mjs";
 import { normalizeStockCode } from "../lib/stock-code.mjs";
 import { createMarketAnalysisSnapshot, validateMarketAnalysisSnapshot } from "../lib/market-analysis-snapshot.mjs";
+import { createIntradayMarketSeed, validateIntradayMarketSeed } from "../lib/intraday-market-seed.mjs";
 import {
   annotateRankingMetadata,
   assertSnapshotQualityGate,
@@ -138,17 +139,20 @@ const historyDirectory = path.join(process.cwd(), "data", "history");
 const marketPriceDirectory = path.join(process.cwd(), "data", "market-prices");
 const universeHistoryDirectory = path.join(process.cwd(), "data", "universe-history");
 const marketAnalysisDirectory = path.join(process.cwd(), "data", "analysis", "market");
+const marketSeedDirectory = path.join(process.cwd(), "data", "analysis", "market-seeds");
 if (!dryRun) {
   await fs.mkdir(historyDirectory, { recursive: true });
   await fs.mkdir(marketPriceDirectory, { recursive: true });
   await fs.mkdir(universeHistoryDirectory, { recursive: true });
   await fs.mkdir(marketAnalysisDirectory, { recursive: true });
+  await fs.mkdir(marketSeedDirectory, { recursive: true });
 }
 if (requestedDate && !dryRun) {
   for (const existingPath of [
     path.join(historyDirectory, `${requestedDate}.json`),
     path.join(marketPriceDirectory, `${requestedDate}.json`),
     path.join(marketAnalysisDirectory, `${requestedDate}.json`),
+    path.join(marketSeedDirectory, `${requestedDate}.json`),
   ]) {
     try {
       await fs.access(existingPath);
@@ -257,10 +261,13 @@ const excludedFromScoring = buildExcludedFromScoring(quality, stocksByCode);
 const dataQuality = createDataQualityMetadata(quality, asOfDate);
 const marketAnalysisFormulaHash = createFormulaHashes({ marketAnalysis: await fs.readFile(path.join(process.cwd(), "lib", "market-analysis-v1.mjs"), "utf8") }).marketAnalysis;
 const marketAnalysisSnapshot = fatalIssues.length === 0 ? createMarketAnalysisSnapshot({ requestedDate: asOfDate, generatedAt, universe, historyByCode: new Map([...historyByCode].map(([code, rows]) => [code, normalizeModelInputRows(rows)])), quality, sourceManifest, dataQuality, universeSummary, formulaHash: marketAnalysisFormulaHash }) : null;
+const normalizedHistoryByCode = new Map([...historyByCode].map(([code, rows]) => [code, normalizeModelInputRows(rows)]));
+const intradayMarketSeed = fatalIssues.length === 0 ? createIntradayMarketSeed({ requestedDate: asOfDate, generatedAt, universe, historyByCode: normalizedHistoryByCode, quality, sourceManifest, dataQuality, universeSummary, formulaHash: marketAnalysisFormulaHash }) : null;
 if (marketAnalysisSnapshot) {
   const marketAnalysisErrors = validateMarketAnalysisSnapshot(marketAnalysisSnapshot, EXPECTED_UNIVERSE_COUNT);
   if (marketAnalysisErrors.length > 0) throw new Error(`시장분석 스냅샷 검증 실패:\n${marketAnalysisErrors.slice(0, 20).join("\n")}`);
 }
+if (intradayMarketSeed) { const errors = validateIntradayMarketSeed(intradayMarketSeed, EXPECTED_UNIVERSE_COUNT); if (errors.length) throw new Error(`장중 seed 검증 실패:\n${errors.slice(0,20).join("\n")}`); }
 const preparedUniverseArchive = fatalIssues.length === 0
   ? createUniverseArchive({ requestedDate: asOfDate, generatedAt, universe, historyByCode, sourceManifest })
   : null;
@@ -372,7 +379,7 @@ if (ledgerValidationErrors.length > 0) {
 }
 
 if (dryRun) {
-  dryRunResult.plannedArtifactsValidation = { snapshot: "passed", marketPriceLedger: "passed", universeArchive: preparedUniverseArchive ? "passed" : "failed", marketAnalysis: marketAnalysisSnapshot ? "passed" : "failed" };
+  dryRunResult.plannedArtifactsValidation = { snapshot: "passed", marketPriceLedger: "passed", universeArchive: preparedUniverseArchive ? "passed" : "failed", marketAnalysis: marketAnalysisSnapshot ? "passed" : "failed", intradayMarketSeed: intradayMarketSeed ? "passed" : "failed" };
   dryRunResult.universeArchiveContentHash = preparedUniverseArchive?.contentHash ?? null;
   console.log(`DRY_RUN_RESULT_JSON=${JSON.stringify(dryRunResult)}`);
   process.exit(0);
@@ -392,17 +399,22 @@ const archiveLockPath = `${archivePath}.lock`;
 const marketAnalysisPath = path.join(marketAnalysisDirectory, `${asOfDate}.json`);
 const marketAnalysisTemporaryPath = `${marketAnalysisPath}.tmp`;
 const marketAnalysisLockPath = `${marketAnalysisPath}.lock`;
+const marketSeedPath = path.join(marketSeedDirectory, `${asOfDate}.json`);
+const marketSeedTemporaryPath = `${marketSeedPath}.tmp`;
+const marketSeedLockPath = `${marketSeedPath}.lock`;
 
 try {
   await fs.writeFile(lockPath, `${process.pid}\n`, { encoding: "utf8", flag: "wx" });
   await fs.writeFile(ledgerLockPath, `${process.pid}\n`, { encoding: "utf8", flag: "wx" });
   await fs.writeFile(archiveLockPath, `${process.pid}\n`, { encoding: "utf8", flag: "wx" });
   await fs.writeFile(marketAnalysisLockPath, `${process.pid}\n`, { encoding: "utf8", flag: "wx" });
+  await fs.writeFile(marketSeedLockPath, `${process.pid}\n`, { encoding: "utf8", flag: "wx" });
 } catch (error) {
   await fs.rm(lockPath, { force: true });
   await fs.rm(ledgerLockPath, { force: true });
   await fs.rm(archiveLockPath, { force: true });
   await fs.rm(marketAnalysisLockPath, { force: true });
+  await fs.rm(marketSeedLockPath, { force: true });
   if (error?.code === "EEXIST") throw new Error(`${asOfDate} 스냅샷 생성이 이미 진행 중이거나 완료되었습니다.`);
   throw error;
 }
@@ -426,10 +438,12 @@ try {
   } catch (error) {
     if (error?.code !== "ENOENT") throw error;
   }
+  try { await fs.access(marketSeedPath); throw new Error(`${marketSeedPath}가 이미 존재합니다. 장중 seed를 덮어쓰지 않습니다.`); } catch (error) { if (error?.code !== "ENOENT") throw error; }
   await fs.writeFile(temporaryPath, `${JSON.stringify(snapshot, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
   await fs.writeFile(ledgerTemporaryPath, `${JSON.stringify(marketPriceLedger, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
   if (archiveAction === "create") await fs.writeFile(archiveTemporaryPath, `${JSON.stringify(universeArchive, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
   await fs.writeFile(marketAnalysisTemporaryPath, `${JSON.stringify(marketAnalysisSnapshot, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
+  await fs.writeFile(marketSeedTemporaryPath, `${JSON.stringify(intradayMarketSeed, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
   const committed = [];
   try {
     await fs.rename(temporaryPath, outputPath);
@@ -439,6 +453,7 @@ try {
     if (archiveAction === "create") { await fs.rename(archiveTemporaryPath, archivePath); committed.push(archivePath); }
     await fs.rename(marketAnalysisTemporaryPath, marketAnalysisPath);
     committed.push(marketAnalysisPath);
+    await fs.rename(marketSeedTemporaryPath, marketSeedPath); committed.push(marketSeedPath);
   } catch (error) {
     for (const file of committed.reverse()) await fs.rm(file, { force: true });
     throw error;
@@ -451,8 +466,10 @@ try {
   await fs.rm(ledgerTemporaryPath, { force: true });
   await fs.rm(archiveTemporaryPath, { force: true });
   await fs.rm(marketAnalysisTemporaryPath, { force: true });
+  await fs.rm(marketSeedTemporaryPath, { force: true });
   await fs.rm(lockPath, { force: true });
   await fs.rm(ledgerLockPath, { force: true });
   await fs.rm(archiveLockPath, { force: true });
   await fs.rm(marketAnalysisLockPath, { force: true });
+  await fs.rm(marketSeedLockPath, { force: true });
 }

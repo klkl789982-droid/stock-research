@@ -25,6 +25,7 @@ const artifactPaths = {
   ledger: path.join(root, "data", "market-prices", `${requestedDate}.json`),
   universe: path.join(root, "data", "universe-history", `${requestedDate}.json`),
   marketAnalysis: path.join(root, "data", "analysis", "market", `${requestedDate}.json`),
+  marketSeed: path.join(root, "data", "analysis", "market-seeds", `${requestedDate}.json`),
 };
 
 async function runScript(script, args = []) {
@@ -83,13 +84,15 @@ if (classification.status !== "tradingDay") {
   let ledgerExists = await exists(artifactPaths.ledger);
   let universeExists = await exists(artifactPaths.universe);
   let marketAnalysisExists = await exists(artifactPaths.marketAnalysis);
-  if (new Set([modelExists, ledgerExists, universeExists, marketAnalysisExists]).size !== 1) {
+  let marketSeedExists = await exists(artifactPaths.marketSeed);
+  if (new Set([modelExists, ledgerExists, universeExists, marketAnalysisExists, marketSeedExists]).size !== 1) {
     await updateTradingCalendarDate(requestedDate, {
       status: "tradingDay", observedBasDt: requestedDate,
       modelSnapshot: modelExists ? "created" : "missing",
       marketPriceLedger: ledgerExists ? "created" : "missing", reason: "partialArtifacts",
       universeArchive: universeExists ? "created" : "missing",
       marketAnalysisSnapshot: marketAnalysisExists ? "created" : "missing",
+      intradayMarketSeed: marketSeedExists ? "created" : "missing",
     }, root);
     throw new Error("모델 스냅샷과 가격 원장 중 하나만 존재합니다. 자동 대체하지 않습니다.");
   }
@@ -101,29 +104,33 @@ if (classification.status !== "tradingDay") {
       ledgerExists = await exists(artifactPaths.ledger);
       universeExists = await exists(artifactPaths.universe);
       marketAnalysisExists = await exists(artifactPaths.marketAnalysis);
+      marketSeedExists = await exists(artifactPaths.marketSeed);
       await updateTradingCalendarDate(requestedDate, {
         status: "tradingDay", observedBasDt: requestedDate,
         modelSnapshot: modelExists ? "created" : "failed",
         marketPriceLedger: ledgerExists ? "created" : "failed", reason: "artifactCreationFailed",
         universeArchive: universeExists ? "created" : "failed",
         marketAnalysisSnapshot: marketAnalysisExists ? "created" : "failed",
+        intradayMarketSeed: marketSeedExists ? "created" : "failed",
       }, root);
       throw error;
     }
   }
-  const [snapshot, ledger, universeArchive, marketAnalysis] = await Promise.all([
+  const [snapshot, ledger, universeArchive, marketAnalysis, marketSeed] = await Promise.all([
     fs.readFile(artifactPaths.model, "utf8").then(JSON.parse),
     fs.readFile(artifactPaths.ledger, "utf8").then(JSON.parse),
     fs.readFile(artifactPaths.universe, "utf8").then(JSON.parse),
     fs.readFile(artifactPaths.marketAnalysis, "utf8").then(JSON.parse),
+    fs.readFile(artifactPaths.marketSeed, "utf8").then(JSON.parse),
   ]);
-  if (snapshot.asOfDate !== requestedDate || ledger.date !== requestedDate || universeArchive.requestedDate !== requestedDate || marketAnalysis.requestedDate !== requestedDate) throw new Error("산출물 날짜가 요청 날짜와 일치하지 않습니다.");
-  if (snapshot.records?.length !== universe.finalCount || ledger.records?.length < universe.finalCount || universeArchive.observedUniverse?.length !== universe.finalCount || marketAnalysis.records?.length !== universe.finalCount) throw new Error("산출물 종목 수가 Universe와 일치하지 않습니다.");
+  if (snapshot.asOfDate !== requestedDate || ledger.date !== requestedDate || universeArchive.requestedDate !== requestedDate || marketAnalysis.requestedDate !== requestedDate || marketSeed.requestedDate !== requestedDate) throw new Error("산출물 날짜가 요청 날짜와 일치하지 않습니다.");
+  if (snapshot.records?.length !== universe.finalCount || ledger.records?.length < universe.finalCount || universeArchive.observedUniverse?.length !== universe.finalCount || marketAnalysis.records?.length !== universe.finalCount || marketSeed.records?.length !== universe.finalCount) throw new Error("산출물 종목 수가 Universe와 일치하지 않습니다.");
   await updateTradingCalendarDate(requestedDate, {
     status: "tradingDay", observedBasDt: requestedDate,
     modelSnapshot: "created", marketPriceLedger: "created", reason: null,
     universeArchive: "created",
     marketAnalysisSnapshot: "created",
+    intradayMarketSeed: "created",
   }, root);
   await runScript("scripts/resolve-history-returns.mjs");
   console.log(JSON.stringify({ requestedDate, status: "tradingDay", modelSnapshot: "created", marketPriceLedger: "created", resolved: true }, null, 2));

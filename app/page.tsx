@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import TopStocksPanel from "../components/TopStocksPanel";
-import MarketAnalysisPanel from "../components/market-analysis/MarketAnalysisPanel";
+import MarketAnalysisPanel, { type MarketAnalysisResponse, type IntradayAnalysisResponse } from "../components/market-analysis/MarketAnalysisPanel";
 import CompanyAnalysisPanel, { type CompanyAnalysisResult } from "../components/company-analysis/CompanyAnalysisPanel";
 export default function Home() {
   const [query, setQuery] = useState("");
@@ -36,6 +36,10 @@ const [priceHistory, setPriceHistory] = useState<any[]>([]);
 const [companyAnalysis, setCompanyAnalysis] = useState<CompanyAnalysisResult | null>(null);
 const [companyAnalysisError, setCompanyAnalysisError] = useState<string | null>(null);
 const [companyAnalysisLoading, setCompanyAnalysisLoading] = useState(false);
+const [marketAnalysis, setMarketAnalysis] = useState<MarketAnalysisResponse | null>(null);
+const [intradayAnalysis, setIntradayAnalysis] = useState<IntradayAnalysisResponse | null>(null);
+const [marketAnalysisError, setMarketAnalysisError] = useState<string | null>(null);
+const [marketAnalysisLoading, setMarketAnalysisLoading] = useState(false);
 const [loading, setLoading] = useState(false);
 const [realtimeError, setRealtimeError] = useState<string | null>(null);
 const [priceError, setPriceError] = useState<string | null>(null);
@@ -58,7 +62,7 @@ const apiErrorMessage = (data: unknown, fallback: string) => {
   return fallback;
 };
 useEffect(() => {
-  if (!stockInfo) return;
+  if (!stockInfo || realtimePrice?.marketStatus !== "open" || !realtimePrice.isRealtime) return;
 
   const stockCode = stockInfo.srtnCd.replace(/^A/, "");
   let timer: ReturnType<typeof setTimeout> | null = null;
@@ -130,7 +134,7 @@ useEffect(() => {
     document.removeEventListener("visibilitychange", handleVisibility);
   };
 
-}, [stockInfo]);
+}, [stockInfo, realtimePrice?.marketStatus, realtimePrice?.isRealtime]);
 useEffect(() => {
   if (!stockInfo) return;
 
@@ -177,6 +181,7 @@ setInvestorData(null);
 setCompanyAnalysis(null);
 setCompanyAnalysisError(null);
 setCompanyAnalysisLoading(true);
+setMarketAnalysis(null); setIntradayAnalysis(null); setMarketAnalysisError(null); setMarketAnalysisLoading(true);
 setLoading(true);
   try {
     const response = await fetch(
@@ -206,14 +211,18 @@ selectedCodeRef.current = stockCode;
 const [
   priceResponse,
   realtimeResponse,
-  companyResponse
+  companyResponse,
+  marketResponse,
+  intradayResponse
 ] = await Promise.all([
   fetch(`/api/price?code=${stockCode}`, { signal: searchController.signal }),
   fetch(`/api/realtime?code=${stockCode}`, { signal: searchController.signal }),
   fetch(`/api/company-analysis?code=${stockCode}`, { signal: searchController.signal, cache: "no-store" }).catch((error) => {
     if (error instanceof DOMException && error.name === "AbortError") throw error;
     return null;
-  })
+  }),
+  fetch(`/api/market-analysis?code=${stockCode}`, { signal: searchController.signal, cache: "no-store" }).catch((error) => { if (error instanceof DOMException && error.name === "AbortError") throw error; return null; }),
+  fetch(`/api/intraday-market-analysis?code=${stockCode}`, { signal: searchController.signal, cache: "no-store" }).catch((error) => { if (error instanceof DOMException && error.name === "AbortError") throw error; return null; })
 ]);
 
 const priceData = await priceResponse.json();
@@ -244,6 +253,10 @@ if (requestId !== searchRequestIdRef.current || selectedCodeRef.current !== stoc
 if (companyResponse?.ok) { setCompanyAnalysis(companyData); setCompanyAnalysisError(null); }
 else { setCompanyAnalysis(null); setCompanyAnalysisError(apiErrorMessage(companyData, "저장된 기업분석 결과가 없습니다.")); }
 setCompanyAnalysisLoading(false);
+const marketData=marketResponse?await marketResponse.json():null; const intradayData=intradayResponse?await intradayResponse.json():null;
+if(requestId!==searchRequestIdRef.current||selectedCodeRef.current!==stockCode)return;
+if(marketResponse?.ok){setMarketAnalysis(marketData);setMarketAnalysisError(null);}else{setMarketAnalysis(null);setMarketAnalysisError(apiErrorMessage(marketData,"저장된 시장분석 결과가 없습니다."));}
+setIntradayAnalysis(intradayResponse?.ok?intradayData:null);setMarketAnalysisLoading(false);
 if (!realtimeResponse.ok) {
   console.error(
     "실시간 API 실패",
@@ -275,6 +288,7 @@ if (!realtimeResponse.ok) {
   }
   finally {
   if (requestId === searchRequestIdRef.current) setCompanyAnalysisLoading(false);
+  if (requestId === searchRequestIdRef.current) setMarketAnalysisLoading(false);
   if (requestId === searchRequestIdRef.current) setLoading(false);
 }
 }
@@ -485,7 +499,7 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
   <CompanyAnalysisPanel result={companyAnalysis} loading={companyAnalysisLoading} error={companyAnalysisError} />
 )}
 {activeTab === "trader" && searchedStock && stockInfo?.srtnCd && (
-  <MarketAnalysisPanel key={String(stockInfo.srtnCd)} code={String(stockInfo.srtnCd).replace(/^A/, "")} investorData={investorData} />
+  <MarketAnalysisPanel key={String(stockInfo.srtnCd)} data={marketAnalysis} intraday={intradayAnalysis} investorData={investorData} loading={marketAnalysisLoading} error={marketAnalysisError} />
 )}
 {activeTab === "trader" && searchedStock && (
   <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-5">
