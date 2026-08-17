@@ -62,7 +62,7 @@ const apiErrorMessage = (data: unknown, fallback: string) => {
   return fallback;
 };
 useEffect(() => {
-  if (!stockInfo || realtimePrice?.marketStatus !== "open" || !realtimePrice.isRealtime) return;
+  if (!stockInfo || intradayAnalysis?.session?.sessionStatus !== "inferredOpen") return;
 
   const stockCode = stockInfo.srtnCd.replace(/^A/, "");
   let timer: ReturnType<typeof setTimeout> | null = null;
@@ -97,16 +97,13 @@ useEffect(() => {
     if (disposed || pollingBlocked || document.hidden || selectedCodeRef.current !== stockCode) return;
     activeController = new AbortController();
     try {
-      const response = await fetch(`/api/realtime?code=${stockCode}`, { signal: activeController.signal });
+      const response = await fetch(`/api/intraday-market-analysis?code=${stockCode}`, { signal: activeController.signal, cache: "no-store" });
       const data = await response.json();
-      if (!response.ok) return fail(apiErrorMessage(data, "현재 시세 조회 실패"));
-      if (data.price === undefined || data.rate === undefined || data.volume === undefined || data.change === undefined || data.code !== stockCode || !Number.isFinite(data.price) || data.price <= 0) {
-        return fail("현재 시세 응답이 올바르지 않습니다.");
-      }
+      if (!response.ok) return fail(apiErrorMessage(data, "장중 참고 분석 조회 실패"));
       if (selectedCodeRef.current !== stockCode) return;
+      setIntradayAnalysis(data);
+      if (data.session?.sessionStatus !== "inferredOpen") { pollingBlocked = true; clearTimer(); return; }
       consecutiveFailures = 0;
-      setRealtimePrice(data);
-      setRealtimeError(null);
       schedule(5000);
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
@@ -134,7 +131,7 @@ useEffect(() => {
     document.removeEventListener("visibilitychange", handleVisibility);
   };
 
-}, [stockInfo, realtimePrice?.marketStatus, realtimePrice?.isRealtime]);
+}, [stockInfo, intradayAnalysis?.session?.sessionStatus]);
 useEffect(() => {
   if (!stockInfo) return;
 

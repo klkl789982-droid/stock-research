@@ -1,0 +1,18 @@
+{
+  "policyVersion": "intraday-session-policy-v1",
+  "timezone": "Asia/Seoul",
+  "evidenceType": "scheduleAndFreshQuoteInferred",
+  "standardSessionStart": "09:00:00",
+  "standardSessionEnd": "15:30:00",
+  "calculationStart": "09:00:00",
+  "calculationEnd": "15:20:00",
+  "maxQuoteAgeSeconds": 60,
+  "quoteCacheTtlSeconds": 5,
+  "displayOnly": true,
+  "eligibleForRanking": false,
+  "eligibleForBacktest": false,
+  "eligibleForOptimization": false,
+  "label": "장중 추정",
+  "specialSessionRequiresExplicitOverride": true,
+  "overrides": []
+}
