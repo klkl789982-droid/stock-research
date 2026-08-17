@@ -33,7 +33,7 @@ const lines = [
   `# Snapshot Dry-run Report — ${requestedDate}`, "",
   `- 시작: ${startedAt.toISOString()}`, `- 종료: ${endedAt.toISOString()}`,
   `- 실행시간: ${((endedAt - startedAt) / 1000).toFixed(3)}초`,
-  `- 최종 판정: **${result.approvedForSchemaV5Snapshot ? "SCHEMA_V5_SNAPSHOT_APPROVED" : "NOT_APPROVED"}**`, "",
+  `- 최종 판정: **${result.approvedForSchemaV6Snapshot ? "SCHEMA_V6_SNAPSHOT_APPROVED" : "NOT_APPROVED"}**`, "",
   "## 1. 구현 파일", "", "- `scripts/run-history-dry-run.mjs`", "- `lib/dry-run-safety.mjs`", "- 기존 `scripts/create-daily-model-snapshot.mjs --dry-run` 경로 재사용", "",
   "## 2. 쓰기 차단", "", "dry-run은 history·가격 원장·Universe 아카이브 디렉터리 생성, lock/tmp/backup, 거래일 상태 갱신, resolver 실행 전에 종료한다. 허용된 이 보고서만 기록했다.", "",
   "## 3. API 안전 설정", "", `- endpoint: 공공데이터포털 공식 일봉 getStockPriceInfo`, `- concurrency: ${result.collection.concurrency}`, `- timeout: ${result.collection.timeoutMs}ms`, `- 최대 시도: ${result.collection.maxAttempts}`, "- 429·5xx·timeout·네트워크 오류만 제한 재시도", "- 4xx 인증 오류 재시도 금지", "- 인증 파라미터·키 로그 금지", "",
@@ -44,7 +44,7 @@ const lines = [
   "## 7. 역사 길이 분포", "", "| 구간 | 종목 수 |", "|---|---:|", `| 260일 이상 | ${result.historyDistribution.counts.atLeast260} |`, `| 120~259일 | ${result.historyDistribution.counts.from120To259} |`, `| 34~119일 | ${result.historyDistribution.counts.from34To119} |`, `| 34일 미만 | ${result.historyDistribution.counts.below34} |`, `| 최소/중앙/최대 | ${result.historyDistribution.minimum} / ${result.historyDistribution.median} / ${result.historyDistribution.maximum} |`, "",
   ...Object.entries(result.historyDistribution.codes).flatMap(([key, codes]) => [`### ${key}`, "", codes.length ? codes.join(", ") : "없음", ""]),
   "## 8. 모델별 eligible·excluded", "", "| 모델 | eligible | excluded | TOP50 가능 |", "|---|---:|---:|---|",
-  ...Object.entries(models).map(([version, item]) => `| ${version} | ${item.count} | ${item.excludedCount} | ${item.count >= 50 && result.approvedForSchemaV5Snapshot ? "진단 가능" : "NOT_APPROVED"} |`), "", `제외 사유: \`${JSON.stringify(excludedReasons)}\``, "",
+  ...Object.entries(models).map(([version, item]) => `| ${version} | ${item.count} | ${item.excludedCount} | ${item.count >= 50 && result.approvedForSchemaV6Snapshot ? "진단 가능" : "NOT_APPROVED"} |`), "", `제외 사유: \`${JSON.stringify(excludedReasons)}\``, "",
   "## 9. Common B/C Universe", "", `- activeModels: ${result.universeSummary.commonComparisonUniverse.activeModels.join(", ")}`, `- count: ${result.universeSummary.commonComparisonUniverse.count}`, `- codesHash: \`${result.universeSummary.commonComparisonUniverse.codesHash}\``, "",
   "## 10. 품질 판정", "", `- fatal: ${result.quality.fatalCount}`, `- ineligible records: ${result.quality.ineligibleCount}`, `- warning: ${result.quality.warningCount}`, `- structuralStatus: ${q.structuralStatus}`, `- overallGrade: ${q.overallGrade}`, `- eligibleForSnapshot: ${result.quality.eligibleForSnapshot}`, `- eligibleForRanking: ${q.certification.eligibleForRanking}`, `- eligibleForRankBacktest: ${q.certification.eligibleForRankBacktest}`, `- eligibleForOptimization: ${q.certification.eligibleForOptimization}`, `- blockingReasons: ${q.blockingReasons.join(", ")}`, "",
   "## 11. Source manifest", "", "```json", JSON.stringify(result.sourceManifest, null, 2), "```", "",
@@ -52,7 +52,7 @@ const lines = [
   "## 13. 모델별 예상 TOP10", "",
   ...Object.entries(result.diagnosticTop10).flatMap(([version, top]) => [`### ${version} — ${top.status}`, "", top.stocks.length ? ["| rank | code | name | score | universe | percentile | grade |", "|---:|---|---|---:|---:|---:|---|", ...top.stocks.map((stock) => `| ${stock.rank} | ${stock.code} | ${stock.name} | ${stock.score} | ${stock.rankingUniverseCount} | ${stock.rankPercentile} | ${stock.dataQualityGrade} |`)].join("\n") : "NOT_APPROVED", ""]),
   "## 14. Production 데이터 불변", "", `- SHA 및 파일 목록 전후 동일: **${integrity.unchanged}**`, "", "```json", JSON.stringify(after.protectedHashes, null, 2), "```", "",
-  "## 15. 다음 조치", "", result.approvedForSchemaV5Snapshot ? "구조적으로 첫 schema v5 스냅샷 생성이 가능하다. 다만 PROVISIONAL 차단 사유를 유지하고 사용자 승인 후 production 실행해야 한다." : "공식 데이터 게시 또는 fatal 원인 해소 전까지 schema v5 스냅샷을 생성하지 않는다.", "",
+  "## 15. 다음 조치", "", result.approvedForSchemaV6Snapshot ? "구조적으로 첫 schema v6 스냅샷 생성이 가능하다. 다만 PROVISIONAL 차단 사유를 유지하고 사용자 승인 후 production 실행해야 한다." : "공식 데이터 게시 또는 fatal 원인 해소 전까지 schema v6 스냅샷을 생성하지 않는다.", "",
   "## 16. 테스트·빌드", "", "이 섹션은 구현 검증 명령 완료 후 최종 보고에서 보완한다.", "",
 ];
 const reportDirectory = path.join(root, "reports");

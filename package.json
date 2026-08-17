@@ -44,6 +44,8 @@
     "intraday:session-test": "node scripts/test-intraday-session-policy.mjs",
     "backtest:rank": "node scripts/run-rank-backtest.mjs",
     "backtest:rank-test": "node scripts/test-rank-backtest.mjs && node scripts/test-rank-backtest-api.mjs",
+    "history:execution-test": "node scripts/test-execution-return-resolver.mjs",
+    "history:availability-test": "node scripts/test-source-availability.mjs",
     "backfill:data-preflight": "node --env-file=.env.local scripts/run-backfill-data-preflight.mjs",
     "backfill:data-preflight-test": "node scripts/test-backfill-data-preflight.mjs",
     "pit:data-preflight": "node --env-file=.env.local scripts/run-point-in-time-preflight.mjs",

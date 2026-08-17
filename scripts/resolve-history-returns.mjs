@@ -8,6 +8,7 @@ import {
   serializableSnapshot,
 } from "../lib/future-return-resolver.mjs";
 import { loadTradingCalendar, validateTradingCalendar } from "../lib/trading-calendar-status.mjs";
+import { resolveExecutionReturns } from "../lib/execution-return-resolver.mjs";
 
 const historyDirectory = path.join(process.cwd(), "data", "history");
 const marketPriceDirectory = path.join(process.cwd(), "data", "market-prices");
@@ -54,13 +55,17 @@ const immutableBefore = new Map(
   ]),
 );
 const result = resolveFutureReturns(snapshots, marketPriceLedgers, tradingCalendar);
+const executionResult = resolveExecutionReturns(result.snapshots, marketPriceLedgers, tradingCalendar);
+result.snapshots = executionResult.snapshots;
+result.changedDates = [...new Set([...result.changedDates, ...executionResult.changedDates])].sort();
+result.statistics.executionPolicy = { policyId: "public-eod-t2-open-v1", changedDates: executionResult.changedDates };
 
 for (const date of result.changedDates) {
   const snapshot = result.snapshots.find((item) => item.asOfDate === date);
   const serializable = serializableSnapshot(snapshot);
   const immutableAfter = JSON.stringify(immutableSnapshotView(serializable));
   if (immutableBefore.get(date) !== immutableAfter) {
-    throw new Error(`${date}: futureReturns 외 원본 데이터가 변경되었습니다.`);
+    throw new Error(`${date}: 허용된 수익률 필드 외 원본 데이터가 변경되었습니다.`);
   }
 
   const outputPath = path.join(historyDirectory, `${date}.json`);

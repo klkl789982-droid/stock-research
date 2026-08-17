@@ -9,7 +9,7 @@ import { saveRankBacktest } from "../lib/rank-backtest-storage.mjs";
 const config=JSON.parse(fs.readFileSync(new URL("../config/rank-backtest.json",import.meta.url),"utf8"));
 const makeSnapshot=(date,shift=0)=>({schemaVersion:5,asOfDate:date,modelDefinitions:{A:{modelVersion:"A-v1"},B:{modelVersion:"B-v1"},C:{modelVersion:"C-v1"},D:{modelVersion:"D-v1"}},records:Array.from({length:60},(_,index)=>{const rank=index+1,value=rank===60?null:rank+shift;return {code:String(rank).padStart(6,"0"),scores:{modelA:61-rank,modelB:61-rank,modelC:61-rank,modelD:61-rank},ranks:{modelA:rank,modelB:rank,modelC:rank,modelD:rank},scoresByVersion:{"A-v1":61-rank},ranksByVersion:{"A-v1":rank},rankingUniverseCount:{modelA:60,modelB:60,modelC:60,modelD:60},rankPercentile:{modelA:rank/60,modelB:rank/60,modelC:rank/60,modelD:rank/60},futureReturns:{future1dReturn:value,future5dReturn:value+1,future20dReturn:value+2},backtestReturns:{returns:{nextOpenToT1CloseReturn:value===null?null:value+100,nextOpenToT5CloseReturn:value===null?null:value+101,nextOpenToT20CloseReturn:value===null?null:value+102}}};})});
 const snapshots=["2026-01-02","2026-01-05"].map((date,index)=>{const snapshot=makeSnapshot(date,index);return {date,hash:hashObject(snapshot),snapshot};});
-const options={snapshots,models:["A-v1","B-v1"],evaluations:["predictive","executable"],config,includeProvisional:true,generatedAt:"2026-08-17T00:00:00.000Z"};
+const options={snapshots,models:["A-v1","B-v1"],evaluations:["predictive","executable"],config,includeProvisional:true,generatedAt:"2026-08-17T00:00:00.000Z",executionPolicy:"legacy-t1-open-v1"};
 const result=buildRankBacktest(options);
 const metric=(evaluation,bucket)=>result.metrics.find((item)=>item.modelVersion==="A-v1"&&item.evaluation===evaluation&&item.horizon==="T1"&&item.rankBucket===bucket);
 assert.equal(metric("predictive","TOP10").observationCount,20);
@@ -35,6 +35,18 @@ const pending=buildRankBacktest({...options,snapshots:[{date:"2026-02-02",hash:h
 assert.equal(pending.metrics.find((item)=>item.horizon==="T1").status,"NO_RESOLVED_RETURNS");
 assert.equal(pending.metrics.find((item)=>item.horizon==="T1").meanReturn,null);
 assert.equal(buildRankBacktest(options).contentHash,result.contentHash);
+const policySnapshot=makeSnapshot("2026-03-02");
+for(const [index,record] of policySnapshot.records.entries()){
+  const evidence=index%2===0?"VERIFIED":"POLICY_ESTIMATED";
+  record.executionReturnsByPolicy={"public-eod-t2-open-v1":{timingValidationStatus:"VALID",timingEvidenceLevel:evidence,signalAvailableAt:"2026-03-03T13:00:00+09:00",entry:{timestamp:"2026-03-04T09:00:00+09:00"},returns:{holding1dReturn:index+1,holding5dReturn:index+2,holding20dReturn:index+3},resolution:{h1Status:"resolved",h5Status:"resolved",h20Status:"resolved"}}};
+}
+const policyResult=buildRankBacktest({...options,snapshots:[{date:"2026-03-02",hash:hashObject(policySnapshot),snapshot:policySnapshot}],models:["A-v1"],evaluations:["executable"],executionPolicy:"public-eod-t2-open-v1"});
+assert.equal(policyResult.executionPolicy.executionPolicyId,"public-eod-t2-open-v1");
+assert.deepEqual(policyResult.horizons.executable,["H1","H5","H20"]);
+assert.ok(policyResult.verifiedTimingMetrics.some((item)=>item.observationCount>0));
+assert.ok(policyResult.policyEstimatedTimingMetrics.some((item)=>item.observationCount>0));
+assert.equal(policyResult.executionPolicy.eligibleForExecutableConclusion,true);
+assert.equal(result.executionPolicy.timingUnverified,true);
 assert.doesNotMatch(fs.readFileSync(new URL("../lib/rank-backtest-engine.mjs",import.meta.url),"utf8"),/(?:import|from).*intraday/i);
 
 const root=await fsp.mkdtemp(path.join(os.tmpdir(),"rank-backtest-"));

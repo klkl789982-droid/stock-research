@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "defaultExecutablePolicy": "public-eod-t2-open-v1",
+  "policies": {
+    "public-eod-t2-open-v1": {
+      "status": "active",
+      "signalPriceBasis": "officialDailyClose",
+      "sourceAvailabilityRequirement": "signalAvailableAtBeforeEntryTimestamp",
+      "sourcePublicationPolicy": "nextBusinessDayAfter13KST",
+      "entryTradingDayOffset": 2,
+      "entryPriceBasis": "officialDailyOpen",
+      "horizons": { "H1": 1, "H5": 5, "H20": 20 },
+      "horizonBasis": "entryTradingDay",
+      "timingValidationRequired": true,
+      "grossReturn": true,
+      "transactionCostsIncluded": false,
+      "slippageIncluded": false,
+      "eligibleForOptimization": false,
+      "eligibleForExecutableConclusion": true,
+      "promotionRequiresApproval": true
+    },
+    "legacy-t1-open-v1": {
+      "status": "legacyTimingUnverified",
+      "signalPriceBasis": "officialDailyClose",
+      "sourceAvailabilityRequirement": "notRecorded",
+      "entryTradingDayOffset": 1,
+      "entryPriceBasis": "officialDailyOpen",
+      "horizons": { "T1": 1, "T5": 5, "T20": 20 },
+      "horizonBasis": "signalTradingDay",
+      "timingValidationRequired": false,
+      "grossReturn": true,
+      "transactionCostsIncluded": false,
+      "slippageIncluded": false,
+      "eligibleForOptimization": false,
+      "eligibleForExecutableConclusion": false,
+      "promotionRequiresApproval": true
+    }
+  }
+}

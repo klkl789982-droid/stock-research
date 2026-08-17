@@ -81,9 +81,13 @@ const schemaRecords = Array.from({ length: 553 }, (_, index) => createHistoryRec
   modelB: { ...parallel.modelB, trendStrength: index / 10 }, modelC: { ...parallel.modelC, entryStrength: index / 10 }, modelD: index / 20, modelE: null,
 }));
 assignRanks(schemaRecords);
+for (const record of schemaRecords) record.executionReturnsByPolicy["public-eod-t2-open-v1"].signalAvailableAt = "2026-08-18T04:02:00.000Z";
 const syntheticSnapshot = {
   schemaVersion: MODEL_HISTORY_SCHEMA_VERSION,
   asOfDate: "2026-08-17",
+  sourceMarketDate: "2026-08-17", sourceCollectedAt: "2026-08-18T04:00:00.000Z", sourceStoredAt: "2026-08-18T04:02:00.000Z",
+  signalComputedAt: "2026-08-18T04:01:00.000Z", signalAvailableAt: "2026-08-18T04:02:00.000Z", sourceAvailabilityStatus: "OBSERVED",
+  sourcePublicationPolicyHash: "a".repeat(64), timingPolicyVersion: "public-eod-t2-open-v1",
   modelDefinitions: MODEL_DEFINITIONS,
   modelVersionDefinitions: MODEL_VERSION_DEFINITIONS,
   topLists: createTopLists(schemaRecords),

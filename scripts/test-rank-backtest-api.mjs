@@ -6,5 +6,6 @@ assert.match(route,/BACKTEST_RESULT_NOT_AVAILABLE/);
 assert.match(route,/readFile/);
 assert.doesNotMatch(route,/buildRankBacktest|calculate|fetch\(/);
 assert.match(runner,/--dry-run|\["dry-run"\]/);
+assert.match(runner,/execution-policy/);
 assert.doesNotMatch(runner,/(?:import|from).*intraday|history:resolve|fetch\(/i);
 console.log("백테스트 API 조회 전용·runner 격리 테스트 통과");

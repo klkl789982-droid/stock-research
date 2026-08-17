@@ -42,6 +42,29 @@ assumption. Existing field names remain unchanged for compatibility.
 
 ## Executable backtest returns (`backtestReturns`)
 
+`backtestReturns` is retained as the legacy `legacy-t1-open-v1` structure. Its source
+availability was not recorded, so it is timing-unverified and is not eligible for an
+executable-performance conclusion. Existing field names, values, and formulas are
+preserved for compatibility.
+
+## Versioned executable returns (`executionReturnsByPolicy`)
+
+New schema-v6 snapshots use `public-eod-t2-open-v1`. The official T-day close is
+published by policy after 13:00 on the next business day, so entry is the open of the
+second verified trading day after T. `signalAvailableAt` must be strictly earlier than
+the entry timestamp. H1 exits at the entry-day close; H5 and H20 exit at the fifth and
+twentieth verified trading-day close counting the entry day as day one.
+
+Returns are `(exitClosePrice / entryOpenPrice - 1) * 100`, rounded to six decimal
+places. They are gross returns: transaction costs and slippage are not included.
+Predictive `futureReturns`, legacy `backtestReturns`, and versioned executable returns
+must never be combined into one headline metric.
+
+Source timing fields distinguish the market date, policy publication estimate,
+observed collection time, computation time, and availability time. `generatedAt` is
+not a substitute for any of them. The public source does not expose a record-specific
+publication timestamp, so `sourcePublishedAt` remains `null`.
+
 The signal is frozen after the T-day close. The theoretical entry is the
 official T+1 daily open (`mkp`), and exits are the official T+1, T+5, and T+20
 closes:

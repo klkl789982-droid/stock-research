@@ -6,6 +6,8 @@ import { normalizeModelInputRows, validateMarketDataQuality } from "../lib/marke
 import { normalizeStockCode } from "../lib/stock-code.mjs";
 import { createMarketAnalysisSnapshot, validateMarketAnalysisSnapshot } from "../lib/market-analysis-snapshot.mjs";
 import { createIntradayMarketSeed, validateIntradayMarketSeed } from "../lib/intraday-market-seed.mjs";
+import { createSourceAvailability } from "../lib/source-availability.mjs";
+import { createExecutionReturns, PUBLIC_EOD_T2_POLICY_ID } from "../lib/execution-return-resolver.mjs";
 import {
   annotateRankingMetadata,
   assertSnapshotQualityGate,
@@ -175,6 +177,7 @@ const histories = await mapWithConcurrency(
     }
   },
 );
+const sourceCollectedAt = new Date().toISOString();
 const historyByCode = new Map(universe.stocks.map((stock, index) => [stock.code, histories[index]]).filter(([, rows]) => Array.isArray(rows)));
 const asOfDate = requestedDate ?? (() => {
   const dates = [...historyByCode.values()].map((rows) => String(rows[0]?.basDt ?? ""));
@@ -233,6 +236,7 @@ const records = fatalIssues.length > 0 ? [] : universe.stocks.map((stock) => {
 
 assignRanks(records);
 annotateRankingMetadata(records);
+const signalComputedAt = new Date().toISOString();
 async function findModelAV2ComparisonStartDate() {
   const filenames = (await fs.readdir(historyDirectory))
     .filter((filename) => /^\d{4}-\d{2}-\d{2}\.json$/.test(filename))
@@ -271,6 +275,9 @@ if (intradayMarketSeed) { const errors = validateIntradayMarketSeed(intradayMark
 const preparedUniverseArchive = fatalIssues.length === 0
   ? createUniverseArchive({ requestedDate: asOfDate, generatedAt, universe, historyByCode, sourceManifest })
   : null;
+const availabilityTimestamp = new Date().toISOString();
+const sourceAvailability = createSourceAvailability({ sourceMarketDate: asOfDate, sourceCollectedAt, signalComputedAt, availabilityTimestamp });
+for (const record of records) record.executionReturnsByPolicy[PUBLIC_EOD_T2_POLICY_ID] = createExecutionReturns(asOfDate, sourceAvailability.signalAvailableAt);
 function createHistoryDistribution() {
   const entries = Object.entries(quality.perSymbol).map(([code, value]) => ({ code, days: value.uniqueTradingDays }));
   const days = entries.map((entry) => entry.days).sort((a, b) => a - b);
@@ -298,7 +305,7 @@ function diagnosticTop10(modelKey, version = null) {
 }
 const dryRunResult = {
   mode: "dry-run", requestedDate: asOfDate, generatedAt,
-  approvedForSchemaV5Snapshot: fatalIssues.length === 0,
+  approvedForSchemaV6Snapshot: fatalIssues.length === 0,
   collection: { ...collectionStatistics, observedUniverse: universe.stocks.length, concurrency: CONCURRENCY, timeoutMs: REQUEST_TIMEOUT_MS, maxAttempts: MAX_ATTEMPTS },
   quality: { status: quality.status, grade: quality.grade, eligibleForSnapshot: quality.eligibleForSnapshot, dataQuality, fatalCount: fatalIssues.length, ineligibleCount: excludedFromScoring.length, warningCount: quality.issues.filter((entry) => entry.severity === "warning").length },
   universeSummary, excludedFromScoring, historyDistribution: createHistoryDistribution(), sourceManifest,
@@ -314,6 +321,7 @@ const snapshot = {
   schemaVersion: MODEL_HISTORY_SCHEMA_VERSION,
   asOfDate,
   computedAt: generatedAt,
+  ...sourceAvailability,
   dataMode: "official-daily-close",
   universe: {
     generatedAt: universe.generatedAt,

@@ -84,5 +84,5 @@ await test("신규 필드는 resolver 불변 view에 포함", async () => {
   const snapshot = { sourceManifest: { a: 1 }, dataQuality: { b: 2 }, universeSummary: { c: 3 }, records: [{ code: "1", futureReturns: {}, backtestReturns: {}, rankingUniverseCount: { modelA: 1 } }] };
   const view = immutableSnapshotView(snapshot); assert.deepEqual(view.sourceManifest, { a: 1 }); assert.deepEqual(view.records[0].rankingUniverseCount, { modelA: 1 });
 });
-await test("schemaVersion 2/3/4/5 읽기 호환", async () => { for (const version of [2, 3, 4, 5]) assert.equal(isReadableModelHistorySchemaVersion(version), true); });
+await test("schemaVersion 2/3/4/5/6 읽기 호환", async () => { for (const version of [2, 3, 4, 5, 6]) assert.equal(isReadableModelHistorySchemaVersion(version), true); });
 console.log(`스냅샷 품질 파이프라인 테스트 완료: ${passed}개 통과`);
