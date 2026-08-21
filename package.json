@@ -18,6 +18,7 @@
     "history:daily": "node --env-file=.env.local scripts/run-daily-history.mjs",
     "history:dry-run": "node --env-file=.env.local scripts/run-history-dry-run.mjs",
     "history:dry-run-test": "node scripts/test-history-dry-run.mjs",
+    "history:issue-manifest-test": "node scripts/test-dry-run-issue-manifest.mjs",
     "history:calendar-test": "node scripts/test-trading-calendar-status.mjs",
     "data:quality-test": "node scripts/test-market-data-quality-validator.mjs",
     "data:normalization-test": "node scripts/test-market-data-normalization.mjs",

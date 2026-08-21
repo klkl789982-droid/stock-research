@@ -32,6 +32,13 @@ if (!integrity.unchanged) throw new Error("dry-run 중 production 데이터가 �
 const q = result.quality.dataQuality;
 const models = result.universeSummary.modelEligibleUniverse;
 const excludedReasons = Object.fromEntries([...new Set(result.excludedFromScoring.map((item) => item.reason))].sort().map((reason) => [reason, result.excludedFromScoring.filter((item) => item.reason === reason).length]));
+const issueManifest = result.issueManifest;
+if (!issueManifest?.contentHash) throw new Error("dry-run issue manifest가 누락되었습니다.");
+const manifestDirectory = path.join(root, "reports", "dry-run-issues");
+await fs.mkdir(manifestDirectory, { recursive: true });
+const manifestPath = path.join(manifestDirectory, `schema-v6-issue-manifest-${requestedDate}.json`);
+await fs.writeFile(manifestPath, `${JSON.stringify(issueManifest, null, 2)}\n`, "utf8");
+const manifestRelativePath = path.relative(root, manifestPath).replaceAll("\\", "/");
 const lines = [
   `# Schema v6 Full-Universe Dry-run — ${reportDate}`, "",
   `- 체크포인트 커밋: \`e4920b47f244623bd35df361b7f0ecf056f929ff\``, `- 실행 ID: \`${result.runId ?? "not-created"}\``,
@@ -52,7 +59,7 @@ const lines = [
   "## 9. Common B/C Universe", "", `- activeModels: ${result.universeSummary.commonComparisonUniverse.activeModels.join(", ")}`, `- count: ${result.universeSummary.commonComparisonUniverse.count}`, `- codesHash: \`${result.universeSummary.commonComparisonUniverse.codesHash}\``, "",
   "## 10. 품질 판정", "", `- fatal: ${result.quality.fatalCount}`, `- ineligible records: ${result.quality.ineligibleCount}`, `- warning: ${result.quality.warningCount}`, `- structuralStatus: ${q.structuralStatus}`, `- overallGrade: ${q.overallGrade}`, `- eligibleForSnapshot: ${result.quality.eligibleForSnapshot}`, `- eligibleForRanking: ${q.certification.eligibleForRanking}`, `- eligibleForRankBacktest: ${q.certification.eligibleForRankBacktest}`, `- eligibleForOptimization: ${q.certification.eligibleForOptimization}`, `- blockingReasons: ${q.blockingReasons.join(", ")}`, "",
   "## 11. Source manifest", "", "```json", JSON.stringify(result.sourceManifest, null, 2), "```", "",
-  "## 12. 표본 진단", "", "### Fatal 최대 20", "", "```json", JSON.stringify(result.samples.fatal, null, 2), "```", "", "### Insufficient history 최대 50", "", "```json", JSON.stringify(result.samples.insufficientHistory, null, 2), "```", "", "### Zero volume 최대 20", "", "```json", JSON.stringify(result.samples.zeroVolume, null, 2), "```", "",
+  "## 12. Issue manifest", "", `- manifest: \`${manifestRelativePath}\``, `- schemaVersion: ${issueManifest.schemaVersion}`, `- contentHash: \`${issueManifest.contentHash}\``, `- fatal/warning/total: ${issueManifest.fatalCount} / ${issueManifest.warningCount} / ${issueManifest.issues.length}`, "", "### Type별 전체 count", "", "```json", JSON.stringify(issueManifest.issueTypeCounts, null, 2), "```", "", "### Fatal 최대 20", "", "```json", JSON.stringify(result.samples.fatal, null, 2), "```", "", "### Insufficient history 최대 50", "", "```json", JSON.stringify(result.samples.insufficientHistory, null, 2), "```", "", "### Zero volume 최대 20", "", "```json", JSON.stringify(result.samples.zeroVolume, null, 2), "```", "",
   "## 13. 모델별 예상 TOP10", "",
   ...Object.entries(result.diagnosticTop10).flatMap(([version, top]) => [`### ${version} — ${top.status}`, "", top.stocks.length ? ["| rank | code | name | score | universe | percentile | grade |", "|---:|---|---|---:|---:|---:|---|", ...top.stocks.map((stock) => `| ${stock.rank} | ${stock.code} | ${stock.name} | ${stock.score} | ${stock.rankingUniverseCount} | ${stock.rankPercentile} | ${stock.dataQualityGrade} |`)].join("\n") : "NOT_APPROVED", ""]),
   "## 14. Production 데이터 불변", "", `- SHA 및 파일 목록 전후 동일: **${integrity.unchanged}**`, "", "```json", JSON.stringify(after.protectedHashes, null, 2), "```", "",

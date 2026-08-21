@@ -7,6 +7,7 @@ import { normalizeStockCode } from "../lib/stock-code.mjs";
 import { createMarketAnalysisSnapshot, validateMarketAnalysisSnapshot } from "../lib/market-analysis-snapshot.mjs";
 import { createIntradayMarketSeed, validateIntradayMarketSeed } from "../lib/intraday-market-seed.mjs";
 import { createSourceAvailability } from "../lib/source-availability.mjs";
+import { createDryRunIssueManifest } from "../lib/dry-run-issue-manifest.mjs";
 import { createExecutionReturns, PUBLIC_EOD_T2_POLICY_ID } from "../lib/execution-return-resolver.mjs";
 import { createPublicEodQuery, createPublicEodRequestShape, createPublicEodSingleFlight, evaluatePublicEodCandidate, normalizePublicEodRows } from "../lib/public-eod-request.mjs";
 import {
@@ -348,6 +349,7 @@ const dryRunResult = {
   returnsState: { futureFiniteCount: 0, legacyFiniteCount: 0, executionFiniteCount: 0, timingValidationStatus: "NOT_PRODUCTION_AVAILABLE", eligibleForExecutableAggregation: false },
   samples: { fatal: fatalIssues.slice(0, 20), insufficientHistory: excludedFromScoring.filter((entry) => entry.reason === "insufficientHistory").slice(0, 50), zeroVolume: quality.issues.filter((entry) => entry.type === "nonTradingObservation").slice(0, 20) },
   issueCounts: Object.fromEntries([...new Set(quality.issues.map((entry) => entry.type))].sort().map((type) => [type, quality.issues.filter((entry) => entry.type === type).length])),
+  issueManifest: dryRun ? createDryRunIssueManifest({ requestedDate: asOfDate, quality, historyByCode }) : null,
   diagnosticTop10: { "A-v1": diagnosticTop10("modelA"), "A-v2": diagnosticTop10(null, "A-v2"), "B-v1": diagnosticTop10("modelB"), "C-v1": diagnosticTop10("modelC"), "D-v1": diagnosticTop10("modelD") },
 };
 const existingHistoryDates = (await fs.readdir(historyDirectory)).filter((name) => /^\d{4}-\d{2}-\d{2}\.json$/.test(name)).map((name) => name.slice(0, 10).replaceAll("-", "")).sort();
