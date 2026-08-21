@@ -2,17 +2,21 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { captureDryRunProductionState, compareDryRunProductionState, sanitizeDryRunText } from "../lib/dry-run-safety.mjs";
+import { parseMaxAttemptsOption } from "../lib/public-eod-retry-policy.mjs";
 
 const argument = process.argv.find((value) => value.startsWith("--date="));
 let requestedDate = argument?.slice(7);
 const latestMode = process.argv.includes("--latest");
+const maxAttempts = parseMaxAttemptsOption();
 if (!latestMode && (!requestedDate || !/^\d{4}-\d{2}-\d{2}$/.test(requestedDate))) throw new Error("--date=YYYY-MM-DD 또는 --latest가 필요합니다.");
 const root = process.cwd();
 const startedAt = new Date();
 const before = await captureDryRunProductionState(root);
 
 const childResult = await new Promise((resolve, reject) => {
-  const child = spawn(process.execPath, ["scripts/create-daily-model-snapshot.mjs", "--dry-run", latestMode ? "--latest" : `--date=${requestedDate}`], { cwd: root, env: process.env, stdio: ["ignore", "pipe", "pipe"] });
+  const childArguments = ["scripts/create-daily-model-snapshot.mjs", "--dry-run", latestMode ? "--latest" : `--date=${requestedDate}`];
+  if (maxAttempts !== null) childArguments.push(`--max-attempts=${maxAttempts}`);
+  const child = spawn(process.execPath, childArguments, { cwd: root, env: process.env, stdio: ["ignore", "pipe", "pipe"] });
   let stdout = ""; let stderr = "";
   child.stdout.on("data", (chunk) => { stdout += chunk; process.stdout.write(chunk); });
   child.stderr.on("data", (chunk) => { stderr += chunk; process.stderr.write(chunk); });

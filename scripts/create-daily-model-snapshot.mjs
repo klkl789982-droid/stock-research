@@ -8,6 +8,7 @@ import { createMarketAnalysisSnapshot, validateMarketAnalysisSnapshot } from "..
 import { createIntradayMarketSeed, validateIntradayMarketSeed } from "../lib/intraday-market-seed.mjs";
 import { createSourceAvailability } from "../lib/source-availability.mjs";
 import { createDryRunIssueManifest } from "../lib/dry-run-issue-manifest.mjs";
+import { parseMaxAttemptsOption, resolveMaxAttempts, shouldRetryPublicEodRequest } from "../lib/public-eod-retry-policy.mjs";
 import { createExecutionReturns, PUBLIC_EOD_T2_POLICY_ID } from "../lib/execution-return-resolver.mjs";
 import { createPublicEodQuery, createPublicEodRequestShape, createPublicEodSingleFlight, evaluatePublicEodCandidate, normalizePublicEodRows } from "../lib/public-eod-request.mjs";
 import {
@@ -41,10 +42,10 @@ const PRICE_URL =
   "https://apis.data.go.kr/1160100/service/GetStockSecuritiesInfoService/getStockPriceInfo";
 const CONCURRENCY = 4;
 const REQUEST_TIMEOUT_MS = 15_000;
-const MAX_ATTEMPTS = 3;
 const EXPECTED_UNIVERSE_COUNT = 553;
 const dryRun = process.argv.includes("--dry-run");
 const latestMode = dryRun && process.argv.includes("--latest");
+const maxAttemptsOverride = parseMaxAttemptsOption();
 const requestCache = createPublicEodSingleFlight();
 const collectionStatistics = { apiRequests: 0, successes: 0, failures: 0, timeouts: 0, retries: 0, cacheHits: 0, failedSymbols: [] };
 
@@ -79,9 +80,8 @@ async function fetchHistoryUncached(shape, attempt = 1) {
     return rows;
   } catch (error) {
     if (error?.name === "AbortError") collectionStatistics.timeouts += 1;
-    const maxAttempts = latestMode ? 2 : MAX_ATTEMPTS;
-    const retryable = error?.name === "AbortError" || (!latestMode && error?.httpStatus === 429) || error?.httpStatus >= 500 || (error?.httpStatus == null && !error?.businessCode);
-    if (!retryable || attempt >= maxAttempts) {
+    const maxAttempts = resolveMaxAttempts({ latestMode, maxAttempts: maxAttemptsOverride });
+    if (!shouldRetryPublicEodRequest({ error, attempt, maxAttempts, latestMode })) {
       collectionStatistics.failures += 1;
       collectionStatistics.failedSymbols.push({ code: shape.code, httpStatus: error?.httpStatus ?? null, timeout: error?.name === "AbortError" });
       throw new Error(`${shape.code} 일봉 조회 실패: ${error instanceof Error ? error.message : String(error)}`);
