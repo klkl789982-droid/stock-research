@@ -89,6 +89,6 @@ if (latestMode) {
 }
 const reportDirectory = path.join(root, "reports");
 await fs.mkdir(reportDirectory, { recursive: true });
-const reportPath = path.join(reportDirectory, latestMode ? "schema-v6-full-universe-dry-run-2026-08-18.md" : `snapshot-dry-run-${requestedDate}.md`);
+const reportPath = path.join(reportDirectory, latestMode ? `schema-v6-full-universe-dry-run-${requestedDate}.md` : `snapshot-dry-run-${requestedDate}.md`);
 await fs.writeFile(reportPath, `${sanitizeDryRunText(lines.join("\n"))}\n`, "utf8");
 console.log(`DRY_RUN_REPORT=${reportPath}`);

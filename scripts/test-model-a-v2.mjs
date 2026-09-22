@@ -97,7 +97,8 @@ const syntheticSnapshot = {
 assert.deepEqual(validateSnapshot(syntheticSnapshot, 553), []);
 
 const historyBuffer = fs.readFileSync("data/history/2026-08-13.json");
-assert.equal(createHash("sha256").update(historyBuffer).digest("hex"), "5e4d913a832d241c90808583eaee1ee7c1165535953c7ac1378c8275f8becdaa");
+const canonicalHistoryContent = historyBuffer.toString("utf8").replaceAll("\r\n", "\n");
+assert.equal(createHash("sha256").update(canonicalHistoryContent).digest("hex"), "5e4d913a832d241c90808583eaee1ee7c1165535953c7ac1378c8275f8becdaa");
 assert.match(MODEL_A_V2_FORMULA_HASH, /^[a-f0-9]{64}$/);
 
 console.log(JSON.stringify({

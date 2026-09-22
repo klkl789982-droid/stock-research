@@ -33,7 +33,13 @@ async function getRealtime(code, token) {
   const response = await fetch(`https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/inquire-price?FID_COND_MRKT_DIV_CODE=J&FID_INPUT_ISCD=${code}`, { headers: { "Content-Type": "application/json", authorization: `Bearer ${token}`, appkey: kisAppKey, appsecret: kisAppSecret, tr_id: "FHKST01010100" } });
   const data = await response.json();
   if (!response.ok || !data.output) throw new Error(`${code} 실시간 시세 실패`);
-  return { price: Number(data.output.stck_prpr), rate: Number(data.output.prdy_ctrt), volume: Number(data.output.acml_vol), high: Number(data.output.stck_hgpr), low: Number(data.output.stck_lwpr) };
+  const asOfDate = /^\d{8}$/u.test(String(data.output.stck_bsop_date ?? ""))
+    ? `${data.output.stck_bsop_date.slice(0, 4)}-${data.output.stck_bsop_date.slice(4, 6)}-${data.output.stck_bsop_date.slice(6, 8)}`
+    : null;
+  const asOfTime = /^\d{6}$/u.test(String(data.output.stck_cntg_hour ?? ""))
+    ? `${data.output.stck_cntg_hour.slice(0, 2)}:${data.output.stck_cntg_hour.slice(2, 4)}:${data.output.stck_cntg_hour.slice(4, 6)}`
+    : null;
+  return { price: Number(data.output.stck_prpr), rate: Number(data.output.prdy_ctrt), volume: Number(data.output.acml_vol), high: Number(data.output.stck_hgpr), low: Number(data.output.stck_lwpr), asOfDate, asOfTime, source: "KIS" };
 }
 
 function round(value) { return value == null ? null : Number(value.toFixed(2)); }

@@ -34,6 +34,10 @@ test("max-attempts 옵션은 child process로 전달되고 snapshot에서 정책
   assert.match(snapshotSource, /resolveMaxAttempts\(\{ latestMode, maxAttempts: maxAttemptsOverride \}\)/);
   assert.match(snapshotSource, /shouldRetryPublicEodRequest/);
 });
+test("latest 보고서 파일명은 candidate date를 사용한다", () => {
+  assert.match(runnerSource, /schema-v6-full-universe-dry-run-\$\{requestedDate\}\.md/);
+  assert.doesNotMatch(runnerSource, /schema-v6-full-universe-dry-run-2026-08-18\.md/);
+});
 const root = await fs.mkdtemp(path.join(os.tmpdir(), "dry-run-zero-write-"));
 assert.equal((await fs.readdir(root)).length, 0);
 await fs.rm(root, { recursive: true });

@@ -33,11 +33,21 @@ for (let index = 0; index < 36; index += 1) {
 issues.push({ severity: "warning", type: "nonTradingObservation", code: "000001", date: "20260810", rowIndex: 0, header: `Bearer ${SECRET}` });
 historyByCode.set("000001", [row("20260810", 100, 0), row("20260809", 100)]);
 
-const manifest = createDryRunIssueManifest({ requestedDate, quality: { issues }, historyByCode });
+const requestResults = [
+  { code: "360000", operation: "getStockPriceInfo", attemptCount: 1, maxAttempts: 1, outcome: "networkError", httpStatus: null, errorCategory: "dns", retryable: true, requestStartedAt: "2026-08-13T00:00:00.000Z", requestFinishedAt: "2026-08-13T00:00:00.010Z", elapsedMs: 10, latestBasDt: null, serviceKey: SECRET },
+  { code: "000001", operation: "getStockPriceInfo", attemptCount: 1, maxAttempts: 1, outcome: "success", httpStatus: null, errorCategory: "none", retryable: false, requestStartedAt: "2026-08-13T00:00:00.000Z", requestFinishedAt: "2026-08-13T00:00:00.020Z", elapsedMs: 20, latestBasDt: "20260813", rawResponse: SECRET },
+];
+const requestContract = { operation: "getStockPriceInfo", purpose: "latestHistoryCollection" };
+const manifest = createDryRunIssueManifest({ requestedDate, quality: { issues }, historyByCode, requestResults, requestContract, requestPolicy: { concurrency: 4, timeoutMs: 15000, maxAttempts: 1 } });
 assert.equal(manifest.fatalCount, 36);
 assert.equal(manifest.warningCount, 1);
 assert.equal(manifest.issueTypeCounts.zeroVolumePriceChanged, 36);
 assert.equal(manifest.issues.length, 37);
+assert.deepEqual(manifest.requestExecution.outcomeCounts, { networkError: 1, success: 1 });
+assert.deepEqual(manifest.requestExecution.errorCategoryCounts, { dns: 1, none: 1 });
+assert.deepEqual(manifest.requestExecution.attemptCountDistribution, { "1": 2 });
+assert.equal(manifest.requestExecution.requests[0].code, "000001");
+assert.equal(manifest.requestExecution.failedCodeListHash.length, 64);
 assert.deepEqual(manifest.issues[0], {
   severity: "warning",
   validatorRule: "nonTradingObservation",
@@ -51,7 +61,7 @@ assert.deepEqual(manifest.issues[0], {
 assert.deepEqual(manifest.issues[1].previousRow, { date: "20260813", clpr: 100 });
 assert.deepEqual(manifest.issues[1].nextRow, { date: "20260811", clpr: 100 });
 assert.deepEqual(validateDryRunIssueManifest(manifest), []);
-assert.equal(createDryRunIssueManifest({ requestedDate, quality: { issues: [...issues].reverse() }, historyByCode }).contentHash, manifest.contentHash);
+assert.equal(createDryRunIssueManifest({ requestedDate, quality: { issues: [...issues].reverse() }, historyByCode, requestResults: [...requestResults].reverse(), requestContract, requestPolicy: { concurrency: 4, timeoutMs: 15000, maxAttempts: 1 } }).contentHash, manifest.contentHash);
 assert.equal(JSON.stringify(manifest).includes(SECRET), false);
 
 const validatorInput = {
@@ -61,7 +71,7 @@ const validatorInput = {
   requirements: { expectedUniverseCount: 1, maxRequestedNonTradingRatio: 1 },
 };
 const before = validateMarketDataQuality(validatorInput);
-createDryRunIssueManifest({ requestedDate, quality: before, historyByCode: validatorInput.historyByCode });
+createDryRunIssueManifest({ requestedDate, quality: before, historyByCode: validatorInput.historyByCode, requestResults: [{ code: "000001", operation: "getStockPriceInfo", attemptCount: 1, maxAttempts: 1, outcome: "success", httpStatus: null, errorCategory: "none", retryable: false, requestStartedAt: "2026-08-13T00:00:00.000Z", requestFinishedAt: "2026-08-13T00:00:00.001Z", elapsedMs: 1, latestBasDt: "20260813" }] });
 const after = validateMarketDataQuality(validatorInput);
 assert.deepEqual(after, before);
 assert.ok(before.issues.some((entry) => entry.type === "zeroVolumePriceChanged" && entry.severity === "fatal"));

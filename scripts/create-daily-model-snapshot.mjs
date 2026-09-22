@@ -8,6 +8,7 @@ import { createMarketAnalysisSnapshot, validateMarketAnalysisSnapshot } from "..
 import { createIntradayMarketSeed, validateIntradayMarketSeed } from "../lib/intraday-market-seed.mjs";
 import { createSourceAvailability } from "../lib/source-availability.mjs";
 import { createDryRunIssueManifest } from "../lib/dry-run-issue-manifest.mjs";
+import { classifyPublicEodRequestError, createPublicEodRequestContract, createPublicEodRequestResult } from "../lib/public-eod-request-observability.mjs";
 import { parseMaxAttemptsOption, resolveMaxAttempts, shouldRetryPublicEodRequest } from "../lib/public-eod-retry-policy.mjs";
 import { createExecutionReturns, PUBLIC_EOD_T2_POLICY_ID } from "../lib/execution-return-resolver.mjs";
 import { createPublicEodQuery, createPublicEodRequestShape, createPublicEodSingleFlight, evaluatePublicEodCandidate, normalizePublicEodRows } from "../lib/public-eod-request.mjs";
@@ -46,8 +47,10 @@ const EXPECTED_UNIVERSE_COUNT = 553;
 const dryRun = process.argv.includes("--dry-run");
 const latestMode = dryRun && process.argv.includes("--latest");
 const maxAttemptsOverride = parseMaxAttemptsOption();
+const effectiveMaxAttempts = resolveMaxAttempts({ latestMode, maxAttempts: maxAttemptsOverride });
 const requestCache = createPublicEodSingleFlight();
-const collectionStatistics = { apiRequests: 0, successes: 0, failures: 0, timeouts: 0, retries: 0, cacheHits: 0, failedSymbols: [] };
+const collectionStatistics = { apiRequests: 0, successes: 0, failures: 0, timeouts: 0, retries: 0, cacheHits: 0, failedSymbols: [], requestResults: [] };
+let requestContract = null;
 
 function parseRequestedDate() {
   const argument = process.argv.find((value) => value.startsWith("--date="));
@@ -60,7 +63,7 @@ function parseRequestedDate() {
 let requestedDate = parseRequestedDate();
 let requestedCompactDate = requestedDate?.replaceAll("-", "") ?? null;
 
-async function fetchHistoryUncached(shape, attempt = 1) {
+async function fetchHistoryUncached(shape, attempt = 1, startedAt = new Date()) {
   const query = createPublicEodQuery(shape);
   try {
     const controller = new AbortController();
@@ -70,30 +73,37 @@ async function fetchHistoryUncached(shape, attempt = 1) {
     try { response = await fetch(`${PRICE_URL}?serviceKey=${serviceKey}&${query}`, { signal: controller.signal }); }
     finally { clearTimeout(timeout); }
     if (!response.ok) { const failure = new Error(`HTTP ${response.status}`); failure.httpStatus = response.status; throw failure; }
-    const payload = await response.json();
+    let payload;
+    try { payload = await response.json(); }
+    catch { const failure = new Error("일봉 응답 JSON 해석 실패"); failure.observabilityOutcome = "invalidResponse"; throw failure; }
     const businessCode = String(payload?.response?.header?.resultCode ?? "");
     if (businessCode && businessCode !== "00") { const failure = new Error(`업무 응답 ${businessCode}`); failure.businessCode = businessCode; throw failure; }
-    const { rows } = normalizePublicEodRows(payload?.response?.body?.items?.item, { code: shape.code });
+    let rows;
+    try { ({ rows } = normalizePublicEodRows(payload?.response?.body?.items?.item, { code: shape.code })); }
+    catch { const failure = new Error("일봉 응답 정규화 실패"); failure.observabilityOutcome = "invalidResponse"; throw failure; }
 
-    if (rows.length === 0) throw new Error("일봉 응답이 비어 있습니다.");
+    if (rows.length === 0) { const failure = new Error("일봉 응답이 비어 있습니다."); failure.observabilityOutcome = "invalidResponse"; throw failure; }
     collectionStatistics.successes += 1;
+    collectionStatistics.requestResults.push(createPublicEodRequestResult({ shape, attemptCount: attempt, maxAttempts: effectiveMaxAttempts, startedAt, finishedAt: new Date(), retryable: false, outcome: { outcome: "success", httpStatus: null, errorCategory: "none" }, latestBasDt: rows[0]?.basDt }));
     return rows;
   } catch (error) {
     if (error?.name === "AbortError") collectionStatistics.timeouts += 1;
-    const maxAttempts = resolveMaxAttempts({ latestMode, maxAttempts: maxAttemptsOverride });
-    if (!shouldRetryPublicEodRequest({ error, attempt, maxAttempts, latestMode })) {
+    const retryable = shouldRetryPublicEodRequest({ error, attempt, maxAttempts: Number.MAX_SAFE_INTEGER, latestMode });
+    if (!shouldRetryPublicEodRequest({ error, attempt, maxAttempts: effectiveMaxAttempts, latestMode })) {
       collectionStatistics.failures += 1;
       collectionStatistics.failedSymbols.push({ code: shape.code, httpStatus: error?.httpStatus ?? null, timeout: error?.name === "AbortError" });
+      collectionStatistics.requestResults.push(createPublicEodRequestResult({ shape, attemptCount: attempt, maxAttempts: effectiveMaxAttempts, startedAt, finishedAt: new Date(), retryable, outcome: classifyPublicEodRequestError(error) }));
       throw new Error(`${shape.code} 일봉 조회 실패: ${error instanceof Error ? error.message : String(error)}`);
     }
     collectionStatistics.retries += 1;
     await new Promise((resolve) => setTimeout(resolve, 2 ** (attempt - 1) * 1000));
-    return fetchHistoryUncached(shape, attempt + 1);
+    return fetchHistoryUncached(shape, attempt + 1, startedAt);
   }
 }
 
 function fetchHistory(code) {
   const shape = createPublicEodRequestShape({ code, purpose: "latestHistoryCollection", beginBasDt: null, endBasDt: null, pageNo: 1, numOfRows: 260, resultType: "json" });
+  requestContract ??= createPublicEodRequestContract(shape);
   if (requestCache.has(shape)) collectionStatistics.cacheHits += 1;
   return requestCache.run(shape, async () => fetchHistoryUncached(shape)).then((rows) => rows.filter((row) => !requestedCompactDate || String(row.basDt) <= requestedCompactDate));
 }
@@ -341,7 +351,7 @@ const dryRunResult = {
   mode: "dry-run", dryRunOnly: true, runId: `schema-v6-dry-run-${new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14)}`,
   dryRunStartedAt, requestedDate: asOfDate, candidateAsOfDate: asOfDate, representativeProbe, generatedAt,
   approvedForSchemaV6Snapshot: fatalIssues.length === 0,
-  collection: { ...collectionStatistics, observedUniverse: universe.stocks.length, requestedUniverseCount: universe.stocks.length, requestedCodeCount: requestCache.size(), concurrency: CONCURRENCY, timeoutMs: REQUEST_TIMEOUT_MS, maxAttempts: latestMode ? 2 : MAX_ATTEMPTS },
+  collection: { ...collectionStatistics, observedUniverse: universe.stocks.length, requestedUniverseCount: universe.stocks.length, requestedCodeCount: requestCache.size(), concurrency: CONCURRENCY, timeoutMs: REQUEST_TIMEOUT_MS, maxAttempts: effectiveMaxAttempts },
   quality: { status: quality.status, grade: quality.grade, eligibleForSnapshot: quality.eligibleForSnapshot, dataQuality, fatalCount: fatalIssues.length, ineligibleCount: excludedFromScoring.length, warningCount: quality.issues.filter((entry) => entry.severity === "warning").length },
   universeSummary, excludedFromScoring, historyDistribution: createHistoryDistribution(), sourceManifest,
   requestFingerprint: sha256Canonical({ candidateAsOfDate: asOfDate, codes: universe.stocks.map((stock) => stock.code).sort(), endpoint: "getStockPriceInfo", rowsPerCode: 260 }),
@@ -349,7 +359,7 @@ const dryRunResult = {
   returnsState: { futureFiniteCount: 0, legacyFiniteCount: 0, executionFiniteCount: 0, timingValidationStatus: "NOT_PRODUCTION_AVAILABLE", eligibleForExecutableAggregation: false },
   samples: { fatal: fatalIssues.slice(0, 20), insufficientHistory: excludedFromScoring.filter((entry) => entry.reason === "insufficientHistory").slice(0, 50), zeroVolume: quality.issues.filter((entry) => entry.type === "nonTradingObservation").slice(0, 20) },
   issueCounts: Object.fromEntries([...new Set(quality.issues.map((entry) => entry.type))].sort().map((type) => [type, quality.issues.filter((entry) => entry.type === type).length])),
-  issueManifest: dryRun ? createDryRunIssueManifest({ requestedDate: asOfDate, quality, historyByCode }) : null,
+  issueManifest: dryRun ? createDryRunIssueManifest({ requestedDate: asOfDate, quality, historyByCode, requestResults: collectionStatistics.requestResults, requestContract, requestPolicy: { concurrency: CONCURRENCY, timeoutMs: REQUEST_TIMEOUT_MS, maxAttempts: effectiveMaxAttempts } }) : null,
   diagnosticTop10: { "A-v1": diagnosticTop10("modelA"), "A-v2": diagnosticTop10(null, "A-v2"), "B-v1": diagnosticTop10("modelB"), "C-v1": diagnosticTop10("modelC"), "D-v1": diagnosticTop10("modelD") },
 };
 const existingHistoryDates = (await fs.readdir(historyDirectory)).filter((name) => /^\d{4}-\d{2}-\d{2}\.json$/.test(name)).map((name) => name.slice(0, 10).replaceAll("-", "")).sort();

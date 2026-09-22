@@ -1,9 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import TopStocksPanel from "../components/TopStocksPanel";
 import MarketAnalysisPanel, { type MarketAnalysisResponse, type IntradayAnalysisResponse } from "../components/market-analysis/MarketAnalysisPanel";
 import CompanyAnalysisPanel, { type CompanyAnalysisResult } from "../components/company-analysis/CompanyAnalysisPanel";
+import TechnicalStrengthPanel from "../components/TechnicalStrengthPanel";
+import { searchApiErrorMessage, settleSearchRequest } from "../lib/search-request-isolation.mjs";
+import { buildSearchTechnicalStrength } from "../lib/search-technical-strength.mjs";
+import { buildSearchMarketAnalysis } from "../lib/search-market-analysis.mjs";
+import { analysisAvailabilityMessage } from "../lib/analysis-availability.mjs";
 export default function Home() {
   const [query, setQuery] = useState("");
   const [searchedStock, setSearchedStock] = useState<string | null>(null);
@@ -13,6 +18,7 @@ const [realtimePrice, setRealtimePrice] = useState<{
   change: number;
   rate: number;
   volume: number;
+  open: number | null;
   high: number;
   low: number;
   code: string;
@@ -39,10 +45,11 @@ const [companyAnalysisLoading, setCompanyAnalysisLoading] = useState(false);
 const [marketAnalysis, setMarketAnalysis] = useState<MarketAnalysisResponse | null>(null);
 const [intradayAnalysis, setIntradayAnalysis] = useState<IntradayAnalysisResponse | null>(null);
 const [marketAnalysisError, setMarketAnalysisError] = useState<string | null>(null);
-const [marketAnalysisLoading, setMarketAnalysisLoading] = useState(false);
+const [intradayError, setIntradayError] = useState<string | null>(null);
 const [loading, setLoading] = useState(false);
 const [realtimeError, setRealtimeError] = useState<string | null>(null);
 const [priceError, setPriceError] = useState<string | null>(null);
+const [priceRequestStatus, setPriceRequestStatus] = useState<"idle" | "loading" | "success" | "missing" | "error" | "unavailable">("idle");
 const [priceMeta, setPriceMeta] = useState<{
   code: string;
   source: "officialDailyPrice";
@@ -54,13 +61,16 @@ const searchRequestIdRef = useRef(0);
 const searchControllerRef = useRef<AbortController | null>(null);
 const selectedCodeRef = useRef<string | null>(null);
 const pageTopRef = useRef<HTMLElement | null>(null);
-const apiErrorMessage = (data: unknown, fallback: string) => {
-  if (!data || typeof data !== "object") return fallback;
-  const error = (data as { error?: unknown }).error;
-  if (typeof error === "string") return error;
-  if (error && typeof error === "object" && typeof (error as { message?: unknown }).message === "string") return (error as { message: string }).message;
-  return fallback;
-};
+const technicalStrength = useMemo(() => buildSearchTechnicalStrength({
+  priceHistory,
+  priceRequestStatus,
+  realtimePrice,
+}), [priceHistory, priceRequestStatus, realtimePrice]);
+const marketAnalysisView = useMemo(() => buildSearchMarketAnalysis({
+  priceHistory,
+  priceRequestStatus,
+  storedMarketData: marketAnalysis,
+}), [priceHistory, priceRequestStatus, marketAnalysis]);
 useEffect(() => {
   if (!stockInfo || intradayAnalysis?.session?.sessionStatus !== "inferredOpen") return;
 
@@ -99,7 +109,7 @@ useEffect(() => {
     try {
       const response = await fetch(`/api/intraday-market-analysis?code=${stockCode}`, { signal: activeController.signal, cache: "no-store" });
       const data = await response.json();
-      if (!response.ok) return fail(apiErrorMessage(data, "장중 참고 분석 조회 실패"));
+      if (!response.ok) return fail(searchApiErrorMessage(data, "장중 참고 분석 조회 실패"));
       if (selectedCodeRef.current !== stockCode) return;
       setIntradayAnalysis(data);
       if (data.session?.sessionStatus !== "inferredOpen") { pollingBlocked = true; clearTimer(); return; }
@@ -168,17 +178,20 @@ searchControllerRef.current?.abort();
 const searchController = new AbortController();
 searchControllerRef.current = searchController;
 selectedCodeRef.current = null;
+setStockInfo(null);
+setSearchedStock(null);
 setRealtimePrice(null);
 setPriceInfo(null);
 setPriceHistory([]);
 setPriceMeta(null);
 setRealtimeError(null);
 setPriceError(null);
+setPriceRequestStatus("loading");
 setInvestorData(null);
 setCompanyAnalysis(null);
 setCompanyAnalysisError(null);
 setCompanyAnalysisLoading(true);
-setMarketAnalysis(null); setIntradayAnalysis(null); setMarketAnalysisError(null); setMarketAnalysisLoading(true);
+setMarketAnalysis(null); setIntradayAnalysis(null); setMarketAnalysisError(null); setIntradayError(null);
 setLoading(true);
   try {
     const response = await fetch(
@@ -205,75 +218,56 @@ if (selection) requestAnimationFrame(() => pageTopRef.current?.scrollIntoView({ 
 const stockCode = selectedItem.srtnCd.replace(/^A/, "");
 selectedCodeRef.current = stockCode;
 
-const [
-  priceResponse,
-  realtimeResponse,
-  companyResponse,
-  marketResponse,
-  intradayResponse
-] = await Promise.all([
-  fetch(`/api/price?code=${stockCode}`, { signal: searchController.signal }),
-  fetch(`/api/realtime?code=${stockCode}`, { signal: searchController.signal }),
-  fetch(`/api/company-analysis?code=${stockCode}`, { signal: searchController.signal, cache: "no-store" }).catch((error) => {
-    if (error instanceof DOMException && error.name === "AbortError") throw error;
-    return null;
+const isCurrentSearch = () => requestId === searchRequestIdRef.current && selectedCodeRef.current === stockCode;
+const tasks = [
+  settleSearchRequest(fetch(`/api/price?code=${stockCode}`, { signal: searchController.signal }), "공식 종가 조회 실패").then((result) => {
+    if (!isCurrentSearch()) return;
+    const priceData = result.data;
+    if (result.status === "success" && priceData?.code === stockCode && Array.isArray(priceData.items) && priceData.items.length > 0) {
+      setPriceInfo(priceData.items[0]);
+      setPriceHistory(priceData.items);
+      setPriceMeta({ code: priceData.code, source: priceData.source, priceBasis: priceData.priceBasis, asOfDate: priceData.asOfDate, closePrice: priceData.closePrice });
+      setPriceError(null);
+      setPriceRequestStatus("success");
+    } else {
+      setPriceInfo(null);
+      setPriceHistory([]);
+      setPriceMeta(null);
+      setPriceError(result.status === "success" ? "공식 종가 응답이 현재 종목과 일치하지 않습니다." : result.errorMessage);
+      setPriceRequestStatus(result.status === "missing" ? "missing" : result.status === "unavailable" ? "unavailable" : "error");
+    }
   }),
-  fetch(`/api/market-analysis?code=${stockCode}`, { signal: searchController.signal, cache: "no-store" }).catch((error) => { if (error instanceof DOMException && error.name === "AbortError") throw error; return null; }),
-  fetch(`/api/intraday-market-analysis?code=${stockCode}`, { signal: searchController.signal, cache: "no-store" }).catch((error) => { if (error instanceof DOMException && error.name === "AbortError") throw error; return null; })
-]);
-
-const priceData = await priceResponse.json();
-if (requestId !== searchRequestIdRef.current || selectedCodeRef.current !== stockCode) return;
-
-console.log("가격 API 원본:", priceData);
-
-if (!priceResponse.ok) {
-  setPriceInfo(null);
-  setPriceHistory([]);
-  setPriceMeta(null);
-  setPriceError(priceData?.error ?? "공식 종가 조회 실패");
-} else if (priceData.code === stockCode && priceData.items && priceData.items.length > 0) {
-  setPriceInfo(priceData.items[0]);
-  setPriceHistory(priceData.items);
-  setPriceMeta({ code: priceData.code, source: priceData.source, priceBasis: priceData.priceBasis, asOfDate: priceData.asOfDate, closePrice: priceData.closePrice });
-  setPriceError(null);
-
-  console.log("priceHistory 개수:", priceData.items.length);
-} else {
-  setPriceInfo(null);
-  setPriceHistory([]);
-  setPriceMeta(null);
-  setPriceError("공식 종가 응답이 현재 종목과 일치하지 않습니다.");
-}
-const companyData = companyResponse ? await companyResponse.json() : null;
-if (requestId !== searchRequestIdRef.current || selectedCodeRef.current !== stockCode) return;
-if (companyResponse?.ok) { setCompanyAnalysis(companyData); setCompanyAnalysisError(null); }
-else { setCompanyAnalysis(null); setCompanyAnalysisError(apiErrorMessage(companyData, "저장된 기업분석 결과가 없습니다.")); }
-setCompanyAnalysisLoading(false);
-const marketData=marketResponse?await marketResponse.json():null; const intradayData=intradayResponse?await intradayResponse.json():null;
-if(requestId!==searchRequestIdRef.current||selectedCodeRef.current!==stockCode)return;
-if(marketResponse?.ok){setMarketAnalysis(marketData);setMarketAnalysisError(null);}else{setMarketAnalysis(null);setMarketAnalysisError(apiErrorMessage(marketData,"저장된 시장분석 결과가 없습니다."));}
-setIntradayAnalysis(intradayResponse?.ok?intradayData:null);setMarketAnalysisLoading(false);
-if (!realtimeResponse.ok) {
-  console.error(
-    "실시간 API 실패",
-    realtimeResponse.status
-  );
-  const realtimeErrorData = await realtimeResponse.json();
-  setRealtimePrice(null);
-  setRealtimeError(apiErrorMessage(realtimeErrorData, `현재 시세 조회 실패 (HTTP ${realtimeResponse.status})`));
-} else {
-  const realtimeData = await realtimeResponse.json();
-  if (requestId !== searchRequestIdRef.current || selectedCodeRef.current !== stockCode) return;
-  if (realtimeData.code !== stockCode || !Number.isFinite(realtimeData.price) || realtimeData.price <= 0) {
-    setRealtimePrice(null);
-    setRealtimeError("현재 시세 응답이 올바르지 않습니다.");
-  } else {
-    setRealtimePrice(realtimeData);
-    setRealtimeError(null);
-  }
-  console.log("실시간 데이터:", realtimeData);
-}
+  settleSearchRequest(fetch(`/api/realtime?code=${stockCode}`, { signal: searchController.signal }), "현재 시세 조회 실패").then((result) => {
+    if (!isCurrentSearch()) return;
+    const realtimeData = result.data;
+    if (result.status === "success" && realtimeData?.code === stockCode && Number.isFinite(realtimeData.price) && realtimeData.price > 0) {
+      setRealtimePrice(realtimeData);
+      setRealtimeError(null);
+    } else {
+      setRealtimePrice(null);
+      setRealtimeError(result.status === "success" ? "현재 시세 응답이 올바르지 않습니다." : result.errorMessage);
+    }
+  }),
+  settleSearchRequest(fetch(`/api/company-analysis?code=${stockCode}`, { signal: searchController.signal, cache: "no-store" }), "저장된 기업분석 결과가 없습니다.").then((result) => {
+    if (!isCurrentSearch()) return;
+    setCompanyAnalysis(result.status === "success" ? result.data : null);
+    setCompanyAnalysisError(result.status === "success" ? null : result.errorMessage);
+    setCompanyAnalysisLoading(false);
+  }),
+  settleSearchRequest(fetch(`/api/market-analysis?code=${stockCode}`, { signal: searchController.signal, cache: "no-store" }), "저장된 시장분석 결과가 없습니다.").then((result) => {
+    if (!isCurrentSearch()) return;
+    setMarketAnalysis(result.status === "success" ? result.data : null);
+    setMarketAnalysisError(result.status === "success" ? null : result.errorMessage);
+  }),
+  settleSearchRequest(fetch(`/api/intraday-market-analysis?code=${stockCode}`, { signal: searchController.signal, cache: "no-store" }), "장중 참고 분석 조회 실패").then((result) => {
+    if (!isCurrentSearch()) return;
+    setIntradayAnalysis(result.status === "success" ? result.data : null);
+    setIntradayError(result.status === "success" ? null : analysisAvailabilityMessage("INTRADAY_UNAVAILABLE"));
+  }),
+];
+const taskResults = await Promise.allSettled(tasks);
+const aborted = taskResults.find((result) => result.status === "rejected" && result.reason instanceof DOMException && result.reason.name === "AbortError");
+if (aborted?.status === "rejected") throw aborted.reason;
 
 
 } else {
@@ -285,7 +279,6 @@ if (!realtimeResponse.ok) {
   }
   finally {
   if (requestId === searchRequestIdRef.current) setCompanyAnalysisLoading(false);
-  if (requestId === searchRequestIdRef.current) setMarketAnalysisLoading(false);
   if (requestId === searchRequestIdRef.current) setLoading(false);
 }
 }
@@ -461,6 +454,8 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
   </div>
 )}
 
+{searchedStock && <TechnicalStrengthPanel view={technicalStrength} />}
+
             <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
               <button
   onClick={() => setActiveTab("investor")}
@@ -496,7 +491,7 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
   <CompanyAnalysisPanel result={companyAnalysis} loading={companyAnalysisLoading} error={companyAnalysisError} />
 )}
 {activeTab === "trader" && searchedStock && stockInfo?.srtnCd && (
-  <MarketAnalysisPanel key={String(stockInfo.srtnCd)} data={marketAnalysis} intraday={intradayAnalysis} investorData={investorData} loading={marketAnalysisLoading} error={marketAnalysisError} />
+  <MarketAnalysisPanel key={String(stockInfo.srtnCd)} data={marketAnalysisView.status === "available" ? marketAnalysisView.data : null} intraday={intradayAnalysis} investorData={investorData} loading={marketAnalysisView.status === "loading"} error={marketAnalysisView.status === "available" ? null : analysisAvailabilityMessage(marketAnalysisView.reason, marketAnalysisError ?? undefined)} source={marketAnalysisView.source ?? null} intradayError={intradayError} />
 )}
 {activeTab === "trader" && searchedStock && (
   <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-5">
