@@ -79,6 +79,9 @@ const marketAnalysisView = useMemo(() => buildSearchMarketAnalysis({
   priceRequestStatus,
   storedMarketData: marketAnalysis,
 }), [priceHistory, priceRequestStatus, marketAnalysis]);
+const verifiedRealtimePrice = realtimePrice?.metadataAvailability?.status === "complete" && realtimePrice.freshnessStatus === "freshObservation"
+  ? realtimePrice
+  : null;
 useEffect(() => {
   if (!stockInfo || intradayAnalysis?.session?.sessionStatus !== "inferredOpen") return;
 
@@ -356,24 +359,25 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
 
     <div className="mt-3 space-y-2 text-sm text-gray-700">
       <div className="flex justify-between">
-  <span>{realtimePrice ? (realtimePrice.metadataAvailability?.status !== "complete" ? "KIS 조회가 · 기준시점 미확인" : realtimePrice.freshnessStatus === "freshObservation" ? "KIS 최근 조회가" : "KIS 조회가 · 최신성 미확인") : "최근 거래일 종가"}</span>
+  <span>{verifiedRealtimePrice ? "KIS 최근 조회가" : "최근 거래일 공식 종가"}</span>
   <span>
-  {realtimePrice
-    ? `${realtimePrice.price.toLocaleString()}원`
+  {verifiedRealtimePrice
+    ? `${verifiedRealtimePrice.price.toLocaleString()}원`
     : priceMeta
     ? `${priceMeta.closePrice.toLocaleString()}원`
     : "-"}
 </span>
 </div>
-{realtimeError && <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{realtimeError}. 이전 종목 가격을 표시하지 않습니다.</p>}
+{realtimePrice && !verifiedRealtimePrice && priceMeta && <div className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800"><p className="font-semibold">실시간 시세 확인 불가</p><p>표시된 가격은 {priceMeta.asOfDate} 공식 종가 기준입니다.</p></div>}
+{realtimeError && <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">실시간 시세를 확인할 수 없습니다.{priceMeta ? ` 표시된 가격은 ${priceMeta.asOfDate} 공식 종가 기준입니다.` : ""}</p>}
 {priceError && <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">{priceError}</p>}
-{(realtimePrice || priceInfo) && (
+{(verifiedRealtimePrice || priceInfo) && (
 <>
 <div className="flex justify-between">
   <span>전일 종가</span>
   <span>
-    {realtimePrice
-  ? (realtimePrice.price - realtimePrice.change).toLocaleString()
+    {verifiedRealtimePrice
+  ? (verifiedRealtimePrice.price - verifiedRealtimePrice.change).toLocaleString()
   : priceHistory[1]?.clpr
   ? Number(priceHistory[1].clpr).toLocaleString()
   : "-"}원
@@ -384,7 +388,7 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
         <span>전일 대비</span>
         <span>
   {(
-    realtimePrice?.change ??
+    verifiedRealtimePrice?.change ??
     (priceInfo?.vs ? Number(priceInfo.vs) : 0)
   ).toLocaleString()}원
 </span>
@@ -394,7 +398,7 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
   <span>등락률</span>
   <span>
   {(
-    realtimePrice?.rate ??
+    verifiedRealtimePrice?.rate ??
     (priceInfo?.fltRt ? Number(priceInfo.fltRt) : 0)
   ).toFixed(2)}%
 </span>
@@ -404,7 +408,7 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
         <span>거래량</span>
         <span>
   {(
-    realtimePrice?.volume ??
+    verifiedRealtimePrice?.volume ??
     (priceInfo?.trqu ? Number(priceInfo.trqu) : 0)
   ).toLocaleString()}주
 </span>
@@ -429,7 +433,7 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
         <span>고가</span>
         <span>
   {(
-    realtimePrice?.high ??
+    verifiedRealtimePrice?.high ??
     (priceInfo?.hipr ? Number(priceInfo.hipr) : 0)
   ).toLocaleString()}원
 </span>
@@ -439,7 +443,7 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
         <span>저가</span>
         <span>
   {(
-    realtimePrice?.low ??
+    verifiedRealtimePrice?.low ??
     (priceInfo?.lopr ? Number(priceInfo.lopr) : 0)
   ).toLocaleString()}원
 </span>
@@ -451,8 +455,8 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
       <div className="flex justify-between">
   <span>가격 기준</span>
   <span>
-    {realtimePrice
-      ? `KIS · ${realtimePrice.asOfDate ?? "기준일 미제공"}${realtimePrice.asOfTime ? ` ${realtimePrice.asOfTime}` : ""} · ${realtimePrice.metadataAvailability?.status === "complete" ? "기준시점 형식 확인" : "기준시점 미확인"} · ${realtimePrice.freshnessStatus === "freshObservation" ? "최신성 확인" : "최신성 미확인"} · ${realtimePrice.marketStatus === "closed" ? "휴장" : realtimePrice.marketStatus === "open" ? "장중" : "시장 상태 확인 불가"}`
+    {verifiedRealtimePrice
+      ? `KIS · ${verifiedRealtimePrice.asOfDate}${verifiedRealtimePrice.asOfTime ? ` ${verifiedRealtimePrice.asOfTime}` : ""}`
       : priceMeta
       ? `${priceMeta.asOfDate} · 공식 일봉 종가`
       : "가격 정보 없음"}
@@ -503,11 +507,12 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
 )}
 {activeTab === "trader" && searchedStock && (
   <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-5">
-    <p className="text-sm text-gray-500">Short Signal</p>
+    <p className="text-sm font-medium text-amber-700">데이터 준비 중</p>
 
     <h2 className="mt-1 text-xl font-bold text-gray-900">
       공매도 관련 시장 데이터
     </h2>
+    <p className="mt-2 text-sm text-gray-500">공매도·대차잔고 데이터 연결 전이며 현재 분석 결과를 제공하지 않습니다.</p>
 
     <section className="mt-6">
       <div className="space-y-3 text-sm">

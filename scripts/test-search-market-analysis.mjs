@@ -39,8 +39,8 @@ assert.match(page, /setIntradayAnalysis\(null\)/u);
 assert.match(page, /requestId === searchRequestIdRef\.current && selectedCodeRef\.current === stockCode/u);
 
 const panel = fs.readFileSync(new URL("../components/market-analysis/MarketAnalysisPanel.tsx", import.meta.url), "utf8");
-assert.match(panel, /검색 공식 일봉 계산/u);
-assert.match(panel, /realtime 미적용/u);
-assert.match(panel, /장중 참고 분석 · displayOnly/u);
+assert.match(panel, /검색 시점 기준 임시 계산/u);
+assert.match(panel, /공식 일봉 기준/u);
+assert.match(panel, /장중 참고 정보/u);
 
 console.log("검색 시장분석 공식 일봉 fallback·snapshot 독립·reason mapping 테스트 통과");

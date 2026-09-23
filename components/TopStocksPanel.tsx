@@ -32,6 +32,12 @@ type TopStocksResponse = {
   structuralStatus?: string;
   eligibleForRankBacktest?: boolean;
   sourceManifestVersion?: number | null;
+  originalUniverseCount?: number;
+  qualityEligibleUniverseCount?: number;
+  rankingUniverseCount?: number;
+  quarantinedCount?: number;
+  isPartialRanking?: boolean;
+  exclusionPolicyVersion?: string;
 };
 
 type StockSelection = { code: string; name: string };
@@ -47,6 +53,13 @@ const researchTabs = [
   { id: "D", model: "D" as const, label: "D-v1 · 결합 점수 · 연구 보존" },
 ];
 const tabs = [...primaryTabs, ...researchTabs];
+const modelDescriptions: Record<string, string> = {
+  B: "가격 추세와 기술적 흐름을 중심으로 보는 순위입니다.",
+  C: "현재 진입 조건의 상대적 강도를 중심으로 보는 순위입니다.",
+  "A-v1": "기존 기술적 강도 공식을 보존한 연구 순위입니다.",
+  "A-v2": "범위를 제한한 기술적 강도 후보 모델의 연구 순위입니다.",
+  D: "여러 기술 신호를 결합해 비교하는 연구 순위입니다.",
+};
 
 export default function TopStocksPanel({ onSelectStock }: TopStocksPanelProps) {
   const [activeTab, setActiveTab] = useState("B");
@@ -87,6 +100,7 @@ export default function TopStocksPanel({ onSelectStock }: TopStocksPanelProps) {
     <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
       <p className="text-sm text-gray-500">History Snapshot Ranking</p>
       <h2 className="mt-1 text-xl font-bold text-gray-900">시장 TOP 종목</h2>
+      <p className="mt-2 text-sm text-gray-600">{modelDescriptions[activeTab]}</p>
 
       <div className="mt-6 grid grid-cols-2 gap-2" role="tablist" aria-label="활성 비교 모델">
         {primaryTabs.map((tab) => (
@@ -113,10 +127,10 @@ export default function TopStocksPanel({ onSelectStock }: TopStocksPanelProps) {
 
       {data && (
         <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <span className="font-semibold">{data.dataQualityGrade && data.dataQualityGrade !== "UNKNOWN" ? "잠정 데이터" : "기존 잠정 스냅샷 · 품질 게이트 도입 전"}</span><span className="ml-2">기준일 {data.rankingAsOfDate}</span>
+          <div className="flex flex-wrap gap-x-4 gap-y-1"><span><strong>데이터 기준일</strong> {data.rankingAsOfDate}</span><span>공식 일봉 데이터</span><span>분석 대상 {data.rankingUniverseCount ?? data.stocks[0]?.rankingUniverseCount ?? "정보 없음"}종목</span></div>
           <details className="mt-2 text-xs text-amber-800"><summary className="cursor-pointer font-medium">데이터 기준 자세히 보기</summary>
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <div>구조 검증: {data.structuralStatus === "passed" ? "통과" : "정보 없음"}</div><div>순위 기준일: {data.rankingAsOfDate}</div><div>가격 기준일: {data.priceAsOfDate}</div><div>가격 기준: 공식 일봉 종가</div><div>모델 버전: {data.modelVersion ?? "미등록"}</div><div>데이터 모드: 실제 스냅샷</div><div>순위 Universe: {data.stocks[0]?.rankingUniverseCount ?? "정보 없음"}</div><div>공식 최적화: 불가</div><div>Manifest: {data.sourceManifestVersion ?? "도입 전"}</div>
+          <div>구조 검증: {data.structuralStatus === "passed" ? "통과" : "정보 없음"}</div><div>순위 기준일: {data.rankingAsOfDate}</div><div>가격 기준일: {data.priceAsOfDate}</div><div>가격 기준: 공식 일봉 종가</div><div>모델 버전: {data.modelVersion ?? "미등록"}</div><div>원래 종목: {data.originalUniverseCount ?? "정보 없음"}</div><div>품질 확인 종목: {data.qualityEligibleUniverseCount ?? "정보 없음"}</div><div>검토 제외 종목: {data.quarantinedCount ?? "정보 없음"}</div><div>부분 순위: {data.isPartialRanking ? "예" : "아니오"}</div><div>제외 정책: {data.exclusionPolicyVersion ?? "정보 없음"}</div><div>Manifest: {data.sourceManifestVersion ?? "도입 전"}</div>
           </div></details>
         </div>
       )}

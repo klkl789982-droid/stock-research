@@ -33,19 +33,20 @@ export default function TechnicalStrengthPanel({ view }: { view: TechnicalStreng
             </p>
           )}
         </div>
-        <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">{view.modelVersion} · 검증 진행 중</span>
+        <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">분석 모델 검증 진행 중</span>
       </div>
       {view.status === "available" && (
         <div className="mt-3 space-y-1 text-xs text-gray-500">
-          <p>공식 일봉 기준일 {formatDate(view.historicalAsOfDate)}</p>
+          <p>데이터 기준일 {formatDate(view.historicalAsOfDate)}</p>
           <p>{view.realtimeApplied
             ? `현재가 적용 · ${view.realtimeSource ?? "출처 미제공"} · ${view.realtimeAsOfDate ?? "기준일 미제공"}${view.realtimeAsOfTime ? ` ${view.realtimeAsOfTime}` : ""}`
             : view.realtimeStatus === "staleIgnored"
               ? "오래된 현재가는 제외하고 공식 일봉으로 계산"
               : view.realtimeStatus === "invalidMetadata"
                 ? "기준시점이 불완전한 현재가는 제외하고 공식 일봉으로 계산"
-                : "현재가 미적용 · 공식 일봉으로 계산"}</p>
+                : "공식 일봉 기준"}</p>
           {view.outsideDisplayRange && <p className="text-amber-700">A-v1 기준선의 원점수이며 0~100 clamp를 적용하지 않았습니다.</p>}
+          <details className="pt-1"><summary className="cursor-pointer font-medium text-gray-600">데이터 기준 자세히 보기</summary><div className="mt-2 space-y-1"><p>모델 버전 {view.modelVersion}</p><p>실시간 적용 상태 {view.realtimeStatus ?? "정보 없음"}</p></div></details>
         </div>
       )}
     </div>

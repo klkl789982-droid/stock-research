@@ -11,7 +11,9 @@ for (const route of [realtime, investor]) {
 assert.match(realtime, /getKisQuote/u);
 assert.match(realtime, /freshnessStatus/u);
 assert.match(page, /metadataAvailability/u);
-assert.match(page, /기준시점 미확인/u);
+assert.match(page, /verifiedRealtimePrice/u);
+assert.match(page, /실시간 시세 확인 불가/u);
+assert.match(page, /공식 종가 기준입니다/u);
 assert.match(investor, /kisRequest/u);
 assert.match(investor, /classifyKisHttpStatus/u);
 assert.doesNotMatch(investor, /fake_ntby_qty \?\? 0/u);
