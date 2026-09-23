@@ -155,6 +155,20 @@ test("거래량 0인데 가격 변동 시 오류", () => {
   assert.ok(hasIssue(validate({ histories: { "000001": rows } }), "zeroVolumePriceChanged"));
 });
 
+test("무거래 행 이후 가격 불연속은 별도 quarantine으로 차단", () => {
+  const rows = makeRows();
+  rows[1] = { ...rows[1], trqu: 0, mkp: 0, hipr: 0, lopr: 0, clpr: rows[2].clpr };
+  const result = validate({ histories: { "000001": rows } });
+  assert.equal(hasIssue(result, "zeroVolumePriceChanged"), false);
+  assert.ok(hasIssue(result, "nonTradingObservation"));
+  assert.deepEqual(
+    result.issues.find((entry) => entry.type === "postNonTradingPriceDiscontinuity"),
+    { severity: "fatal", type: "postNonTradingPriceDiscontinuity", code: "000001", date: rows[1].basDt, rowIndex: 1, disposition: "quarantine" },
+  );
+  assert.equal(result.status, "failed");
+  assert.equal(result.perSymbol["000001"].uniqueTradingDays, 259);
+});
+
 test("exact-date 시총 누락 실패", () => {
   const rows = makeRows();
   rows[0].mrktTotAmt = null;

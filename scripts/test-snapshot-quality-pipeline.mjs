@@ -3,12 +3,12 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { immutableSnapshotView } from "../lib/future-return-resolver.mjs";
-import { isReadableModelHistorySchemaVersion } from "../lib/model-history-schema.mjs";
+import { assignRanks, isReadableModelHistorySchemaVersion } from "../lib/model-history-schema.mjs";
 import { validateMarketDataQuality } from "../lib/market-data-quality-validator.mjs";
 import {
   annotateRankingMetadata, assertSnapshotQualityGate, buildExcludedFromScoring, buildTrackingUniverse,
-  buildUniverseSummary, checkUniverseArchive, commitNewArtifactSet, createFormulaHashes,
-  createSourceManifest, createUniverseArchive, sha256Canonical,
+  buildUniverseSummary, checkUniverseArchive, commitNewArtifactSet, createFormulaHashes, createRankingCoverage,
+  createSourceManifest, createUniverseArchive, sha256Canonical, structuralFatalIssues,
 } from "../lib/snapshot-quality-pipeline.mjs";
 
 const requestedDate = "2026-08-14";
@@ -57,6 +57,48 @@ await test("제외 종목에는 점수나 순위를 만들지 않는 nullable �
 await test("rankingUniverseCount와 percentile 정확", async () => {
   const records = [1, 2].map((rank) => ({ ranks: { modelA: rank, modelB: rank, modelC: rank, modelD: rank }, ranksByVersion: { "A-v2": rank }, rankingUniverseCount: {}, rankPercentile: {}, rankingUniverseCountByVersion: {}, rankPercentileByVersion: {} }));
   annotateRankingMetadata(records); assert.equal(records[0].rankingUniverseCount.modelA, 2); assert.equal(records[0].rankPercentile.modelA, 0.5);
+});
+await test("10종목 중 2종목 quarantine은 records를 보존하고 8종목만 ranking", async () => {
+  const universe = Array.from({ length: 10 }, (_, index) => ({ code: String(index + 1).padStart(6, "0"), name: `S${index + 1}`, market: "KOSPI" }));
+  const histories = new Map(universe.map((stock, index) => {
+    const history = rows();
+    if (index >= 8) {
+      history[0] = { ...history[0], clpr: 101 };
+      history[1] = { ...history[1], mkp: 0, hipr: 0, lopr: 0, clpr: 100, trqu: 0 };
+      history[2] = { ...history[2], clpr: 100 };
+    }
+    return [stock.code, history];
+  }));
+  const result = quality(histories, universe);
+  assert.equal(structuralFatalIssues(result).length, 0);
+  assert.doesNotThrow(() => assertSnapshotQualityGate(result));
+  const summary = buildUniverseSummary(result, ["B-v1", "C-v1"]);
+  assert.equal(summary.originalUniverse.count, 10);
+  assert.equal(summary.qualityEligibleUniverse.count, 8);
+  assert.equal(summary.quarantinedUniverse.count, 2);
+  assert.notEqual(summary.originalUniverse.codesHash, summary.qualityEligibleUniverse.codesHash);
+  assert.equal(summary.isPartialRanking, true);
+
+  const quarantinedCodes = new Set(summary.quarantinedUniverse.exclusions.map((entry) => entry.code));
+  const records = universe.map((stock, index) => {
+    const eligible = !quarantinedCodes.has(stock.code);
+    const score = eligible ? 100 - index : null;
+    return {
+      code: stock.code,
+      scores: { modelA: score, modelB: score, modelC: score, modelD: score, modelE: null },
+      scoresByVersion: { "A-v1": score, "A-v2": score }, rawScoresByVersion: { "A-v2": score },
+      ranks: { modelA: null, modelB: null, modelC: null, modelD: null, modelE: null }, ranksByVersion: { "A-v1": null, "A-v2": null },
+      rankingUniverseCount: {}, rankPercentile: {}, rankingUniverseCountByVersion: {}, rankPercentileByVersion: {},
+      qualityEligibility: eligible ? { eligible: true, status: "eligible", exclusions: [] } : { eligible: false, status: "quarantined", exclusions: summary.quarantinedUniverse.exclusions.filter((entry) => entry.code === stock.code) },
+    };
+  });
+  assignRanks(records);
+  annotateRankingMetadata(records);
+  assert.equal(records.length, 10);
+  assert.equal(records.filter((record) => Number.isInteger(record.ranks.modelA)).length, 8);
+  assert.ok(records.filter((record) => record.qualityEligibility.status === "quarantined").every((record) => record.scores.modelA === null && record.ranks.modelA === null && record.qualityEligibility.exclusions[0].reason === "postNonTradingPriceDiscontinuity"));
+  const coverage = createRankingCoverage({ asOfDate: requestedDate, records, universeSummary: summary }, "A-v1", 8);
+  assert.deepEqual({ original: coverage.originalUniverseCount, ranked: coverage.rankingUniverseCount, quarantined: coverage.quarantinedCount, partial: coverage.isPartialRanking }, { original: 10, ranked: 8, quarantined: 2, partial: true });
 });
 await test("입력 및 공식 hash 결정론", async () => {
   assert.equal(sha256Canonical({ b: 2, a: 1 }), sha256Canonical({ a: 1, b: 2 }));

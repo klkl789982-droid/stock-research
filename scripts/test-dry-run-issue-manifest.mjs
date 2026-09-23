@@ -76,4 +76,13 @@ const after = validateMarketDataQuality(validatorInput);
 assert.deepEqual(after, before);
 assert.ok(before.issues.some((entry) => entry.type === "zeroVolumePriceChanged" && entry.severity === "fatal"));
 
+const discontinuityInput = {
+  ...validatorInput,
+  historyByCode: { "000001": [row("20260813", 101), row("20260812", 100, 0), row("20260811", 100)] },
+};
+const discontinuityQuality = validateMarketDataQuality(discontinuityInput);
+const discontinuityManifest = createDryRunIssueManifest({ requestedDate, quality: discontinuityQuality, historyByCode: discontinuityInput.historyByCode });
+assert.ok(discontinuityManifest.issues.some((entry) => entry.validatorRule === "postNonTradingPriceDiscontinuity" && entry.severity === "fatal" && entry.disposition === "quarantine"));
+assert.equal(discontinuityManifest.issues.some((entry) => entry.validatorRule === "zeroVolumePriceChanged"), false);
+
 console.log("dry-run issue manifest: all synthetic checks passed");

@@ -24,6 +24,18 @@ assert.equal(metric("predictive","TOP10").medianReturn,6);
 assert.equal(metric("predictive","TOP10").positiveRate,1);
 assert.equal(metric("predictive","TOP10").signalDateCount,2);
 assert.equal(metric("predictive","TOP10").status,"INSUFFICIENT_DATA");
+const partialSnapshot=makeSnapshot("2026-01-06");
+partialSnapshot.records.push({code:"900001"},{code:"900002"});
+partialSnapshot.universeSummary={
+  originalUniverse:{count:62,codesHash:"original-hash"},
+  qualityEligibleUniverse:{count:60,codesHash:"eligible-hash"},
+  quarantinedUniverse:{count:2,codesHash:"quarantine-hash",exclusions:[{code:"900001",reason:"postNonTradingPriceDiscontinuity",issueDate:"20260105",disposition:"quarantine"},{code:"900002",reason:"postNonTradingPriceDiscontinuity",issueDate:"20260105",disposition:"quarantine"}]},
+  rankingUniverse:{"A-v1":{count:60,codesHash:"ranking-hash"}},
+  exclusionPolicyVersion:"quality-quarantine-v1",isPartialRanking:true,
+};
+const partialResult=buildRankBacktest({...options,snapshots:[{date:"2026-01-06",hash:hashObject(partialSnapshot),snapshot:partialSnapshot}],models:["A-v1"],evaluations:["predictive"]});
+const partialCoverage=partialResult.metrics.find((item)=>item.horizon==="T1"&&item.rankBucket==="TOP10").coverageByDate[0];
+assert.deepEqual({original:partialCoverage.originalUniverseCount,ranked:partialCoverage.rankingUniverseCount,quarantined:partialCoverage.quarantinedCount,partial:partialCoverage.isPartialRanking,quarantineHash:partialCoverage.quarantineHash},{original:62,ranked:60,quarantined:2,partial:true,quarantineHash:"quarantine-hash"});
 const common=result.commonComparisonMetrics.find((item)=>item.modelVersion==="A-v1"&&item.evaluation==="predictive"&&item.horizon==="T1"&&item.rankBucket==="TOP10");
 assert.equal(common.comparisonUniverseByDate.length,2);
 assert.equal(common.comparisonUniverseByDate[0].count,59);

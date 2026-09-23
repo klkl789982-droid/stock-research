@@ -13,6 +13,8 @@ const changed = { ...halted, clpr: 106 };
 assert.equal(classifyMarketDataRow(valid).type, "validTradingRow");
 assert.equal(classifyMarketDataRow(halted, { clpr: 105 }).type, "nonTradingObservation");
 assert.deepEqual(classifyMarketDataRow(changed, { clpr: 105 }), { type: "invalidTradingRow", reason: "zeroVolumePriceChanged", prices: { mkp: 0, hipr: 0, lopr: 0, clpr: 106 }, volume: 0 });
+assert.equal(classifyMarketDataRow(halted, { clpr: 105 }, { clpr: 110 }).postNonTradingPriceDiscontinuity, true);
+assert.equal(classifyMarketDataRow(halted, { clpr: 105 }).type, "nonTradingObservation");
 assert.deepEqual(normalizeModelInputRows([halted, valid]), [valid]);
 
 const makeRow = (index) => ({ basDt: String(20260817 - index), mkp: 100, hipr: 110, lopr: 90, clpr: 100, trqu: 10, trPrc: 1000, mrktTotAmt: 1_000_000 });

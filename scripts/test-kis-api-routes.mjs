@@ -9,6 +9,9 @@ for (const route of [realtime, investor]) {
   assert.doesNotMatch(route, /KIS_APP_KEY|KIS_APP_SECRET/u);
 }
 assert.match(realtime, /getKisQuote/u);
+assert.match(realtime, /freshnessStatus/u);
+assert.match(page, /metadataAvailability/u);
+assert.match(page, /기준시점 미확인/u);
 assert.match(investor, /kisRequest/u);
 assert.match(investor, /classifyKisHttpStatus/u);
 assert.doesNotMatch(investor, /fake_ntby_qty \?\? 0/u);

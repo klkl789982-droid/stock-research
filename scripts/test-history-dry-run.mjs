@@ -38,6 +38,10 @@ test("latest 보고서 파일명은 candidate date를 사용한다", () => {
   assert.match(runnerSource, /schema-v6-full-universe-dry-run-\$\{requestedDate\}\.md/);
   assert.doesNotMatch(runnerSource, /schema-v6-full-universe-dry-run-2026-08-18\.md/);
 });
+test("dry-run artifact summary는 초기화 완료된 Universe archive를 사용한다", () => {
+  assert.match(snapshotSource, /artifactSummary\("universeHistoryArchive", preparedUniverseArchive, preparedUniverseArchive\.schemaVersion, preparedUniverseArchive\.observedUniverse\.length\)/);
+  assert.doesNotMatch(snapshotSource, /artifactSummary\("universeHistoryArchive", universeArchive,/);
+});
 const root = await fs.mkdtemp(path.join(os.tmpdir(), "dry-run-zero-write-"));
 assert.equal((await fs.readdir(root)).length, 0);
 await fs.rm(root, { recursive: true });

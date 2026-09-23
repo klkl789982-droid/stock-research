@@ -16,6 +16,7 @@ import {
   annotateRankingMetadata,
   assertSnapshotQualityGate,
   buildExcludedFromScoring,
+  buildQuarantineExclusions,
   buildTrackingUniverse,
   buildUniverseSummary,
   checkUniverseArchive,
@@ -24,6 +25,7 @@ import {
   createSourceManifest,
   createUniverseArchive,
   sha256Canonical,
+  structuralFatalIssues,
 } from "../lib/snapshot-quality-pipeline.mjs";
 import {
   MODEL_DEFINITIONS,
@@ -233,13 +235,21 @@ const quality = validateMarketDataQuality({
   },
 });
 const fatalIssues = quality.issues.filter((entry) => entry.severity === "fatal");
+const structuralFatals = structuralFatalIssues(quality);
+const quarantineExclusions = buildQuarantineExclusions(quality);
+const quarantinedByCode = new Map();
+for (const exclusion of quarantineExclusions) {
+  const existing = quarantinedByCode.get(exclusion.code) ?? [];
+  existing.push(exclusion);
+  quarantinedByCode.set(exclusion.code, existing);
+}
 if (!dryRun) {
   try { assertSnapshotQualityGate(quality); }
   catch (error) { throw new Error(`시장 데이터 품질 검증 실패(산출물 생성 0개):\n${JSON.stringify(error.issues?.slice(0, 20) ?? [], null, 2)}`); }
 }
 
 const eligibilityByCode = new Map(Object.keys(quality.perSymbol).map((code) => [code, Object.fromEntries(Object.entries(quality.perSymbol[code].modelStatus).map(([version, status]) => [version, status === "eligible"]))]));
-const records = fatalIssues.length > 0 ? [] : universe.stocks.map((stock) => {
+const records = structuralFatals.length > 0 ? [] : universe.stocks.map((stock) => {
     const rawHistory = historyByCode.get(stock.code);
     const history = normalizeModelInputRows(rawHistory);
     const eligibility = eligibilityByCode.get(stock.code);
@@ -263,6 +273,10 @@ const records = fatalIssues.length > 0 ? [] : universe.stocks.map((stock) => {
     record.executable = !halted;
     record.priceStatus = halted ? "tradingHaltOrNoTrade" : "executable";
     record.referenceClose = halted ? quality.perSymbol[stock.code].referenceClose : null;
+    const exclusions = quarantinedByCode.get(stock.code) ?? [];
+    record.qualityEligibility = exclusions.length > 0
+      ? { eligible: false, status: "quarantined", exclusions }
+      : { eligible: true, status: "eligible", exclusions: [] };
     return record;
 });
 
@@ -296,15 +310,15 @@ const stocksByCode = new Map(universe.stocks.map((stock) => [stock.code, stock])
 const excludedFromScoring = buildExcludedFromScoring(quality, stocksByCode);
 const dataQuality = createDataQualityMetadata(quality, asOfDate);
 const marketAnalysisFormulaHash = createFormulaHashes({ marketAnalysis: await fs.readFile(path.join(process.cwd(), "lib", "market-analysis-v1.mjs"), "utf8") }).marketAnalysis;
-const marketAnalysisSnapshot = fatalIssues.length === 0 ? createMarketAnalysisSnapshot({ requestedDate: asOfDate, generatedAt, universe, historyByCode: new Map([...historyByCode].map(([code, rows]) => [code, normalizeModelInputRows(rows)])), quality, sourceManifest, dataQuality, universeSummary, formulaHash: marketAnalysisFormulaHash }) : null;
+const marketAnalysisSnapshot = structuralFatals.length === 0 ? createMarketAnalysisSnapshot({ requestedDate: asOfDate, generatedAt, universe, historyByCode: new Map([...historyByCode].map(([code, rows]) => [code, normalizeModelInputRows(rows)])), quality, sourceManifest, dataQuality, universeSummary, formulaHash: marketAnalysisFormulaHash }) : null;
 const normalizedHistoryByCode = new Map([...historyByCode].map(([code, rows]) => [code, normalizeModelInputRows(rows)]));
-const intradayMarketSeed = fatalIssues.length === 0 ? createIntradayMarketSeed({ requestedDate: asOfDate, generatedAt, universe, historyByCode: normalizedHistoryByCode, quality, sourceManifest, dataQuality, universeSummary, formulaHash: marketAnalysisFormulaHash }) : null;
+const intradayMarketSeed = structuralFatals.length === 0 ? createIntradayMarketSeed({ requestedDate: asOfDate, generatedAt, universe, historyByCode: normalizedHistoryByCode, quality, sourceManifest, dataQuality, universeSummary, formulaHash: marketAnalysisFormulaHash }) : null;
 if (marketAnalysisSnapshot) {
   const marketAnalysisErrors = validateMarketAnalysisSnapshot(marketAnalysisSnapshot, EXPECTED_UNIVERSE_COUNT);
   if (marketAnalysisErrors.length > 0) throw new Error(`시장분석 스냅샷 검증 실패:\n${marketAnalysisErrors.slice(0, 20).join("\n")}`);
 }
 if (intradayMarketSeed) { const errors = validateIntradayMarketSeed(intradayMarketSeed, EXPECTED_UNIVERSE_COUNT); if (errors.length) throw new Error(`장중 seed 검증 실패:\n${errors.slice(0,20).join("\n")}`); }
-const preparedUniverseArchive = fatalIssues.length === 0
+const preparedUniverseArchive = structuralFatals.length === 0
   ? createUniverseArchive({ requestedDate: asOfDate, generatedAt, universe, historyByCode, sourceManifest })
   : null;
 const availabilityTimestamp = new Date().toISOString();
@@ -334,7 +348,7 @@ function createHistoryDistribution() {
   return { counts: Object.fromEntries(Object.entries(codes).map(([key, value]) => [key, value.length])), minimum: days.at(0) ?? 0, maximum: days.at(-1) ?? 0, median: days.length ? days[Math.floor(days.length / 2)] : 0, codes };
 }
 function diagnosticTop10(modelKey, version = null) {
-  if (fatalIssues.length > 0) return { status: "NOT_APPROVED", stocks: [] };
+  if (structuralFatals.length > 0) return { status: "NOT_APPROVED", stocks: [] };
   const rankOf = (record) => version ? record.ranksByVersion?.[version] : record.ranks?.[modelKey];
   return {
     status: "DIAGNOSTIC_ONLY",
@@ -350,9 +364,9 @@ function diagnosticTop10(modelKey, version = null) {
 const dryRunResult = {
   mode: "dry-run", dryRunOnly: true, runId: `schema-v6-dry-run-${new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14)}`,
   dryRunStartedAt, requestedDate: asOfDate, candidateAsOfDate: asOfDate, representativeProbe, generatedAt,
-  approvedForSchemaV6Snapshot: fatalIssues.length === 0,
+  approvedForSchemaV6Snapshot: structuralFatals.length === 0,
   collection: { ...collectionStatistics, observedUniverse: universe.stocks.length, requestedUniverseCount: universe.stocks.length, requestedCodeCount: requestCache.size(), concurrency: CONCURRENCY, timeoutMs: REQUEST_TIMEOUT_MS, maxAttempts: effectiveMaxAttempts },
-  quality: { status: quality.status, grade: quality.grade, eligibleForSnapshot: quality.eligibleForSnapshot, dataQuality, fatalCount: fatalIssues.length, ineligibleCount: excludedFromScoring.length, warningCount: quality.issues.filter((entry) => entry.severity === "warning").length },
+  quality: { status: quality.status, grade: quality.grade, eligibleForSnapshot: structuralFatals.length === 0, dataQuality, fatalCount: fatalIssues.length, structuralFatalCount: structuralFatals.length, quarantinedCount: quarantinedByCode.size, ineligibleCount: excludedFromScoring.length, warningCount: quality.issues.filter((entry) => entry.severity === "warning").length },
   universeSummary, excludedFromScoring, historyDistribution: createHistoryDistribution(), sourceManifest,
   requestFingerprint: sha256Canonical({ candidateAsOfDate: asOfDate, codes: universe.stocks.map((stock) => stock.code).sort(), endpoint: "getStockPriceInfo", rowsPerCode: 260 }),
   sourceAvailability,
@@ -365,7 +379,7 @@ const dryRunResult = {
 const existingHistoryDates = (await fs.readdir(historyDirectory)).filter((name) => /^\d{4}-\d{2}-\d{2}\.json$/.test(name)).map((name) => name.slice(0, 10).replaceAll("-", "")).sort();
 const candidateEvaluation = evaluatePublicEodCandidate({ requestedDate: asOfDate.replaceAll("-", ""), latestDates: Object.values(quality.perSymbol).map((item) => item.latestBasDt), existingLatestDate: existingHistoryDates.at(-1) ?? null });
 dryRunResult.candidateDecision = { representativeCandidate: representativeProbe?.candidateAsOfDate ?? asOfDate, ...candidateEvaluation, exactDateMatchCount: quality.summary.exactDateMatches, staleCount: quality.issues.filter((item) => item.type === "latestDateMismatch").length, futureCount: quality.issues.filter((item) => item.type === "futureDate").length, missingCount: quality.summary.missingHistoryCodes.length, exactMissingCodesHash: sha256Canonical(Object.entries(quality.perSymbol).filter(([, item]) => item.latestBasDt !== asOfDate.replaceAll("-", "")).map(([code]) => code).sort()) };
-if (dryRun && fatalIssues.length > 0) {
+if (dryRun && structuralFatals.length > 0) {
   console.log(`DRY_RUN_RESULT_JSON=${JSON.stringify(dryRunResult)}`);
   process.exit(0);
 }
@@ -393,6 +407,8 @@ const snapshot = {
   sourceManifest,
   dataQuality,
   universeSummary,
+  isPartialRanking: universeSummary.isPartialRanking,
+  exclusionPolicyVersion: universeSummary.exclusionPolicyVersion,
   excludedFromScoring,
   topLists: createTopLists(records),
   topListsByVersion: createTopListsByVersion(records),
@@ -449,7 +465,7 @@ if (dryRun) {
   dryRunResult.artifacts = [
     artifactSummary("historySnapshot", snapshot, snapshot.schemaVersion, snapshot.records.length),
     artifactSummary("marketPriceLedger", marketPriceLedger, marketPriceLedger.schemaVersion, marketPriceLedger.records.length),
-    artifactSummary("universeHistoryArchive", universeArchive, universeArchive.schemaVersion, universeArchive.observedUniverse.length),
+    artifactSummary("universeHistoryArchive", preparedUniverseArchive, preparedUniverseArchive.schemaVersion, preparedUniverseArchive.observedUniverse.length),
     artifactSummary("officialMarketAnalysis", marketAnalysisSnapshot, marketAnalysisSnapshot.schemaVersion, marketAnalysisSnapshot.records.length),
     artifactSummary("intradayMarketSeed", intradayMarketSeed, intradayMarketSeed.schemaVersion, intradayMarketSeed.records.length),
   ];

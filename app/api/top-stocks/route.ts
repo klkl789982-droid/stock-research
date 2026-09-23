@@ -2,6 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 import { normalizeStockCode } from "@/lib/stock-code.mjs";
+import { createRankingCoverage } from "@/lib/snapshot-quality-pipeline.mjs";
 
 const MODEL_KEYS = {
   A: "modelA",
@@ -35,7 +36,16 @@ type HistorySnapshot = {
   championChallenger?: { champion?: string; challenger?: string; promotionStatus?: string; evaluationMode?: string; comparisonStartDate?: string };
   dataQuality?: { overallGrade?: string; structuralStatus?: string; certification?: { eligibleForRankBacktest?: boolean } };
   sourceManifest?: { schemaVersion?: number };
-  universeSummary?: { modelEligibleUniverse?: Record<string, { count?: number; codesHash?: string }> };
+  universe?: { sourceCount?: number };
+  universeSummary?: {
+    originalUniverse?: { count?: number; codesHash?: string };
+    qualityEligibleUniverse?: { count?: number; codesHash?: string };
+    quarantinedUniverse?: { count?: number; codesHash?: string };
+    exclusionPolicyVersion?: string;
+    isPartialRanking?: boolean;
+    modelEligibleUniverse?: Record<string, { count?: number; codesHash?: string }>;
+    rankingUniverse?: Record<string, { count?: number; codesHash?: string }>;
+  };
 };
 
 function isValidSnapshot(value: unknown, filenameDate: string): value is HistorySnapshot {
@@ -110,6 +120,7 @@ export async function GET(request: NextRequest) {
     }
 
     const definition = snapshot.modelVersionDefinitions?.["A-v2"];
+    const coverage = createRankingCoverage(snapshot, "A-v2", snapshot.records.filter((record) => Number.isInteger(record.ranksByVersion?.["A-v2"])).length);
     const stocks = [...snapshot.records]
       .filter((record) => Number.isInteger(record.ranksByVersion?.["A-v2"]))
       .sort((left, right) => Number(left.ranksByVersion?.["A-v2"]) - Number(right.ranksByVersion?.["A-v2"]))
@@ -118,8 +129,8 @@ export async function GET(request: NextRequest) {
         rank: record.ranksByVersion?.["A-v2"], code: normalizeStockCode(record.code) ?? record.code, name: record.name, market: record.market,
         score: record.scoresByVersion?.["A-v2"], rawScore: record.rawScoresByVersion?.["A-v2"], closePrice: record.closePrice,
         priceBasis: "officialDailyClose", priceAsOfDate: snapshot.asOfDate,
-        rankingUniverseCount: record.rankingUniverseCountByVersion?.["A-v2"] ?? snapshot.universeSummary?.modelEligibleUniverse?.["A-v2"]?.count ?? snapshot.records.length,
-        rankPercentile: record.rankPercentileByVersion?.["A-v2"] ?? Number(record.ranksByVersion?.["A-v2"]) / (snapshot.universeSummary?.modelEligibleUniverse?.["A-v2"]?.count ?? snapshot.records.length),
+        rankingUniverseCount: record.rankingUniverseCountByVersion?.["A-v2"] ?? coverage.rankingUniverseCount,
+        rankPercentile: record.rankPercentileByVersion?.["A-v2"] ?? Number(record.ranksByVersion?.["A-v2"]) / coverage.rankingUniverseCount,
       }));
     return NextResponse.json({
       dataMode: "historySnapshot", model: "A", modelName: "bounded technical-strength challenger",
@@ -128,8 +139,7 @@ export async function GET(request: NextRequest) {
       rankingAsOfDate: snapshot.asOfDate, priceAsOfDate: snapshot.asOfDate, priceBasis: "officialDailyClose",
       scoreBasis: "finalScore", tieBreakBasis: "rawScoreThenCode", formulaHash: definition?.formulaHash ?? null,
       comparisonStartDate: snapshot.championChallenger?.comparisonStartDate ?? snapshot.asOfDate,
-      rankingUniverseCount: snapshot.universeSummary?.modelEligibleUniverse?.["A-v2"]?.count ?? snapshot.records.length,
-      rankingUniverseHash: snapshot.universeSummary?.modelEligibleUniverse?.["A-v2"]?.codesHash ?? null,
+      ...coverage,
       dataQualityGrade: snapshot.dataQuality?.overallGrade ?? "UNKNOWN", structuralStatus: snapshot.dataQuality?.structuralStatus ?? "unknown",
       eligibleForRankBacktest: snapshot.dataQuality?.certification?.eligibleForRankBacktest ?? false, sourceManifestVersion: snapshot.sourceManifest?.schemaVersion ?? null,
       generatedAt: new Date().toISOString(), snapshotComputedAt: snapshot.computedAt ?? null, count: stocks.length, stocks,
@@ -138,6 +148,8 @@ export async function GET(request: NextRequest) {
 
   const modelKey = MODEL_KEYS[model];
   const definition = snapshot.modelDefinitions[model];
+  const modelVersion = definition?.modelVersion ?? "";
+  const coverage = createRankingCoverage(snapshot, modelVersion, snapshot.records.filter((record) => Number.isInteger(record.ranks[modelKey])).length);
   const stocks = [...snapshot.records]
     .filter((record) => Number.isInteger(record.ranks[modelKey]))
     .sort((left, right) => {
@@ -154,8 +166,8 @@ export async function GET(request: NextRequest) {
       closePrice: record.closePrice,
       priceBasis: "officialDailyClose",
       priceAsOfDate: snapshot.asOfDate,
-      rankingUniverseCount: record.rankingUniverseCount?.[modelKey] ?? snapshot.universeSummary?.modelEligibleUniverse?.[definition?.modelVersion ?? ""]?.count ?? snapshot.records.length,
-      rankPercentile: record.rankPercentile?.[modelKey] ?? Number(record.ranks[modelKey]) / (snapshot.universeSummary?.modelEligibleUniverse?.[definition?.modelVersion ?? ""]?.count ?? snapshot.records.length),
+      rankingUniverseCount: record.rankingUniverseCount?.[modelKey] ?? coverage.rankingUniverseCount,
+      rankPercentile: record.rankPercentile?.[modelKey] ?? Number(record.ranks[modelKey]) / coverage.rankingUniverseCount,
     }));
 
   return NextResponse.json({
@@ -169,8 +181,7 @@ export async function GET(request: NextRequest) {
     priceBasis: "officialDailyClose",
     generatedAt: new Date().toISOString(),
     snapshotComputedAt: snapshot.computedAt ?? null,
-    rankingUniverseCount: snapshot.universeSummary?.modelEligibleUniverse?.[definition?.modelVersion ?? ""]?.count ?? snapshot.records.length,
-    rankingUniverseHash: snapshot.universeSummary?.modelEligibleUniverse?.[definition?.modelVersion ?? ""]?.codesHash ?? null,
+    ...coverage,
     dataQualityGrade: snapshot.dataQuality?.overallGrade ?? "UNKNOWN",
     structuralStatus: snapshot.dataQuality?.structuralStatus ?? "unknown",
     eligibleForRankBacktest: snapshot.dataQuality?.certification?.eligibleForRankBacktest ?? false,

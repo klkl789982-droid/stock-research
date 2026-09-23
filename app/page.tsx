@@ -29,6 +29,14 @@ const [realtimePrice, setRealtimePrice] = useState<{
   responseAt: string;
   marketStatus: "open" | "closed" | "unknown";
   isRealtime: boolean;
+  freshnessStatus: "freshObservation" | "unverified";
+  valueStatus: "valid";
+  metadataAvailability: {
+    status: "complete" | "incomplete";
+    missingFields: Array<"asOfDate" | "asOfTime">;
+    usableForDatedCalculation: boolean;
+    usableForFreshness: boolean;
+  };
 } | null>(null);
 // 기존 API 응답은 아직 공통 타입 계약이 없어 후속 타입화 전까지 legacy state로 격리합니다.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -348,7 +356,7 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
 
     <div className="mt-3 space-y-2 text-sm text-gray-700">
       <div className="flex justify-between">
-  <span>{realtimePrice ? "마지막 조회가" : "최근 거래일 종가"}</span>
+  <span>{realtimePrice ? (realtimePrice.metadataAvailability?.status !== "complete" ? "KIS 조회가 · 기준시점 미확인" : realtimePrice.freshnessStatus === "freshObservation" ? "KIS 최근 조회가" : "KIS 조회가 · 최신성 미확인") : "최근 거래일 종가"}</span>
   <span>
   {realtimePrice
     ? `${realtimePrice.price.toLocaleString()}원`
@@ -444,7 +452,7 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
   <span>가격 기준</span>
   <span>
     {realtimePrice
-      ? `KIS · ${realtimePrice.asOfDate ?? "기준일 미제공"}${realtimePrice.asOfTime ? ` ${realtimePrice.asOfTime}` : ""} · ${realtimePrice.marketStatus === "closed" ? "휴장" : realtimePrice.marketStatus === "open" ? "장중" : "시장 상태 확인 불가"}`
+      ? `KIS · ${realtimePrice.asOfDate ?? "기준일 미제공"}${realtimePrice.asOfTime ? ` ${realtimePrice.asOfTime}` : ""} · ${realtimePrice.metadataAvailability?.status === "complete" ? "기준시점 형식 확인" : "기준시점 미확인"} · ${realtimePrice.freshnessStatus === "freshObservation" ? "최신성 확인" : "최신성 미확인"} · ${realtimePrice.marketStatus === "closed" ? "휴장" : realtimePrice.marketStatus === "open" ? "장중" : "시장 상태 확인 불가"}`
       : priceMeta
       ? `${priceMeta.asOfDate} · 공식 일봉 종가`
       : "가격 정보 없음"}
