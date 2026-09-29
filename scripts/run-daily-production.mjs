@@ -3,6 +3,7 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { createPublicEodQuery, createPublicEodRequestShape, normalizePublicEodRows } from "../lib/public-eod-request.mjs";
+import { LATEST_PUBLIC_EOD_MAX_ATTEMPTS, runPublicEodRequestWithRetry } from "../lib/public-eod-retry-policy.mjs";
 import { validateSnapshot } from "../lib/model-history-schema.mjs";
 import { assertPromotionFiles, classifyLatestProbeFailure, classifySameDate, createCompactModelHistory, createDailyRunManifest, DAILY_RUN_STATUS, evaluatePromotionCandidate, markManifestPromoted, resolveOfficialReferenceDate, validateCompactModelHistory } from "../lib/daily-production.mjs";
 
@@ -30,17 +31,31 @@ async function latestOfficialDate() {
   console.log("DAILY_PRODUCTION_PROBE stage=started operation=getStockPriceInfo credential=present");
   const universe = JSON.parse(await fs.readFile(path.join(root, "data", "universe.json"), "utf8"));
   const shape = createPublicEodRequestShape({ code: universe.stocks[0].code, purpose: "dailyProductionLatestProbe", pageNo: 1, numOfRows: 5 });
-  const query = createPublicEodQuery(shape); const response = await fetch(`https://apis.data.go.kr/1160100/service/GetStockSecuritiesInfoService/getStockPriceInfo?serviceKey=${serviceKey}&${query}`, { signal: AbortSignal.timeout(20_000) });
-  console.log(`DAILY_PRODUCTION_PROBE stage=http-response status=${response.status} ok=${response.ok}`);
-  if (!response.ok) throw new Error(`LATEST_PROBE_HTTP_${response.status}`);
-  const contentType = response.headers.get("content-type") ?? "";
-  console.log(`DAILY_PRODUCTION_PROBE stage=response-format category=${contentType.toLowerCase().includes("json") ? "json" : "non-json-or-unspecified"}`);
-  let payload;
-  try { payload = await response.json(); } catch (error) { throw new SyntaxError("LATEST_PROBE_INVALID_JSON", { cause: error }); }
-  const businessCode = String(payload?.response?.header?.resultCode ?? "UNKNOWN");
-  console.log(`DAILY_PRODUCTION_PROBE stage=business-response category=${businessCode === "00" ? "success" : "error"}`);
-  if (businessCode !== "00") throw new Error(`LATEST_PROBE_BUSINESS_${businessCode.replace(/[^A-Z0-9_-]/giu, "_").slice(0, 40)}`);
-  const normalized = normalizePublicEodRows(payload?.response?.body?.items?.item, { code: shape.code }); const compact = normalized.rows[0]?.basDt;
+  const query = createPublicEodQuery(shape);
+  const probe = await runPublicEodRequestWithRetry({
+    maxAttempts: LATEST_PUBLIC_EOD_MAX_ATTEMPTS,
+    latestMode: true,
+    onRetry: ({ attempt, nextAttempt, maxAttempts, delayMs, outcome, errorCategory }) => {
+      console.log(`DAILY_PRODUCTION_PROBE stage=retry attempt=${attempt} nextAttempt=${nextAttempt} maxAttempts=${maxAttempts} delayMs=${delayMs} outcome=${outcome} category=${errorCategory}`);
+    },
+    execute: async () => {
+      try {
+        const response = await fetch(`https://apis.data.go.kr/1160100/service/GetStockSecuritiesInfoService/getStockPriceInfo?serviceKey=${serviceKey}&${query}`, { signal: AbortSignal.timeout(20_000) });
+        console.log(`DAILY_PRODUCTION_PROBE stage=http-response status=${response.status} ok=${response.ok}`);
+        if (!response.ok) { const error = new Error(`LATEST_PROBE_HTTP_${response.status}`); error.httpStatus = response.status; throw error; }
+        const contentType = response.headers.get("content-type") ?? "";
+        console.log(`DAILY_PRODUCTION_PROBE stage=response-format category=${contentType.toLowerCase().includes("json") ? "json" : "non-json-or-unspecified"}`);
+        let payload;
+        try { payload = await response.json(); } catch (error) { const failure = new SyntaxError("LATEST_PROBE_INVALID_JSON", { cause: error }); failure.observabilityOutcome = "invalidResponse"; throw failure; }
+        const businessCode = String(payload?.response?.header?.resultCode ?? "UNKNOWN");
+        console.log(`DAILY_PRODUCTION_PROBE stage=business-response category=${businessCode === "00" ? "success" : "error"}`);
+        if (businessCode !== "00") { const failure = new Error(`LATEST_PROBE_BUSINESS_${businessCode.replace(/[^A-Z0-9_-]/giu, "_").slice(0, 40)}`); failure.businessCode = businessCode; throw failure; }
+        const normalized = normalizePublicEodRows(payload?.response?.body?.items?.item, { code: shape.code });
+        return normalized.rows[0]?.basDt;
+      } catch (error) { throw error; }
+    },
+  });
+  const compact = probe.value;
   if (!/^\d{8}$/u.test(String(compact ?? ""))) throw new Error("LATEST_PROBE_INVALID_RESPONSE");
   console.log(`DAILY_PRODUCTION_PROBE stage=parsed-latest-date present=true date=${compact.slice(0, 4)}-${compact.slice(4, 6)}-${compact.slice(6, 8)}`);
   return `${compact.slice(0, 4)}-${compact.slice(4, 6)}-${compact.slice(6, 8)}`;
