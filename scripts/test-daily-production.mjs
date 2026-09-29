@@ -62,6 +62,9 @@ const files = assertPromotionFiles([
   `data/history/${snapshot.asOfDate}.json`, `data/model-history/${snapshot.asOfDate}.json`, `data/daily-runs/${snapshot.asOfDate}/${runId}.json`,
 ], snapshot.asOfDate, runId);
 assert.equal(files.length, 3);
+assert.equal(assertPromotionFiles([`data/model-history/${snapshot.asOfDate}.json`], snapshot.asOfDate, runId)[0], `data/model-history/${snapshot.asOfDate}.json`);
+assert.throws(() => assertPromotionFiles(["data/model-history/"], snapshot.asOfDate, runId), "축약된 디렉터리 경로는 승격하면 안 됩니다.");
+assert.throws(() => assertPromotionFiles(["daily-production.log"], snapshot.asOfDate, runId), "runtime 로그는 승격하면 안 됩니다.");
 assert.throws(() => assertPromotionFiles([".env.local"], snapshot.asOfDate, runId));
 assert.throws(() => assertPromotionFiles(["scripts/run-daily-production.mjs"], snapshot.asOfDate, runId));
 
@@ -80,6 +83,8 @@ assert.deepEqual(resolveOfficialReferenceDate({ observedDate: "2026-10-02", coll
 assert.deepEqual(resolveOfficialReferenceDate({ observedDate: "2026-09-23", collectionDate: "2026-09-28", previousProductionReferenceDate: "2026-09-22" }), { status: "candidate", referenceDate: "2026-09-23", reason: null }, "source lag는 관측 거래일 자체를 referenceDate로 사용합니다.");
 assert.deepEqual(resolveOfficialReferenceDate({ observedDate: "2026-09-21", collectionDate: "2026-09-29", previousProductionReferenceDate: "2026-09-22" }), { status: "stale", referenceDate: null, reason: "observedDateOlderThanProduction" }, "production보다 오래된 응답은 차단합니다.");
 assert.deepEqual(resolveOfficialReferenceDate({ observedDate: "2026-09-22", collectionDate: "2026-09-29", previousProductionReferenceDate: "2026-09-22" }), { status: "noNewOfficialEod", referenceDate: "2026-09-22", reason: "sameReferenceDate" });
-assert.match(await import("node:fs/promises").then((fs) => fs.readFile(new URL("./run-daily-production.mjs", import.meta.url), "utf8")), /--date=\$\{referenceDate\}.*--observed-date=\$\{referenceDate\}/su, "downstream에는 동일 referenceDate를 전달해야 합니다.");
+const runnerSource = await import("node:fs/promises").then((fs) => fs.readFile(new URL("./run-daily-production.mjs", import.meta.url), "utf8"));
+assert.match(runnerSource, /--date=\$\{referenceDate\}.*--observed-date=\$\{referenceDate\}/su, "downstream에는 동일 referenceDate를 전달해야 합니다.");
+assert.match(runnerSource, /"--porcelain=v1", "-uall"/u, "새 compact history는 디렉터리가 아닌 파일 단위로 allowlist 검증해야 합니다.");
 
 console.log(JSON.stringify({ records: compact.records.length, compactBytes: Buffer.byteLength(JSON.stringify(compact)), statuses: ["create", "idempotent", "revisionRequired", manifest.status], allowlistedFiles: files.length }, null, 2));
