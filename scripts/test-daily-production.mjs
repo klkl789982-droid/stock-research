@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {
   assertPromotionFiles,
+  classifyLatestProbeFailure,
   classifySameDate,
   createCompactModelHistory,
   createDailyRunManifest,
@@ -65,5 +66,11 @@ assert.throws(() => assertPromotionFiles(["scripts/run-daily-production.mjs"], s
 
 const serialized = JSON.stringify({ compact, manifest });
 for (const forbidden of ["DATA_GO_KR_SERVICE_KEY=", "DART_API_KEY=", "KIS_APP_SECRET="]) assert(!serialized.includes(forbidden));
+assert.equal(classifyLatestProbeFailure(new Error("LATEST_PROBE_HTTP_403")), "LATEST_PROBE_HTTP_403");
+assert.equal(classifyLatestProbeFailure(Object.assign(new Error("request"), { cause: { code: "ENOTFOUND" } })), "LATEST_PROBE_NETWORK_DNS");
+assert.equal(classifyLatestProbeFailure(Object.assign(new TypeError("fetch failed"), { cause: { code: "ECONNRESET" } })), "LATEST_PROBE_NETWORK_CONNECTION_RESET");
+assert.equal(classifyLatestProbeFailure(Object.assign(new Error("timeout"), { name: "TimeoutError" })), "LATEST_PROBE_TIMEOUT");
+assert.equal(classifyLatestProbeFailure(new SyntaxError("bad json")), "LATEST_PROBE_INVALID_JSON");
+assert.equal(classifyLatestProbeFailure(new TypeError("fetch failed")), "LATEST_PROBE_NETWORK_UNKNOWN");
 
 console.log(JSON.stringify({ records: compact.records.length, compactBytes: Buffer.byteLength(JSON.stringify(compact)), statuses: ["create", "idempotent", "revisionRequired", manifest.status], allowlistedFiles: files.length }, null, 2));

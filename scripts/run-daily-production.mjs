@@ -4,7 +4,7 @@ import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { createPublicEodQuery, createPublicEodRequestShape, normalizePublicEodRows } from "../lib/public-eod-request.mjs";
 import { validateSnapshot } from "../lib/model-history-schema.mjs";
-import { assertPromotionFiles, classifySameDate, createCompactModelHistory, createDailyRunManifest, DAILY_RUN_STATUS, evaluatePromotionCandidate, markManifestPromoted, validateCompactModelHistory } from "../lib/daily-production.mjs";
+import { assertPromotionFiles, classifyLatestProbeFailure, classifySameDate, createCompactModelHistory, createDailyRunManifest, DAILY_RUN_STATUS, evaluatePromotionCandidate, markManifestPromoted, validateCompactModelHistory } from "../lib/daily-production.mjs";
 
 const root = process.cwd();
 const option = (name) => process.argv.find((value) => value.startsWith(`--${name}=`))?.slice(name.length + 3);
@@ -27,13 +27,22 @@ const sourceGitSha = await new Promise((resolve) => { const child = spawn("git",
 
 async function latestOfficialDate() {
   if (requestedDate) { if (!/^\d{4}-\d{2}-\d{2}$/u.test(requestedDate)) throw new Error("--date=YYYY-MM-DD 형식이 필요합니다."); return requestedDate; }
+  console.log("DAILY_PRODUCTION_PROBE stage=started operation=getStockPriceInfo credential=present");
   const universe = JSON.parse(await fs.readFile(path.join(root, "data", "universe.json"), "utf8"));
   const shape = createPublicEodRequestShape({ code: universe.stocks[0].code, purpose: "dailyProductionLatestProbe", pageNo: 1, numOfRows: 5 });
   const query = createPublicEodQuery(shape); const response = await fetch(`https://apis.data.go.kr/1160100/service/GetStockSecuritiesInfoService/getStockPriceInfo?serviceKey=${serviceKey}&${query}`, { signal: AbortSignal.timeout(20_000) });
+  console.log(`DAILY_PRODUCTION_PROBE stage=http-response status=${response.status} ok=${response.ok}`);
   if (!response.ok) throw new Error(`LATEST_PROBE_HTTP_${response.status}`);
-  const payload = await response.json(); if (payload?.response?.header?.resultCode !== "00") throw new Error(`LATEST_PROBE_BUSINESS_${payload?.response?.header?.resultCode ?? "UNKNOWN"}`);
+  const contentType = response.headers.get("content-type") ?? "";
+  console.log(`DAILY_PRODUCTION_PROBE stage=response-format category=${contentType.toLowerCase().includes("json") ? "json" : "non-json-or-unspecified"}`);
+  let payload;
+  try { payload = await response.json(); } catch (error) { throw new SyntaxError("LATEST_PROBE_INVALID_JSON", { cause: error }); }
+  const businessCode = String(payload?.response?.header?.resultCode ?? "UNKNOWN");
+  console.log(`DAILY_PRODUCTION_PROBE stage=business-response category=${businessCode === "00" ? "success" : "error"}`);
+  if (businessCode !== "00") throw new Error(`LATEST_PROBE_BUSINESS_${businessCode.replace(/[^A-Z0-9_-]/giu, "_").slice(0, 40)}`);
   const normalized = normalizePublicEodRows(payload?.response?.body?.items?.item, { code: shape.code }); const compact = normalized.rows[0]?.basDt;
   if (!/^\d{8}$/u.test(String(compact ?? ""))) throw new Error("LATEST_PROBE_INVALID_RESPONSE");
+  console.log(`DAILY_PRODUCTION_PROBE stage=parsed-latest-date present=true date=${compact.slice(0, 4)}-${compact.slice(4, 6)}-${compact.slice(6, 8)}`);
   return `${compact.slice(0, 4)}-${compact.slice(4, 6)}-${compact.slice(6, 8)}`;
 }
 
@@ -77,6 +86,7 @@ try {
     console.log(`DAILY_PRODUCTION_RESULT_JSON=${JSON.stringify({ status: manifest.status, referenceDate, runId, manifestPath, promotionFiles })}`);
   }
 } catch (error) {
-  const manifest = createDailyRunManifest({ referenceDate, runId, status: DAILY_RUN_STATUS.FAILED, startedAt, completedAt: new Date().toISOString(), sourceGitSha, previousProductionReferenceDate, reason: error instanceof Error ? error.message.slice(0, 500) : "unknownFailure" });
-  const manifestPath = await writeManifest(manifest).catch(() => null); console.error("DAILY_PRODUCTION_FAILED"); console.log(`DAILY_PRODUCTION_RESULT_JSON=${JSON.stringify({ status: manifest.status, referenceDate, runId, manifestPath, promotionFiles: [] })}`); process.exitCode = 1;
+  const failureReason = referenceDate == null ? classifyLatestProbeFailure(error) : (error instanceof Error ? error.message.slice(0, 500) : "unknownFailure");
+  const manifest = createDailyRunManifest({ referenceDate, runId, status: DAILY_RUN_STATUS.FAILED, startedAt, completedAt: new Date().toISOString(), sourceGitSha, previousProductionReferenceDate, reason: failureReason });
+  const manifestPath = await writeManifest(manifest).catch(() => null); console.error(`DAILY_PRODUCTION_FAILED reason=${failureReason}`); console.log(`DAILY_PRODUCTION_RESULT_JSON=${JSON.stringify({ status: manifest.status, referenceDate, runId, manifestPath, promotionFiles: [], reason: failureReason })}`); process.exitCode = 1;
 }
