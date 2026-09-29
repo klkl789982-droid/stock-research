@@ -7,6 +7,7 @@ import {
   createDailyRunManifest,
   DAILY_RUN_STATUS,
   evaluatePromotionCandidate,
+  resolveOfficialReferenceDate,
   validateCompactModelHistory,
 } from "../lib/daily-production.mjs";
 
@@ -72,5 +73,13 @@ assert.equal(classifyLatestProbeFailure(Object.assign(new TypeError("fetch faile
 assert.equal(classifyLatestProbeFailure(Object.assign(new Error("timeout"), { name: "TimeoutError" })), "LATEST_PROBE_TIMEOUT");
 assert.equal(classifyLatestProbeFailure(new SyntaxError("bad json")), "LATEST_PROBE_INVALID_JSON");
 assert.equal(classifyLatestProbeFailure(new TypeError("fetch failed")), "LATEST_PROBE_NETWORK_UNKNOWN");
+
+assert.deepEqual(resolveOfficialReferenceDate({ observedDate: "2026-09-29", collectionDate: "2026-09-29", previousProductionReferenceDate: "2026-09-28" }), { status: "candidate", referenceDate: "2026-09-29", reason: null }, "정상 거래일은 관측 basDt를 사용합니다.");
+assert.deepEqual(resolveOfficialReferenceDate({ observedDate: "2026-09-25", collectionDate: "2026-09-27", previousProductionReferenceDate: "2026-09-24" }), { status: "candidate", referenceDate: "2026-09-25", reason: null }, "주말 실행도 현재 날짜가 아닌 최신 관측 거래일을 사용합니다.");
+assert.deepEqual(resolveOfficialReferenceDate({ observedDate: "2026-10-02", collectionDate: "2026-10-05", previousProductionReferenceDate: "2026-10-01" }), { status: "candidate", referenceDate: "2026-10-02", reason: null }, "공휴일 또는 게시 지연도 확인된 최신 basDt를 사용합니다.");
+assert.deepEqual(resolveOfficialReferenceDate({ observedDate: "2026-09-23", collectionDate: "2026-09-28", previousProductionReferenceDate: "2026-09-22" }), { status: "candidate", referenceDate: "2026-09-23", reason: null }, "source lag는 관측 거래일 자체를 referenceDate로 사용합니다.");
+assert.deepEqual(resolveOfficialReferenceDate({ observedDate: "2026-09-21", collectionDate: "2026-09-29", previousProductionReferenceDate: "2026-09-22" }), { status: "stale", referenceDate: null, reason: "observedDateOlderThanProduction" }, "production보다 오래된 응답은 차단합니다.");
+assert.deepEqual(resolveOfficialReferenceDate({ observedDate: "2026-09-22", collectionDate: "2026-09-29", previousProductionReferenceDate: "2026-09-22" }), { status: "noNewOfficialEod", referenceDate: "2026-09-22", reason: "sameReferenceDate" });
+assert.match(await import("node:fs/promises").then((fs) => fs.readFile(new URL("./run-daily-production.mjs", import.meta.url), "utf8")), /--date=\$\{referenceDate\}.*--observed-date=\$\{referenceDate\}/su, "downstream에는 동일 referenceDate를 전달해야 합니다.");
 
 console.log(JSON.stringify({ records: compact.records.length, compactBytes: Buffer.byteLength(JSON.stringify(compact)), statuses: ["create", "idempotent", "revisionRequired", manifest.status], allowlistedFiles: files.length }, null, 2));

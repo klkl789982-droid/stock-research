@@ -3,16 +3,19 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 import { classifyRequestedDate, isWeekend, updateTradingCalendarDate } from "../lib/trading-calendar-status.mjs";
 import { normalizeStockCode } from "../lib/stock-code.mjs";
+import { createPublicEodQuery, createPublicEodRequestShape, normalizePublicEodRows } from "../lib/public-eod-request.mjs";
 
 const PRICE_URL = "https://apis.data.go.kr/1160100/service/GetStockSecuritiesInfoService/getStockPriceInfo";
 const serviceKey = process.env.DATA_GO_KR_SERVICE_KEY;
 const argument = process.argv.find((value) => value.startsWith("--date="));
 const requestedDate = argument?.slice("--date=".length);
+const observedDateArgument = process.argv.find((value) => value.startsWith("--observed-date="));
+const confirmedObservedDate = observedDateArgument?.slice("--observed-date=".length) ?? null;
 if (!requestedDate || !/^\d{4}-\d{2}-\d{2}$/.test(requestedDate)) throw new Error("--date=YYYY-MM-DD가 필요합니다.");
+if (confirmedObservedDate && !/^\d{4}-\d{2}-\d{2}$/.test(confirmedObservedDate)) throw new Error("--observed-date=YYYY-MM-DD 형식이 필요합니다.");
 if (!serviceKey) throw new Error("DATA_GO_KR_SERVICE_KEY가 없습니다.");
 
 const root = process.cwd();
-const compactDate = requestedDate.replaceAll("-", "");
 const universe = JSON.parse(await fs.readFile(path.join(root, "data", "universe.json"), "utf8"));
 const referenceCode = normalizeStockCode(universe.stocks?.[0]?.code);
 if (!referenceCode) throw new Error("상태 확인용 기준 종목이 없습니다.");
@@ -37,8 +40,10 @@ async function runScript(script, args = []) {
 }
 
 async function probe() {
+  if (confirmedObservedDate) return classifyRequestedDate({ requestedDate, observedBasDt: confirmedObservedDate });
   if (isWeekend(requestedDate)) return classifyRequestedDate({ requestedDate });
-  const query = new URLSearchParams({ resultType: "json", pageNo: "1", numOfRows: "5", likeSrtnCd: referenceCode, endBasDt: compactDate });
+  const shape = createPublicEodRequestShape({ code: referenceCode, purpose: "dailyHistoryReferenceProbe", pageNo: 1, numOfRows: 5 });
+  const query = createPublicEodQuery(shape);
   try {
     const response = await fetch(`${PRICE_URL}?serviceKey=${serviceKey}&${query}`);
     if (!response.ok) return classifyRequestedDate({ requestedDate, error: `HTTP ${response.status}` });
@@ -46,14 +51,8 @@ async function probe() {
     if (payload?.response?.header?.resultCode !== "00") {
       return classifyRequestedDate({ requestedDate, error: `API ${payload?.response?.header?.resultCode ?? "unknown"}` });
     }
-    const raw = payload?.response?.body?.items?.item;
-    const rows = Array.isArray(raw) ? raw : raw ? [raw] : [];
-    const observed = rows
-      .filter((row) => normalizeStockCode(row.srtnCd) === referenceCode)
-      .map((row) => String(row.basDt ?? ""))
-      .filter((value) => /^\d{8}$/u.test(value))
-      .sort()
-      .at(-1);
+    const normalized = normalizePublicEodRows(payload?.response?.body?.items?.item, { code: referenceCode });
+    const observed = normalized.rows[0]?.basDt;
     const observedDate = observed ? `${observed.slice(0, 4)}-${observed.slice(4, 6)}-${observed.slice(6, 8)}` : null;
     return classifyRequestedDate({ requestedDate, observedBasDt: observedDate });
   } catch (error) {

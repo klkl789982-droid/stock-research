@@ -4,7 +4,7 @@ import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { createPublicEodQuery, createPublicEodRequestShape, normalizePublicEodRows } from "../lib/public-eod-request.mjs";
 import { validateSnapshot } from "../lib/model-history-schema.mjs";
-import { assertPromotionFiles, classifyLatestProbeFailure, classifySameDate, createCompactModelHistory, createDailyRunManifest, DAILY_RUN_STATUS, evaluatePromotionCandidate, markManifestPromoted, validateCompactModelHistory } from "../lib/daily-production.mjs";
+import { assertPromotionFiles, classifyLatestProbeFailure, classifySameDate, createCompactModelHistory, createDailyRunManifest, DAILY_RUN_STATUS, evaluatePromotionCandidate, markManifestPromoted, resolveOfficialReferenceDate, validateCompactModelHistory } from "../lib/daily-production.mjs";
 
 const root = process.cwd();
 const option = (name) => process.argv.find((value) => value.startsWith(`--${name}=`))?.slice(name.length + 3);
@@ -55,12 +55,16 @@ const runScript = (script, args) => new Promise((resolve, reject) => { const chi
 
 let referenceDate = requestedDate ?? null;
 try {
-  referenceDate = await latestOfficialDate();
-  if (previousProductionReferenceDate && referenceDate <= previousProductionReferenceDate) {
-    const manifest = createDailyRunManifest({ referenceDate, runId, status: DAILY_RUN_STATUS.NO_NEW_OFFICIAL_EOD, startedAt, completedAt: new Date().toISOString(), sourceGitSha, previousProductionReferenceDate, reason: referenceDate === previousProductionReferenceDate ? "sameReferenceDate" : "candidateOlderThanProduction" });
+  const observedDate = await latestOfficialDate();
+  const collectionDate = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const dateDecision = resolveOfficialReferenceDate({ observedDate, previousProductionReferenceDate, collectionDate });
+  if (dateDecision.status === "invalid" || dateDecision.status === "stale") throw new Error(`LATEST_PROBE_${dateDecision.reason.replace(/([a-z])([A-Z])/gu, "$1_$2").toUpperCase()}`);
+  referenceDate = dateDecision.referenceDate;
+  if (dateDecision.status === "noNewOfficialEod") {
+    const manifest = createDailyRunManifest({ referenceDate, runId, status: DAILY_RUN_STATUS.NO_NEW_OFFICIAL_EOD, startedAt, completedAt: new Date().toISOString(), sourceGitSha, previousProductionReferenceDate, reason: dateDecision.reason });
     const manifestPath = await writeManifest(manifest); console.log(`DAILY_PRODUCTION_RESULT_JSON=${JSON.stringify({ status: manifest.status, referenceDate, runId, manifestPath, promotionFiles: [] })}`); process.exit(0);
   }
-  await runScript("scripts/run-daily-history.mjs", [`--date=${referenceDate}`]);
+  await runScript("scripts/run-daily-history.mjs", [`--date=${referenceDate}`, `--observed-date=${referenceDate}`]);
   const paths = { snapshot: path.join(root, "data", "history", `${referenceDate}.json`), ledger: path.join(root, "data", "market-prices", `${referenceDate}.json`), universe: path.join(root, "data", "universe-history", `${referenceDate}.json`), market: path.join(root, "data", "analysis", "market", `${referenceDate}.json`), seed: path.join(root, "data", "analysis", "market-seeds", `${referenceDate}.json`) };
   const [snapshot, ledger, universeArchive, market, seed] = await Promise.all(Object.values(paths).map((file) => fs.readFile(file, "utf8").then(JSON.parse)));
   const snapshotErrors = validateSnapshot(snapshot, snapshot.universeSummary?.originalUniverse?.count ?? snapshot.records.length);
