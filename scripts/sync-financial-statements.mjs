@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import corpMap from "../data/corp-map.json" with { type: "json" };
 import { classifyLedgerWrite, financialSourceHash, validateFinancialStatement } from "../lib/financial-statement-ledger.mjs";
+import { createCagrProvenance } from "../lib/company-analysis-provenance.mjs";
 
 const option = (name) => process.argv.find((value) => value.startsWith(`--${name}=`))?.split("=").slice(1).join("=");
 const code = option("code");
@@ -47,6 +48,7 @@ const rules = {
   interestExpense: { ids: ["ifrs-full_FinanceCosts"], names: ["이자비용", "금융비용", "이자비용(금융원가)"], sections: ["IS", "CIS"] },
 };
 const operatingProfit = current(rules.operatingProfit); const interestExpense = current(rules.interestExpense);
+const featureProvenance = { revenueCagr: createCagrProvenance(findRow(rules.revenue), amount), operatingProfitCagr: createCagrProvenance(findRow(rules.operatingProfit), amount) };
 const normalizedAccounts = {
   revenue: current(rules.revenue), operatingProfit, netIncome: current(rules.netIncome), assets: current(rules.assets),
   liabilities: current(rules.liabilities), equity: current(rules.equity), revenueCagr: twoYearCagr(rules.revenue),
@@ -64,7 +66,7 @@ const statement = {
   schemaVersion: 1, code, corpCode: company.corpCode, companyName: company.corpName,
   source: { provider: "DART", endpoint: "fnlttSinglAcntAll" }, reportCode, reportName: "사업보고서", businessYear,
   fiscalPeriodEnd: `${businessYear}-12-31`, filingDate, receiptNumber, fsDivision,
-  unit: identity.currency ?? "KRW", normalizedAccounts, sourceHash: financialSourceHash(normalizedAccounts),
+  unit: identity.currency ?? "KRW", normalizedAccounts, featureProvenance, sourceHash: financialSourceHash(normalizedAccounts),
   generatedAt: new Date().toISOString(), qualityStatus: "PROVISIONAL", qualityReasons: ["singleCompanyVerticalSlice"],
 };
 const errors = validateFinancialStatement(statement);

@@ -36,6 +36,7 @@
     "market:ui-test": "node scripts/test-market-analysis-ui.mjs",
     "company:calculator-test": "node scripts/test-company-analysis-calculator.mjs",
     "company:ledger-test": "node scripts/test-financial-statement-ledger.mjs",
+    "company:provenance-test": "node scripts/test-company-analysis-provenance.mjs",
     "company:snapshot-test": "node scripts/test-company-analysis-snapshot.mjs",
     "company:api-test": "node scripts/test-company-analysis-api.mjs",
     "company:ui-test": "node scripts/test-company-analysis-ui.mjs",
