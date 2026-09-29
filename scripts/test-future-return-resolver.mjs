@@ -22,7 +22,8 @@ function emptyFutureReturns(prefilled = null) {
     future1dReturn: prefilled,
     future5dReturn: null,
     future20dReturn: null,
-    resolvedAt: { future1dDate: prefilled == null ? null : "pre-existing", future5dDate: null, future20dDate: null },
+    future60dReturn: null,
+    resolvedAt: { future1dDate: prefilled == null ? null : "pre-existing", future5dDate: null, future20dDate: null, future60dDate: null },
   };
 }
 
@@ -36,13 +37,13 @@ function emptyBacktestReturns() {
   };
 }
 
-const dates = businessDates("2026-01-05", 21);
+const dates = businessDates("2026-01-05", 61);
 const snapshots = dates.map((date, index) => ({
   asOfDate: date,
   modelDefinitions: { A: "A-v1" },
   topLists: { modelA: [] },
   records: [
-    { code: "000001", closePrice: index === 0 ? 100 : index === 1 ? 111 : index === 5 ? 120 : index === 20 ? 150 : 100 + index, scores: { modelA: 50 }, ranks: { modelA: 1 }, factors: {}, riskFlags: {}, futureReturns: emptyFutureReturns(), backtestReturns: emptyBacktestReturns() },
+    { code: "000001", closePrice: index === 0 ? 100 : index === 1 ? 111 : index === 5 ? 120 : index === 20 ? 150 : index === 60 ? 180 : 100 + index, scores: { modelA: 50 }, ranks: { modelA: 1 }, factors: {}, riskFlags: {}, futureReturns: emptyFutureReturns(), backtestReturns: emptyBacktestReturns() },
     { code: "000002", closePrice: 200 + index, scores: { modelA: 40 }, ranks: { modelA: 2 }, factors: {}, riskFlags: {}, futureReturns: emptyFutureReturns(index === 0 ? 12.345678 : null), backtestReturns: emptyBacktestReturns() },
   ],
 }));
@@ -67,6 +68,7 @@ const first = serializableSnapshot(firstRun.snapshots[0]);
 assert.equal(first.records[0].futureReturns.future1dReturn, 11);
 assert.equal(first.records[0].futureReturns.future5dReturn, 20);
 assert.equal(first.records[0].futureReturns.future20dReturn, 50);
+assert.equal(first.records[0].futureReturns.future60dReturn, 80);
 assert.equal(first.records[0].backtestReturns.returns.nextOpenToT1CloseReturn, 0.909091);
 assert.equal(first.records[0].backtestReturns.returns.nextOpenToT5CloseReturn, 9.090909);
 assert.equal(first.records[0].backtestReturns.returns.nextOpenToT20CloseReturn, 36.363636);
@@ -93,6 +95,7 @@ const gapCalendar = { schemaVersion: 1, dates: {
 const gapRun = resolveFutureReturns(prepareSnapshots(gapSnapshots), prepareMarketPriceLedgers(gapLedgers), gapCalendar);
 assert.equal(gapRun.snapshots[0].records[0].backtestReturns.resolution.entryStatus, "unchecked");
 assert.equal(gapRun.snapshots[0].records[0].futureReturns.future1dReturn, null);
+assert.equal(gapRun.snapshots[0].records[0].futureReturns.future60dReturn, null, "60D 가격이 아직 없으면 pending/null을 유지해야 합니다.");
 
 const haltedLedgers = structuredClone(ledgers);
 haltedLedgers[1].records[0] = { code: "A000001", openPrice: null, closePrice: null, referenceClose: 111, executable: false, priceStatus: "tradingHaltOrNoTrade" };

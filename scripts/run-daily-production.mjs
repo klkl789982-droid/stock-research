@@ -1,0 +1,82 @@
+import fs from "node:fs/promises";
+import path from "node:path";
+import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
+import { createPublicEodQuery, createPublicEodRequestShape, normalizePublicEodRows } from "../lib/public-eod-request.mjs";
+import { validateSnapshot } from "../lib/model-history-schema.mjs";
+import { assertPromotionFiles, classifySameDate, createCompactModelHistory, createDailyRunManifest, DAILY_RUN_STATUS, evaluatePromotionCandidate, markManifestPromoted, validateCompactModelHistory } from "../lib/daily-production.mjs";
+
+const root = process.cwd();
+const option = (name) => process.argv.find((value) => value.startsWith(`--${name}=`))?.slice(name.length + 3);
+const promotionManifest = option("mark-promoted");
+if (promotionManifest) {
+  const target = path.resolve(root, promotionManifest); const manifest = JSON.parse(await fs.readFile(target, "utf8"));
+  await fs.writeFile(target, `${JSON.stringify(markManifestPromoted(manifest, new Date().toISOString()), null, 2)}\n`, "utf8");
+  console.log(`PROMOTED_MANIFEST=${path.relative(root, target).replaceAll("\\", "/")}`); process.exit(0);
+}
+
+const startedAt = new Date().toISOString();
+const runId = option("run-id") ?? `daily-${startedAt.replace(/[-:TZ.]/gu, "").slice(0, 14)}`;
+const requestedDate = option("date");
+const serviceKey = process.env.DATA_GO_KR_SERVICE_KEY;
+if (!serviceKey) throw new Error("DATA_GO_KR_SERVICE_KEY가 없습니다.");
+const historyDir = path.join(root, "data", "history");
+const historyNames = (await fs.readdir(historyDir)).filter((name) => /^\d{4}-\d{2}-\d{2}\.json$/u.test(name)).sort();
+const previousProductionReferenceDate = historyNames.at(-1)?.slice(0, 10) ?? null;
+const sourceGitSha = await new Promise((resolve) => { const child = spawn("git", ["rev-parse", "HEAD"], { cwd: root, stdio: ["ignore", "pipe", "ignore"] }); let output = ""; child.stdout.on("data", (chunk) => { output += chunk; }); child.on("close", () => resolve(output.trim() || null)); });
+
+async function latestOfficialDate() {
+  if (requestedDate) { if (!/^\d{4}-\d{2}-\d{2}$/u.test(requestedDate)) throw new Error("--date=YYYY-MM-DD 형식이 필요합니다."); return requestedDate; }
+  const universe = JSON.parse(await fs.readFile(path.join(root, "data", "universe.json"), "utf8"));
+  const shape = createPublicEodRequestShape({ code: universe.stocks[0].code, purpose: "dailyProductionLatestProbe", pageNo: 1, numOfRows: 5 });
+  const query = createPublicEodQuery(shape); const response = await fetch(`https://apis.data.go.kr/1160100/service/GetStockSecuritiesInfoService/getStockPriceInfo?serviceKey=${serviceKey}&${query}`, { signal: AbortSignal.timeout(20_000) });
+  if (!response.ok) throw new Error(`LATEST_PROBE_HTTP_${response.status}`);
+  const payload = await response.json(); if (payload?.response?.header?.resultCode !== "00") throw new Error(`LATEST_PROBE_BUSINESS_${payload?.response?.header?.resultCode ?? "UNKNOWN"}`);
+  const normalized = normalizePublicEodRows(payload?.response?.body?.items?.item, { code: shape.code }); const compact = normalized.rows[0]?.basDt;
+  if (!/^\d{8}$/u.test(String(compact ?? ""))) throw new Error("LATEST_PROBE_INVALID_RESPONSE");
+  return `${compact.slice(0, 4)}-${compact.slice(4, 6)}-${compact.slice(6, 8)}`;
+}
+
+async function writeManifest(manifest) {
+  const directory = path.join(root, "data", "daily-runs", manifest.referenceDate ?? "unknown"); await fs.mkdir(directory, { recursive: true });
+  const target = path.join(directory, `${runId}.json`); await fs.writeFile(target, `${JSON.stringify(manifest, null, 2)}\n`, { flag: "wx" }); return path.relative(root, target).replaceAll("\\", "/");
+}
+const hashFile = async (file) => createHash("sha256").update(await fs.readFile(file)).digest("hex");
+const runScript = (script, args) => new Promise((resolve, reject) => { const child = spawn(process.execPath, [script, ...args], { cwd: root, env: process.env, stdio: "inherit" }); child.on("error", reject); child.on("exit", (code) => code === 0 ? resolve() : reject(new Error(`${script} 종료 코드 ${code}`))); });
+
+let referenceDate = requestedDate ?? null;
+try {
+  referenceDate = await latestOfficialDate();
+  if (previousProductionReferenceDate && referenceDate <= previousProductionReferenceDate) {
+    const manifest = createDailyRunManifest({ referenceDate, runId, status: DAILY_RUN_STATUS.NO_NEW_OFFICIAL_EOD, startedAt, completedAt: new Date().toISOString(), sourceGitSha, previousProductionReferenceDate, reason: referenceDate === previousProductionReferenceDate ? "sameReferenceDate" : "candidateOlderThanProduction" });
+    const manifestPath = await writeManifest(manifest); console.log(`DAILY_PRODUCTION_RESULT_JSON=${JSON.stringify({ status: manifest.status, referenceDate, runId, manifestPath, promotionFiles: [] })}`); process.exit(0);
+  }
+  await runScript("scripts/run-daily-history.mjs", [`--date=${referenceDate}`]);
+  const paths = { snapshot: path.join(root, "data", "history", `${referenceDate}.json`), ledger: path.join(root, "data", "market-prices", `${referenceDate}.json`), universe: path.join(root, "data", "universe-history", `${referenceDate}.json`), market: path.join(root, "data", "analysis", "market", `${referenceDate}.json`), seed: path.join(root, "data", "analysis", "market-seeds", `${referenceDate}.json`) };
+  const [snapshot, ledger, universeArchive, market, seed] = await Promise.all(Object.values(paths).map((file) => fs.readFile(file, "utf8").then(JSON.parse)));
+  const snapshotErrors = validateSnapshot(snapshot, snapshot.universeSummary?.originalUniverse?.count ?? snapshot.records.length);
+  if (snapshotErrors.length || snapshot.dataQuality?.structuralStatus !== "passed") throw new Error(`CANDIDATE_INVALID:${snapshotErrors.join(",") || snapshot.dataQuality?.structuralStatus}`);
+  if (ledger.date !== referenceDate || universeArchive.requestedDate !== referenceDate || market.requestedDate !== referenceDate || seed.requestedDate !== referenceDate) throw new Error("CANDIDATE_DATE_MISMATCH");
+  const compact = createCompactModelHistory(snapshot); const compactErrors = validateCompactModelHistory(compact, snapshot.records.length); if (compactErrors.length) throw new Error(`COMPACT_HISTORY_INVALID:${compactErrors.join(",")}`);
+  const promotion = evaluatePromotionCandidate({ collectionCompleted: true, snapshotValidationErrors: snapshotErrors, structuralFatalCount: snapshot.dataQuality?.structuralFatalCount ?? (snapshot.dataQuality?.structuralStatus === "passed" ? 0 : 1), requiredArtifactsPresent: true, compactValidationErrors: compactErrors });
+  if (!promotion.eligible) throw new Error(`PROMOTION_BLOCKED:${promotion.reasons.join(",")}`);
+  const compactDir = path.join(root, "data", "model-history"); await fs.mkdir(compactDir, { recursive: true }); const compactPath = path.join(compactDir, `${referenceDate}.json`);
+  let existing = null; try { existing = JSON.parse(await fs.readFile(compactPath, "utf8")); } catch (error) { if (error?.code !== "ENOENT") throw error; }
+  const sameDate = classifySameDate(existing, compact);
+  if (sameDate === "revisionRequired") {
+    const manifest = createDailyRunManifest({ referenceDate, runId, status: DAILY_RUN_STATUS.REVISION_REQUIRES_APPROVAL, startedAt, completedAt: new Date().toISOString(), sourceGitSha, previousProductionReferenceDate, snapshotHash: compact.sourceSnapshotHash, compactHistoryHash: compact.contentHash, reason: "sameDateDifferentHash" });
+    const manifestPath = await writeManifest(manifest); console.log(`DAILY_PRODUCTION_RESULT_JSON=${JSON.stringify({ status: manifest.status, referenceDate, runId, manifestPath, promotionFiles: [] })}`); process.exitCode = 3;
+  } else {
+    if (sameDate === "create") await fs.writeFile(compactPath, `${JSON.stringify(compact, null, 2)}\n`, { flag: "wx" });
+    const summary = snapshot.universeSummary; const manifest = createDailyRunManifest({ referenceDate, runId, status: DAILY_RUN_STATUS.CANDIDATE_VALIDATED, startedAt, completedAt: new Date().toISOString(), sourceGitSha, previousProductionReferenceDate, snapshotHash: compact.sourceSnapshotHash, universeHash: summary.originalUniverse.codesHash, priceLedgerHash: ledger.contentHash ?? await hashFile(paths.ledger), originalCount: summary.originalUniverse.count, eligibleCount: summary.qualityEligibleUniverse.count, quarantineCount: summary.quarantinedUniverse.count, rankingUniverseSizeByModel: Object.fromEntries(Object.entries(summary.rankingUniverse).map(([key, value]) => [key, value.count])), issueManifestHash: snapshot.dataQuality?.issueManifestHash ?? null, compactHistoryHash: compact.contentHash, provenance: snapshot.sourceManifest });
+    const manifestPath = await writeManifest(manifest);
+    const statusLines = (await new Promise((resolve) => { const child = spawn("git", ["status", "--porcelain"], { cwd: root, stdio: ["ignore", "pipe", "ignore"] }); let output = ""; child.stdout.on("data", (chunk) => { output += chunk; }); child.on("close", () => resolve(output)); })).split(/\r?\n/u).filter(Boolean);
+    const changed = statusLines.map((line) => line.slice(3).replaceAll("\\", "/")).filter((file) => !file.startsWith("data/daily-runs/") || file === manifestPath);
+    changed.push(`data/model-history/${referenceDate}.json`, manifestPath);
+    const promotionFiles = assertPromotionFiles(changed, referenceDate, runId);
+    console.log(`DAILY_PRODUCTION_RESULT_JSON=${JSON.stringify({ status: manifest.status, referenceDate, runId, manifestPath, promotionFiles })}`);
+  }
+} catch (error) {
+  const manifest = createDailyRunManifest({ referenceDate, runId, status: DAILY_RUN_STATUS.FAILED, startedAt, completedAt: new Date().toISOString(), sourceGitSha, previousProductionReferenceDate, reason: error instanceof Error ? error.message.slice(0, 500) : "unknownFailure" });
+  const manifestPath = await writeManifest(manifest).catch(() => null); console.error("DAILY_PRODUCTION_FAILED"); console.log(`DAILY_PRODUCTION_RESULT_JSON=${JSON.stringify({ status: manifest.status, referenceDate, runId, manifestPath, promotionFiles: [] })}`); process.exitCode = 1;
+}
