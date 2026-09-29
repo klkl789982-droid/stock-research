@@ -41,7 +41,7 @@ type TopStocksResponse = {
 };
 
 type StockSelection = { code: string; name: string };
-type TopStocksPanelProps = { onSelectStock?: (stock: StockSelection) => void | Promise<void> };
+type TopStocksPanelProps = { onSelectStock?: (stock: StockSelection) => void | Promise<void>; compact?: boolean; onOpenFull?: () => void };
 
 const primaryTabs = [
   { id: "B", model: "B" as const, label: "모델 B · 추세 강도" },
@@ -61,7 +61,7 @@ const modelDescriptions: Record<string, string> = {
   D: "여러 기술 신호를 결합해 비교하는 연구 순위입니다.",
 };
 
-export default function TopStocksPanel({ onSelectStock }: TopStocksPanelProps) {
+export default function TopStocksPanel({ onSelectStock, compact = false, onOpenFull }: TopStocksPanelProps) {
   const [activeTab, setActiveTab] = useState("B");
   const [selectingCode, setSelectingCode] = useState<string | null>(null);
   const [data, setData] = useState<TopStocksResponse | null>(null);
@@ -79,7 +79,7 @@ export default function TopStocksPanel({ onSelectStock }: TopStocksPanelProps) {
         const selectedTab = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
         const selectedVersion = "version" in selectedTab ? selectedTab.version : undefined;
         const versionQuery = selectedVersion ? `&version=${selectedVersion}` : "";
-        const response = await fetch(`/api/top-stocks?model=${selectedTab.model}${versionQuery}&limit=50`, { cache: "no-store", signal: controller.signal });
+        const response = await fetch(`/api/top-stocks?model=${selectedTab.model}${versionQuery}&limit=${compact ? 5 : 50}`, { cache: "no-store", signal: controller.signal });
         const result = await response.json();
         if (!response.ok) throw new Error(result?.error?.message ?? "실제 TOP50 데이터를 불러오지 못했습니다.");
         if (result.dataMode !== "historySnapshot" || result.model !== selectedTab.model) throw new Error("TOP50 응답의 데이터 모드 또는 모델이 올바르지 않습니다.");
@@ -94,29 +94,29 @@ export default function TopStocksPanel({ onSelectStock }: TopStocksPanelProps) {
     }
     load();
     return () => controller.abort();
-  }, [activeTab, requestVersion]);
+  }, [activeTab, compact, requestVersion]);
 
   return (
     <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
-      <p className="text-sm text-gray-500">History Snapshot Ranking</p>
-      <h2 className="mt-1 text-xl font-bold text-gray-900">시장 TOP 종목</h2>
+      <p className="text-sm text-gray-500">공식 일봉 데이터 기준</p>
+      <div className="flex items-center justify-between gap-4"><h2 className="mt-1 text-xl font-bold text-gray-900">{compact ? "오늘의 시장 TOP" : "시장 TOP 종목"}</h2>{compact && onOpenFull && <button type="button" onClick={onOpenFull} className="text-sm font-semibold text-gray-700 hover:text-gray-950">전체 순위 보기</button>}</div>
       <p className="mt-2 text-sm text-gray-600">{modelDescriptions[activeTab]}</p>
 
-      <div className="mt-6 grid grid-cols-2 gap-2" role="tablist" aria-label="활성 비교 모델">
+      {!compact && <div className="mt-6 grid grid-cols-2 gap-2" role="tablist" aria-label="활성 비교 모델">
         {primaryTabs.map((tab) => (
           <button key={tab.id} type="button" role="tab" aria-selected={activeTab === tab.id} onClick={() => setActiveTab(tab.id)}
             className={`rounded-xl border px-3 py-3 text-sm transition-colors ${activeTab === tab.id ? "border-gray-900 bg-gray-900 font-semibold text-white" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"}`}>
             {tab.label}
           </button>
         ))}
-      </div>
+      </div>}
 
-      <details className="mt-3 rounded-xl border border-gray-200 bg-gray-50">
+      {!compact && <details className="mt-3 rounded-xl border border-gray-200 bg-gray-50">
         <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-gray-700">연구 모델 보기</summary>
         <div className="grid grid-cols-1 gap-2 border-t border-gray-200 p-3 sm:grid-cols-3" role="tablist" aria-label="연구 모델">
           {researchTabs.map((tab) => <button key={tab.id} type="button" role="tab" aria-selected={activeTab === tab.id} onClick={() => setActiveTab(tab.id)} className={`min-h-12 rounded-xl border px-3 py-2 text-sm leading-snug ${activeTab === tab.id ? "border-gray-900 bg-gray-900 font-semibold text-white" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"}`}>{tab.label}</button>)}
         </div>
-      </details>
+      </details>}
 
       {activeTab === "A-v2" && (
         <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -125,7 +125,7 @@ export default function TopStocksPanel({ onSelectStock }: TopStocksPanelProps) {
         </div>
       )}
 
-      {data && (
+      {data && !compact && (
         <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           <div className="flex flex-wrap gap-x-4 gap-y-1"><span><strong>데이터 기준일</strong> {data.rankingAsOfDate}</span><span>공식 일봉 데이터</span><span>분석 대상 {data.rankingUniverseCount ?? data.stocks[0]?.rankingUniverseCount ?? "정보 없음"}종목</span></div>
           <details className="mt-2 text-xs text-amber-800"><summary className="cursor-pointer font-medium">데이터 기준 자세히 보기</summary>
@@ -134,6 +134,7 @@ export default function TopStocksPanel({ onSelectStock }: TopStocksPanelProps) {
           </div></details>
         </div>
       )}
+      {data && compact && <p className="mt-3 text-xs text-gray-500">데이터 기준일 {data.rankingAsOfDate} · 공식 일봉</p>}
 
       {loading && <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-12 text-center text-sm text-gray-500">실제 TOP50 데이터를 불러오는 중입니다...</div>}
       {!loading && error && (
@@ -146,10 +147,10 @@ export default function TopStocksPanel({ onSelectStock }: TopStocksPanelProps) {
       {!loading && !error && data && data.stocks.length === 0 && <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-12 text-center text-sm text-gray-500">실제 TOP50 데이터가 없습니다. 최신 유효 모델 스냅샷을 생성해야 합니다.</div>}
       {!loading && !error && data && data.stocks.length > 0 && (
         <div className="mt-5 overflow-x-auto rounded-xl border border-gray-200">
-          <table className="w-full min-w-[560px] table-auto border-collapse text-sm">
-            <thead className="bg-gray-50 text-left text-xs text-gray-500"><tr><th className="whitespace-nowrap px-3 py-3 font-medium sm:px-4">순위</th><th className="px-3 py-3 font-medium sm:px-4">종목명</th><th className="hidden px-4 py-3 font-medium sm:table-cell">시장</th><th className="whitespace-nowrap px-3 py-3 text-right font-medium sm:px-4">점수</th><th className="whitespace-nowrap px-3 py-3 text-right font-medium sm:px-4">기준일 종가</th></tr></thead>
+          <table className={`w-full table-auto border-collapse text-sm ${compact ? "" : "min-w-[560px]"}`}>
+            <thead className="bg-gray-50 text-left text-xs text-gray-500"><tr><th className="whitespace-nowrap px-3 py-3 font-medium sm:px-4">순위</th><th className="px-3 py-3 font-medium sm:px-4">종목명</th><th className="hidden px-4 py-3 font-medium sm:table-cell">시장</th><th className="whitespace-nowrap px-3 py-3 text-right font-medium sm:px-4">점수</th>{!compact && <th className="whitespace-nowrap px-3 py-3 text-right font-medium sm:px-4">기준일 종가</th>}</tr></thead>
             <tbody className="divide-y divide-gray-100">
-              {data.stocks.map((stock) => <tr key={stock.code} className="hover:bg-gray-50"><td className="whitespace-nowrap px-3 py-4 font-semibold text-gray-900 sm:px-4">{stock.rank}</td><td className="px-3 py-4 sm:px-4"><button type="button" disabled={selectingCode !== null} aria-label={`${stock.name} ${stock.code} 검색`} onClick={async () => { if (!onSelectStock || selectingCode) return; setSelectingCode(stock.code); try { await onSelectStock({ code: stock.code, name: stock.name }); } finally { setSelectingCode(null); } }} className="cursor-pointer text-left font-semibold text-gray-900 hover:text-blue-700 hover:underline disabled:cursor-wait">{stock.name}<span className="block whitespace-nowrap text-xs font-normal text-gray-400 sm:inline sm:ml-2">{stock.code}</span></button></td><td className="hidden px-4 py-4 text-gray-500 sm:table-cell">{stock.market}</td><td className="whitespace-nowrap px-3 py-4 text-right font-semibold text-gray-800 sm:px-4">{stock.score.toFixed(2)}</td><td className="whitespace-nowrap px-3 py-4 text-right text-gray-700 sm:px-4">{stock.closePrice.toLocaleString("ko-KR")}원</td></tr>)}
+              {data.stocks.map((stock) => <tr key={stock.code} className="hover:bg-gray-50"><td className="whitespace-nowrap px-3 py-4 font-semibold text-gray-900 sm:px-4">{stock.rank}</td><td className="px-3 py-4 sm:px-4"><button type="button" disabled={selectingCode !== null} aria-label={`${stock.name} ${stock.code} 검색`} onClick={async () => { if (!onSelectStock || selectingCode) return; setSelectingCode(stock.code); try { await onSelectStock({ code: stock.code, name: stock.name }); } finally { setSelectingCode(null); } }} className="cursor-pointer text-left font-semibold text-gray-900 hover:text-blue-700 hover:underline disabled:cursor-wait">{stock.name}<span className="block whitespace-nowrap text-xs font-normal text-gray-400 sm:inline sm:ml-2">{stock.code}</span></button></td><td className="hidden px-4 py-4 text-gray-500 sm:table-cell">{stock.market}</td><td className="whitespace-nowrap px-3 py-4 text-right font-semibold text-gray-800 sm:px-4">{stock.score.toFixed(2)}</td>{!compact && <td className="whitespace-nowrap px-3 py-4 text-right text-gray-700 sm:px-4">{stock.closePrice.toLocaleString("ko-KR")}원</td>}</tr>)}
             </tbody>
           </table>
         </div>

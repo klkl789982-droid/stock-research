@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import TopStocksPanel from "../components/TopStocksPanel";
 import MarketAnalysisPanel, { type MarketAnalysisResponse, type IntradayAnalysisResponse } from "../components/market-analysis/MarketAnalysisPanel";
-import CompanyAnalysisPanel, { type CompanyAnalysisResult } from "../components/company-analysis/CompanyAnalysisPanel";
+import CompanyAnalysisPanel, { companyAnalysisReasonLabel, type CompanyAnalysisResult } from "../components/company-analysis/CompanyAnalysisPanel";
 import TechnicalStrengthPanel from "../components/TechnicalStrengthPanel";
 import { searchApiErrorMessage, settleSearchRequest } from "../lib/search-request-isolation.mjs";
 import { buildSearchTechnicalStrength } from "../lib/search-technical-strength.mjs";
@@ -12,7 +12,8 @@ import { analysisAvailabilityMessage } from "../lib/analysis-availability.mjs";
 export default function Home() {
   const [query, setQuery] = useState("");
   const [searchedStock, setSearchedStock] = useState<string | null>(null);
-const [activeTab, setActiveTab] = useState<string | null>(null);
+const [activeTab, setActiveTab] = useState<"technical" | "company">("technical");
+const [showFullTop, setShowFullTop] = useState(false);
 const [realtimePrice, setRealtimePrice] = useState<{
   price: number;
   change: number;
@@ -184,6 +185,8 @@ async function handleSearch(selection?: { code: string; name: string }) {
   const searchTerm = selection?.name ?? query.trim();
   if (searchTerm === "") return;
   if (selection) setQuery(selection.name);
+setShowFullTop(false);
+setActiveTab("technical");
 const requestId = ++searchRequestIdRef.current;
 searchControllerRef.current?.abort();
 const searchController = new AbortController();
@@ -295,16 +298,19 @@ if (aborted?.status === "rejected") throw aborted.reason;
 }
 return (
     <main ref={pageTopRef} className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-md px-5 py-16">
-        <h1 className="text-3xl font-bold text-gray-900">
-          Stock Research
+      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
+        <header className="max-w-2xl">
+        <p className="text-sm font-semibold text-gray-500">한국 주식 리서치</p>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-950 sm:text-4xl">
+          궁금한 종목을 검색해 보세요
         </h1>
 
         <p className="mt-3 text-gray-600">
-          주식 데이터를 쉽고 객관적으로 분석합니다.
+          공식 데이터에 근거한 가격·기술·재무 분석을 한곳에서 확인합니다.
         </p>
+        </header>
 
-        <div className="mt-10 flex gap-2">
+        <div className="mt-8 flex max-w-2xl gap-2">
           <input
   type="text"
   value={query}
@@ -323,33 +329,27 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
   disabled={loading}
   className="whitespace-nowrap rounded-xl bg-gray-900 px-5 py-4 font-medium text-white disabled:opacity-40"
 >
-  {loading ? "Loading..." : "검색"}
+  {loading ? "검색 중" : "검색"}
 </button>
         </div>
 
-        <p className="mt-4 text-sm text-gray-500">
+        <p className="mt-3 text-sm text-gray-500">
           종목명 또는 종목코드를 입력하세요.
         </p>
 
+        {!searchedStock && !showFullTop && <TopStocksPanel compact onSelectStock={handleSearch} onOpenFull={() => setShowFullTop(true)} />}
+        {!searchedStock && showFullTop && <><button type="button" onClick={() => setShowFullTop(false)} className="mt-8 text-sm font-semibold text-gray-600 hover:text-gray-950">← 검색 화면으로</button><TopStocksPanel onSelectStock={handleSearch} /></>}
+
         {searchedStock && (
-          <div className="mt-10 rounded-2xl border border-gray-200 bg-white p-5">
+          <div className="mt-10 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
             <p className="text-sm text-gray-500">검색 결과</p>
 
             <h2 className="mt-2 text-2xl font-bold text-gray-900">
               {searchedStock}
             </h2>
 
-           <div className="mt-2 space-y-1 text-sm text-gray-600">
-  <p>시장 : {stockInfo?.mrktCtg}</p>
-  <p>종목코드 : {stockInfo?.srtnCd?.replace(/^A/, "")}</p>
-  <p>법인명 : {stockInfo?.corpNm}</p>
-  <p>ISIN : {stockInfo?.isinCd}</p>
-  <p>
-    기준일 :
-    {stockInfo?.basDt
-      ? `${stockInfo.basDt.slice(0, 4)}-${stockInfo.basDt.slice(4, 6)}-${stockInfo.basDt.slice(6, 8)}`
-      : ""}
-  </p>
+           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500">
+  <span>{stockInfo?.srtnCd?.replace(/^A/, "")}</span><span>{stockInfo?.mrktCtg}</span>
 </div>
 {(priceInfo || realtimePrice || priceError || realtimeError) && (
   <div className="mt-5 rounded-xl bg-gray-50 p-4">
@@ -357,22 +357,23 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
       최근 시세
     </p>
 
-    <div className="mt-3 space-y-2 text-sm text-gray-700">
-      <div className="flex justify-between">
-  <span>{verifiedRealtimePrice ? "KIS 최근 조회가" : "최근 거래일 공식 종가"}</span>
-  <span>
+    <div className="mt-3 space-y-3 text-sm text-gray-700">
+      <div className="flex items-end justify-between gap-4">
+  <span className="text-gray-500">{verifiedRealtimePrice ? "KIS 최근 조회가" : "최근 거래일 공식 종가"}</span>
+  <strong className="text-2xl text-gray-950">
   {verifiedRealtimePrice
     ? `${verifiedRealtimePrice.price.toLocaleString()}원`
     : priceMeta
     ? `${priceMeta.closePrice.toLocaleString()}원`
     : "-"}
-</span>
+</strong>
 </div>
+{(verifiedRealtimePrice || priceInfo) && <div className="flex justify-between"><span>전일 대비</span><strong>{(verifiedRealtimePrice?.change ?? (priceInfo?.vs ? Number(priceInfo.vs) : 0)).toLocaleString()}원 · {(verifiedRealtimePrice?.rate ?? (priceInfo?.fltRt ? Number(priceInfo.fltRt) : 0)).toFixed(2)}%</strong></div>}
 {realtimePrice && !verifiedRealtimePrice && priceMeta && <div className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800"><p className="font-semibold">실시간 시세 확인 불가</p><p>표시된 가격은 {priceMeta.asOfDate} 공식 종가 기준입니다.</p></div>}
 {realtimeError && <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">실시간 시세를 확인할 수 없습니다.{priceMeta ? ` 표시된 가격은 ${priceMeta.asOfDate} 공식 종가 기준입니다.` : ""}</p>}
 {priceError && <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">{priceError}</p>}
 {(verifiedRealtimePrice || priceInfo) && (
-<>
+<details className="rounded-lg border border-gray-200 bg-white"><summary className="cursor-pointer px-3 py-2.5 font-medium text-gray-600">시세 상세보기</summary><div className="space-y-2 border-t border-gray-100 p-3">
 <div className="flex justify-between">
   <span>전일 종가</span>
   <span>
@@ -449,7 +450,7 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
 </span>
       </div>
 
-</>
+</div></details>
 )}
 
       <div className="flex justify-between">
@@ -466,46 +467,51 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
   </div>
 )}
 
-{searchedStock && <TechnicalStrengthPanel view={technicalStrength} />}
+<details className="mt-4 text-xs text-gray-500">
+  <summary className="cursor-pointer font-medium text-gray-600">종목·가격 데이터 기준 자세히 보기</summary>
+  <div className="mt-3 grid gap-2 rounded-xl bg-gray-50 p-4 sm:grid-cols-2">
+    <span>법인명 {stockInfo?.corpNm || "정보 없음"}</span><span>ISIN {stockInfo?.isinCd || "정보 없음"}</span>
+    <span>종목 기준일 {stockInfo?.basDt ? `${stockInfo.basDt.slice(0, 4)}-${stockInfo.basDt.slice(4, 6)}-${stockInfo.basDt.slice(6, 8)}` : "정보 없음"}</span>
+    <span>{verifiedRealtimePrice ? "검증된 실시간 가격 적용" : "공식 일봉 가격 기준"}</span>
+  </div>
+</details>
 
-            <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <section className="mt-6 border-t border-gray-100 pt-6">
+              <div className="flex items-end justify-between gap-4"><div><p className="text-sm font-semibold text-gray-500">분석 요약</p><h3 className="mt-1 text-xl font-bold text-gray-950">핵심 결과를 한눈에</h3></div><span className="text-xs text-gray-400">검증된 데이터만 표시</span></div>
+              <div className="mt-4 divide-y divide-gray-100 rounded-xl border border-gray-200 bg-gray-50 px-4 sm:grid sm:grid-cols-3 sm:divide-x sm:divide-y-0 sm:px-0">
+                <div className="flex items-center justify-between py-4 sm:block sm:px-5"><span className="text-sm text-gray-500">기술 흐름</span><div className="text-right sm:mt-2 sm:text-left">{technicalStrength.status === "available" ? <><strong className="text-xl text-gray-950">{technicalStrength.score}</strong><span className="ml-1 text-xs text-gray-400">/ 100</span><p className="text-sm font-semibold text-gray-700">분석 모델 검증 중</p></> : <strong className="text-sm text-gray-700">{technicalStrength.status === "loading" ? "분석 준비 중" : analysisAvailabilityMessage(technicalStrength.reason)}</strong>}</div></div>
+                <div className="flex items-center justify-between py-4 sm:block sm:px-5"><span className="text-sm text-gray-500">기업 재무</span><div className="max-w-52 text-right sm:mt-2 sm:text-left">{companyAnalysisLoading ? <strong className="text-sm text-gray-700">분석 준비 중</strong> : companyAnalysis?.record?.eligible ? <><strong className="text-xl text-gray-950">{companyAnalysis.record.totalScore}</strong><span className="ml-1 text-xs text-gray-400">/ 100</span><p className="text-sm font-semibold text-gray-700">{companyAnalysis.record.grade}</p></> : <strong className="text-sm text-gray-700">{companyAnalysis?.record?.ineligibleReasons?.[0] ? companyAnalysisReasonLabel(companyAnalysis.record.ineligibleReasons[0]) : companyAnalysisError ? "기업분석을 이용할 수 없습니다." : "분석 준비 중"}</strong>}</div></div>
+                <div className="flex items-center justify-between py-4 sm:block sm:px-5"><span className="text-sm text-gray-500">시장 흐름</span><div className="text-right sm:mt-2 sm:text-left">{marketAnalysisView.status === "available" ? <strong className="text-xl text-gray-950">{marketAnalysisView.data.record.technicalStatus}</strong> : <strong className="text-sm text-gray-700">{marketAnalysisView.status === "loading" ? "분석 준비 중" : analysisAvailabilityMessage(marketAnalysisView.reason, marketAnalysisError ?? undefined)}</strong>}</div></div>
+              </div>
+            </section>
+
+            <div className="mt-6 grid grid-cols-2 gap-2 rounded-xl bg-gray-100 p-1" role="tablist" aria-label="상세 분석">
               <button
-  onClick={() => setActiveTab("investor")}
-  className="rounded-xl border border-gray-200 px-3 py-3 text-sm"
+  onClick={() => setActiveTab("technical")}
+  role="tab" aria-selected={activeTab === "technical"}
+  className={`rounded-lg px-3 py-2.5 text-sm font-semibold ${activeTab === "technical" ? "bg-white text-gray-950 shadow-sm" : "text-gray-500"}`}
 >
-  기업 분석
+  기술·시장
 </button>
 
               <button
-  onClick={() => setActiveTab("trader")}
-  className="rounded-xl border border-gray-200 px-3 py-3 text-sm"
+  onClick={() => setActiveTab("company")}
+  role="tab" aria-selected={activeTab === "company"}
+  className={`rounded-lg px-3 py-2.5 text-sm font-semibold ${activeTab === "company" ? "bg-white text-gray-950 shadow-sm" : "text-gray-500"}`}
 >
-  시장 분석
-</button>
-
-              <button
-  onClick={() => setActiveTab("dividend")}
-  className="rounded-xl border border-gray-200 px-3 py-3 text-sm"
->
-  배당 분석
-</button>
-
-              <button
-  onClick={() => setActiveTab("topStocks")}
-  className="rounded-xl border border-gray-200 px-3 py-3 text-sm"
->
-  시장 TOP 종목
+  기업
 </button>
             </div>
           </div>
         )}
-{activeTab === "investor" && searchedStock && (
+{activeTab === "company" && searchedStock && (
   <CompanyAnalysisPanel result={companyAnalysis} loading={companyAnalysisLoading} error={companyAnalysisError} />
 )}
-{activeTab === "trader" && searchedStock && stockInfo?.srtnCd && (
-  <MarketAnalysisPanel key={String(stockInfo.srtnCd)} data={marketAnalysisView.status === "available" ? marketAnalysisView.data : null} intraday={intradayAnalysis} investorData={investorData} loading={marketAnalysisView.status === "loading"} error={marketAnalysisView.status === "available" ? null : analysisAvailabilityMessage(marketAnalysisView.reason, marketAnalysisError ?? undefined)} source={marketAnalysisView.source ?? null} intradayError={intradayError} />
+{activeTab === "technical" && searchedStock && <TechnicalStrengthPanel view={technicalStrength} showScore={false} />}
+{activeTab === "technical" && searchedStock && stockInfo?.srtnCd && (
+  <MarketAnalysisPanel key={String(stockInfo.srtnCd)} data={marketAnalysisView.status === "available" ? marketAnalysisView.data : null} intraday={intradayAnalysis} investorData={investorData} loading={marketAnalysisView.status === "loading"} error={marketAnalysisView.status === "available" ? null : analysisAvailabilityMessage(marketAnalysisView.reason, marketAnalysisError ?? undefined)} source={marketAnalysisView.source ?? null} intradayError={intradayError} showHeadlineScore={false} />
 )}
-{activeTab === "trader" && searchedStock && (
+{false && searchedStock && (
   <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-5">
     <p className="text-sm font-medium text-amber-700">데이터 준비 중</p>
 
@@ -561,7 +567,7 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
     </section>
   </div>
 )}
-{activeTab === "dividend" && searchedStock && (
+{false && searchedStock && (
   <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-5">
     <p className="text-sm text-gray-500">Dividend View</p>
 
@@ -634,7 +640,7 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
     </p>
   </div>
 )}
-{activeTab === "topStocks" && searchedStock && <TopStocksPanel onSelectStock={handleSearch} />}
+{searchedStock && <section className="mt-6 rounded-xl border border-dashed border-gray-300 bg-gray-50 px-5 py-4"><h2 className="text-sm font-semibold text-gray-800">추가 분석 준비 중</h2><p className="mt-1 text-sm text-gray-500">배당 · 공매도 · 대차잔고 데이터를 안전하게 연결하고 있습니다.</p></section>}
       </div>
     </main>
   );

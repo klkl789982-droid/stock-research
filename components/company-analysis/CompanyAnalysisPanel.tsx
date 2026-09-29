@@ -3,10 +3,23 @@ type RecordData = { analysisAsOfDate:string; financialPeriodEnd:string|null; fil
 export type CompanyAnalysisResult = { status:string; generatedAt:string; calculatorVersion:string; record:RecordData };
 const fmt=(value:number|null|undefined,d=2)=>typeof value==="number"&&Number.isFinite(value)?value.toFixed(d):"계산 불가";
 const componentLabel:Record<string,string>={profitability:"수익성",growth:"성장성",stability:"재무 안정성",valuation:"가치 수준"};
+const reasonLabel: Record<string, string> = {
+  profitabilityNotCalculable: "수익성 계산에 필요한 재무자료가 부족합니다.",
+  growthNotCalculable: "성장성 계산에 필요한 비교 기간 자료가 부족합니다.",
+  stabilityNotCalculable: "재무 안정성 계산에 필요한 자료가 부족합니다.",
+  valuationNotCalculable: "가치평가를 계산할 수 없습니다.",
+  missingMarketCap: "기준일 시가총액 자료가 없습니다.",
+  priceDateMismatch: "재무자료와 가격의 기준일이 일치하지 않습니다.",
+  financialLedgerMissing: "검증된 재무제표가 아직 준비되지 않았습니다.",
+  pointInTimeStatementMissing: "분석 기준일에 사용할 수 있는 재무제표가 없습니다.",
+  futureFiling: "분석 기준일 이후 공시는 사용할 수 없습니다.",
+  notCalculable: "현재 자료로 기업분석을 계산할 수 없습니다.",
+};
+export const companyAnalysisReasonLabel = (reason?: string | null) => reason ? (reasonLabel[reason] ?? "기업분석에 필요한 자료가 충분하지 않습니다.") : "기업 재무데이터를 준비하고 있습니다.";
 export default function CompanyAnalysisPanel({ result, loading, error }:{result:CompanyAnalysisResult|null;loading:boolean;error:string|null}) {
   if(loading) return <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-5 text-sm text-gray-500">저장된 기업분석 결과를 조회하고 있습니다.</div>;
   if(error||!result) return <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5"><h2 className="font-bold text-amber-900">기업 재무데이터 준비 중</h2><p className="mt-2 text-sm text-amber-800">{error??"검증된 기업분석 결과가 아직 준비되지 않았습니다."}</p><p className="mt-2 text-xs text-amber-700">확인되지 않은 재무정보나 현재가로 대신 계산하지 않습니다.</p></div>;
   const r=result.record;
-  if(!r.eligible) return <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5"><h2 className="font-bold text-amber-900">기업분석 계산 불가</h2><p className="mt-2 text-sm">{r.ineligibleReasons.join(", ")}</p></div>;
+  if(!r.eligible) return <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5"><h2 className="font-bold text-amber-900">기업분석 계산 불가</h2><div className="mt-2 space-y-1 text-sm text-amber-800">{r.ineligibleReasons.length ? r.ineligibleReasons.map((reason) => <p key={reason}>{companyAnalysisReasonLabel(reason)}</p>) : <p>{companyAnalysisReasonLabel()}</p>}</div></div>;
   return <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-5"><p className="text-sm text-gray-500">검증된 저장 결과</p><h2 className="mt-1 text-xl font-bold">기업 분석</h2><div className="mt-2 text-xs text-gray-500">분석 기준일 {r.analysisAsOfDate} · 재무 기간 {r.financialPeriodEnd??"-"}</div><div className="mt-5 rounded-xl border p-4"><div className="flex justify-between"><span className="text-sm text-gray-500">종합 투자지표</span><strong className="text-3xl">{r.totalScore} / 100</strong></div><p className="mt-1 text-right font-semibold">{r.grade}</p>{Object.entries(r.componentScores).map(([key,value])=><div className="mt-2 flex justify-between text-sm" key={key}><span>{componentLabel[key]??key}</span><span>{fmt(value,1)} / 25</span></div>)}</div><details className="mt-5 rounded-xl border border-gray-200 bg-gray-50"><summary className="cursor-pointer px-4 py-3 text-sm font-medium">상세 재무지표 보기</summary><div className="space-y-2 border-t p-4 text-sm">{[["ROE",r.financialMetrics.roe],["영업이익률",r.financialMetrics.operatingMargin],["부채비율",r.financialMetrics.debtRatio],["PER",r.financialMetrics.per],["PBR",r.financialMetrics.pbr],["매출 CAGR",r.financialMetrics.revenueCagr],["영업이익 CAGR",r.financialMetrics.operatingProfitCagr]].map(([label,value])=><div className="flex justify-between" key={String(label)}><span>{label}</span><span>{fmt(value as number|null)}{String(label).includes("PER")||String(label).includes("PBR")?"배":"%"}</span></div>)}</div></details><details className="mt-3 text-xs text-gray-500"><summary className="cursor-pointer font-medium">데이터 기준 자세히 보기</summary><div className="mt-2 grid grid-cols-2 gap-2"><span>공시일 {r.filingDate??"-"}</span><span>{r.fsDivision==="CFS"?"연결 재무제표":"별도 재무제표"}</span><span>가치 기준일 {r.priceAsOfDate??"-"}</span><span>상태 {r.qualityStatus==="PROVISIONAL"?"데이터 검증 중":r.qualityStatus}</span><span>분석 버전 {r.formulaVersion}</span></div></details><p className="mt-5 text-xs text-gray-400">가치평가는 공식 기준일 시가총액만 사용합니다. KIS 현재가는 표시 카드와 독립적입니다.</p></div>;
 }

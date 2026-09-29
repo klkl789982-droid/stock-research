@@ -19,19 +19,19 @@ const formatDate = (value?: string | null) => value && /^\d{8}$/u.test(value)
   ? `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}`
   : value;
 
-export default function TechnicalStrengthPanel({ view }: { view: TechnicalStrengthView }) {
+export default function TechnicalStrengthPanel({ view, showScore = true }: { view: TechnicalStrengthView; showScore?: boolean }) {
   return (
     <div className="mt-5 rounded-xl border border-gray-200 bg-white p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm text-gray-500">기술적 강도</p>
-          {view.status === "available" ? (
+          {view.status === "available" && showScore ? (
             <p className="mt-1"><span className="text-3xl font-bold text-gray-900">{view.score}</span><span className="text-sm text-gray-500"> / 100</span></p>
-          ) : (
+          ) : view.status !== "available" ? (
             <p className="mt-1 text-sm font-semibold text-gray-700">
               {view.status === "loading" ? "계산 준비 중" : analysisAvailabilityMessage(view.reason)}
             </p>
-          )}
+          ) : <p className="mt-1 text-sm font-semibold text-gray-700">가격 흐름과 변동성 지표를 함께 반영한 결과입니다.</p>}
         </div>
         <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">분석 모델 검증 진행 중</span>
       </div>
