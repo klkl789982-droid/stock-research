@@ -23,6 +23,17 @@
       "marketPriceLedger": "notRequired",
       "reason": "weekend",
       "checkedAt": "2026-08-16T14:17:26.789Z"
+    },
+    "2026-09-28": {
+      "status": "tradingDay",
+      "observedBasDt": "2026-09-28",
+      "modelSnapshot": "created",
+      "marketPriceLedger": "created",
+      "reason": null,
+      "universeArchive": "created",
+      "marketAnalysisSnapshot": "created",
+      "intradayMarketSeed": "created",
+      "checkedAt": "2026-09-29T12:20:03.494Z"
     }
   }
 }
