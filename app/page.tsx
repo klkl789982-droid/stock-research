@@ -5,6 +5,7 @@ import TopStocksPanel from "../components/TopStocksPanel";
 import MarketAnalysisPanel, { type MarketAnalysisResponse, type IntradayAnalysisResponse } from "../components/market-analysis/MarketAnalysisPanel";
 import CompanyAnalysisPanel, { companyAnalysisRecordReasonLabel, type CompanyAnalysisResult } from "../components/company-analysis/CompanyAnalysisPanel";
 import TechnicalStrengthPanel from "../components/TechnicalStrengthPanel";
+import BrandMark from "../components/BrandMark";
 import { searchApiErrorMessage, settleSearchRequest } from "../lib/search-request-isolation.mjs";
 import { buildSearchTechnicalStrength } from "../lib/search-technical-strength.mjs";
 import { buildSearchMarketAnalysis } from "../lib/search-market-analysis.mjs";
@@ -72,6 +73,7 @@ const searchRequestIdRef = useRef(0);
 const searchControllerRef = useRef<AbortController | null>(null);
 const selectedCodeRef = useRef<string | null>(null);
 const pageTopRef = useRef<HTMLElement | null>(null);
+const searchInputRef = useRef<HTMLInputElement | null>(null);
 const technicalStrength = useMemo(() => buildSearchTechnicalStrength({
   priceHistory,
   priceRequestStatus,
@@ -331,37 +333,49 @@ function handleHome() {
 }
 return (
     <main ref={pageTopRef} className="min-h-screen bg-[var(--tb-page)] text-slate-900">
-      <header className="sticky top-0 z-30 border-b border-[var(--tb-border)] bg-white/95 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
-          <button type="button" onClick={handleHome} className="tb-focus group flex shrink-0 items-center gap-3 rounded-xl text-left" aria-label="Tight Budget 홈으로">
-            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--tb-blue)] text-base font-black tracking-tighter text-white shadow-sm transition-transform group-hover:-translate-y-0.5">TB</span>
-            <span className="hidden sm:block"><span className="block text-lg font-extrabold tracking-tight text-slate-950">Tight <span className="font-medium">Budget</span></span><span className="block text-[11px] text-slate-500">Data-driven stock research</span></span>
+      <header className="tb-brand-shell sticky top-0 z-30 border-b border-white/10 text-white shadow-[0_8px_25px_rgba(7,18,40,0.14)]">
+        <div className="mx-auto flex max-w-[1600px] items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
+          <button type="button" onClick={handleHome} className="tb-focus shrink-0 rounded-xl text-left" aria-label="Tight Budget 홈으로">
+            <span className="sm:hidden"><BrandMark compact inverse /></span><span className="hidden sm:inline-flex"><BrandMark inverse /></span>
           </button>
-          {searchedStock && <form className="ml-auto flex min-w-0 flex-1 gap-2 sm:max-w-xl" onSubmit={(event) => { event.preventDefault(); void handleSearch(); }}>
+          <form className="ml-auto hidden min-w-0 flex-1 gap-2 sm:flex sm:max-w-xl" onSubmit={(event) => { event.preventDefault(); void handleSearch(); }}>
             <label className="sr-only" htmlFor="header-stock-search">종목명 또는 종목코드 검색</label>
-            <input id="header-stock-search" value={query} onChange={(event) => setQuery(event.target.value)} disabled={loading} placeholder="종목명 또는 종목코드 검색" className="tb-focus min-w-0 flex-1 rounded-xl border border-[var(--tb-border)] bg-slate-50 px-4 py-2.5 text-sm text-slate-950 placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:outline-none" />
-            <button type="submit" disabled={loading} className="tb-focus rounded-xl bg-[var(--tb-blue)] px-4 py-2.5 text-sm font-bold text-white hover:bg-[var(--tb-blue-dark)] disabled:opacity-40">{loading ? "조회 중" : "검색"}</button>
-          </form>}
-          <div className="ml-auto hidden items-center gap-2 text-sm font-semibold text-slate-500 lg:flex">
-            <button type="button" onClick={handleHome} className="tb-focus rounded-lg px-3 py-2 text-[var(--tb-blue)]">홈</button>
-            {searchedStock && <span className="rounded-lg px-3 py-2 text-slate-700">종목 분석</span>}
-            <button type="button" onClick={() => { handleHome(); setShowFullTop(true); }} className="tb-focus rounded-lg px-3 py-2 hover:bg-slate-50 hover:text-slate-900">모델 TOP</button>
+            <input id="header-stock-search" value={query} onChange={(event) => setQuery(event.target.value)} disabled={loading} placeholder="종목명 또는 종목코드 검색" className="tb-focus min-w-0 flex-1 rounded-full border border-white/15 bg-white/10 px-5 py-2.5 text-sm text-white placeholder:text-slate-300 focus:border-white/35 focus:bg-white/15 focus:outline-none" />
+            <button type="submit" disabled={loading} className="tb-focus rounded-full bg-[var(--tb-orange)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[var(--tb-orange-bright)] disabled:opacity-40">{loading ? "조회 중" : "검색"}</button>
+          </form>
+          <div className="ml-auto hidden items-center gap-1 text-sm font-semibold text-slate-200 lg:flex">
+            <button type="button" onClick={handleHome} className="tb-focus rounded-lg px-3 py-2 hover:bg-white/10 hover:text-white">홈</button>
+            {searchedStock && <span className="rounded-lg px-3 py-2 text-orange-200">종목 분석</span>}
+            <button type="button" onClick={() => { handleHome(); setShowFullTop(true); }} className="tb-focus rounded-lg px-3 py-2 hover:bg-white/10 hover:text-white">모델 TOP</button>
           </div>
         </div>
+        {searchedStock && <form className="flex gap-2 border-t border-white/10 px-4 py-2.5 sm:hidden" onSubmit={(event) => { event.preventDefault(); void handleSearch(); }}>
+          <label className="sr-only" htmlFor="mobile-header-stock-search">종목명 또는 종목코드 검색</label>
+          <input id="mobile-header-stock-search" value={query} onChange={(event) => setQuery(event.target.value)} disabled={loading} placeholder="종목명 또는 종목코드 검색" className="tb-focus min-w-0 flex-1 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm text-white placeholder:text-slate-300 focus:outline-none" />
+          <button type="submit" disabled={loading} className="tb-focus rounded-full bg-[var(--tb-orange)] px-4 py-2 text-sm font-bold text-white disabled:opacity-40">{loading ? "조회 중" : "검색"}</button>
+        </form>}
       </header>
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-        {!searchedStock && <section className="relative overflow-hidden rounded-[28px] bg-[#071a3b] px-6 py-9 text-white shadow-[0_20px_45px_rgba(17,39,78,0.16)] sm:px-10 sm:py-12 lg:px-14 lg:py-14">
-          <div aria-hidden="true" className="absolute -right-20 -top-24 h-80 w-80 rounded-full border-[52px] border-blue-500/25" />
-          <div aria-hidden="true" className="absolute -bottom-36 right-16 h-72 w-72 rounded-full border-[42px] border-red-500/25" />
+      <div className="mx-auto flex max-w-[1600px] items-stretch">
+        <aside className="hidden w-56 shrink-0 border-r border-[var(--tb-border)] bg-white px-4 py-6 lg:flex lg:min-h-[calc(100vh-73px)] lg:flex-col">
+          <nav className="space-y-2" aria-label="주요 메뉴">
+            <button type="button" onClick={handleHome} className="tb-focus flex w-full items-center gap-3 rounded-xl bg-orange-50 px-4 py-3 text-left text-sm font-bold text-[var(--tb-orange)]"><span aria-hidden="true">⌂</span> 홈</button>
+            <button type="button" onClick={() => searchInputRef.current?.focus()} className="tb-focus flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-slate-600 hover:bg-slate-50"><span aria-hidden="true">⌕</span> 종목 분석</button>
+            <button type="button" onClick={() => { handleHome(); setShowFullTop(true); }} className="tb-focus flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-slate-600 hover:bg-slate-50"><span aria-hidden="true">▦</span> 모델 TOP</button>
+          </nav>
+          <div className="mt-auto rounded-2xl border border-[var(--tb-border)] bg-slate-50 p-4"><BrandMark compact /><p className="mt-3 text-sm font-bold text-[var(--tb-text)]">Tight Budget</p><p className="mt-1 text-xs leading-5 text-[var(--tb-muted)]">데이터 기준을 숨기지 않는 종목 분석</p></div>
+        </aside>
+        <div className="min-w-0 flex-1 px-4 py-5 sm:px-6 sm:py-7 lg:px-7">
+        {!searchedStock && !showFullTop && <div className="grid gap-5 xl:grid-cols-[minmax(0,1.8fr)_minmax(280px,0.7fr)]">
+        <section className="tb-matte-hero relative overflow-hidden rounded-[24px] px-6 py-8 text-white shadow-[0_18px_40px_rgba(10,23,51,0.16)] sm:px-9 sm:py-10">
+          <div aria-hidden="true" className="absolute -bottom-20 -right-12 text-[210px] font-black leading-none tracking-[-0.18em] text-white/[0.055]">TB</div>
           <div className="relative max-w-2xl">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-200">Tight Budget</p>
-            <h1 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-5xl">데이터로 시작하는 종목 분석</h1>
-            <p className="mt-4 max-w-xl text-sm leading-6 text-slate-300 sm:text-base">공식 가격과 저장된 기술·재무 분석, 검증 중인 모델 순위를 한곳에서 명확한 기준일과 함께 확인하세요.</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-200">Tight Budget</p>
+            <h1 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">데이터로 시작하는 종목 분석</h1>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-300">공식 가격과 저장된 기술·재무 분석, 검증 중인 모델 순위를 명확한 기준일과 함께 확인하세요.</p>
           </div>
-        </section>}
-
-        {!searchedStock && <div className="relative z-10 mx-auto -mt-5 flex max-w-3xl flex-col gap-2 px-3 sm:-mt-6 sm:flex-row">
+          <div className="relative mt-6 flex flex-col gap-2 sm:max-w-2xl sm:flex-row">
           <input
+  ref={searchInputRef}
   type="text"
   value={query}
   onChange={(e) => setQuery(e.target.value)}
@@ -372,24 +386,31 @@ return (
   }}
   disabled={loading}
   placeholder="종목명 또는 종목코드를 검색하세요"
-className="tb-focus min-h-13 w-full rounded-2xl border border-[var(--tb-border)] bg-white px-5 py-3.5 text-slate-950 shadow-[0_8px_24px_rgba(17,39,78,0.08)] placeholder:text-slate-400 focus:border-blue-400 focus:outline-none"/>
+className="tb-focus min-h-12 w-full rounded-full border border-white/20 bg-white px-5 py-3 text-slate-950 shadow-lg placeholder:text-slate-400 focus:border-orange-300 focus:outline-none"/>
 
           <button
   onClick={() => void handleSearch()}
   disabled={loading}
-  className="tb-focus min-h-13 whitespace-nowrap rounded-2xl bg-[var(--tb-blue)] px-7 py-3.5 font-bold text-white shadow-sm transition-colors hover:bg-[var(--tb-blue-dark)] disabled:opacity-40"
+  className="tb-focus min-h-12 whitespace-nowrap rounded-full bg-[var(--tb-orange)] px-7 py-3 font-bold text-white shadow-sm transition-colors hover:bg-[var(--tb-orange-bright)] disabled:opacity-40"
 >
   {loading ? "검색 중" : "검색"}
 </button>
+          </div>
+        </section>
+        <section className="tb-card p-5 sm:p-6">
+          <p className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--tb-orange)]">Analysis coverage</p>
+          <h2 className="mt-2 text-xl font-extrabold tracking-tight text-[var(--tb-text)]">검증된 데이터만 표시</h2>
+          <div className="mt-5 space-y-4 text-sm"><div><p className="font-bold text-slate-800">공식 가격</p><p className="mt-1 text-xs leading-5 text-slate-500">최근 거래일 공식 종가와 KIS 조회가를 구분합니다.</p></div><div className="border-t border-slate-100 pt-4"><p className="font-bold text-slate-800">저장 분석</p><p className="mt-1 text-xs leading-5 text-slate-500">기술·시장·기업 결과의 기준일과 품질 상태를 함께 표시합니다.</p></div><div className="border-t border-slate-100 pt-4"><p className="font-bold text-slate-800">모델 순위</p><p className="mt-1 text-xs leading-5 text-slate-500">Daily Production의 실제 A/B/C/D 결과만 사용합니다.</p></div></div>
+        </section>
         </div>}
 
         {searchError && <p role="alert" className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{searchError === "notFound" ? "해당 종목을 찾을 수 없습니다." : "검색 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요."}</p>}
-        {!searchedStock && <p className="mx-auto mt-3 max-w-3xl px-3 text-sm text-slate-500">
+        {!searchedStock && !showFullTop && <p className="mt-3 px-1 text-xs text-slate-500">
           종목명 또는 종목코드를 입력하세요.
         </p>}
 
-        {!searchedStock && !showFullTop && <TopStocksPanel compact onSelectStock={handleSearch} onOpenFull={() => setShowFullTop(true)} />}
-        {!searchedStock && showFullTop && <><button type="button" onClick={() => setShowFullTop(false)} className="mt-8 text-sm font-semibold text-gray-600 hover:text-gray-950">← 검색 화면으로</button><TopStocksPanel onSelectStock={handleSearch} /></>}
+        {!searchedStock && !showFullTop && <div className="grid gap-5 xl:grid-cols-[minmax(0,1.8fr)_minmax(280px,0.7fr)]"><TopStocksPanel compact onSelectStock={handleSearch} onOpenFull={() => setShowFullTop(true)} /><section className="tb-card mt-6 p-5 sm:p-6"><p className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--tb-orange)]">Quick start</p><h2 className="mt-2 text-xl font-extrabold text-[var(--tb-text)]">분석을 시작하세요</h2><p className="mt-2 text-sm leading-6 text-slate-500">종목을 검색하거나 모델 TOP 종목명을 선택하면 상세 분석으로 바로 이동합니다.</p><button type="button" onClick={() => searchInputRef.current?.focus()} className="tb-focus mt-5 w-full rounded-xl bg-[var(--tb-navy)] px-4 py-3 text-sm font-bold text-white hover:bg-[var(--tb-indigo)]">종목 검색</button><button type="button" onClick={() => setShowFullTop(true)} className="tb-focus mt-2 w-full rounded-xl border border-[var(--tb-border)] px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">전체 모델 순위</button></section></div>}
+        {!searchedStock && showFullTop && <><button type="button" onClick={() => setShowFullTop(false)} className="tb-focus mt-1 rounded-lg px-2 py-2 text-sm font-semibold text-[var(--tb-orange)] hover:bg-orange-50">← 대시보드로</button><TopStocksPanel onSelectStock={handleSearch} /></>}
 
         {searchedStock && (
           <div className="tb-card mt-8 overflow-hidden p-5 sm:p-7">
@@ -692,6 +713,7 @@ className="tb-focus min-h-13 w-full rounded-2xl border border-[var(--tb-border)]
   </div>
 )}
 {searchedStock && <section className="mt-6 rounded-xl border border-dashed border-gray-300 bg-gray-50 px-5 py-4"><h2 className="text-sm font-semibold text-gray-800">추가 분석 준비 중</h2><p className="mt-1 text-sm text-gray-500">배당 · 공매도 · 대차잔고 데이터를 안전하게 연결하고 있습니다.</p></section>}
+      </div>
       </div>
     </main>
   );

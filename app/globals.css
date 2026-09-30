@@ -1,20 +1,25 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f5f7fb;
-  --foreground: #14213d;
-  --tb-blue: #1769e0;
-  --tb-blue-dark: #0d3f91;
-  --tb-red: #ef3f4f;
-  --tb-page: #f5f7fb;
+  --background: #f3f5f8;
+  --foreground: #111d35;
+  --tb-navy: #0a1733;
+  --tb-indigo: #293653;
+  --tb-orange: #e85f22;
+  --tb-orange-bright: #ff7a28;
+  --tb-blue: var(--tb-orange);
+  --tb-blue-dark: #c94a15;
+  --tb-red: #e8404f;
+  --tb-page: #f3f5f8;
   --tb-card: #ffffff;
-  --tb-muted: #667085;
-  --tb-border: #e4e9f1;
+  --tb-text: #111d35;
+  --tb-muted: #697386;
+  --tb-border: #e2e6ed;
   --tb-positive: #e8404f;
   --tb-negative: #1672e8;
   --tb-warning: #b86b09;
   --tb-radius: 20px;
-  --tb-shadow: 0 10px 30px rgba(18, 38, 70, 0.06);
+  --tb-shadow: 0 10px 30px rgba(10, 23, 51, 0.055);
 }
 
 @theme inline {
@@ -32,8 +37,8 @@ body {
 }
 
 ::selection {
-  background: #dbeafe;
-  color: #123a74;
+  background: #ffdfcb;
+  color: #5e210b;
 }
 
 button,
@@ -50,6 +55,26 @@ summary {
 }
 
 .tb-focus:focus-visible {
-  outline: 3px solid rgba(23, 105, 224, 0.2);
+  outline: 3px solid rgba(232, 95, 34, 0.22);
   outline-offset: 2px;
+}
+
+.tb-brand-mark {
+  background:
+    linear-gradient(145deg, transparent 45%, rgba(255, 122, 40, 0.98) 46% 74%, transparent 75%),
+    linear-gradient(160deg, #56678f 0%, #263554 48%, #101c38 100%);
+  box-shadow: 0 8px 18px rgba(7, 18, 40, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.tb-brand-shell {
+  background:
+    radial-gradient(circle at 88% 20%, rgba(255, 119, 42, 0.2), transparent 28%),
+    linear-gradient(105deg, var(--tb-navy) 0%, #111d3b 58%, #302439 100%);
+}
+
+.tb-matte-hero {
+  background:
+    radial-gradient(circle at 84% 78%, rgba(238, 98, 30, 0.36), transparent 31%),
+    radial-gradient(circle at 68% 18%, rgba(87, 104, 151, 0.28), transparent 30%),
+    linear-gradient(135deg, #091733 0%, #15213d 58%, #432b31 100%);
 }
