@@ -87,6 +87,7 @@ assert.match(panel, /0~100 clamp를 적용하지 않았습니다/u);
 
 const availability = fs.readFileSync(new URL("../lib/analysis-availability.mjs", import.meta.url), "utf8");
 assert.match(availability, /분석에 필요한 거래 데이터가 부족합니다/u);
-assert.match(availability, /가격 데이터 정합성을 확인할 수 없습니다/u);
+assert.match(availability, /과거 일봉 중 검증이 필요한 구간이 있어 기술·시장 분석을 제공하지 않습니다/u);
+assert.match(availability, /현재가와 기업분석은 별도로 확인할 수 있습니다/u);
 
 console.log("검색 기술적 강도 availability·realtime provenance·stale 격리 테스트 통과");

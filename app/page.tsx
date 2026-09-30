@@ -9,6 +9,7 @@ import { searchApiErrorMessage, settleSearchRequest } from "../lib/search-reques
 import { buildSearchTechnicalStrength } from "../lib/search-technical-strength.mjs";
 import { buildSearchMarketAnalysis } from "../lib/search-market-analysis.mjs";
 import { analysisAvailabilityMessage } from "../lib/analysis-availability.mjs";
+import { isVerifiedKisRealtimeQuote } from "../lib/kis-quote-display-policy.mjs";
 export default function Home() {
   const [query, setQuery] = useState("");
   const [searchedStock, setSearchedStock] = useState<string | null>(null);
@@ -56,6 +57,7 @@ const [intradayAnalysis, setIntradayAnalysis] = useState<IntradayAnalysisRespons
 const [marketAnalysisError, setMarketAnalysisError] = useState<string | null>(null);
 const [intradayError, setIntradayError] = useState<string | null>(null);
 const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState<"notFound" | "request" | null>(null);
 const [realtimeError, setRealtimeError] = useState<string | null>(null);
 const [priceError, setPriceError] = useState<string | null>(null);
 const [priceRequestStatus, setPriceRequestStatus] = useState<"idle" | "loading" | "success" | "missing" | "error" | "unavailable">("idle");
@@ -80,7 +82,7 @@ const marketAnalysisView = useMemo(() => buildSearchMarketAnalysis({
   priceRequestStatus,
   storedMarketData: marketAnalysis,
 }), [priceHistory, priceRequestStatus, marketAnalysis]);
-const verifiedRealtimePrice = realtimePrice?.metadataAvailability?.status === "complete" && realtimePrice.freshnessStatus === "freshObservation"
+const verifiedRealtimePrice = isVerifiedKisRealtimeQuote(realtimePrice)
   ? realtimePrice
   : null;
 useEffect(() => {
@@ -184,6 +186,7 @@ useEffect(() => {
 async function handleSearch(selection?: { code: string; name: string }) {
   const searchTerm = selection?.name ?? query.trim();
   if (searchTerm === "") return;
+  setSearchError(null);
   if (selection) setQuery(selection.name);
 setShowFullTop(false);
 setActiveTab("technical");
@@ -285,12 +288,12 @@ if (aborted?.status === "rejected") throw aborted.reason;
 
 
 } else {
-      alert("종목을 찾을 수 없습니다.");
+      setSearchError("notFound");
     }
   } catch (error) {
     if (requestId !== searchRequestIdRef.current || (error instanceof DOMException && error.name === "AbortError")) return;
     console.error(error);
-    alert("검색 중 오류가 발생했습니다.");
+    setSearchError("request");
   }
   finally {
   if (requestId === searchRequestIdRef.current) setCompanyAnalysisLoading(false);
@@ -303,6 +306,7 @@ function handleHome() {
   searchControllerRef.current = null;
   selectedCodeRef.current = null;
   setQuery("");
+  setSearchError(null);
   setSearchedStock(null);
   setStockInfo(null);
   setRealtimePrice(null);
@@ -370,6 +374,7 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
 </button>
         </div>
 
+        {searchError && <p role="alert" className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{searchError === "notFound" ? "해당 종목을 찾을 수 없습니다." : "검색 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요."}</p>}
         <p className="mt-2 text-sm text-gray-500">
           종목명 또는 종목코드를 입력하세요.
         </p>

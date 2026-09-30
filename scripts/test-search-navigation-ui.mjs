@@ -15,5 +15,10 @@ assert.match(page, /\{searchedStock && <button[^>]*onClick=\{handleHome\}/u);
 assert.match(page, /requestId !== searchRequestIdRef\.current \|\| \(error instanceof DOMException/u);
 assert.match(page, /<TopStocksPanel compact onSelectStock=\{handleSearch\}/u);
 assert.match(page, /<TopStocksPanel onSelectStock=\{handleSearch\}/u);
+assert.doesNotMatch(page, /alert\(/u);
+assert.match(page, /searchError/u);
+assert.match(page, /해당 종목을 찾을 수 없습니다/u);
+assert.match(page, /검색 중 문제가 발생했습니다/u);
+assert.match(page, /role="alert"/u);
 
 console.log("검색 화면 전환·홈 복귀·stale request guard UI 테스트 통과");

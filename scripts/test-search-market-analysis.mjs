@@ -28,7 +28,7 @@ assert.equal(buildSearchMarketAnalysis({ ...base, priceHistory: history.map((row
 assert.equal(buildSearchMarketAnalysis(base, () => { throw new Error("synthetic"); }).status, "error");
 
 assert.equal(analysisAvailabilityMessage("INSUFFICIENT_HISTORY"), "분석에 필요한 거래 데이터가 부족합니다.");
-assert.equal(analysisAvailabilityMessage("INVALID_HISTORY"), "가격 데이터 정합성을 확인할 수 없습니다.");
+assert.equal(analysisAvailabilityMessage("INVALID_HISTORY"), "과거 일봉 중 검증이 필요한 구간이 있어 기술·시장 분석을 제공하지 않습니다. 현재가와 기업분석은 별도로 확인할 수 있습니다.");
 assert.equal(analysisAvailabilityMessage("staleQuote"), "현재 시세가 오래되어 장중 분석에서 제외했습니다.");
 
 const page = fs.readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
