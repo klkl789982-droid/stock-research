@@ -344,8 +344,8 @@ return (
           </form>}
           <div className="ml-auto hidden items-center gap-2 text-sm font-semibold text-slate-500 lg:flex">
             <button type="button" onClick={handleHome} className="tb-focus rounded-lg px-3 py-2 text-[var(--tb-blue)]">홈</button>
-            <span className="rounded-lg px-3 py-2">종목 분석</span>
-            <span className="rounded-lg px-3 py-2">모델 TOP</span>
+            {searchedStock && <span className="rounded-lg px-3 py-2 text-slate-700">종목 분석</span>}
+            <button type="button" onClick={() => { handleHome(); setShowFullTop(true); }} className="tb-focus rounded-lg px-3 py-2 hover:bg-slate-50 hover:text-slate-900">모델 TOP</button>
           </div>
         </div>
       </header>
@@ -384,9 +384,9 @@ className="tb-focus min-h-13 w-full rounded-2xl border border-[var(--tb-border)]
         </div>}
 
         {searchError && <p role="alert" className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{searchError === "notFound" ? "해당 종목을 찾을 수 없습니다." : "검색 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요."}</p>}
-        <p className={`${searchedStock ? "mt-2" : "mx-auto mt-3 max-w-3xl px-3"} text-sm text-slate-500`}>
+        {!searchedStock && <p className="mx-auto mt-3 max-w-3xl px-3 text-sm text-slate-500">
           종목명 또는 종목코드를 입력하세요.
-        </p>
+        </p>}
 
         {!searchedStock && !showFullTop && <TopStocksPanel compact onSelectStock={handleSearch} onOpenFull={() => setShowFullTop(true)} />}
         {!searchedStock && showFullTop && <><button type="button" onClick={() => setShowFullTop(false)} className="mt-8 text-sm font-semibold text-gray-600 hover:text-gray-950">← 검색 화면으로</button><TopStocksPanel onSelectStock={handleSearch} /></>}
