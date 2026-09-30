@@ -21,7 +21,7 @@ const scoreLabel = (value: number) => value >= 85 ? "매우 강함" : value >= 7
 const qualityLabel = (value: string) => value === "SEARCH_SESSION_PROVISIONAL" || value === "PROVISIONAL" ? "데이터 검증 중" : value;
 
 export default function MarketAnalysisPanel({ data, intraday, investorData, loading, error, source, intradayError, showHeadlineScore = true }: { data: MarketAnalysisResponse | null; intraday: IntradayAnalysisResponse | null; investorData?: { foreignNetBuyQty?: number; institutionNetBuyQty?: number; totalNetBuyQty?: number } | null; loading: boolean; error: string | null; source?: string | null; intradayError?: string | null; showHeadlineScore?: boolean }) {
-  if (loading) return <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-5 text-sm text-gray-500">저장된 시장분석 결과를 조회하고 있습니다.</div>;
+  if (loading) return <div className="tb-card mt-6 p-5 text-sm text-slate-500">저장된 시장분석 결과를 조회하고 있습니다.</div>;
   if (error || !data) return <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5"><h2 className="font-bold text-amber-900">시장분석을 이용할 수 없습니다</h2><p className="mt-2 text-sm text-amber-800">{error ?? "분석에 필요한 공식 일봉 데이터가 준비되지 않았습니다."}</p><p className="mt-2 text-xs text-amber-700">확인되지 않은 값으로 대신 계산하지 않습니다.</p></div>;
   const record = data.record; const i = record.indicators;
   if (!record.eligible) return <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5"><h2 className="font-bold text-amber-900">시장분석 제외</h2><p className="mt-2 text-sm text-amber-800">{record.ineligibleReasons.join(", ")}</p></div>;
@@ -33,8 +33,8 @@ export default function MarketAnalysisPanel({ data, intraday, investorData, load
     ["20일 평균 대비 거래량", `${number(i.volumeRatio, 1)}%`], ["ATR(14) / ATR 비율", `${number(i.atr14, 0)}원 / ${number(i.atrPercent)}%`],
     ["20일 변동성", `${number(i.volatility20)}%`], ["52주 고가 · 저가 · 위치", `${number(i.high52w, 0)} / ${number(i.low52w, 0)} / ${number(i.position52w, 1)}%`],
   ];
-  return <><div className="mt-6 rounded-2xl border border-gray-200 bg-white p-5">
-    <p className="text-sm text-gray-500">공식 일봉 기준 분석</p><h2 className="mt-1 text-xl font-bold text-gray-900">시장 분석</h2>
+  return <><div className="tb-card mt-6 p-5 sm:p-6">
+    <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--tb-blue)]">Official daily analysis</p><h2 className="mt-1 text-xl font-extrabold tracking-tight text-slate-950">시장 분석</h2>
     <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-500"><span>데이터 기준일 {record.asOfDate}</span><span>공식 종가 {record.officialClosePrice?.toLocaleString()}원</span><span>공식 일봉 기준</span><span>{qualityLabel(record.qualityStatus)}</span></div>
     <div className="mt-5 rounded-xl border border-gray-200 p-4">{showHeadlineScore && <div className="flex justify-between"><div><p className="text-sm text-gray-500">종합 기술 흐름</p><span className="text-3xl font-bold text-gray-900">{record.finalTechnicalScore}</span><span className="text-sm text-gray-500"> / 100</span></div><span className="font-semibold">{record.technicalStatus}</span></div>}
       <div className="mt-4 space-y-3 text-sm">{Object.entries(record.componentScores).map(([key, value]) => <div className="flex items-center justify-between gap-3" key={key}><span>{componentLabels[key] ?? key}</span><span className="text-right"><strong>{scoreLabel(value)}</strong><span className="ml-2 text-xs text-gray-400">{number(value)}점</span></span></div>)}<div className="border-t pt-3 flex justify-between"><span>반전 신호</span><span>{record.reversalBonus > 0 ? `가점 +${record.reversalBonus}` : record.penalty > 0 ? `주의 -${record.penalty}` : "특이 신호 없음"}</span></div>{record.penaltyReasons.map((reason) => <p className="text-xs text-gray-500" key={reason}>• {reason}</p>)}</div>

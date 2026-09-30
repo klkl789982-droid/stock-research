@@ -8,7 +8,7 @@ const componentKeys=["profitability","growth","stability","valuation"] as const;
 export { companyAnalysisReasonLabel, companyAnalysisRecordReasonLabel };
 const cagrStatusLabel:Record<string,string>={available:"확인됨",missing:"비교 입력 없음",nonPositive:"비교 입력이 0 이하"};
 export default function CompanyAnalysisPanel({ result, loading, error }:{result:CompanyAnalysisResult|null;loading:boolean;error:string|null}) {
-  if(loading) return <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-5 text-sm text-gray-500">저장된 기업분석 결과를 조회하고 있습니다.</div>;
+  if(loading) return <div className="tb-card mt-6 p-5 text-sm text-slate-500">저장된 기업분석 결과를 조회하고 있습니다.</div>;
   if(error||!result) return <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5"><h2 className="font-bold text-amber-900">기업 재무데이터 준비 중</h2><p className="mt-2 text-sm text-amber-800">{error??"검증된 기업분석 결과가 아직 준비되지 않았습니다."}</p><p className="mt-2 text-xs text-amber-700">확인되지 않은 재무정보나 현재가로 대신 계산하지 않습니다.</p></div>;
   const r=result.record;
   if(!r.eligible&&Object.keys(r.financialMetrics??{}).length===0) return <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5"><h2 className="font-bold text-amber-900">기업분석 계산 불가</h2><div className="mt-2 space-y-1 text-sm text-amber-800">{r.ineligibleReasons.length ? r.ineligibleReasons.map((reason) => <p key={reason}>{companyAnalysisRecordReasonLabel(r, reason)}</p>) : <p>{companyAnalysisReasonLabel()}</p>}</div></div>;

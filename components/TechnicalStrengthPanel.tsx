@@ -21,10 +21,10 @@ const formatDate = (value?: string | null) => value && /^\d{8}$/u.test(value)
 
 export default function TechnicalStrengthPanel({ view, showScore = true }: { view: TechnicalStrengthView; showScore?: boolean }) {
   return (
-    <div className="mt-5 rounded-xl border border-gray-200 bg-white p-4">
+    <div className="tb-card mt-5 p-5 sm:p-6">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm text-gray-500">기술적 강도</p>
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--tb-blue)]">Technical strength</p>
           {view.status === "available" && showScore ? (
             <p className="mt-1"><span className="text-3xl font-bold text-gray-900">{view.score}</span><span className="text-sm text-gray-500"> / 100</span></p>
           ) : view.status !== "available" ? (

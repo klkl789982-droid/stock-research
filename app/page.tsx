@@ -330,28 +330,37 @@ function handleHome() {
   requestAnimationFrame(() => pageTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
 }
 return (
-    <main ref={pageTopRef} className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-5xl px-4 py-5 sm:px-6 sm:py-7">
-        <header className="flex items-center justify-between gap-4 border-b border-gray-200 pb-4">
-          <button type="button" onClick={handleHome} className="group text-left" aria-label="주식 리서치 홈으로">
-            <span className="block text-base font-bold tracking-tight text-gray-950 group-hover:text-gray-700">주식 리서치</span>
-            <span className="block text-xs text-gray-500">한국 주식 분석</span>
+    <main ref={pageTopRef} className="min-h-screen bg-[var(--tb-page)] text-slate-900">
+      <header className="sticky top-0 z-30 border-b border-[var(--tb-border)] bg-white/95 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
+          <button type="button" onClick={handleHome} className="tb-focus group flex shrink-0 items-center gap-3 rounded-xl text-left" aria-label="Tight Budget 홈으로">
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--tb-blue)] text-base font-black tracking-tighter text-white shadow-sm transition-transform group-hover:-translate-y-0.5">TB</span>
+            <span className="hidden sm:block"><span className="block text-lg font-extrabold tracking-tight text-slate-950">Tight <span className="font-medium">Budget</span></span><span className="block text-[11px] text-slate-500">Data-driven stock research</span></span>
           </button>
-          {searchedStock && <button type="button" onClick={handleHome} className="rounded-lg px-3 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 hover:text-gray-950">홈으로</button>}
-        </header>
-
-        {!searchedStock && <section className="mt-9 max-w-2xl sm:mt-12">
-        <p className="text-sm font-semibold text-gray-500">한국 주식 리서치</p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-950 sm:text-4xl">
-          궁금한 종목을 검색해 보세요
-        </h1>
-
-        <p className="mt-3 text-gray-600">
-          공식 데이터에 근거한 가격·기술·재무 분석을 한곳에서 확인합니다.
-        </p>
+          {searchedStock && <form className="ml-auto flex min-w-0 flex-1 gap-2 sm:max-w-xl" onSubmit={(event) => { event.preventDefault(); void handleSearch(); }}>
+            <label className="sr-only" htmlFor="header-stock-search">종목명 또는 종목코드 검색</label>
+            <input id="header-stock-search" value={query} onChange={(event) => setQuery(event.target.value)} disabled={loading} placeholder="종목명 또는 종목코드 검색" className="tb-focus min-w-0 flex-1 rounded-xl border border-[var(--tb-border)] bg-slate-50 px-4 py-2.5 text-sm text-slate-950 placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:outline-none" />
+            <button type="submit" disabled={loading} className="tb-focus rounded-xl bg-[var(--tb-blue)] px-4 py-2.5 text-sm font-bold text-white hover:bg-[var(--tb-blue-dark)] disabled:opacity-40">{loading ? "조회 중" : "검색"}</button>
+          </form>}
+          <div className="ml-auto hidden items-center gap-2 text-sm font-semibold text-slate-500 lg:flex">
+            <button type="button" onClick={handleHome} className="tb-focus rounded-lg px-3 py-2 text-[var(--tb-blue)]">홈</button>
+            <span className="rounded-lg px-3 py-2">종목 분석</span>
+            <span className="rounded-lg px-3 py-2">모델 TOP</span>
+          </div>
+        </div>
+      </header>
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        {!searchedStock && <section className="relative overflow-hidden rounded-[28px] bg-[#071a3b] px-6 py-9 text-white shadow-[0_20px_45px_rgba(17,39,78,0.16)] sm:px-10 sm:py-12 lg:px-14 lg:py-14">
+          <div aria-hidden="true" className="absolute -right-20 -top-24 h-80 w-80 rounded-full border-[52px] border-blue-500/25" />
+          <div aria-hidden="true" className="absolute -bottom-36 right-16 h-72 w-72 rounded-full border-[42px] border-red-500/25" />
+          <div className="relative max-w-2xl">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-200">Tight Budget</p>
+            <h1 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-5xl">데이터로 시작하는 종목 분석</h1>
+            <p className="mt-4 max-w-xl text-sm leading-6 text-slate-300 sm:text-base">공식 가격과 저장된 기술·재무 분석, 검증 중인 모델 순위를 한곳에서 명확한 기준일과 함께 확인하세요.</p>
+          </div>
         </section>}
 
-        <div className={`${searchedStock ? "mt-5 max-w-3xl" : "mt-8 max-w-2xl"} flex flex-col gap-2 sm:flex-row`}>
+        {!searchedStock && <div className="relative z-10 mx-auto -mt-5 flex max-w-3xl flex-col gap-2 px-3 sm:-mt-6 sm:flex-row">
           <input
   type="text"
   value={query}
@@ -362,20 +371,20 @@ return (
     }
   }}
   disabled={loading}
-  placeholder="종목명을 검색하세요"
-className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-black placeholder:text-gray-400 focus:border-gray-500 focus:outline-none"/>
+  placeholder="종목명 또는 종목코드를 검색하세요"
+className="tb-focus min-h-13 w-full rounded-2xl border border-[var(--tb-border)] bg-white px-5 py-3.5 text-slate-950 shadow-[0_8px_24px_rgba(17,39,78,0.08)] placeholder:text-slate-400 focus:border-blue-400 focus:outline-none"/>
 
           <button
   onClick={() => void handleSearch()}
   disabled={loading}
-  className="whitespace-nowrap rounded-xl bg-gray-900 px-5 py-3 font-medium text-white disabled:opacity-40"
+  className="tb-focus min-h-13 whitespace-nowrap rounded-2xl bg-[var(--tb-blue)] px-7 py-3.5 font-bold text-white shadow-sm transition-colors hover:bg-[var(--tb-blue-dark)] disabled:opacity-40"
 >
   {loading ? "검색 중" : "검색"}
 </button>
-        </div>
+        </div>}
 
         {searchError && <p role="alert" className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{searchError === "notFound" ? "해당 종목을 찾을 수 없습니다." : "검색 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요."}</p>}
-        <p className="mt-2 text-sm text-gray-500">
+        <p className={`${searchedStock ? "mt-2" : "mx-auto mt-3 max-w-3xl px-3"} text-sm text-slate-500`}>
           종목명 또는 종목코드를 입력하세요.
         </p>
 
@@ -383,10 +392,10 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
         {!searchedStock && showFullTop && <><button type="button" onClick={() => setShowFullTop(false)} className="mt-8 text-sm font-semibold text-gray-600 hover:text-gray-950">← 검색 화면으로</button><TopStocksPanel onSelectStock={handleSearch} /></>}
 
         {searchedStock && (
-          <div className="mt-10 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
-            <p className="text-sm text-gray-500">검색 결과</p>
+          <div className="tb-card mt-8 overflow-hidden p-5 sm:p-7">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--tb-blue)]">Stock Detail</p>
 
-            <h2 className="mt-2 text-2xl font-bold text-gray-900">
+            <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">
               {searchedStock}
             </h2>
 
@@ -410,7 +419,7 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
     : "-"}
 </strong>
 </div>
-{(verifiedRealtimePrice || priceInfo) && <div className="flex justify-between"><span>전일 대비</span><strong>{(verifiedRealtimePrice?.change ?? (priceInfo?.vs ? Number(priceInfo.vs) : 0)).toLocaleString()}원 · {(verifiedRealtimePrice?.rate ?? (priceInfo?.fltRt ? Number(priceInfo.fltRt) : 0)).toFixed(2)}%</strong></div>}
+{(verifiedRealtimePrice || priceInfo) && <div className="flex justify-between"><span>전일 대비</span><strong className={(verifiedRealtimePrice?.rate ?? Number(priceInfo?.fltRt ?? 0)) > 0 ? "text-[var(--tb-positive)]" : (verifiedRealtimePrice?.rate ?? Number(priceInfo?.fltRt ?? 0)) < 0 ? "text-[var(--tb-negative)]" : "text-slate-700"}>{(verifiedRealtimePrice?.change ?? (priceInfo?.vs ? Number(priceInfo.vs) : 0)).toLocaleString()}원 · {(verifiedRealtimePrice?.rate ?? (priceInfo?.fltRt ? Number(priceInfo.fltRt) : 0)).toFixed(2)}%</strong></div>}
 {realtimePrice && !verifiedRealtimePrice && priceMeta && <div className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800"><p className="font-semibold">실시간 시세 확인 불가</p><p>표시된 가격은 {priceMeta.asOfDate} 공식 종가 기준입니다.</p></div>}
 {realtimeError && <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">실시간 시세를 확인할 수 없습니다.{priceMeta ? ` 표시된 가격은 ${priceMeta.asOfDate} 공식 종가 기준입니다.` : ""}</p>}
 {priceError && <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">{priceError}</p>}
@@ -520,18 +529,18 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
 
             <section className="mt-6 border-t border-gray-100 pt-6">
               <div className="flex items-end justify-between gap-4"><div><p className="text-sm font-semibold text-gray-500">분석 요약</p><h3 className="mt-1 text-xl font-bold text-gray-950">핵심 결과를 한눈에</h3></div><span className="text-xs text-gray-400">검증된 데이터만 표시</span></div>
-              <div className="mt-4 divide-y divide-gray-100 rounded-xl border border-gray-200 bg-gray-50 px-4 sm:grid sm:grid-cols-3 sm:divide-x sm:divide-y-0 sm:px-0">
+              <div className="mt-4 divide-y divide-slate-100 rounded-2xl border border-[var(--tb-border)] bg-slate-50/70 px-4 sm:grid sm:grid-cols-3 sm:divide-x sm:divide-y-0 sm:px-0">
                 <div className="flex items-center justify-between py-4 sm:block sm:px-5"><span className="text-sm text-gray-500">기술 흐름</span><div className="text-right sm:mt-2 sm:text-left">{technicalStrength.status === "available" ? <><strong className="text-xl text-gray-950">{technicalStrength.score}</strong><span className="ml-1 text-xs text-gray-400">/ 100</span><p className="text-sm font-semibold text-gray-700">분석 모델 검증 중</p></> : <strong className="text-sm text-gray-700">{technicalStrength.status === "loading" ? "분석 준비 중" : analysisAvailabilityMessage(technicalStrength.reason)}</strong>}</div></div>
                 <div className="flex items-center justify-between py-4 sm:block sm:px-5"><span className="text-sm text-gray-500">기업 재무</span><div className="max-w-52 text-right sm:mt-2 sm:text-left">{companyAnalysisLoading ? <strong className="text-sm text-gray-700">분석 준비 중</strong> : companyAnalysis?.record?.eligible ? <><strong className="text-xl text-gray-950">{companyAnalysis.record.totalScore}</strong><span className="ml-1 text-xs text-gray-400">/ 100</span><p className="text-sm font-semibold text-gray-700">{companyAnalysis.record.grade}</p></> : <strong className="text-sm text-gray-700">{companyAnalysis?.record?.ineligibleReasons?.[0] ? companyAnalysisRecordReasonLabel(companyAnalysis.record, companyAnalysis.record.ineligibleReasons[0]) : companyAnalysisError ? "기업분석을 이용할 수 없습니다." : "분석 준비 중"}</strong>}</div></div>
                 <div className="flex items-center justify-between py-4 sm:block sm:px-5"><span className="text-sm text-gray-500">시장 흐름</span><div className="text-right sm:mt-2 sm:text-left">{marketAnalysisView.status === "available" ? <strong className="text-xl text-gray-950">{marketAnalysisView.data.record.technicalStatus}</strong> : <strong className="text-sm text-gray-700">{marketAnalysisView.status === "loading" ? "분석 준비 중" : analysisAvailabilityMessage(marketAnalysisView.reason, marketAnalysisError ?? undefined)}</strong>}</div></div>
               </div>
             </section>
 
-            <div className="mt-6 grid grid-cols-2 gap-2 rounded-xl bg-gray-100 p-1" role="tablist" aria-label="상세 분석">
+            <div className="mt-7 grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1.5" role="tablist" aria-label="상세 분석">
               <button
   onClick={() => setActiveTab("technical")}
   role="tab" aria-selected={activeTab === "technical"}
-  className={`rounded-lg px-3 py-2.5 text-sm font-semibold ${activeTab === "technical" ? "bg-white text-gray-950 shadow-sm" : "text-gray-500"}`}
+  className={`tb-focus rounded-xl px-3 py-3 text-sm font-semibold ${activeTab === "technical" ? "bg-white text-[var(--tb-blue)] shadow-sm" : "text-slate-500"}`}
 >
   기술·시장
 </button>
@@ -539,7 +548,7 @@ className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-blac
               <button
   onClick={() => setActiveTab("company")}
   role="tab" aria-selected={activeTab === "company"}
-  className={`rounded-lg px-3 py-2.5 text-sm font-semibold ${activeTab === "company" ? "bg-white text-gray-950 shadow-sm" : "text-gray-500"}`}
+  className={`tb-focus rounded-xl px-3 py-3 text-sm font-semibold ${activeTab === "company" ? "bg-white text-[var(--tb-blue)] shadow-sm" : "text-slate-500"}`}
 >
   기업
 </button>
