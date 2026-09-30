@@ -114,9 +114,60 @@ assert.equal(haltedExitRecord.backtestReturns.resolution.t5Status, "notExecutabl
 assert.equal(haltedExitRecord.backtestReturns.returns.nextOpenToT5CloseReturn, null);
 assert.equal(haltedExitRecord.futureReturns.future5dReturn, null);
 
+// Daily Production adds one verified trading date at a time. Prove that old frozen
+// signals mature incrementally without changing ranks, versions, or quarantine data.
+const maturityDates = ["2026-01-02", "2026-01-06", "2026-01-07", "2026-01-08", "2026-01-09", "2026-01-12"];
+const maturitySnapshots = maturityDates.map((date, index) => ({
+  schemaVersion: 6,
+  asOfDate: date,
+  isPartialRanking: true,
+  exclusionPolicyVersion: "quality-quarantine-v1",
+  modelVersionDefinitions: { "A-v1": { status: "active" }, "A-v2": { status: "evaluation" } },
+  universeSummary: { qualityEligibleUniverse: { count: 1 }, quarantinedUniverse: { count: 0 } },
+  records: [{
+    code: "000001", closePrice: 100 + index * 10,
+    scores: { modelA: 70, modelB: 60, modelC: 50, modelD: 55 }, ranks: { modelA: 1, modelB: 1, modelC: 1, modelD: 1 },
+    scoresByVersion: { "A-v1": 70, "A-v2": 70 }, ranksByVersion: { "A-v1": 1, "A-v2": 1 },
+    qualityEligibility: { eligible: true, status: "eligible", exclusions: [] },
+    factors: {}, riskFlags: {}, futureReturns: emptyFutureReturns(), backtestReturns: emptyBacktestReturns(),
+  }],
+}));
+const maturityLedgers = maturityDates.map((date, index) => ({ date, records: [{ code: "000001", openPrice: 100 + index * 10, closePrice: 100 + index * 10 }] }));
+const maturityCalendar = (lastIndex) => ({ schemaVersion: 1, dates: {
+  "2026-01-02": { status: "tradingDay", modelSnapshot: "created", marketPriceLedger: "created" },
+  "2026-01-05": { status: "marketClosed", modelSnapshot: "notRequired", marketPriceLedger: "notRequired" },
+  ...Object.fromEntries(maturityDates.slice(1, lastIndex + 1).map((date) => [date, { status: "tradingDay", modelSnapshot: "created", marketPriceLedger: "created" }])),
+} });
+const runMaturity = (lastIndex, inputSnapshots = maturitySnapshots.slice(0, lastIndex + 1), inputLedgers = maturityLedgers.slice(0, lastIndex + 1)) => resolveFutureReturns(prepareSnapshots(structuredClone(inputSnapshots)), prepareMarketPriceLedgers(structuredClone(inputLedgers)), maturityCalendar(lastIndex));
+
+const onlySignal = runMaturity(0);
+assert.deepEqual(Object.values(onlySignal.snapshots[0].records[0].futureReturns).slice(0, 4), [null, null, null, null], "T만 존재하면 모든 horizon이 pending이어야 합니다.");
+const throughT1 = runMaturity(1);
+assert.equal(throughT1.snapshots[0].records[0].futureReturns.future1dReturn, 10, "휴장일 다음 첫 거래일이 T+1이어야 합니다.");
+assert.equal(throughT1.snapshots[0].records[0].futureReturns.future5dReturn, null);
+assert.equal(throughT1.snapshots[0].records[0].futureReturns.future20dReturn, null);
+assert.equal(throughT1.snapshots[0].records[0].futureReturns.future60dReturn, null);
+const throughT5 = runMaturity(5);
+const maturedSignal = serializableSnapshot(throughT5.snapshots[0]);
+assert.equal(maturedSignal.records[0].futureReturns.future1dReturn, 10);
+assert.equal(maturedSignal.records[0].futureReturns.future5dReturn, 50);
+assert.equal(maturedSignal.records[0].futureReturns.future20dReturn, null, "미래 가격이 부족한 장기 horizon은 pending이어야 합니다.");
+assert.equal(maturedSignal.isPartialRanking, true);
+assert.equal(maturedSignal.exclusionPolicyVersion, "quality-quarantine-v1");
+assert.deepEqual(maturedSignal.modelVersionDefinitions, maturitySnapshots[0].modelVersionDefinitions);
+assert.deepEqual(maturedSignal.records[0].qualityEligibility, maturitySnapshots[0].records[0].qualityEligibility);
+assert.deepEqual(maturedSignal.records[0].scores, maturitySnapshots[0].records[0].scores);
+assert.deepEqual(maturedSignal.records[0].ranks, maturitySnapshots[0].records[0].ranks);
+const changedLedger = structuredClone(maturityLedgers.slice(0, 6)); changedLedger[1].records[0].closePrice = 999;
+const finiteProtected = runMaturity(5, throughT5.snapshots.map(serializableSnapshot), changedLedger);
+assert.equal(finiteProtected.snapshots[0].records[0].futureReturns.future1dReturn, 10, "이미 resolved된 outcome은 후속 실행에서 바뀌면 안 됩니다.");
+const maturitySecondRun = runMaturity(5, throughT5.snapshots.map(serializableSnapshot));
+assert.deepEqual(maturitySecondRun.changedDates, [], "동일 자료 재실행은 멱등이어야 합니다.");
+
 console.log(JSON.stringify({
   predictiveReturns: first.records[0].futureReturns,
   backtestReturns: first.records[0].backtestReturns,
   secondRunChangedSnapshots: secondRun.changedDates.length,
   blockedWeekdayStatus: gapRun.snapshots[0].records[0].backtestReturns.resolution.entryStatus,
+  incrementalMaturity: maturedSignal.records[0].futureReturns,
 }, null, 2));

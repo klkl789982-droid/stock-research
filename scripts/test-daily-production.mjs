@@ -84,7 +84,12 @@ assert.deepEqual(resolveOfficialReferenceDate({ observedDate: "2026-09-23", coll
 assert.deepEqual(resolveOfficialReferenceDate({ observedDate: "2026-09-21", collectionDate: "2026-09-29", previousProductionReferenceDate: "2026-09-22" }), { status: "stale", referenceDate: null, reason: "observedDateOlderThanProduction" }, "production보다 오래된 응답은 차단합니다.");
 assert.deepEqual(resolveOfficialReferenceDate({ observedDate: "2026-09-22", collectionDate: "2026-09-29", previousProductionReferenceDate: "2026-09-22" }), { status: "noNewOfficialEod", referenceDate: "2026-09-22", reason: "sameReferenceDate" });
 const runnerSource = await import("node:fs/promises").then((fs) => fs.readFile(new URL("./run-daily-production.mjs", import.meta.url), "utf8"));
+const dailyHistorySource = await import("node:fs/promises").then((fs) => fs.readFile(new URL("./run-daily-history.mjs", import.meta.url), "utf8"));
 assert.match(runnerSource, /--date=\$\{referenceDate\}.*--observed-date=\$\{referenceDate\}/su, "downstream에는 동일 referenceDate를 전달해야 합니다.");
 assert.match(runnerSource, /"--porcelain=v1", "-uall"/u, "새 compact history는 디렉터리가 아닌 파일 단위로 allowlist 검증해야 합니다.");
+assert.match(dailyHistorySource, /updateTradingCalendarDate\(requestedDate,[\s\S]*await runScript\("scripts\/resolve-history-returns\.mjs"\)/u, "거래일 상태와 가격 원장을 확정한 뒤 전체 history resolver를 호출해야 합니다.");
+assert.equal(isAllowedOlderHistory(assertPromotionFiles(["data/history/2026-09-22.json"], "2026-09-29", runId)), true, "과거 snapshot의 성숙 outcome도 promotion 대상이어야 합니다.");
 
 console.log(JSON.stringify({ records: compact.records.length, compactBytes: Buffer.byteLength(JSON.stringify(compact)), statuses: ["create", "idempotent", "revisionRequired", manifest.status], allowlistedFiles: files.length }, null, 2));
+
+function isAllowedOlderHistory(files) { return files.length === 1 && files[0] === "data/history/2026-09-22.json"; }
