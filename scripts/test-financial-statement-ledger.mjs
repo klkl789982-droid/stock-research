@@ -1,5 +1,17 @@
 import assert from "node:assert/strict"; import { financialSourceHash,validateFinancialStatement,classifyLedgerWrite } from "../lib/financial-statement-ledger.mjs";
+import { FINANCIAL_ACCOUNT_RULES, findFinancialAccountRow } from "../lib/financial-account-normalization.mjs";
 const normalizedAccounts={revenue:100,netIncome:10,equity:50}; const row={schemaVersion:1,code:"005930",corpCode:"00126380",companyName:"삼성전자",source:{provider:"DART"},reportCode:"11011",reportName:"사업보고서",businessYear:"2025",fiscalPeriodEnd:"2025-12-31",filingDate:"2026-03-20",receiptNumber:"202603200001",fsDivision:"CFS",unit:"KRW",normalizedAccounts,sourceHash:financialSourceHash(normalizedAccounts),generatedAt:"2026-08-17T00:00:00Z",qualityStatus:"PROVISIONAL",qualityReasons:[]};
 assert.deepEqual(validateFinancialStatement(row),[]); assert.equal(classifyLedgerWrite(null,row),"create"); assert.equal(classifyLedgerWrite(row,{...row}),"idempotent"); assert.equal(classifyLedgerWrite(row,{...row,sourceHash:"x"}),"conflict"); assert.equal(classifyLedgerWrite(row,{...row,sourceHash:"x",correctionOfReceiptNumber:row.receiptNumber}),"correction"); assert.notEqual(financialSourceHash({value:null}),financialSourceHash({value:0}));
 assert.deepEqual(validateFinancialStatement({...row,code:"0009K0"}),[]);
+const canonicalOperatingProfit = { sj_div: "CIS", account_id: "dart_OperatingIncomeLoss", account_nm: "영업이익", thstrm_amount: "100" };
+const fallbackOperatingProfit = { sj_div: "CIS", account_id: "ifrs-full_ProfitLossFromOperatingActivities", account_nm: "III.영업이익(손실)", thstrm_amount: "90" };
+assert.equal(findFinancialAccountRow([fallbackOperatingProfit, canonicalOperatingProfit], FINANCIAL_ACCOUNT_RULES.operatingProfit), canonicalOperatingProfit);
+assert.equal(findFinancialAccountRow([fallbackOperatingProfit], FINANCIAL_ACCOUNT_RULES.operatingProfit), fallbackOperatingProfit);
+const approvedOperatingProfitName = { sj_div: "CIS", account_id: "custom", account_nm: "영업이익(손실)" };
+assert.equal(findFinancialAccountRow([fallbackOperatingProfit, approvedOperatingProfitName], FINANCIAL_ACCOUNT_RULES.operatingProfit), approvedOperatingProfitName);
+assert.equal(findFinancialAccountRow([{ sj_div: "CIS", account_id: "custom_ProfitLossFromOperatingActivitiesAdjusted", account_nm: "조정영업활동손익" }], FINANCIAL_ACCOUNT_RULES.operatingProfit), undefined);
+assert.equal(findFinancialAccountRow([{ sj_div: "CIS", account_id: "custom", account_nm: "영업이익 조정액" }], FINANCIAL_ACCOUNT_RULES.operatingProfit), undefined);
+const existingRevenueName = { sj_div: "CIS", account_id: "custom", account_nm: "매출액" };
+const existingRevenueId = { sj_div: "CIS", account_id: "ifrs-full_Revenue", account_nm: "수익" };
+assert.equal(findFinancialAccountRow([existingRevenueName, existingRevenueId], FINANCIAL_ACCOUNT_RULES.revenue), existingRevenueName);
 console.log("정규화 재무 원장 schema·validator 테스트 통과");

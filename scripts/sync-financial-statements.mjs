@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import corpMap from "../data/corp-map.json" with { type: "json" };
 import { classifyLedgerWrite, financialSourceHash, validateFinancialStatement } from "../lib/financial-statement-ledger.mjs";
+import { FINANCIAL_ACCOUNT_RULES as rules, findFinancialAccountRow } from "../lib/financial-account-normalization.mjs";
 import { createCagrProvenance } from "../lib/company-analysis-provenance.mjs";
 
 const option = (name) => process.argv.find((value) => value.startsWith(`--${name}=`))?.split("=").slice(1).join("=");
@@ -30,22 +31,11 @@ const amount = (value) => {
   const parsed = Number(String(value).replaceAll(",", "").trim());
   return Number.isFinite(parsed) ? parsed : null;
 };
-const findRow = ({ ids = [], names = [], sections = [] }) => list.find((row) =>
-  (!sections.length || sections.includes(row.sj_div)) && (ids.includes(row.account_id) || names.includes(row.account_nm))
-);
+const findRow = (rule) => findFinancialAccountRow(list, rule);
 const current = (rule) => amount(findRow(rule)?.thstrm_amount);
 const twoYearCagr = (rule) => {
   const row = findRow(rule); const latest = amount(row?.thstrm_amount); const twoYearsAgo = amount(row?.bfefrmtrm_amount);
   return latest != null && twoYearsAgo != null && latest > 0 && twoYearsAgo > 0 ? (Math.pow(latest / twoYearsAgo, 1 / 2) - 1) * 100 : null;
-};
-const rules = {
-  revenue: { ids: ["ifrs-full_Revenue"], names: ["매출액", "수익(매출액)", "영업수익"], sections: ["IS", "CIS"] },
-  operatingProfit: { ids: ["dart_OperatingIncomeLoss"], names: ["영업이익", "영업이익(손실)"], sections: ["IS", "CIS"] },
-  netIncome: { ids: ["ifrs-full_ProfitLoss"], names: ["당기순이익", "당기순이익(손실)", "연결당기순이익"], sections: ["IS", "CIS"] },
-  assets: { ids: ["ifrs-full_Assets"], names: ["자산총계"], sections: ["BS"] },
-  liabilities: { ids: ["ifrs-full_Liabilities"], names: ["부채총계"], sections: ["BS"] },
-  equity: { ids: ["ifrs-full_Equity"], names: ["자본총계"], sections: ["BS"] },
-  interestExpense: { ids: ["ifrs-full_FinanceCosts"], names: ["이자비용", "금융비용", "이자비용(금융원가)"], sections: ["IS", "CIS"] },
 };
 const operatingProfit = current(rules.operatingProfit); const interestExpense = current(rules.interestExpense);
 const featureProvenance = { revenueCagr: createCagrProvenance(findRow(rules.revenue), amount), operatingProfitCagr: createCagrProvenance(findRow(rules.operatingProfit), amount) };
