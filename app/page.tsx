@@ -288,6 +288,7 @@ if (aborted?.status === "rejected") throw aborted.reason;
       alert("종목을 찾을 수 없습니다.");
     }
   } catch (error) {
+    if (requestId !== searchRequestIdRef.current || (error instanceof DOMException && error.name === "AbortError")) return;
     console.error(error);
     alert("검색 중 오류가 발생했습니다.");
   }
@@ -296,10 +297,46 @@ if (aborted?.status === "rejected") throw aborted.reason;
   if (requestId === searchRequestIdRef.current) setLoading(false);
 }
 }
+function handleHome() {
+  searchRequestIdRef.current += 1;
+  searchControllerRef.current?.abort();
+  searchControllerRef.current = null;
+  selectedCodeRef.current = null;
+  setQuery("");
+  setSearchedStock(null);
+  setStockInfo(null);
+  setRealtimePrice(null);
+  setPriceInfo(null);
+  setPriceHistory([]);
+  setPriceMeta(null);
+  setInvestorData(null);
+  setCompanyAnalysis(null);
+  setCompanyAnalysisError(null);
+  setCompanyAnalysisLoading(false);
+  setMarketAnalysis(null);
+  setIntradayAnalysis(null);
+  setMarketAnalysisError(null);
+  setIntradayError(null);
+  setRealtimeError(null);
+  setPriceError(null);
+  setPriceRequestStatus("idle");
+  setActiveTab("technical");
+  setShowFullTop(false);
+  setLoading(false);
+  requestAnimationFrame(() => pageTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+}
 return (
     <main ref={pageTopRef} className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
-        <header className="max-w-2xl">
+      <div className="mx-auto max-w-5xl px-4 py-5 sm:px-6 sm:py-7">
+        <header className="flex items-center justify-between gap-4 border-b border-gray-200 pb-4">
+          <button type="button" onClick={handleHome} className="group text-left" aria-label="주식 리서치 홈으로">
+            <span className="block text-base font-bold tracking-tight text-gray-950 group-hover:text-gray-700">주식 리서치</span>
+            <span className="block text-xs text-gray-500">한국 주식 분석</span>
+          </button>
+          {searchedStock && <button type="button" onClick={handleHome} className="rounded-lg px-3 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 hover:text-gray-950">홈으로</button>}
+        </header>
+
+        {!searchedStock && <section className="mt-9 max-w-2xl sm:mt-12">
         <p className="text-sm font-semibold text-gray-500">한국 주식 리서치</p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-950 sm:text-4xl">
           궁금한 종목을 검색해 보세요
@@ -308,9 +345,9 @@ return (
         <p className="mt-3 text-gray-600">
           공식 데이터에 근거한 가격·기술·재무 분석을 한곳에서 확인합니다.
         </p>
-        </header>
+        </section>}
 
-        <div className="mt-8 flex max-w-2xl gap-2">
+        <div className={`${searchedStock ? "mt-5 max-w-3xl" : "mt-8 max-w-2xl"} flex flex-col gap-2 sm:flex-row`}>
           <input
   type="text"
   value={query}
@@ -322,18 +359,18 @@ return (
   }}
   disabled={loading}
   placeholder="종목명을 검색하세요"
-className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-black placeholder:text-gray-400"/>
+className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-black placeholder:text-gray-400 focus:border-gray-500 focus:outline-none"/>
 
           <button
   onClick={() => void handleSearch()}
   disabled={loading}
-  className="whitespace-nowrap rounded-xl bg-gray-900 px-5 py-4 font-medium text-white disabled:opacity-40"
+  className="whitespace-nowrap rounded-xl bg-gray-900 px-5 py-3 font-medium text-white disabled:opacity-40"
 >
   {loading ? "검색 중" : "검색"}
 </button>
         </div>
 
-        <p className="mt-3 text-sm text-gray-500">
+        <p className="mt-2 text-sm text-gray-500">
           종목명 또는 종목코드를 입력하세요.
         </p>
 
