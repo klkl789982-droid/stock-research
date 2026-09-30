@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { TOP_INTRADAY_POLL_MS, toTopIntradayOverlay } from "../lib/top-stocks-intraday-overlay.mjs";
 
 type ModelId = "A" | "B" | "C" | "D";
 type TopStock = {
@@ -42,6 +43,7 @@ type TopStocksResponse = {
 
 type StockSelection = { code: string; name: string };
 type TopStocksPanelProps = { onSelectStock?: (stock: StockSelection) => void | Promise<void>; compact?: boolean; onOpenFull?: () => void };
+type IntradayOverlay = { code: string; status: "available"; price: number; rate: number | null; asOfDate: string | null; asOfTime: string | null; receivedAt: string | null; source: "KIS" | null } | { code: string; status: "unavailable" };
 
 const primaryTabs = [
   { id: "B", model: "B" as const, label: "모델 B · 추세 강도" },
@@ -68,6 +70,8 @@ export default function TopStocksPanel({ onSelectStock, compact = false, onOpenF
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [requestVersion, setRequestVersion] = useState(0);
+  const [intradayByCode, setIntradayByCode] = useState<Record<string, IntradayOverlay>>({});
+  const intradayRequestVersionRef = useRef(0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -95,6 +99,56 @@ export default function TopStocksPanel({ onSelectStock, compact = false, onOpenF
     load();
     return () => controller.abort();
   }, [activeTab, compact, requestVersion]);
+
+  useEffect(() => {
+    const codes = data?.stocks.slice(0, 5).map((stock) => stock.code) ?? [];
+    const requestVersion = ++intradayRequestVersionRef.current;
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let disposed = false;
+
+    const clearTimer = () => {
+      if (timer) clearTimeout(timer);
+      timer = null;
+    };
+    const schedule = () => {
+      clearTimer();
+      if (!disposed && !document.hidden && codes.length > 0) timer = setTimeout(loadQuotes, TOP_INTRADAY_POLL_MS);
+    };
+    async function loadQuotes() {
+      if (disposed || document.hidden || codes.length === 0) return;
+      let results;
+      try {
+        results = await Promise.all(codes.map(async (code) => {
+          try {
+            const response = await fetch(`/api/realtime?code=${code}`, { cache: "no-store", signal: controller.signal });
+            const quote = response.ok ? await response.json() : null;
+            return toTopIntradayOverlay(code, quote);
+          } catch {
+            return toTopIntradayOverlay(code, null);
+          }
+        }));
+      } catch {
+        return;
+      }
+      if (disposed || requestVersion !== intradayRequestVersionRef.current) return;
+      setIntradayByCode(Object.fromEntries(results.map((overlay) => [overlay.code, overlay])));
+      schedule();
+    }
+    const onVisibilityChange = () => {
+      if (document.hidden) clearTimer();
+      else if (!disposed) void loadQuotes();
+    };
+
+    if (codes.length > 0) void loadQuotes();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      disposed = true;
+      clearTimer();
+      controller.abort();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [data?.stocks]);
 
   return (
     <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
@@ -148,9 +202,9 @@ export default function TopStocksPanel({ onSelectStock, compact = false, onOpenF
       {!loading && !error && data && data.stocks.length > 0 && (
         <div className="mt-5 overflow-x-auto rounded-xl border border-gray-200">
           <table className={`w-full table-auto border-collapse text-sm ${compact ? "" : "min-w-[560px]"}`}>
-            <thead className="bg-gray-50 text-left text-xs text-gray-500"><tr><th className="whitespace-nowrap px-3 py-3 font-medium sm:px-4">순위</th><th className="px-3 py-3 font-medium sm:px-4">종목명</th><th className="hidden px-4 py-3 font-medium sm:table-cell">시장</th><th className="whitespace-nowrap px-3 py-3 text-right font-medium sm:px-4">점수</th>{!compact && <th className="whitespace-nowrap px-3 py-3 text-right font-medium sm:px-4">기준일 종가</th>}</tr></thead>
+            <thead className="bg-gray-50 text-left text-xs text-gray-500"><tr><th className="whitespace-nowrap px-3 py-3 font-medium sm:px-4">순위</th><th className="px-3 py-3 font-medium sm:px-4">종목명</th><th className="hidden px-4 py-3 font-medium sm:table-cell">시장</th><th className="whitespace-nowrap px-3 py-3 text-right font-medium sm:px-4">전일 점수</th>{!compact && <th className="whitespace-nowrap px-3 py-3 text-right font-medium sm:px-4">기준일 종가</th>}<th className="whitespace-nowrap px-3 py-3 text-right font-medium sm:px-4">오늘 현재</th></tr></thead>
             <tbody className="divide-y divide-gray-100">
-              {data.stocks.map((stock) => <tr key={stock.code} className="hover:bg-gray-50"><td className="whitespace-nowrap px-3 py-4 font-semibold text-gray-900 sm:px-4">{stock.rank}</td><td className="px-3 py-4 sm:px-4"><button type="button" disabled={selectingCode !== null} aria-label={`${stock.name} ${stock.code} 검색`} onClick={async () => { if (!onSelectStock || selectingCode) return; setSelectingCode(stock.code); try { await onSelectStock({ code: stock.code, name: stock.name }); } finally { setSelectingCode(null); } }} className="cursor-pointer text-left font-semibold text-gray-900 hover:text-blue-700 hover:underline disabled:cursor-wait">{stock.name}<span className="block whitespace-nowrap text-xs font-normal text-gray-400 sm:inline sm:ml-2">{stock.code}</span></button></td><td className="hidden px-4 py-4 text-gray-500 sm:table-cell">{stock.market}</td><td className="whitespace-nowrap px-3 py-4 text-right font-semibold text-gray-800 sm:px-4">{stock.score.toFixed(2)}</td>{!compact && <td className="whitespace-nowrap px-3 py-4 text-right text-gray-700 sm:px-4">{stock.closePrice.toLocaleString("ko-KR")}원</td>}</tr>)}
+              {data.stocks.map((stock) => { const overlay = intradayByCode[stock.code]; return <tr key={stock.code} className="hover:bg-gray-50"><td className="whitespace-nowrap px-3 py-4 font-semibold text-gray-900 sm:px-4">{stock.rank}</td><td className="px-3 py-4 sm:px-4"><button type="button" disabled={selectingCode !== null} aria-label={`${stock.name} ${stock.code} 검색`} onClick={async () => { if (!onSelectStock || selectingCode) return; setSelectingCode(stock.code); try { await onSelectStock({ code: stock.code, name: stock.name }); } finally { setSelectingCode(null); } }} className="cursor-pointer text-left font-semibold text-gray-900 hover:text-blue-700 hover:underline disabled:cursor-wait">{stock.name}<span className="block whitespace-nowrap text-xs font-normal text-gray-400 sm:inline sm:ml-2">{stock.code}</span></button></td><td className="hidden px-4 py-4 text-gray-500 sm:table-cell">{stock.market}</td><td className="whitespace-nowrap px-3 py-4 text-right font-semibold text-gray-800 sm:px-4">{stock.score.toFixed(2)}</td>{!compact && <td className="whitespace-nowrap px-3 py-4 text-right text-gray-700 sm:px-4">{stock.closePrice.toLocaleString("ko-KR")}원</td>}<td className="whitespace-nowrap px-3 py-4 text-right text-xs sm:px-4">{overlay?.status === "available" ? <><strong className="block text-sm text-gray-900">{overlay.price.toLocaleString("ko-KR")}원</strong><span className={overlay.rate != null && overlay.rate < 0 ? "text-rose-700" : overlay.rate != null && overlay.rate > 0 ? "text-emerald-700" : "text-gray-500"}>{overlay.rate == null ? "KIS 현재 조회" : `${overlay.rate > 0 ? "+" : ""}${overlay.rate.toFixed(2)}%`}</span><span className="mt-0.5 block text-[11px] text-gray-400">{overlay.asOfTime ? `KIS ${overlay.asOfTime}` : "KIS 현재 조회"}</span></> : <span className="text-gray-400">현재가 확인 불가</span>}</td></tr>; })}
             </tbody>
           </table>
         </div>
