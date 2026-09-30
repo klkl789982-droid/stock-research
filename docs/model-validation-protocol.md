@@ -70,3 +70,15 @@ For each registered window:
 
 Do not change weights under the same version. Any formula, weight, threshold,
 or penalty change requires a new append-only model version and experiment.
+
+## Cross-sectional validation metrics
+
+`model-validation-v1` treats each signal date as one cross-sectional observation.
+It does not treat every stock on the same date as an independent time-series sample.
+Spearman Rank IC uses average ranks for score and return ties. Deciles are assigned
+after deterministic frozen-rank-then-code ordering and are balanced by row count;
+decile 1 is the top bucket. The reported top-decile-minus-bottom-decile value is an
+eligible-universe-relative spread, not a market benchmark excess return. Until an
+approved KOSPI/KOSDAQ benchmark source exists, `benchmark` and `excessReturn` remain
+`null`. Metrics may be displayed before 60 resolved signal dates, but no validation,
+promotion, or model-superiority conclusion is allowed before that threshold.
