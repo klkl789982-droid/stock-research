@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "referenceDate": "2026-09-30",
+  "runId": "daily-20261001172844",
+  "status": "PROMOTED",
+  "startedAt": "2026-10-01T17:28:44.035Z",
+  "completedAt": "2026-10-01T17:35:59.779Z",
+  "source": {
+    "provider": "공공데이터포털",
+    "operation": "getStockPriceInfo"
+  },
+  "provenance": {
+    "schemaVersion": 2,
+    "requestedDate": "2026-09-30",
+    "generatedAt": "2026-10-01T17:35:56.486Z",
+    "sources": {
+      "securityMaster": {
+        "provider": "KIS",
+        "asOfDate": null,
+        "pointInTimeCertified": false,
+        "contentHash": null
+      },
+      "officialDailyPrice": {
+        "provider": "공공데이터포털",
+        "service": "getStockPriceInfo",
+        "requestedDate": "2026-09-30",
+        "minimumLatestBasDt": "20260930",
+        "maximumLatestBasDt": "20260930",
+        "rawResponseStored": false,
+        "normalizedInputHash": "262d8104d29394e0a01f21a3597157b173aaa54b79fedfd8dd16fff70903b076"
+      }
+    },
+    "universe": {
+      "filterVersion": "v1",
+      "contentHash": "032857c64b3d087a7aaf67c1eb182eaabc7fab4b38a7eed8f7bcd3e3b54261d4"
+    },
+    "modelFormulaHashes": {
+      "A-v1": "43efe2d499ccb05b183056f8e8f82bf91190e863ba86fb326c398f16006fcb4c",
+      "A-v2": "b3578fe7f9452d9cc169f705b0508de3b6f0f0e1674c5d4e10b7bac3d358bb2a",
+      "B-v1": "b9a45d38d0398617133ce8c9ce9dd05393ba787c3ad8e032efc8cb5cea6052d0",
+      "C-v1": "86f255711483ae949ec913750048461ac3a41b98dc28b2c0e21ca10522b16b8b",
+      "D-v1": "033a5f3e40adba3c74360e646b622b95683b1a83805baeb079227226658e732f"
+    },
+    "marketDataNormalizationVersion": "v2"
+  },
+  "sourceGitSha": "a19172c450105da6e4d4b8c90ddce5f521868859",
+  "promotionGitSha": null,
+  "promotionCommitBasis": "manifestContainedInPromotionCommit",
+  "previousProductionReferenceDate": "2026-09-28",
+  "snapshotHash": "c8c32cada36cc2527817137ec2ce82af148afb0f50987e4eab88553c6d277342",
+  "universeHash": "3672e61b8593b2dbebb3e36babd5e0f333a7a33992ea30f9c2f15655e30b3d68",
+  "priceLedgerHash": "ed4b90260e1b4365f563f1250b9611a2bd052a6efe7e832f96e1981ef8a08ae2",
+  "originalCount": 553,
+  "eligibleCount": 523,
+  "quarantineCount": 30,
+  "rankingUniverseSizeByModel": {
+    "A-v1": 508,
+    "A-v2": 508,
+    "B-v1": 508,
+    "C-v1": 523,
+    "D-v1": 508
+  },
+  "issueManifestHash": null,
+  "compactHistoryHash": "6e7741276f873a2c2be4b376e8dd992956360755d3afa0c357835c14301f4e9b",
+  "promoted": true,
+  "promotedAt": "2026-10-01T17:36:00.056Z",
+  "reason": null,
+  "contentHash": "290fe772e8e074a750d2fc08faa5714216e6e72a7af42aad111f553411e44d88"
+}
