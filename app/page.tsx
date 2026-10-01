@@ -332,11 +332,11 @@ function handleHome() {
   requestAnimationFrame(() => pageTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
 }
 return (
-    <main ref={pageTopRef} className="min-h-screen bg-[var(--tb-page)] text-slate-900">
+    <main ref={pageTopRef} className="tb-page-ambient min-h-screen text-slate-900">
       <header className="tb-brand-shell sticky top-0 z-30 border-b border-white/10 text-white shadow-[0_8px_25px_rgba(7,18,40,0.14)]">
-        <div className="mx-auto flex max-w-[1600px] items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
+        <div className="flex w-full items-center gap-4 px-4 py-2 sm:px-6 lg:px-6">
           <button type="button" onClick={handleHome} className="tb-focus shrink-0 rounded-xl text-left" aria-label="Tight Budget 홈으로">
-            <span className="sm:hidden"><BrandMark compact inverse /></span><span className="hidden sm:inline-flex"><BrandMark inverse /></span>
+            <BrandMark inverse />
           </button>
           <form className="ml-auto hidden min-w-0 flex-1 gap-2 sm:flex sm:max-w-xl" onSubmit={(event) => { event.preventDefault(); void handleSearch(); }}>
             <label className="sr-only" htmlFor="header-stock-search">종목명 또는 종목코드 검색</label>
@@ -355,25 +355,30 @@ return (
           <button type="submit" disabled={loading} className="tb-focus rounded-full bg-[var(--tb-orange)] px-4 py-2 text-sm font-bold text-white disabled:opacity-40">{loading ? "조회 중" : "검색"}</button>
         </form>}
       </header>
-      <div className="mx-auto flex max-w-[1600px] items-stretch">
-        <aside className="hidden w-56 shrink-0 border-r border-[var(--tb-border)] bg-white px-4 py-6 lg:flex lg:min-h-[calc(100vh-73px)] lg:flex-col">
-          <nav className="space-y-2" aria-label="주요 메뉴">
-            <button type="button" onClick={handleHome} className="tb-focus flex w-full items-center gap-3 rounded-xl bg-orange-50 px-4 py-3 text-left text-sm font-bold text-[var(--tb-orange)]"><span aria-hidden="true">⌂</span> 홈</button>
-            <button type="button" onClick={() => searchInputRef.current?.focus()} className="tb-focus flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-slate-600 hover:bg-slate-50"><span aria-hidden="true">⌕</span> 종목 분석</button>
-            <button type="button" onClick={() => { handleHome(); setShowFullTop(true); }} className="tb-focus flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-slate-600 hover:bg-slate-50"><span aria-hidden="true">▦</span> 모델 TOP</button>
+      <div className="relative z-[1] flex w-full items-stretch">
+        <aside className="tb-sidebar-surface hidden w-52 shrink-0 border-r border-[var(--tb-border)] px-3 py-4 lg:flex lg:min-h-[calc(100vh-60px)] lg:flex-col">
+          <nav className="space-y-1" aria-label="주요 메뉴">
+            <button type="button" onClick={handleHome} className="tb-focus flex w-full items-center gap-3 rounded-lg bg-[rgba(182,91,50,0.13)] px-3 py-2.5 text-left text-sm font-semibold text-[var(--tb-orange)]"><span aria-hidden="true">⌂</span> 홈</button>
+            <button type="button" onClick={() => searchInputRef.current?.focus()} className="tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"><span aria-hidden="true">⌕</span> 종목 분석</button>
+            <button type="button" onClick={() => { handleHome(); setShowFullTop(true); }} className="tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"><span aria-hidden="true">▦</span> 모델 TOP</button>
+            <div className="my-3 border-t border-white/10" />
+            {[["▥", "시장 현황"], ["⌁", "백테스트"], ["☆", "관심 종목"], ["▽", "스크리닝"]].map(([icon, label]) => <div key={label} className="tb-muted-nav flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium" aria-disabled="true"><span aria-hidden="true">{icon}</span><span>{label}</span><span className="ml-auto text-[8px] uppercase tracking-wider">준비 중</span></div>)}
           </nav>
-          <div className="mt-auto rounded-2xl border border-[var(--tb-border)] bg-slate-50 p-4"><BrandMark compact /><p className="mt-3 text-sm font-bold text-[var(--tb-text)]">Tight Budget</p><p className="mt-1 text-xs leading-5 text-[var(--tb-muted)]">데이터 기준을 숨기지 않는 종목 분석</p></div>
+          <div className="mt-auto rounded-2xl border border-white/25 bg-white/15 p-4 shadow-[0_16px_38px_rgba(7,18,39,0.12)]"><BrandMark compact /><p className="mt-3 text-sm font-medium text-slate-100">Tight Budget</p><p className="mt-1 text-xs font-light leading-5 text-slate-300">데이터 기준을 숨기지 않는 종목 분석</p></div>
         </aside>
-        <div className="min-w-0 flex-1 px-4 py-5 sm:px-6 sm:py-7 lg:px-7">
+        <div className="min-w-0 flex-1 px-3 py-3 sm:px-4 sm:py-4 lg:px-4 xl:px-5">
+        {!searchedStock && !showFullTop && <section className="mb-3 grid grid-cols-2 gap-2 xl:grid-cols-4" aria-label="시장 데이터 연결 상태">
+          {[{ label: "KOSPI", note: "공식 지수 소스" }, { label: "KOSDAQ", note: "공식 지수 소스" }, { label: "KRW / USD", note: "검증 환율 소스" }, { label: "거래대금", note: "시장 집계 소스" }].map((item) => <div key={item.label} className="tb-market-status-panel px-4 py-3"><div className="flex items-center justify-between gap-3"><p className="text-[11px] font-medium tracking-[0.08em] text-slate-300">{item.label}</p><span className="rounded-full border border-white/10 px-2 py-0.5 text-[9px] text-slate-400">준비 중</span></div><p className="mt-1.5 text-sm font-light text-slate-100">데이터 연결 전</p><p className="mt-0.5 text-[10px] text-slate-400">{item.note} 확인 후 제공</p></div>)}
+        </section>}
         {!searchedStock && !showFullTop && <div className="grid gap-5 xl:grid-cols-[minmax(0,1.8fr)_minmax(280px,0.7fr)]">
-        <section className="tb-matte-hero relative overflow-hidden rounded-[24px] px-6 py-8 text-white shadow-[0_18px_40px_rgba(10,23,51,0.16)] sm:px-9 sm:py-10">
-          <div aria-hidden="true" className="absolute -bottom-20 -right-12 text-[210px] font-black leading-none tracking-[-0.18em] text-white/[0.055]">TB</div>
-          <div className="relative max-w-2xl">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-200">Tight Budget</p>
-            <h1 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">데이터로 시작하는 종목 분석</h1>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-300">공식 가격과 저장된 기술·재무 분석, 검증 중인 모델 순위를 명확한 기준일과 함께 확인하세요.</p>
+        <section className="tb-matte-hero relative overflow-hidden rounded-[18px] px-6 py-6 text-white sm:px-8 sm:py-7">
+          <div aria-hidden="true" className="absolute -bottom-10 right-1 z-[1] hidden opacity-90 lg:block"><BrandMark hero symbolOnly inverse /></div>
+          <div className="relative z-[2] max-w-2xl lg:max-w-[74%]">
+            <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#d7a17f]">Tight Budget</p>
+            <h1 className="mt-2 text-[28px] font-medium tracking-[-0.035em] 2xl:text-[32px]">데이터로 시작하는 종목 분석</h1>
+            <p className="mt-2 max-w-xl text-xs font-light leading-5 text-slate-300">공식 가격과 저장된 기술·재무 분석, 검증 중인 모델 순위를 기준일과 함께 확인하세요.</p>
           </div>
-          <div className="relative mt-6 flex flex-col gap-2 sm:max-w-2xl sm:flex-row">
+          <div className="relative z-[2] mt-4 flex flex-col gap-2 sm:max-w-2xl sm:flex-row lg:max-w-[74%]">
           <input
   ref={searchInputRef}
   type="text"
@@ -386,30 +391,31 @@ return (
   }}
   disabled={loading}
   placeholder="종목명 또는 종목코드를 검색하세요"
-className="tb-focus min-h-12 w-full rounded-full border border-white/20 bg-white px-5 py-3 text-slate-950 shadow-lg placeholder:text-slate-400 focus:border-orange-300 focus:outline-none"/>
+className="tb-focus min-h-11 w-full rounded-full border border-white/20 bg-[rgba(247,246,242,0.94)] px-5 py-2.5 text-sm text-slate-950 shadow-[0_10px_30px_rgba(2,10,26,0.16)] placeholder:text-slate-400 focus:border-[#c6835d] focus:outline-none"/>
 
           <button
   onClick={() => void handleSearch()}
   disabled={loading}
-  className="tb-focus min-h-12 whitespace-nowrap rounded-full bg-[var(--tb-orange)] px-7 py-3 font-bold text-white shadow-sm transition-colors hover:bg-[var(--tb-orange-bright)] disabled:opacity-40"
+  className="tb-focus min-h-11 whitespace-nowrap rounded-full bg-[var(--tb-orange)] px-7 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[var(--tb-orange-bright)] disabled:opacity-40"
 >
   {loading ? "검색 중" : "검색"}
 </button>
           </div>
         </section>
-        <section className="tb-card p-5 sm:p-6">
-          <p className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--tb-orange)]">Analysis coverage</p>
-          <h2 className="mt-2 text-xl font-extrabold tracking-tight text-[var(--tb-text)]">검증된 데이터만 표시</h2>
-          <div className="mt-5 space-y-4 text-sm"><div><p className="font-bold text-slate-800">공식 가격</p><p className="mt-1 text-xs leading-5 text-slate-500">최근 거래일 공식 종가와 KIS 조회가를 구분합니다.</p></div><div className="border-t border-slate-100 pt-4"><p className="font-bold text-slate-800">저장 분석</p><p className="mt-1 text-xs leading-5 text-slate-500">기술·시장·기업 결과의 기준일과 품질 상태를 함께 표시합니다.</p></div><div className="border-t border-slate-100 pt-4"><p className="font-bold text-slate-800">모델 순위</p><p className="mt-1 text-xs leading-5 text-slate-500">Daily Production의 실제 A/B/C/D 결과만 사용합니다.</p></div></div>
+        <section className="tb-card p-4">
+          <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--tb-orange)]">Analysis coverage</p>
+          <h2 className="mt-1.5 text-lg font-medium tracking-tight text-[var(--tb-text)]">검증된 데이터만 표시</h2>
+          <div className="mt-3 divide-y divide-slate-200/70 text-xs"><div className="flex items-center justify-between gap-3 py-2"><span className="text-slate-500">가격</span><strong className="font-medium text-slate-800">공식 종가 · KIS 분리</strong></div><div className="flex items-center justify-between gap-3 py-2"><span className="text-slate-500">분석</span><strong className="font-medium text-slate-800">기준일 · 품질 표시</strong></div><div className="flex items-center justify-between gap-3 py-2"><span className="text-slate-500">순위</span><strong className="font-medium text-slate-800">Daily A / B / C / D</strong></div></div>
+          <p className="mt-3 rounded-lg bg-[rgba(35,50,78,0.06)] px-3 py-2 text-[10px] leading-4 text-slate-500">예시 값이나 오래된 데이터를 현재 정보처럼 대체하지 않습니다.</p>
         </section>
         </div>}
 
         {searchError && <p role="alert" className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{searchError === "notFound" ? "해당 종목을 찾을 수 없습니다." : "검색 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요."}</p>}
-        {!searchedStock && !showFullTop && <p className="mt-3 px-1 text-xs text-slate-500">
+        {!searchedStock && !showFullTop && <p className="mt-2 px-1 text-[10px] text-slate-600">
           종목명 또는 종목코드를 입력하세요.
         </p>}
 
-        {!searchedStock && !showFullTop && <div className="grid gap-5 xl:grid-cols-[minmax(0,1.8fr)_minmax(280px,0.7fr)]"><TopStocksPanel compact onSelectStock={handleSearch} onOpenFull={() => setShowFullTop(true)} /><section className="tb-card mt-6 p-5 sm:p-6"><p className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--tb-orange)]">Quick start</p><h2 className="mt-2 text-xl font-extrabold text-[var(--tb-text)]">분석을 시작하세요</h2><p className="mt-2 text-sm leading-6 text-slate-500">종목을 검색하거나 모델 TOP 종목명을 선택하면 상세 분석으로 바로 이동합니다.</p><button type="button" onClick={() => searchInputRef.current?.focus()} className="tb-focus mt-5 w-full rounded-xl bg-[var(--tb-navy)] px-4 py-3 text-sm font-bold text-white hover:bg-[var(--tb-indigo)]">종목 검색</button><button type="button" onClick={() => setShowFullTop(true)} className="tb-focus mt-2 w-full rounded-xl border border-[var(--tb-border)] px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">전체 모델 순위</button></section></div>}
+        {!searchedStock && !showFullTop && <div className="grid gap-3 xl:grid-cols-[minmax(0,1.8fr)_minmax(280px,0.7fr)]"><TopStocksPanel compact onSelectStock={handleSearch} onOpenFull={() => setShowFullTop(true)} /><section className="tb-card mt-3 p-4"><p className="text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--tb-orange)]">Quick start</p><h2 className="mt-1.5 text-lg font-medium text-[var(--tb-text)]">분석을 시작하세요</h2><p className="mt-2 text-xs leading-5 text-slate-500">종목 검색 또는 모델 TOP 종목 선택으로 상세 분석을 확인하세요.</p><button type="button" onClick={() => searchInputRef.current?.focus()} className="tb-focus mt-4 w-full rounded-lg bg-[var(--tb-navy)] px-4 py-2.5 text-xs font-medium text-white hover:bg-[var(--tb-indigo)]">종목 검색</button><button type="button" onClick={() => setShowFullTop(true)} className="tb-focus mt-2 w-full rounded-lg border border-[var(--tb-border)] px-4 py-2.5 text-xs font-medium text-slate-700 hover:bg-white/30">전체 모델 순위</button><div className="mt-4 border-t border-slate-200/70 pt-3"><p className="text-[10px] text-slate-500">SYSTEM STATUS</p><div className="mt-2 flex items-center justify-between text-xs"><span className="text-slate-600">저장 순위 조회</span><span className="flex items-center gap-1.5 text-slate-700"><i className="h-1.5 w-1.5 rounded-full bg-emerald-600" />사용 가능</span></div></div></section></div>}
         {!searchedStock && showFullTop && <><button type="button" onClick={() => setShowFullTop(false)} className="tb-focus mt-1 rounded-lg px-2 py-2 text-sm font-semibold text-[var(--tb-orange)] hover:bg-orange-50">← 대시보드로</button><TopStocksPanel onSelectStock={handleSearch} /></>}
 
         {searchedStock && (

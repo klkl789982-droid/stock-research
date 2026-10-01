@@ -1,25 +1,25 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f3f5f8;
+  --background: #7f8d9b;
   --foreground: #111d35;
   --tb-navy: #0a1733;
   --tb-indigo: #293653;
-  --tb-orange: #e85f22;
-  --tb-orange-bright: #ff7a28;
+  --tb-orange: #a95835;
+  --tb-orange-bright: #bd6943;
   --tb-blue: var(--tb-orange);
   --tb-blue-dark: #c94a15;
   --tb-red: #e8404f;
-  --tb-page: #f3f5f8;
-  --tb-card: #ffffff;
-  --tb-text: #111d35;
-  --tb-muted: #697386;
-  --tb-border: #e2e6ed;
+  --tb-page: #7f8d9b;
+  --tb-card: rgba(241, 238, 231, 0.84);
+  --tb-text: #142038;
+  --tb-muted: #5f6b7d;
+  --tb-border: rgba(30, 43, 68, 0.18);
   --tb-positive: #e8404f;
   --tb-negative: #1672e8;
   --tb-warning: #b86b09;
-  --tb-radius: 20px;
-  --tb-shadow: 0 10px 30px rgba(10, 23, 51, 0.055);
+  --tb-radius: 14px;
+  --tb-shadow: 0 20px 52px rgba(13, 25, 47, 0.14), 0 8px 22px rgba(92, 51, 34, 0.055), inset 0 1px 0 rgba(255, 255, 255, 0.38);
 }
 
 @theme inline {
@@ -60,21 +60,85 @@ summary {
 }
 
 .tb-brand-mark {
-  background:
-    linear-gradient(145deg, transparent 45%, rgba(255, 122, 40, 0.98) 46% 74%, transparent 75%),
-    linear-gradient(160deg, #56678f 0%, #263554 48%, #101c38 100%);
-  box-shadow: 0 8px 18px rgba(7, 18, 40, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  filter: drop-shadow(0 8px 12px rgba(5, 13, 30, 0.25));
 }
 
 .tb-brand-shell {
   background:
-    radial-gradient(circle at 88% 20%, rgba(255, 119, 42, 0.2), transparent 28%),
-    linear-gradient(105deg, var(--tb-navy) 0%, #111d3b 58%, #302439 100%);
+    radial-gradient(ellipse 52% 180% at 105% 70%, rgba(133, 60, 38, 0.46), transparent 72%),
+    linear-gradient(90deg, rgba(3, 14, 34, 0.86), rgba(12, 24, 48, 0.68) 64%, rgba(48, 26, 30, 0.56)),
+    url("/tb-material-bg-v2.png") center 30% / cover;
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.06), 0 10px 32px rgba(8, 21, 47, 0.16);
 }
 
 .tb-matte-hero {
   background:
-    radial-gradient(circle at 84% 78%, rgba(238, 98, 30, 0.36), transparent 31%),
-    radial-gradient(circle at 68% 18%, rgba(87, 104, 151, 0.28), transparent 30%),
-    linear-gradient(135deg, #091733 0%, #15213d 58%, #432b31 100%);
+    radial-gradient(ellipse 62% 110% at 106% 112%, rgba(164, 72, 38, 0.3), transparent 69%),
+    linear-gradient(90deg, rgba(1, 12, 32, 0.91), rgba(6, 22, 49, 0.77) 55%, rgba(34, 25, 36, 0.52)),
+    url("/tb-material-bg-v2.png") center 50% / cover;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), 0 22px 54px rgba(7, 18, 40, 0.24), 0 8px 22px rgba(100, 52, 36, 0.1);
+}
+
+.tb-matte-hero::after {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  opacity: 0.28;
+  background: radial-gradient(ellipse 55% 85% at 89% 82%, rgba(225, 132, 78, 0.2), transparent 70%);
+  mix-blend-mode: screen;
+}
+
+.tb-page-ambient {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse 105% 78% at -12% -12%, rgba(3, 16, 39, 0.68), transparent 74%),
+    radial-gradient(ellipse 95% 90% at 111% 108%, rgba(116, 50, 30, 0.22), transparent 76%),
+    linear-gradient(rgba(10, 26, 50, 0.25), rgba(56, 61, 72, 0.08) 48%, rgba(92, 48, 31, 0.14)),
+    url("/tb-material-bg-v2.png") center top / cover fixed;
+}
+
+.tb-page-ambient::before {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  opacity: 0.32;
+  background: radial-gradient(ellipse 78% 52% at 50% -5%, rgba(4, 17, 41, 0.46), transparent 74%), radial-gradient(ellipse 86% 58% at 88% 108%, rgba(119, 53, 31, 0.28), transparent 72%);
+  mix-blend-mode: multiply;
+}
+
+.tb-sidebar-surface {
+  background:
+    linear-gradient(rgba(91, 109, 127, 0.55), rgba(104, 89, 84, 0.45)),
+    url("/tb-material-bg-v2.png") left center / auto 100%;
+  box-shadow: inset -1px 0 rgba(255, 255, 255, 0.22), 12px 0 38px rgba(18, 31, 55, 0.07);
+}
+
+.tb-muted-nav {
+  color: rgba(213, 220, 228, 0.58);
+}
+
+.tb-market-status-panel {
+  border: 1px solid rgba(222, 229, 236, 0.13);
+  border-radius: 12px;
+  background:
+    radial-gradient(ellipse 90% 150% at 108% 120%, rgba(176, 77, 39, 0.28), transparent 62%),
+    linear-gradient(rgba(5, 20, 46, 0.78), rgba(17, 31, 54, 0.7)),
+    url("/tb-material-bg-v2.png") center 38% / cover;
+  box-shadow: 0 14px 36px rgba(7, 17, 36, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+@media (max-width: 640px) {
+  .tb-page-ambient {
+    background:
+      linear-gradient(rgba(7, 22, 47, 0.28), rgba(99, 49, 31, 0.12)),
+      url("/tb-material-bg-v2.png") center top / auto 100% fixed;
+  }
+
+  .tb-page-ambient::before {
+    opacity: 0.13;
+  }
 }
