@@ -11,7 +11,7 @@
   --tb-blue-dark: #c94a15;
   --tb-red: #e8404f;
   --tb-page: #7f8d9b;
-  --tb-card: rgba(241, 238, 231, 0.84);
+  --tb-card: rgba(243, 240, 234, 0.94);
   --tb-text: #142038;
   --tb-muted: #5f6b7d;
   --tb-border: rgba(30, 43, 68, 0.18);
@@ -47,6 +47,35 @@ summary {
   -webkit-tap-highlight-color: transparent;
 }
 
+button:not(:disabled),
+a[href],
+summary {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+button:not(:disabled),
+a[href],
+summary {
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, opacity 160ms ease, transform 120ms ease;
+}
+
+button:not(:disabled):active,
+a[href]:active,
+summary:active {
+  transform: translateY(1px);
+}
+
+button:focus-visible,
+a[href]:focus-visible,
+summary:focus-visible {
+  outline: 3px solid rgba(232, 95, 34, 0.22);
+  outline-offset: 2px;
+}
+
 .tb-card {
   border: 1px solid var(--tb-border);
   border-radius: var(--tb-radius);
@@ -59,22 +88,35 @@ summary {
   outline-offset: 2px;
 }
 
+.tb-mobile-ranking-surface {
+  background: rgba(247, 244, 237, 0.97);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.tb-mobile-ranking-row {
+  background: rgba(247, 244, 237, 0.94);
+}
+
+.tb-mobile-ranking-row:active {
+  background: rgba(240, 233, 223, 0.98);
+}
+
 .tb-brand-mark {
   filter: drop-shadow(0 8px 12px rgba(5, 13, 30, 0.25));
 }
 
 .tb-brand-shell {
   background:
-    radial-gradient(ellipse 52% 180% at 105% 70%, rgba(133, 60, 38, 0.46), transparent 72%),
-    linear-gradient(90deg, rgba(3, 14, 34, 0.86), rgba(12, 24, 48, 0.68) 64%, rgba(48, 26, 30, 0.56)),
+    radial-gradient(ellipse 52% 180% at 105% 70%, rgba(119, 56, 38, 0.36), transparent 72%),
+    linear-gradient(90deg, rgba(3, 14, 34, 0.94), rgba(12, 24, 48, 0.84) 64%, rgba(43, 27, 32, 0.76)),
     url("/tb-material-bg-v2.png") center 30% / cover;
   box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.06), 0 10px 32px rgba(8, 21, 47, 0.16);
 }
 
 .tb-matte-hero {
   background:
-    radial-gradient(ellipse 62% 110% at 106% 112%, rgba(164, 72, 38, 0.3), transparent 69%),
-    linear-gradient(90deg, rgba(1, 12, 32, 0.91), rgba(6, 22, 49, 0.77) 55%, rgba(34, 25, 36, 0.52)),
+    radial-gradient(ellipse 62% 110% at 106% 112%, rgba(153, 69, 40, 0.24), transparent 69%),
+    linear-gradient(90deg, rgba(1, 12, 32, 0.96), rgba(6, 22, 49, 0.9) 55%, rgba(31, 25, 37, 0.77)),
     url("/tb-material-bg-v2.png") center 50% / cover;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), 0 22px 54px rgba(7, 18, 40, 0.24), 0 8px 22px rgba(100, 52, 36, 0.1);
 }
@@ -84,8 +126,8 @@ summary {
   inset: 0;
   pointer-events: none;
   content: "";
-  opacity: 0.28;
-  background: radial-gradient(ellipse 55% 85% at 89% 82%, rgba(225, 132, 78, 0.2), transparent 70%);
+  opacity: 0.22;
+  background: radial-gradient(ellipse 55% 85% at 89% 82%, rgba(212, 120, 72, 0.17), transparent 70%);
   mix-blend-mode: screen;
 }
 
@@ -93,9 +135,10 @@ summary {
   position: relative;
   isolation: isolate;
   background:
-    radial-gradient(ellipse 105% 78% at -12% -12%, rgba(3, 16, 39, 0.68), transparent 74%),
-    radial-gradient(ellipse 95% 90% at 111% 108%, rgba(116, 50, 30, 0.22), transparent 76%),
-    linear-gradient(rgba(10, 26, 50, 0.25), rgba(56, 61, 72, 0.08) 48%, rgba(92, 48, 31, 0.14)),
+    radial-gradient(ellipse 105% 78% at -12% -12%, rgba(4, 18, 43, 0.9), transparent 76%),
+    radial-gradient(ellipse 96% 92% at 112% 110%, rgba(104, 58, 42, 0.46), transparent 78%),
+    radial-gradient(ellipse 95% 90% at 50% 42%, rgba(106, 121, 136, 0.68), transparent 82%),
+    linear-gradient(rgba(43, 62, 82, 0.78), rgba(82, 91, 99, 0.74) 50%, rgba(99, 72, 58, 0.78)),
     url("/tb-material-bg-v2.png") center top / cover fixed;
 }
 
@@ -105,14 +148,14 @@ summary {
   inset: 0;
   pointer-events: none;
   content: "";
-  opacity: 0.32;
-  background: radial-gradient(ellipse 78% 52% at 50% -5%, rgba(4, 17, 41, 0.46), transparent 74%), radial-gradient(ellipse 86% 58% at 88% 108%, rgba(119, 53, 31, 0.28), transparent 72%);
+  opacity: 0.18;
+  background: radial-gradient(ellipse 78% 52% at 50% -5%, rgba(4, 17, 41, 0.42), transparent 74%), radial-gradient(ellipse 86% 58% at 88% 108%, rgba(105, 51, 34, 0.2), transparent 72%);
   mix-blend-mode: multiply;
 }
 
 .tb-sidebar-surface {
   background:
-    linear-gradient(rgba(91, 109, 127, 0.55), rgba(104, 89, 84, 0.45)),
+    linear-gradient(rgba(72, 91, 110, 0.91), rgba(88, 80, 78, 0.9)),
     url("/tb-material-bg-v2.png") left center / auto 100%;
   box-shadow: inset -1px 0 rgba(255, 255, 255, 0.22), 12px 0 38px rgba(18, 31, 55, 0.07);
 }
@@ -125,8 +168,8 @@ summary {
   border: 1px solid rgba(222, 229, 236, 0.13);
   border-radius: 12px;
   background:
-    radial-gradient(ellipse 90% 150% at 108% 120%, rgba(176, 77, 39, 0.28), transparent 62%),
-    linear-gradient(rgba(5, 20, 46, 0.78), rgba(17, 31, 54, 0.7)),
+    radial-gradient(ellipse 90% 150% at 108% 120%, rgba(158, 72, 41, 0.18), transparent 62%),
+    linear-gradient(rgba(5, 20, 46, 0.91), rgba(17, 31, 54, 0.86)),
     url("/tb-material-bg-v2.png") center 38% / cover;
   box-shadow: 0 14px 36px rgba(7, 17, 36, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
@@ -134,7 +177,7 @@ summary {
 @media (max-width: 640px) {
   .tb-page-ambient {
     background:
-      linear-gradient(rgba(7, 22, 47, 0.28), rgba(99, 49, 31, 0.12)),
+      linear-gradient(rgba(20, 40, 62, 0.84), rgba(98, 72, 59, 0.82)),
       url("/tb-material-bg-v2.png") center top / auto 100% fixed;
   }
 

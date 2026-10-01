@@ -214,8 +214,26 @@ export default function TopStocksPanel({ onSelectStock, compact = false, onOpenF
       )}
       {!loading && !error && data && data.stocks.length === 0 && <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-12 text-center text-sm text-gray-500">실제 TOP50 데이터가 없습니다. 최신 유효 모델 스냅샷을 생성해야 합니다.</div>}
       {!loading && !error && data && data.stocks.length > 0 && (
-        <div className={`${compact ? "mt-3 rounded-xl" : "mt-5 rounded-2xl"} overflow-x-auto border border-[var(--tb-border)]`}>
-          <table className={`w-full table-auto border-collapse text-sm ${compact ? "" : "min-w-[560px]"}`}>
+        <div className={`${compact ? "mt-3 rounded-xl" : "mt-5 rounded-2xl"} overflow-hidden border border-[var(--tb-border)] sm:overflow-x-auto`}>
+          <div className="tb-mobile-ranking-surface divide-y divide-slate-200/80 sm:hidden" aria-label="모바일 모델 TOP 종목">
+            {data.stocks.map((stock) => {
+              const overlay = intradayByCode[stock.code];
+              const quoteStatus = overlay?.status === "available"
+                ? `${overlay.price.toLocaleString("ko-KR")}원${overlay.rate == null ? "" : ` · ${overlay.rate > 0 ? "+" : ""}${overlay.rate.toFixed(2)}%`}`
+                : "시세 확인 불가";
+              return (
+                <div key={stock.code} className="tb-mobile-ranking-row grid grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2.5">
+                  <span className="text-sm font-semibold text-[var(--tb-orange)]">{stock.rank}</span>
+                  <button type="button" disabled={selectingCode !== null} aria-label={`${stock.name} ${stock.code} 검색`} onClick={async () => { if (!onSelectStock || selectingCode) return; setSelectingCode(stock.code); try { await onSelectStock({ code: stock.code, name: stock.name }); } finally { setSelectingCode(null); } }} className="tb-focus min-w-0 rounded-md py-0.5 text-left disabled:cursor-wait">
+                    <span className="block truncate text-sm font-semibold text-slate-950">{stock.name}</span>
+                    <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[11px] leading-4"><span className="shrink-0 font-medium text-slate-500">{stock.code}</span><span aria-hidden="true" className="text-slate-300">·</span><span className="truncate text-slate-500">{quoteStatus}</span></span>
+                  </button>
+                  <span className="rounded-md bg-[rgba(169,88,53,0.11)] px-2 py-1 text-sm font-semibold tabular-nums text-[var(--tb-orange)]">{stock.score.toFixed(2)}</span>
+                </div>
+              );
+            })}
+          </div>
+          <table className={`hidden w-full table-auto border-collapse text-sm sm:table ${compact ? "" : "min-w-[560px]"}`}>
             <thead className="bg-slate-50 text-left text-xs text-slate-500"><tr><th className="whitespace-nowrap px-3 py-3 font-medium sm:px-4">순위</th><th className="px-3 py-3 font-medium sm:px-4">종목명</th><th className="hidden px-4 py-3 font-medium sm:table-cell">시장</th><th className="whitespace-nowrap px-3 py-3 text-right font-medium sm:px-4">{shortReferenceDate(data.rankingAsOfDate)} 기준 점수</th>{!compact && <th className="whitespace-nowrap px-3 py-3 text-right font-medium sm:px-4">기준일 종가</th>}<th className="whitespace-nowrap px-3 py-3 text-right font-medium sm:px-4">KIS 최근 조회</th></tr></thead>
             <tbody className="divide-y divide-gray-100">
               {data.stocks.map((stock) => { const overlay = intradayByCode[stock.code]; const overlayView = overlay?.status === "available" ? <><strong className="block text-sm text-slate-900">{overlay.price.toLocaleString("ko-KR")}원</strong><span className={overlay.rate != null && overlay.rate < 0 ? "text-[var(--tb-negative)]" : overlay.rate != null && overlay.rate > 0 ? "text-[var(--tb-positive)]" : "text-slate-500"}>{overlay.rate == null ? "KIS 최근 조회" : `${overlay.rate > 0 ? "+" : ""}${overlay.rate.toFixed(2)}%`}</span><span className="mt-0.5 block text-[11px] text-slate-400">{overlay.asOfTime ? `KIS ${overlay.asOfTime}` : "기준시각 미확인"}</span></> : <span className="text-slate-400">시세 확인 불가</span>; const rowPadding = compact ? "py-2.5" : "py-4"; return <tr key={stock.code} className="transition-colors hover:bg-orange-50/40"><td className={`whitespace-nowrap px-3 ${rowPadding} font-medium text-[var(--tb-orange)] sm:px-4`}>{stock.rank}</td><td className={`px-3 ${rowPadding} sm:px-4`}><button type="button" disabled={selectingCode !== null} aria-label={`${stock.name} ${stock.code} 검색`} onClick={async () => { if (!onSelectStock || selectingCode) return; setSelectingCode(stock.code); try { await onSelectStock({ code: stock.code, name: stock.name }); } finally { setSelectingCode(null); } }} className="tb-focus cursor-pointer rounded text-left font-medium text-slate-900 hover:text-[var(--tb-orange)] hover:underline disabled:cursor-wait">{stock.name}<span className="block whitespace-nowrap text-xs font-normal text-slate-400 sm:ml-2 sm:inline">{stock.code}</span></button>{compact && <div className="mt-1 text-xs sm:hidden"><span className="text-slate-400">KIS 최근 조회 · </span>{overlayView}</div>}</td><td className={`hidden px-4 ${rowPadding} text-slate-500 sm:table-cell`}>{stock.market}</td><td className={`whitespace-nowrap px-3 ${rowPadding} text-right font-medium text-slate-800 sm:px-4`}><span className="rounded-md bg-[rgba(182,91,50,0.09)] px-2 py-0.5 text-[var(--tb-orange)]">{stock.score.toFixed(2)}</span></td>{!compact && <td className="whitespace-nowrap px-3 py-4 text-right text-slate-700 sm:px-4">{stock.closePrice.toLocaleString("ko-KR")}원</td>}<td className={`${compact ? "hidden sm:table-cell" : ""} whitespace-nowrap px-3 ${rowPadding} text-right text-xs sm:px-4`}>{overlayView}</td></tr>; })}
