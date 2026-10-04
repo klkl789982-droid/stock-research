@@ -4,6 +4,7 @@ import { spawn } from "node:child_process";
 import { classifyRequestedDate, isWeekend, updateTradingCalendarDate } from "../lib/trading-calendar-status.mjs";
 import { normalizeStockCode } from "../lib/stock-code.mjs";
 import { createPublicEodQuery, createPublicEodRequestShape, normalizePublicEodRows } from "../lib/public-eod-request.mjs";
+import { resolveUniverseForDate } from "../lib/point-in-time-universe.mjs";
 
 const PRICE_URL = "https://apis.data.go.kr/1160100/service/GetStockSecuritiesInfoService/getStockPriceInfo";
 const serviceKey = process.env.DATA_GO_KR_SERVICE_KEY;
@@ -16,7 +17,8 @@ if (confirmedObservedDate && !/^\d{4}-\d{2}-\d{2}$/.test(confirmedObservedDate))
 if (!serviceKey) throw new Error("DATA_GO_KR_SERVICE_KEY가 없습니다.");
 
 const root = process.cwd();
-const universe = JSON.parse(await fs.readFile(path.join(root, "data", "universe.json"), "utf8"));
+const universeSelection = await resolveUniverseForDate(requestedDate, { root });
+const universe = universeSelection.universe;
 const referenceCode = normalizeStockCode(universe.stocks?.[0]?.code);
 if (!referenceCode) throw new Error("상태 확인용 기준 종목이 없습니다.");
 

@@ -57,11 +57,18 @@ const runId = "daily-test";
 const manifest = createDailyRunManifest({ referenceDate: snapshot.asOfDate, runId, status: DAILY_RUN_STATUS.NO_NEW_OFFICIAL_EOD, startedAt: "2026-09-29T00:00:00.000Z", completedAt: "2026-09-29T00:00:01.000Z" });
 assert.equal(manifest.status, DAILY_RUN_STATUS.NO_NEW_OFFICIAL_EOD);
 assert.equal(manifest.promoted, false);
+assert.deepEqual(manifest.sourceEvidence, []);
+const observedManifest = createDailyRunManifest({ referenceDate: snapshot.asOfDate, runId: "daily-evidence", status: DAILY_RUN_STATUS.CANDIDATE_VALIDATED, startedAt: "2026-09-29T00:00:00.000Z", completedAt: "2026-09-29T00:00:01.000Z", sourceEvidence: [{ source: "공공데이터포털", operation: "getStockPriceInfo", availabilityStatus: "OBSERVED", sourcePublishedAt: null, observedAt: "2026-09-29T00:00:01.000Z" }] });
+assert.equal(observedManifest.sourceEvidence[0].availabilityStatus, "OBSERVED");
+assert.equal(observedManifest.sourceEvidence[0].sourcePublishedAt, null);
 
 const files = assertPromotionFiles([
   `data/history/${snapshot.asOfDate}.json`, `data/model-history/${snapshot.asOfDate}.json`, `data/daily-runs/${snapshot.asOfDate}/${runId}.json`,
 ], snapshot.asOfDate, runId);
 assert.equal(files.length, 3);
+assert.equal(assertPromotionFiles(["data/outcome-coverage/2026-09-22.json"], snapshot.asOfDate, runId)[0], "data/outcome-coverage/2026-09-22.json", "outcome coverage는 signal date별 artifact로 promotion할 수 있어야 합니다.");
+assert.equal(assertPromotionFiles(["data/outcome-coverage/calendar-evidence.json"], snapshot.asOfDate, runId)[0], "data/outcome-coverage/calendar-evidence.json", "derived calendar evidence는 명시적 allowlist로만 promotion해야 합니다.");
+assert.equal(assertPromotionFiles(["data/model-validation/maturity-coverage.json", "data/model-validation/maturity-coverage.md"], snapshot.asOfDate, runId).length, 2, "maturity coverage report는 명시적 파일 allowlist로만 promotion해야 합니다.");
 assert.equal(assertPromotionFiles([`data/model-history/${snapshot.asOfDate}.json`], snapshot.asOfDate, runId)[0], `data/model-history/${snapshot.asOfDate}.json`);
 assert.throws(() => assertPromotionFiles(["data/model-history/"], snapshot.asOfDate, runId), "축약된 디렉터리 경로는 승격하면 안 됩니다.");
 assert.throws(() => assertPromotionFiles(["daily-production.log"], snapshot.asOfDate, runId), "runtime 로그는 승격하면 안 됩니다.");
@@ -86,6 +93,8 @@ assert.deepEqual(resolveOfficialReferenceDate({ observedDate: "2026-09-22", coll
 const runnerSource = await import("node:fs/promises").then((fs) => fs.readFile(new URL("./run-daily-production.mjs", import.meta.url), "utf8"));
 const dailyHistorySource = await import("node:fs/promises").then((fs) => fs.readFile(new URL("./run-daily-history.mjs", import.meta.url), "utf8"));
 assert.match(runnerSource, /--date=\$\{referenceDate\}.*--observed-date=\$\{referenceDate\}/su, "downstream에는 동일 referenceDate를 전달해야 합니다.");
+assert.match(runnerSource, /writeOutcomeCoverageArtifacts\(\{ root, coverageAsOfDate: referenceDate \}\)/u, "Daily Production은 history 생성 후 signal-date coverage artifact를 갱신해야 합니다.");
+assert.match(runnerSource, /writeModelMaturityCoverageReport\(\{ root \}\)/u, "Daily Production은 coverage 갱신 뒤 maturity report를 갱신해야 합니다.");
 assert.match(runnerSource, /"--porcelain=v1", "-uall"/u, "새 compact history는 디렉터리가 아닌 파일 단위로 allowlist 검증해야 합니다.");
 assert.match(dailyHistorySource, /updateTradingCalendarDate\(requestedDate,[\s\S]*await runScript\("scripts\/resolve-history-returns\.mjs"\)/u, "거래일 상태와 가격 원장을 확정한 뒤 전체 history resolver를 호출해야 합니다.");
 assert.equal(isAllowedOlderHistory(assertPromotionFiles(["data/history/2026-09-22.json"], "2026-09-29", runId)), true, "과거 snapshot의 성숙 outcome도 promotion 대상이어야 합니다.");

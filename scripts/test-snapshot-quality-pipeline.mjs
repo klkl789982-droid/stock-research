@@ -104,7 +104,18 @@ await test("입력 및 공식 hash 결정론", async () => {
   assert.equal(sha256Canonical({ b: 2, a: 1 }), sha256Canonical({ a: 1, b: 2 }));
   assert.deepEqual(createFormulaHashes({ B: "x", A: "y" }), createFormulaHashes({ A: "y", B: "x" }));
   const universe = { stocks: [{ code: "000001" }] }; const histories = new Map([["000001", rows()]]); const policy = { pointInTimeMasterCertified: false, rawResponseStored: false, universeFilterVersion: "v1" };
-  assert.equal(createSourceManifest({ requestedDate, generatedAt: "x", universe, historyByCode: histories, formulaHashes: {}, policy }).sources.officialDailyPrice.normalizedInputHash, createSourceManifest({ requestedDate, generatedAt: "x", universe, historyByCode: histories, formulaHashes: {}, policy }).sources.officialDailyPrice.normalizedInputHash);
+  const first = createSourceManifest({ requestedDate, generatedAt: "x", universe, historyByCode: histories, formulaHashes: {}, policy });
+  const second = createSourceManifest({ requestedDate, generatedAt: "x", universe, historyByCode: histories, formulaHashes: {}, policy });
+  assert.equal(first.sources.officialDailyPrice.normalizedInputHash, second.sources.officialDailyPrice.normalizedInputHash);
+  assert.equal(first.sources.officialDailyPrice.availability.availabilityStatus, "UNKNOWN");
+  assert.equal(first.sources.officialDailyPrice.availability.sourcePublishedAt, null);
+  assert.equal(first.sources.officialDailyPrice.availability.sourceTimestampSemantics, "marketDateBasDt");
+  assert.deepEqual([first.sources.officialDailyPrice.availability.minObservedBasDt, first.sources.officialDailyPrice.availability.maxObservedBasDt], ["20260814", "20260814"]);
+  const staleHistory = new Map([["000001", [{ ...rows()[0], basDt: "20260813" }]], ["000002", [{ ...rows()[0], basDt: "20260814" }]]]);
+  const staleManifest = createSourceManifest({ requestedDate, generatedAt: "x", universe: { stocks: [{ code: "000001" }, { code: "000002" }] }, historyByCode: staleHistory, formulaHashes: {}, policy });
+  assert.deepEqual([staleManifest.sources.officialDailyPrice.availability.minObservedBasDt, staleManifest.sources.officialDailyPrice.availability.maxObservedBasDt], ["20260813", "20260814"]);
+  const missingManifest = createSourceManifest({ requestedDate, generatedAt: "x", universe, historyByCode: new Map([["000001", []]]), formulaHashes: {}, policy });
+  assert.deepEqual([missingManifest.sources.officialDailyPrice.availability.minObservedBasDt, missingManifest.sources.officialDailyPrice.availability.maxObservedBasDt], [null, null], "basDt가 없으면 기존 artifact에 값을 소급하지 않습니다.");
 });
 await test("Universe archive 동일 hash 멱등, 다른 hash 충돌", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "universe-archive-")); const target = path.join(root, "a.json");

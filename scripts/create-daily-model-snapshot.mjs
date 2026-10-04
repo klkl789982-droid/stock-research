@@ -6,8 +6,10 @@ import { normalizeModelInputRows, validateMarketDataQuality } from "../lib/marke
 import { normalizeStockCode } from "../lib/stock-code.mjs";
 import { createMarketAnalysisSnapshot, validateMarketAnalysisSnapshot } from "../lib/market-analysis-snapshot.mjs";
 import { createIntradayMarketSeed, validateIntradayMarketSeed } from "../lib/intraday-market-seed.mjs";
-import { createSourceAvailability } from "../lib/source-availability.mjs";
+import { AVAILABILITY_STATUS, createSourceAvailability, createSourceAvailabilityEvidence } from "../lib/source-availability.mjs";
 import { createDryRunIssueManifest } from "../lib/dry-run-issue-manifest.mjs";
+import { assertPreflightAllowsModelCalculation, createDailyDataContractPreflight } from "../lib/daily-data-contract-preflight.mjs";
+import { resolveUniverseForDate } from "../lib/point-in-time-universe.mjs";
 import { classifyPublicEodRequestError, createPublicEodRequestContract, createPublicEodRequestResult } from "../lib/public-eod-request-observability.mjs";
 import { parseMaxAttemptsOption, resolveMaxAttempts, shouldRetryPublicEodRequest } from "../lib/public-eod-retry-policy.mjs";
 import { createExecutionReturns, PUBLIC_EOD_T2_POLICY_ID } from "../lib/execution-return-resolver.mjs";
@@ -24,6 +26,7 @@ import {
   createFormulaHashes,
   createSourceManifest,
   createUniverseArchive,
+  normalizeHistoryForHash,
   sha256Canonical,
   structuralFatalIssues,
 } from "../lib/snapshot-quality-pipeline.mjs";
@@ -127,19 +130,14 @@ async function mapWithConcurrency(items, concurrency, mapper) {
 }
 
 const universePath = path.join(process.cwd(), "data", "universe.json");
-const universe = JSON.parse(await fs.readFile(universePath, "utf8"));
+let universe = JSON.parse(await fs.readFile(universePath, "utf8"));
+let universeSelection = null;
 universe.stocks = (universe.stocks ?? []).map((stock) => ({ ...stock, code: normalizeStockCode(stock.code) }));
-if (universe.stocks.some((stock) => !stock.code) || new Set(universe.stocks.map((stock) => stock.code)).size !== universe.stocks.length) {
-  throw new Error("Universe 종목코드 정규화에 실패했거나 중복 코드가 있습니다.");
-}
 const policy = JSON.parse(await fs.readFile(path.join(process.cwd(), "config", "snapshot-quality-policy.json"), "utf8"));
 const modelRegistry = JSON.parse(await fs.readFile(path.join(process.cwd(), "data", "model-registry.json"), "utf8"));
 for (const version of policy.activeComparisonModels) {
   const registered = modelRegistry.models?.find((entry) => entry.modelVersion === version);
   if (!registered || registered.status === "notConfigured") throw new Error(`활성 비교 모델이 레지스트리에 유효하게 등록되지 않았습니다: ${version}`);
-}
-if (universe.finalCount !== EXPECTED_UNIVERSE_COUNT || universe.stocks?.length !== EXPECTED_UNIVERSE_COUNT) {
-  throw new Error(`Universe가 553개가 아닙니다: finalCount=${universe.finalCount}, stocks=${universe.stocks?.length ?? 0}`);
 }
 const dryRunStartedAt = new Date().toISOString();
 let representativeProbe = null;
@@ -170,6 +168,16 @@ if (latestMode) {
   requestedCompactDate = compact;
   representativeProbe = { status: "OFFICIAL_EOD_CANDIDATE_FOUND", observations, candidateAsOfDate: formatted, completedAt: new Date().toISOString() };
 }
+if (requestedDate) {
+  universeSelection = await resolveUniverseForDate(requestedDate);
+  universe = universeSelection.universe;
+}
+if (universe.stocks.some((stock) => !stock.code) || new Set(universe.stocks.map((stock) => stock.code)).size !== universe.stocks.length) {
+  throw new Error("Universe 종목코드 정규화에 실패했거나 중복 코드가 있습니다.");
+}
+if (universe.finalCount !== EXPECTED_UNIVERSE_COUNT || universe.stocks.length !== EXPECTED_UNIVERSE_COUNT) {
+  throw new Error(`Universe가 553개가 아닙니다: finalCount=${universe.finalCount}, stocks=${universe.stocks.length}`);
+}
 
 const historyDirectory = path.join(process.cwd(), "data", "history");
 const marketPriceDirectory = path.join(process.cwd(), "data", "market-prices");
@@ -198,6 +206,7 @@ if (requestedDate && !dryRun) {
     }
   }
 }
+const sourceRequestedAt = new Date().toISOString();
 const histories = await mapWithConcurrency(
   universe.stocks,
   CONCURRENCY,
@@ -218,6 +227,12 @@ const asOfDate = requestedDate ?? (() => {
   if (new Set(dates).size !== 1 || !/^\d{8}$/.test(dates[0])) throw new Error("요청 날짜가 없고 종목별 최신 거래일이 일치하지 않습니다.");
   return `${dates[0].slice(0, 4)}-${dates[0].slice(4, 6)}-${dates[0].slice(6, 8)}`;
 })();
+if (!universeSelection) {
+  universeSelection = await resolveUniverseForDate(asOfDate);
+  const collectedCodes = sha256Canonical(universe.stocks.map((stock) => stock.code).sort());
+  if (collectedCodes !== universeSelection.provenance.codesHash) throw new Error("UNIVERSE_SELECTION_CHANGED_AFTER_COLLECTION");
+  universe = universeSelection.universe;
+}
 const quality = validateMarketDataQuality({
   requestedDate: asOfDate,
   universeRecords: universe.stocks,
@@ -237,6 +252,9 @@ const quality = validateMarketDataQuality({
 const fatalIssues = quality.issues.filter((entry) => entry.severity === "fatal");
 const structuralFatals = structuralFatalIssues(quality);
 const quarantineExclusions = buildQuarantineExclusions(quality);
+const preflight = createDailyDataContractPreflight({ requestedDate: asOfDate, universe, universeProvenance: universeSelection.provenance, historyByCode, quality, policy, sourceCollectedAt, requestContract });
+console.log(`DATA_CONTRACT_PREFLIGHT status=${preflight.status} referenceDate=${asOfDate} valid=${preflight.coverage.valid} quarantined=${preflight.coverage.quarantined} structuralFatal=${preflight.structuralFatalCount} hash=${preflight.contentHash}`);
+if (!dryRun) assertPreflightAllowsModelCalculation(preflight);
 const quarantinedByCode = new Map();
 for (const exclusion of quarantineExclusions) {
   const existing = quarantinedByCode.get(exclusion.code) ?? [];
@@ -304,7 +322,32 @@ const formulaFiles = {
   "B-v1": "lib/trend-strength.mjs", "C-v1": "lib/entry-strength.mjs", "D-v1": "lib/combined-technical-score.mjs",
 };
 const formulaHashes = createFormulaHashes(Object.fromEntries(await Promise.all(Object.entries(formulaFiles).map(async ([version, file]) => [version, await fs.readFile(path.join(process.cwd(), file), "utf8")]))));
-const sourceManifest = createSourceManifest({ requestedDate: asOfDate, generatedAt, universe, historyByCode, formulaHashes, policy });
+const normalizedInputHash = sha256Canonical(normalizeHistoryForHash(historyByCode));
+const observedLatestBasDts = [...historyByCode.values()]
+  .map((rows) => String(rows[0]?.basDt ?? ""))
+  .filter((basDt) => /^\d{8}$/u.test(basDt))
+  .sort();
+const officialDailyAvailability = createSourceAvailabilityEvidence({
+  source: "공공데이터포털",
+  operation: "getStockPriceInfo",
+  referenceDate: asOfDate,
+  requestedAt: sourceRequestedAt,
+  observedAt: sourceCollectedAt,
+  sourceTimestamp: asOfDate.replaceAll("-", ""),
+  sourceTimestampSemantics: "marketDateBasDt",
+  minObservedBasDt: observedLatestBasDts.at(0) ?? null,
+  maxObservedBasDt: observedLatestBasDts.at(-1) ?? null,
+  sourcePublishedAt: null,
+  availabilityEvidence: "SYSTEM_OBSERVED_BATCH_COLLECTION",
+  availabilityStatus: AVAILABILITY_STATUS.OBSERVED,
+  recordCount: [...historyByCode.values()].reduce((total, rows) => total + rows.length, 0),
+  normalizedInputHash,
+  requestId: requestContract ? sha256Canonical(requestContract) : null,
+  outcome: historyByCode.size === universe.stocks.length ? "success" : "partial",
+});
+const sourceManifest = createSourceManifest({ requestedDate: asOfDate, generatedAt, universe, historyByCode, formulaHashes, policy, universeProvenance: universeSelection.provenance, selectedSecurityMaster: universeSelection.artifact?.sourceManifest?.securityMaster ?? null, officialDailyAvailability });
+if (sourceManifest.sources.officialDailyPrice.normalizedInputHash !== preflight.source.normalizedInputHash) throw new Error("DATA_CONTRACT_SOURCE_HASH_MISMATCH");
+sourceManifest.dataContractPreflight = preflight;
 const universeSummary = buildUniverseSummary(quality, policy.activeComparisonModels);
 const stocksByCode = new Map(universe.stocks.map((stock) => [stock.code, stock]));
 const excludedFromScoring = buildExcludedFromScoring(quality, stocksByCode);
@@ -319,7 +362,7 @@ if (marketAnalysisSnapshot) {
 }
 if (intradayMarketSeed) { const errors = validateIntradayMarketSeed(intradayMarketSeed, EXPECTED_UNIVERSE_COUNT); if (errors.length) throw new Error(`장중 seed 검증 실패:\n${errors.slice(0,20).join("\n")}`); }
 const preparedUniverseArchive = structuralFatals.length === 0
-  ? createUniverseArchive({ requestedDate: asOfDate, generatedAt, universe, historyByCode, sourceManifest })
+  ? universeSelection.artifact ?? createUniverseArchive({ requestedDate: asOfDate, generatedAt, universe, historyByCode, sourceManifest, universeProvenance: universeSelection.provenance })
   : null;
 const availabilityTimestamp = new Date().toISOString();
 const sourceAvailability = dryRun ? {
@@ -368,6 +411,7 @@ const dryRunResult = {
   collection: { ...collectionStatistics, observedUniverse: universe.stocks.length, requestedUniverseCount: universe.stocks.length, requestedCodeCount: requestCache.size(), concurrency: CONCURRENCY, timeoutMs: REQUEST_TIMEOUT_MS, maxAttempts: effectiveMaxAttempts },
   quality: { status: quality.status, grade: quality.grade, eligibleForSnapshot: structuralFatals.length === 0, dataQuality, fatalCount: fatalIssues.length, structuralFatalCount: structuralFatals.length, quarantinedCount: quarantinedByCode.size, ineligibleCount: excludedFromScoring.length, warningCount: quality.issues.filter((entry) => entry.severity === "warning").length },
   universeSummary, excludedFromScoring, historyDistribution: createHistoryDistribution(), sourceManifest,
+  dataContractPreflight: preflight,
   requestFingerprint: sha256Canonical({ candidateAsOfDate: asOfDate, codes: universe.stocks.map((stock) => stock.code).sort(), endpoint: "getStockPriceInfo", rowsPerCode: 260 }),
   sourceAvailability,
   returnsState: { futureFiniteCount: 0, legacyFiniteCount: 0, executionFiniteCount: 0, timingValidationStatus: "NOT_PRODUCTION_AVAILABLE", eligibleForExecutableAggregation: false },
