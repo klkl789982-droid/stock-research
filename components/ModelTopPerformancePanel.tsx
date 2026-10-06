@@ -1,44 +1,47 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-type Group = {
-  topN: number;
+type Horizon = "1DAY" | "5DAY" | "20DAY";
+type HorizonMetrics = {
+  horizon: Horizon;
+  status: "DATA_AVAILABLE" | "ACCUMULATING";
   evaluatedSignalDates: number;
   observationCount: number;
   meanReturn: number | null;
   medianReturn: number | null;
   positiveRate: number | null;
-  compoundReturn: number | null;
-  bestSignalDate: string | null;
-  worstSignalDate: string | null;
+  minReturn: number | null;
+  maxReturn: number | null;
 };
-type Daily = {
-  modelVersion: string;
-  signalDate: string;
-  targetTradingDate: string;
-  topN: number;
-  observationCount: number;
-  meanReturn: number;
-  medianReturn: number;
-  positiveRate: number;
-  universeMeanReturn: number | null;
-  excessReturn: number | null;
+type Group = { topN: number; horizons: HorizonMetrics[] };
+type ModelSummary = { modelVersion: string; groups: Group[] };
+type Response = {
+  matureSignalDates: string[];
+  matureSignalDatesByHorizon: Record<Horizon, string[]>;
+  signalDateRange: { from: string; to: string } | null;
+  lastOutcomeDate: string | null;
+  totalOutcomeObservationCount: number;
+  summary: ModelSummary[];
 };
-type Response = { matureSignalDates: string[]; summary: { modelVersion: string; groups: Group[] }[]; daily: Daily[] };
 
-const labels: Record<string, string> = {
-  "A-v1": "A-v1 · 기술 강도",
-  "A-v2": "A-v2 · 기술 강도",
-  "B-v1": "B-v1 · 추세 지속",
-  "C-v1": "C-v1 · 진입 강도",
-  "D-v1": "D-v1 · 추세 + 진입",
-};
-const format = (value: number | null) => value == null ? "—" : `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
+const MODELS = [
+  { version: "A-v1", label: "A" },
+  { version: "B-v1", label: "B" },
+  { version: "C-v1", label: "C" },
+  { version: "D-v1", label: "D" },
+] as const;
+const TOP_SIZES = [5, 10, 20] as const;
+const HORIZONS: Horizon[] = ["1DAY", "5DAY", "20DAY"];
+
+const formatReturn = (value: number | null) => value == null ? "—" : `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
+const returnTone = (value: number | null) => value == null ? "text-slate-400" : value > 0 ? "text-red-600" : value < 0 ? "text-blue-600" : "text-slate-700";
 
 export default function ModelTopPerformancePanel() {
   const [data, setData] = useState<Response | null>(null);
   const [error, setError] = useState(false);
+  const [modelVersion, setModelVersion] = useState("B-v1");
+  const [topN, setTopN] = useState(10);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -55,30 +58,64 @@ export default function ModelTopPerformancePanel() {
     return () => controller.abort();
   }, []);
 
-  if (error || !data || data.matureSignalDates.length === 0) return null;
+  const selectedHorizons = useMemo(() => {
+    const group = data?.summary.find((model) => model.modelVersion === modelVersion)?.groups.find((item) => item.topN === topN);
+    return HORIZONS.map((horizon) => group?.horizons.find((item) => item.horizon === horizon) ?? {
+      horizon,
+      status: "ACCUMULATING" as const,
+      evaluatedSignalDates: 0,
+      observationCount: 0,
+      meanReturn: null,
+      medianReturn: null,
+      positiveRate: null,
+      minReturn: null,
+      maxReturn: null,
+    });
+  }, [data, modelVersion, topN]);
 
   return (
     <section className="tb-card mt-6 p-4 sm:p-6" aria-labelledby="model-performance-heading">
-      <p className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--tb-orange)]">Historical model outcomes</p>
-      <h2 id="model-performance-heading" className="mt-1 text-xl font-extrabold tracking-tight text-slate-950 sm:text-2xl">모델 과거 성과</h2>
-      <p className="mt-2 text-sm text-slate-600">다음 거래일 공식 종가 기준 · 평가 완료 {data.matureSignalDates.length}거래일 · 초기 관찰 단계</p>
-      <div className="mt-4 overflow-x-auto rounded-xl border border-[var(--tb-border)]">
-        <table className="min-w-[720px] w-full border-collapse text-sm">
-          <thead className="bg-slate-50 text-left text-xs text-slate-500"><tr><th className="px-4 py-3 font-medium">모델</th><th className="px-4 py-3 text-right font-medium">평가일수</th><th className="px-4 py-3 text-right font-medium">TOP5 평균</th><th className="px-4 py-3 text-right font-medium">TOP10 평균</th><th className="px-4 py-3 text-right font-medium">TOP20 평균</th><th className="px-4 py-3 text-right font-medium">TOP20 상승비율</th></tr></thead>
-          <tbody className="divide-y divide-slate-200/80">
-            {data.summary.map((model) => {
-              const top5 = model.groups.find((group) => group.topN === 5);
-              const top10 = model.groups.find((group) => group.topN === 10);
-              const top20 = model.groups.find((group) => group.topN === 20);
-              return <tr key={model.modelVersion}><td className="px-4 py-3 font-semibold text-slate-900">{labels[model.modelVersion] ?? model.modelVersion}</td><td className="px-4 py-3 text-right tabular-nums text-slate-700">{top20?.evaluatedSignalDates ?? 0}</td><td className="px-4 py-3 text-right tabular-nums text-slate-700">{format(top5?.meanReturn ?? null)}</td><td className="px-4 py-3 text-right tabular-nums text-slate-700">{format(top10?.meanReturn ?? null)}</td><td className="px-4 py-3 text-right tabular-nums text-slate-700">{format(top20?.meanReturn ?? null)}</td><td className="px-4 py-3 text-right tabular-nums text-slate-700">{top20?.positiveRate == null ? "—" : `${top20.positiveRate.toFixed(1)}%`}</td></tr>;
-            })}
-          </tbody>
-        </table>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--tb-orange)]">Historical model outcomes</p>
+          <h2 id="model-performance-heading" className="mt-1 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">모델 성과</h2>
+          <p className="mt-1 text-sm text-slate-600">동결된 과거 순위와 확정된 공식 종가 결과만 집계합니다.</p>
+        </div>
+        <div className="grid grid-cols-2 gap-x-5 gap-y-1 text-xs text-slate-600 sm:grid-cols-4 lg:text-right">
+          <span>분석 기간</span><strong className="font-semibold text-slate-800">{data?.signalDateRange ? `${data.signalDateRange.from} ~ ${data.signalDateRange.to}` : "축적 중"}</strong>
+          <span>신호일</span><strong className="font-semibold tabular-nums text-slate-800">{data?.matureSignalDates.length ?? 0}일</strong>
+          <span>최근 결과일</span><strong className="font-semibold text-slate-800">{data?.lastOutcomeDate ?? "—"}</strong>
+          <span>상태</span><strong className="font-semibold text-amber-700">표본 축적 중 · 참고용</strong>
+        </div>
       </div>
-      <details className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-        <summary className="cursor-pointer text-sm font-medium text-slate-700">날짜별 결과 보기</summary>
-        <div className="mt-3 overflow-x-auto"><table className="min-w-[780px] w-full text-xs text-slate-700"><thead><tr className="border-b border-slate-200 text-left text-slate-500"><th className="pb-2">모델</th><th className="pb-2">신호일</th><th className="pb-2">결과일</th><th className="pb-2 text-right">TOP</th><th className="pb-2 text-right">평균</th><th className="pb-2 text-right">Universe 평균</th><th className="pb-2 text-right">초과성과</th><th className="pb-2 text-right">N</th></tr></thead><tbody>{data.daily.map((row) => <tr key={`${row.modelVersion}-${row.signalDate}-${row.topN}`} className="border-b border-slate-200/70"><td className="py-2">{row.modelVersion}</td><td>{row.signalDate}</td><td>{row.targetTradingDate}</td><td className="text-right">{row.topN}</td><td className="text-right">{format(row.meanReturn)}</td><td className="text-right">{format(row.universeMeanReturn)}</td><td className="text-right">{format(row.excessReturn)}</td><td className="text-right">{row.observationCount}</td></tr>)}</tbody></table></div>
-      </details>
+
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-3">
+        <div className="flex gap-1" role="tablist" aria-label="성과 모델 선택">
+          {MODELS.map((model) => <button key={model.version} type="button" role="tab" aria-selected={modelVersion === model.version} onClick={() => setModelVersion(model.version)} className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tb-orange)] ${modelVersion === model.version ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"}`}>모델 {model.label}</button>)}
+        </div>
+        <div className="flex gap-1 rounded-lg bg-slate-100/90 p-1" aria-label="TOP 범위 선택">
+          {TOP_SIZES.map((size) => <button key={size} type="button" onClick={() => setTopN(size)} className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tb-orange)] ${topN === size ? "bg-white text-[var(--tb-orange)] shadow-sm" : "text-slate-500 hover:text-slate-900"}`}>TOP {size}</button>)}
+        </div>
+      </div>
+
+      <div className="mt-4 overflow-hidden rounded-xl border border-[var(--tb-border)] bg-[rgba(255,252,247,0.84)]">
+        <div className="grid grid-cols-[0.9fr_1fr_1fr_1fr_0.75fr] gap-2 border-b border-slate-200 bg-slate-50/90 px-3 py-2.5 text-xs font-medium text-slate-500 sm:px-4">
+          <span>기간</span><span className="text-right">평균</span><span className="text-right">중앙값</span><span className="text-right">상승비율</span><span className="text-right">표본</span>
+        </div>
+        {selectedHorizons.map((metrics) => <div key={metrics.horizon} className="grid min-h-14 grid-cols-[0.9fr_1fr_1fr_1fr_0.75fr] items-center gap-2 border-b border-slate-200/70 px-3 py-3 text-sm last:border-b-0 sm:px-4">
+          <span className="font-semibold text-slate-900">{metrics.horizon}</span>
+          {metrics.status === "DATA_AVAILABLE" ? <>
+            <span className={`text-right font-semibold tabular-nums ${returnTone(metrics.meanReturn)}`}>{formatReturn(metrics.meanReturn)}</span>
+            <span className={`text-right tabular-nums ${returnTone(metrics.medianReturn)}`}>{formatReturn(metrics.medianReturn)}</span>
+            <span className="text-right tabular-nums text-slate-700">{metrics.positiveRate?.toFixed(1)}%</span>
+            <span className="text-right tabular-nums text-slate-700">N={metrics.observationCount}<small className="block text-[10px] text-slate-400">{metrics.evaluatedSignalDates}일</small></span>
+          </> : <span className="col-span-4 text-right text-sm text-slate-400">데이터 축적 중</span>}
+        </div>)}
+      </div>
+
+      {error && <p className="mt-3 text-sm text-red-700" role="alert">성과 데이터를 불러오지 못했습니다.</p>}
+      {!error && !data && <p className="mt-3 text-sm text-slate-500">성과 데이터를 불러오는 중입니다.</p>}
+      <p className="mt-3 text-xs text-slate-500">수익률이 0%인 결과와 미확정 결과는 구분됩니다. 미확정 결과는 통계와 N에 포함하지 않습니다.</p>
     </section>
   );
 }
