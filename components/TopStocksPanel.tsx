@@ -11,13 +11,13 @@ type TopStock = {
   market: string;
   score: number;
   closePrice: number;
-  priceBasis: "officialDailyClose";
+  priceBasis: "officialDailyClose" | "intradayOfficialSignal";
   priceAsOfDate: string;
   rankingUniverseCount?: number;
   rankPercentile?: number;
 };
 type TopStocksResponse = {
-  dataMode: "historySnapshot";
+  dataMode: "historySnapshot" | "intradayOfficialSignal";
   model: ModelId;
   modelName: string;
   modelVersion: string | null;
@@ -25,7 +25,11 @@ type TopStocksResponse = {
   promotionStatus?: "notApproved";
   rankingAsOfDate: string;
   priceAsOfDate: string;
-  priceBasis: "officialDailyClose";
+  priceBasis: "officialDailyClose" | "intradayOfficialSignal";
+  officialSignalTime?: string;
+  collectionStartedAt?: string;
+  collectionCompletedAt?: string;
+  officialSignal?: { signalDate: string | null; status: "READY" | "FAILED" | "FAILED_COLLECTION" | "UNAVAILABLE"; reason: string | null; officialSignalTime: string | null };
   generatedAt: string;
   count: number;
   stocks: TopStock[];
@@ -88,6 +92,11 @@ export default function TopStocksPanel({ onSelectStock, compact = false, onOpenF
     : data?.freshness?.freshnessStatus === "unavailable"
       ? `최신 공식 일봉 기준일을 확인할 수 없습니다. 현재 순위는 ${data.rankingAsOfDate} 기준입니다.`
       : null;
+  const officialSignalMessage = activeTab === "B" && data?.officialSignal?.status !== "READY"
+    ? data?.officialSignal?.status === "FAILED" || data?.officialSignal?.status === "FAILED_COLLECTION"
+      ? `오늘 Official Signal 생성에 실패했습니다.${data.officialSignal.signalDate ? ` 최근 시도일: ${data.officialSignal.signalDate}` : ""}`
+      : "오늘 14:30 Official Signal 생성 대기 또는 상태 확인 불가"
+    : null;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -102,7 +111,7 @@ export default function TopStocksPanel({ onSelectStock, compact = false, onOpenF
         const response = await fetch(`/api/top-stocks?model=${selectedTab.model}${versionQuery}&limit=${compact ? 5 : 50}`, { cache: "no-store", signal: controller.signal });
         const result = await response.json();
         if (!response.ok) throw new Error(result?.error?.message ?? "실제 TOP50 데이터를 불러오지 못했습니다.");
-        if (result.dataMode !== "historySnapshot" || result.model !== selectedTab.model) throw new Error("TOP50 응답의 데이터 모드 또는 모델이 올바르지 않습니다.");
+        if (!["historySnapshot", "intradayOfficialSignal"].includes(result.dataMode) || result.model !== selectedTab.model) throw new Error("TOP50 응답의 데이터 모드 또는 모델이 올바르지 않습니다.");
         if (selectedVersion && result.modelVersion !== selectedVersion) throw new Error("요청한 챌린저 모델 버전과 응답이 일치하지 않습니다.");
         setData(result as TopStocksResponse);
       } catch (loadError) {
@@ -209,7 +218,8 @@ export default function TopStocksPanel({ onSelectStock, compact = false, onOpenF
         </div>
       )}
       {freshnessMessage && <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">{freshnessMessage}</p>}
-      {data && compact && <p className="mt-2 text-[10px] text-gray-500">데이터 기준일 {data.rankingAsOfDate} · 공식 일봉</p>}
+      {officialSignalMessage && <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">{officialSignalMessage}</p>}
+      {data && compact && <p className="mt-2 text-[10px] text-gray-500">{data.dataMode === "intradayOfficialSignal" ? `Official Signal · ${data.rankingAsOfDate} ${data.officialSignalTime?.slice(0, 5) ?? "14:30"} KST` : `데이터 기준일 ${data.rankingAsOfDate} · 공식 일봉`}</p>}
 
       {loading && <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-12 text-center text-sm text-gray-500">실제 TOP50 데이터를 불러오는 중입니다...</div>}
       {!loading && error && (

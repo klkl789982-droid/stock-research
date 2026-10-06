@@ -1,0 +1,43 @@
+name: Intraday Model B Official Signal
+on:
+  schedule:
+    - cron: "30 5 * * 1-5"
+  workflow_dispatch:
+concurrency:
+  group: intraday-model-b-official-signal
+  cancel-in-progress: false
+jobs:
+  signal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
+      KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - id: signal
+        shell: bash
+        run: |
+          set +e
+          node scripts/run-intraday-model-b-official-signal.mjs 2>&1 | tee intraday-model-b.log
+          result=$(grep '^INTRADAY_MODEL_B_RESULT_JSON=' intraday-model-b.log | tail -1 | cut -d= -f2-)
+          [ -n "$result" ] && echo "status=$(jq -r '.status' <<<"$result")" >> "$GITHUB_OUTPUT"
+          [ -n "$result" ] && echo "signal_path=$(jq -r '.signalPath' <<<"$result")" >> "$GITHUB_OUTPUT"
+          [ -n "$result" ] && echo "latest_path=$(jq -r '.latestPath' <<<"$result")" >> "$GITHUB_OUTPUT"
+      - if: steps.signal.outputs.latest_path != ''
+        run: |
+          git add -- "${{ steps.signal.outputs.latest_path }}"
+          if [ "${{ steps.signal.outputs.status }}" = "READY" ]; then git add -- "${{ steps.signal.outputs.signal_path }}"; fi
+          git diff --cached --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ "${{ steps.signal.outputs.status }}" = "READY" ]; then message="chore(data): publish intraday Model B signal"; else message="chore(data): update intraday Model B signal status"; fi
+          git commit -m "$message"
+          git push origin HEAD:main
+      - if: steps.signal.outputs.status != 'READY'
+        run: exit 1

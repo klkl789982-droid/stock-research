@@ -1,0 +1,12 @@
+import assert from "node:assert/strict";
+import { buildIntradayModelBSignal, assertImmutableOfficialSignal, mergeProvisionalCandle } from "../lib/intraday-model-b-official-signal.mjs";
+import { collectKisQuotes } from "../lib/kis-intraday-collector.mjs";
+const rows = Array.from({ length: 260 }, (_, index) => [`${20261001 - index}`, 100 + index, 110 + index, 90 + index, 100 + index, 1000]);
+const seed = { requestedDate: "2026-10-01", contentHash: "seed", sourceManifest: { sources: { officialDailyPrice: { normalizedInputHash: "daily" } } }, records: [{ code: "000001", name: "A", eligible: true, rows }, { code: "000002", name: "B", eligible: true, rows }, { code: "000003", name: "C", eligible: false, ineligibleReasons: ["insufficientHistory"], rows: [] }] };
+const quote = (code, price) => ({ code, source: "KIS", asOfDate: "2026-10-06", asOfTime: "14:30:10", receivedAt: "2026-10-06T05:30:11.000Z", open: price - 1, high: price + 2, low: price - 2, price, volume: 2000 });
+const merged = mergeProvisionalCandle(rows, quote("000001", 200)); assert.equal(merged[0].basDt, "20261006"); assert.equal(merged.length, 260);
+const signal = buildIntradayModelBSignal({ seed, quotesByCode: new Map([["000001", quote("000001", 200)], ["000002", quote("000002", 190)]]), signalDate: "2026-10-06", collectionStartedAt: "2026-10-06T05:30:00.000Z", collectionCompletedAt: "2026-10-06T05:31:00.000Z" });
+assert.equal(signal.status, "READY"); assert.equal(signal.collection.successful, 2); assert.deepEqual(signal.records.filter((r) => r.dataStatus === "AVAILABLE").map((r) => r.rank).sort(), [1, 2]); assert.equal(assertImmutableOfficialSignal(null, signal), "create"); assert.equal(assertImmutableOfficialSignal(signal, signal), "idempotent"); assert.throws(() => assertImmutableOfficialSignal(signal, { ...signal, contentHash: "other" }), /IMMUTABLE/);
+const partial = buildIntradayModelBSignal({ seed, quotesByCode: new Map([["000001", quote("000001", 200)]]), signalDate: "2026-10-06", collectionStartedAt: "x", collectionCompletedAt: "y" }); assert.equal(partial.status, "FAILED_COLLECTION"); assert.equal(partial.records.find((r) => r.ticker === "000002").dataStatus, "MISSING");
+const collected = await collectKisQuotes({ codes: ["1", "2"], delayMs: 0, now: () => "t", fetchQuote: async (code) => code === "2" ? Promise.reject(new Error("timeout")) : quote(code, 200) }); assert.equal(collected.quotesByCode.size, 1); assert.equal(collected.failures.length, 1);
+console.log("intraday Model B provisional candle·rank·immutability·partial collection tests passed");
