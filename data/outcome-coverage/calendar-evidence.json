@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "dataset": "historical-outcome-calendar-evidence",
+  "policy": "onlyFillAbsentCalendarDatesWhenMatchingSnapshotAndPriceLedgerExist;neverOverrideExplicitCalendar",
+  "entries": {
+    "2026-09-22": {
+      "status": "tradingDay",
+      "observedBasDt": "2026-09-22",
+      "modelSnapshot": "created",
+      "marketPriceLedger": "created",
+      "evidence": "matchingHistoricalSnapshotAndPriceLedger"
+    }
+  },
+  "contentHash": "a91d73571932bcc8beca5180a3525afbdfcd20c26ee7256425e2204bfe0b8109"
+}

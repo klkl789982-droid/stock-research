@@ -56,6 +56,17 @@
       "marketAnalysisSnapshot": "created",
       "intradayMarketSeed": "created",
       "checkedAt": "2026-10-02T16:56:07.915Z"
+    },
+    "2026-10-02": {
+      "status": "tradingDay",
+      "observedBasDt": "2026-10-02",
+      "modelSnapshot": "created",
+      "marketPriceLedger": "created",
+      "reason": null,
+      "universeArchive": "created",
+      "marketAnalysisSnapshot": "created",
+      "intradayMarketSeed": "created",
+      "checkedAt": "2026-10-06T09:56:26.483Z"
     }
   }
 }

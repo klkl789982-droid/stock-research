@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "dataset": "daily-top-freshness-status",
+  "snapshotReferenceDate": "2026-10-02",
+  "observedOfficialDate": "2026-10-02",
+  "freshnessStatus": "fresh",
+  "freshnessReason": null,
+  "runStatus": "CANDIDATE_VALIDATED",
+  "updatedAt": "2026-10-06T09:56:28.796Z",
+  "sourceEvidence": [
+    {
+      "source": "공공데이터포털",
+      "operation": "getStockPriceInfoLatestProbe",
+      "referenceDate": "2026-10-02",
+      "requestedAt": "2026-10-06T09:50:00.984Z",
+      "observedAt": "2026-10-06T09:50:03.793Z",
+      "sourceTimestamp": "20261002",
+      "sourceTimestampSemantics": "marketDateBasDt",
+      "minObservedBasDt": "20261002",
+      "maxObservedBasDt": "20261002",
+      "sourcePublishedAt": null,
+      "availabilityEvidence": "SYSTEM_OBSERVED_PROBE_RESPONSE",
+      "availabilityStatus": "OBSERVED",
+      "recordCount": 5,
+      "normalizedInputHash": null,
+      "requestId": "2014c138b3316c0b76b47d697e864e6558f72f5ab48b05921813a1718851a0c4",
+      "outcome": "success"
+    }
+  ],
+  "contentHash": "35881408fa1f6ef819e4d2deb340d8ebdccfcc2604e77ca6b629674bfc110753"
+}
