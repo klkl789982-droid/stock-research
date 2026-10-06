@@ -43,25 +43,31 @@ jobs:
           echo "status=$(jq -r '.status' <<<"$result")" >> "$GITHUB_OUTPUT"
           echo "reference_date=$(jq -r '.referenceDate // ""' <<<"$result")" >> "$GITHUB_OUTPUT"
           echo "manifest_path=$(jq -r '.manifestPath // ""' <<<"$result")" >> "$GITHUB_OUTPUT"
+          echo "freshness_path=$(jq -r '.freshnessPath // ""' <<<"$result")" >> "$GITHUB_OUTPUT"
           echo "promotion_files=$(jq -c '.promotionFiles // []' <<<"$result")" >> "$GITHUB_OUTPUT"
           echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
       - name: Mark validated candidate promoted
         if: steps.daily.outputs.status == 'CANDIDATE_VALIDATED'
         run: node scripts/run-daily-production.mjs --mark-promoted=${{ steps.daily.outputs.manifest_path }}
       - name: Stage only allowlisted artifacts
-        if: steps.daily.outputs.status == 'CANDIDATE_VALIDATED'
+        if: steps.daily.outputs.freshness_path != ''
         shell: bash
         run: |
-          jq -r '.[]' <<<'${{ steps.daily.outputs.promotion_files }}' | while IFS= read -r file; do git add -- "$file"; done
+          git add -- "${{ steps.daily.outputs.freshness_path }}"
+          if [ "${{ steps.daily.outputs.status }}" = "CANDIDATE_VALIDATED" ]; then
+            jq -r '.[]' <<<'${{ steps.daily.outputs.promotion_files }}' | while IFS= read -r file; do git add -- "$file"; done
+          fi
           git diff --cached --check
           if git diff --cached --name-only | grep -E '(^|/)(\.env|.*(secret|token|\.tmp|\.lock|\.bak))' ; then exit 1; fi
       - name: Commit and push atomic promotion
-        if: steps.daily.outputs.status == 'CANDIDATE_VALIDATED'
+        if: steps.daily.outputs.freshness_path != ''
         shell: bash
         run: |
+          if git diff --cached --quiet; then exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "chore(data): publish daily production ${{ steps.daily.outputs.reference_date }}"
+          if [ "${{ steps.daily.outputs.status }}" = "CANDIDATE_VALIDATED" ]; then message="chore(data): publish daily production ${{ steps.daily.outputs.reference_date }}"; else message="chore(data): update daily TOP freshness"; fi
+          git commit -m "$message"
           git push origin HEAD:main
       - name: Upload safe run manifest on no-op or failure
         if: always() && steps.daily.outputs.status != 'CANDIDATE_VALIDATED' && steps.daily.outputs.manifest_path != ''

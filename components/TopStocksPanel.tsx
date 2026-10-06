@@ -33,6 +33,7 @@ type TopStocksResponse = {
   structuralStatus?: string;
   eligibleForRankBacktest?: boolean;
   sourceManifestVersion?: number | null;
+  freshness?: { snapshotReferenceDate: string | null; observedOfficialDate: string | null; freshnessStatus: "fresh" | "stale" | "unavailable"; freshnessReason: string | null; updatedAt: string };
   originalUniverseCount?: number;
   qualityEligibleUniverseCount?: number;
   rankingUniverseCount?: number;
@@ -82,6 +83,11 @@ export default function TopStocksPanel({ onSelectStock, compact = false, onOpenF
   const [requestVersion, setRequestVersion] = useState(0);
   const [intradayByCode, setIntradayByCode] = useState<Record<string, IntradayOverlay>>({});
   const intradayRequestVersionRef = useRef(0);
+  const freshnessMessage = data?.freshness?.freshnessStatus === "stale"
+    ? `최신 공식 일봉(${data.freshness.observedOfficialDate ?? "기준일 확인됨"}) 기준 순위 생성이 아직 완료되지 않았습니다. 현재 순위는 ${data.rankingAsOfDate} 기준입니다.`
+    : data?.freshness?.freshnessStatus === "unavailable"
+      ? `최신 공식 일봉 기준일을 확인할 수 없습니다. 현재 순위는 ${data.rankingAsOfDate} 기준입니다.`
+      : null;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -202,6 +208,7 @@ export default function TopStocksPanel({ onSelectStock, compact = false, onOpenF
           </div></details>
         </div>
       )}
+      {freshnessMessage && <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">{freshnessMessage}</p>}
       {data && compact && <p className="mt-2 text-[10px] text-gray-500">데이터 기준일 {data.rankingAsOfDate} · 공식 일봉</p>}
 
       {loading && <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-12 text-center text-sm text-gray-500">실제 TOP50 데이터를 불러오는 중입니다...</div>}

@@ -5,8 +5,11 @@ import {
   classifySameDate,
   createCompactModelHistory,
   createDailyRunManifest,
+  createDailyTopFreshnessStatus,
   DAILY_RUN_STATUS,
+  DAILY_TOP_FRESHNESS_STATUS,
   evaluatePromotionCandidate,
+  evaluateDailyTopFreshness,
   resolveOfficialReferenceDate,
   validateCompactModelHistory,
 } from "../lib/daily-production.mjs";
@@ -90,12 +93,19 @@ assert.deepEqual(resolveOfficialReferenceDate({ observedDate: "2026-10-02", coll
 assert.deepEqual(resolveOfficialReferenceDate({ observedDate: "2026-09-23", collectionDate: "2026-09-28", previousProductionReferenceDate: "2026-09-22" }), { status: "candidate", referenceDate: "2026-09-23", reason: null }, "source lag는 관측 거래일 자체를 referenceDate로 사용합니다.");
 assert.deepEqual(resolveOfficialReferenceDate({ observedDate: "2026-09-21", collectionDate: "2026-09-29", previousProductionReferenceDate: "2026-09-22" }), { status: "stale", referenceDate: null, reason: "observedDateOlderThanProduction" }, "production보다 오래된 응답은 차단합니다.");
 assert.deepEqual(resolveOfficialReferenceDate({ observedDate: "2026-09-22", collectionDate: "2026-09-29", previousProductionReferenceDate: "2026-09-22" }), { status: "noNewOfficialEod", referenceDate: "2026-09-22", reason: "sameReferenceDate" });
+assert.deepEqual(evaluateDailyTopFreshness({ snapshotReferenceDate: "2026-10-01", observedOfficialDate: "2026-10-01", sourceAvailable: true }), { status: DAILY_TOP_FRESHNESS_STATUS.FRESH, reason: null });
+assert.deepEqual(evaluateDailyTopFreshness({ snapshotReferenceDate: "2026-09-30", observedOfficialDate: "2026-10-01", sourceAvailable: true }), { status: DAILY_TOP_FRESHNESS_STATUS.STALE, reason: "snapshotBehindOfficialEod" });
+assert.deepEqual(evaluateDailyTopFreshness({ snapshotReferenceDate: "2026-09-30", observedOfficialDate: null, sourceAvailable: false }), { status: DAILY_TOP_FRESHNESS_STATUS.UNAVAILABLE, reason: "latestOfficialEodUnavailable" });
+const staleFreshness = createDailyTopFreshnessStatus({ snapshotReferenceDate: "2026-09-30", observedOfficialDate: "2026-10-01", sourceAvailable: true, runStatus: DAILY_RUN_STATUS.FAILED, updatedAt: "2026-10-04T00:00:00.000Z", reason: "LATEST_PROBE_TIMEOUT" });
+assert.equal(staleFreshness.freshnessStatus, DAILY_TOP_FRESHNESS_STATUS.STALE);
+assert.equal(staleFreshness.freshnessReason, "LATEST_PROBE_TIMEOUT");
 const runnerSource = await import("node:fs/promises").then((fs) => fs.readFile(new URL("./run-daily-production.mjs", import.meta.url), "utf8"));
 const dailyHistorySource = await import("node:fs/promises").then((fs) => fs.readFile(new URL("./run-daily-history.mjs", import.meta.url), "utf8"));
 assert.match(runnerSource, /--date=\$\{referenceDate\}.*--observed-date=\$\{referenceDate\}/su, "downstream에는 동일 referenceDate를 전달해야 합니다.");
 assert.match(runnerSource, /writeOutcomeCoverageArtifacts\(\{ root, coverageAsOfDate: referenceDate \}\)/u, "Daily Production은 history 생성 후 signal-date coverage artifact를 갱신해야 합니다.");
 assert.match(runnerSource, /writeModelMaturityCoverageReport\(\{ root \}\)/u, "Daily Production은 coverage 갱신 뒤 maturity report를 갱신해야 합니다.");
 assert.match(runnerSource, /"--porcelain=v1", "-uall"/u, "새 compact history는 디렉터리가 아닌 파일 단위로 allowlist 검증해야 합니다.");
+assert.match(runnerSource, /writeFreshnessStatus/u, "Daily Production은 latest official EOD와 snapshot freshness 상태를 별도로 기록해야 합니다.");
 assert.match(dailyHistorySource, /updateTradingCalendarDate\(requestedDate,[\s\S]*await runScript\("scripts\/resolve-history-returns\.mjs"\)/u, "거래일 상태와 가격 원장을 확정한 뒤 전체 history resolver를 호출해야 합니다.");
 assert.equal(isAllowedOlderHistory(assertPromotionFiles(["data/history/2026-09-22.json"], "2026-09-29", runId)), true, "과거 snapshot의 성숙 outcome도 promotion 대상이어야 합니다.");
 

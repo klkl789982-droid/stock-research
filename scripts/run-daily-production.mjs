@@ -9,7 +9,7 @@ import { assertPreflightPromotionReady } from "../lib/daily-data-contract-prefli
 import { AVAILABILITY_STATUS, createSourceAvailabilityEvidence } from "../lib/source-availability.mjs";
 import { writeOutcomeCoverageArtifacts } from "../lib/outcome-coverage-reconciliation.mjs";
 import { writeModelMaturityCoverageReport } from "../lib/model-maturity-coverage-report.mjs";
-import { assertPromotionFiles, classifyLatestProbeFailure, classifySameDate, createCompactModelHistory, createDailyRunManifest, DAILY_RUN_STATUS, evaluatePromotionCandidate, markManifestPromoted, resolveOfficialReferenceDate, validateCompactModelHistory } from "../lib/daily-production.mjs";
+import { assertPromotionFiles, classifyLatestProbeFailure, classifySameDate, createCompactModelHistory, createDailyRunManifest, createDailyTopFreshnessStatus, DAILY_RUN_STATUS, evaluatePromotionCandidate, markManifestPromoted, resolveOfficialReferenceDate, validateCompactModelHistory } from "../lib/daily-production.mjs";
 
 const root = process.cwd();
 const option = (name) => process.argv.find((value) => value.startsWith(`--${name}=`))?.slice(name.length + 3);
@@ -80,6 +80,16 @@ async function writeManifest(manifest) {
   const directory = path.join(root, "data", "daily-runs", manifest.referenceDate ?? "unknown"); await fs.mkdir(directory, { recursive: true });
   const target = path.join(directory, `${runId}.json`); await fs.writeFile(target, `${JSON.stringify(manifest, null, 2)}\n`, { flag: "wx" }); return path.relative(root, target).replaceAll("\\", "/");
 }
+async function writeFreshnessStatus({ snapshotReferenceDate, observedOfficialDate, sourceAvailable, runStatus, sourceEvidence, reason = null }) {
+  const status = createDailyTopFreshnessStatus({ snapshotReferenceDate, observedOfficialDate, sourceAvailable, runStatus, updatedAt: new Date().toISOString(), sourceEvidence, reason });
+  const directory = path.join(root, "data", "daily-production-status");
+  const target = path.join(directory, "latest.json");
+  const temporary = `${target}.${runId}.tmp`;
+  await fs.mkdir(directory, { recursive: true });
+  await fs.writeFile(temporary, `${JSON.stringify(status, null, 2)}\n`, "utf8");
+  await fs.rename(temporary, target);
+  return path.relative(root, target).replaceAll("\\", "/");
+}
 const hashFile = async (file) => createHash("sha256").update(await fs.readFile(file)).digest("hex");
 const runScript = (script, args) => new Promise((resolve, reject) => { const child = spawn(process.execPath, [script, ...args], { cwd: root, env: process.env, stdio: "inherit" }); child.on("error", reject); child.on("exit", (code) => code === 0 ? resolve() : reject(new Error(`${script} 종료 코드 ${code}`))); });
 
@@ -93,7 +103,9 @@ try {
   referenceDate = dateDecision.referenceDate;
   if (dateDecision.status === "noNewOfficialEod") {
     const manifest = createDailyRunManifest({ referenceDate, runId, status: DAILY_RUN_STATUS.NO_NEW_OFFICIAL_EOD, startedAt, completedAt: new Date().toISOString(), sourceGitSha, previousProductionReferenceDate, sourceEvidence: latestProbeAvailability ? [latestProbeAvailability] : [], reason: dateDecision.reason });
-    const manifestPath = await writeManifest(manifest); console.log(`DAILY_PRODUCTION_RESULT_JSON=${JSON.stringify({ status: manifest.status, referenceDate, runId, manifestPath, promotionFiles: [] })}`); process.exit(0);
+    const manifestPath = await writeManifest(manifest);
+    const freshnessPath = await writeFreshnessStatus({ snapshotReferenceDate: previousProductionReferenceDate, observedOfficialDate: referenceDate, sourceAvailable: true, runStatus: manifest.status, sourceEvidence: [latestProbeAvailability].filter(Boolean), reason: dateDecision.reason });
+    console.log(`DAILY_PRODUCTION_RESULT_JSON=${JSON.stringify({ status: manifest.status, referenceDate, runId, manifestPath, freshnessPath, promotionFiles: [] })}`); process.exit(0);
   }
   await runScript("scripts/run-daily-history.mjs", [`--date=${referenceDate}`, `--observed-date=${referenceDate}`]);
   const outcomeCoverage = await writeOutcomeCoverageArtifacts({ root, coverageAsOfDate: referenceDate });
@@ -112,21 +124,27 @@ try {
   const sameDate = classifySameDate(existing, compact);
   if (sameDate === "revisionRequired") {
     const manifest = createDailyRunManifest({ referenceDate, runId, status: DAILY_RUN_STATUS.REVISION_REQUIRES_APPROVAL, startedAt, completedAt: new Date().toISOString(), sourceGitSha, previousProductionReferenceDate, sourceEvidence: [snapshot.sourceManifest?.sources?.officialDailyPrice?.availability, snapshot.sourceManifest?.sources?.securityMaster?.availability].filter(Boolean), snapshotHash: compact.sourceSnapshotHash, compactHistoryHash: compact.contentHash, reason: "sameDateDifferentHash" });
-    const manifestPath = await writeManifest(manifest); console.log(`DAILY_PRODUCTION_RESULT_JSON=${JSON.stringify({ status: manifest.status, referenceDate, runId, manifestPath, promotionFiles: [] })}`); process.exitCode = 3;
+    const manifestPath = await writeManifest(manifest);
+    const freshnessPath = await writeFreshnessStatus({ snapshotReferenceDate: previousProductionReferenceDate, observedOfficialDate: referenceDate, sourceAvailable: true, runStatus: manifest.status, sourceEvidence: [latestProbeAvailability].filter(Boolean), reason: manifest.reason });
+    console.log(`DAILY_PRODUCTION_RESULT_JSON=${JSON.stringify({ status: manifest.status, referenceDate, runId, manifestPath, freshnessPath, promotionFiles: [] })}`); process.exitCode = 3;
   } else {
     if (sameDate === "create") await fs.writeFile(compactPath, `${JSON.stringify(compact, null, 2)}\n`, { flag: "wx" });
     const summary = snapshot.universeSummary; const sourceEvidence = [snapshot.sourceManifest?.sources?.officialDailyPrice?.availability, snapshot.sourceManifest?.sources?.securityMaster?.availability].filter(Boolean); const manifest = createDailyRunManifest({ referenceDate, runId, status: DAILY_RUN_STATUS.CANDIDATE_VALIDATED, startedAt, completedAt: new Date().toISOString(), sourceGitSha, previousProductionReferenceDate, snapshotHash: compact.sourceSnapshotHash, universeHash: summary.originalUniverse.codesHash, priceLedgerHash: ledger.contentHash ?? await hashFile(paths.ledger), originalCount: summary.originalUniverse.count, eligibleCount: summary.qualityEligibleUniverse.count, quarantineCount: summary.quarantinedUniverse.count, rankingUniverseSizeByModel: Object.fromEntries(Object.entries(summary.rankingUniverse).map(([key, value]) => [key, value.count])), issueManifestHash: snapshot.dataQuality?.issueManifestHash ?? null, compactHistoryHash: compact.contentHash, sourceEvidence, provenance: snapshot.sourceManifest });
     const manifestPath = await writeManifest(manifest);
+    const freshnessPath = await writeFreshnessStatus({ snapshotReferenceDate: referenceDate, observedOfficialDate: referenceDate, sourceAvailable: true, runStatus: manifest.status, sourceEvidence: [latestProbeAvailability].filter(Boolean) });
     const statusLines = (await new Promise((resolve) => { const child = spawn("git", ["status", "--porcelain=v1", "-uall"], { cwd: root, stdio: ["ignore", "pipe", "ignore"] }); let output = ""; child.stdout.on("data", (chunk) => { output += chunk; }); child.on("close", () => resolve(output)); })).split(/\r?\n/u).filter(Boolean);
     const changed = statusLines.map((line) => line.slice(3).replaceAll("\\", "/")).filter((file) => !file.startsWith("data/daily-runs/") || file === manifestPath);
     changed.push(...outcomeCoverage.changedPaths);
     changed.push(...maturityCoverage.changedPaths);
     changed.push(`data/model-history/${referenceDate}.json`, manifestPath);
+    changed.push(freshnessPath);
     const promotionFiles = assertPromotionFiles(changed, referenceDate, runId);
-    console.log(`DAILY_PRODUCTION_RESULT_JSON=${JSON.stringify({ status: manifest.status, referenceDate, runId, manifestPath, promotionFiles })}`);
+    console.log(`DAILY_PRODUCTION_RESULT_JSON=${JSON.stringify({ status: manifest.status, referenceDate, runId, manifestPath, freshnessPath, promotionFiles })}`);
   }
 } catch (error) {
   const failureReason = referenceDate == null ? classifyLatestProbeFailure(error) : (error instanceof Error ? error.message.slice(0, 500) : "unknownFailure");
   const manifest = createDailyRunManifest({ referenceDate, runId, status: DAILY_RUN_STATUS.FAILED, startedAt, completedAt: new Date().toISOString(), sourceGitSha, previousProductionReferenceDate, sourceEvidence: latestProbeAvailability ? [latestProbeAvailability] : [], reason: failureReason });
-  const manifestPath = await writeManifest(manifest).catch(() => null); console.error(`DAILY_PRODUCTION_FAILED reason=${failureReason}`); console.log(`DAILY_PRODUCTION_RESULT_JSON=${JSON.stringify({ status: manifest.status, referenceDate, runId, manifestPath, promotionFiles: [], reason: failureReason })}`); process.exitCode = 1;
+  const manifestPath = await writeManifest(manifest).catch(() => null);
+  const freshnessPath = await writeFreshnessStatus({ snapshotReferenceDate: previousProductionReferenceDate, observedOfficialDate: latestProbeAvailability?.referenceDate ?? null, sourceAvailable: Boolean(latestProbeAvailability), runStatus: manifest.status, sourceEvidence: [latestProbeAvailability].filter(Boolean), reason: failureReason }).catch(() => null);
+  console.error(`DAILY_PRODUCTION_FAILED reason=${failureReason}`); console.log(`DAILY_PRODUCTION_RESULT_JSON=${JSON.stringify({ status: manifest.status, referenceDate, runId, manifestPath, freshnessPath, promotionFiles: [], reason: failureReason })}`); process.exitCode = 1;
 }

@@ -47,6 +47,13 @@ type HistorySnapshot = {
     rankingUniverse?: Record<string, { count?: number; codesHash?: string }>;
   };
 };
+type DailyTopFreshness = {
+  snapshotReferenceDate: string | null;
+  observedOfficialDate: string | null;
+  freshnessStatus: "fresh" | "stale" | "unavailable";
+  freshnessReason: string | null;
+  updatedAt: string;
+};
 
 function isValidSnapshot(value: unknown, filenameDate: string): value is HistorySnapshot {
   if (typeof value !== "object" || value === null) return false;
@@ -80,6 +87,24 @@ async function loadLatestValidSnapshot() {
   return null;
 }
 
+async function loadDailyTopFreshness(snapshot: HistorySnapshot): Promise<DailyTopFreshness> {
+  const unavailable = (reason: string): DailyTopFreshness => ({ snapshotReferenceDate: snapshot.asOfDate, observedOfficialDate: null, freshnessStatus: "unavailable", freshnessReason: reason, updatedAt: new Date(0).toISOString() });
+  try {
+    const value: unknown = JSON.parse(await readFile(path.join(process.cwd(), "data", "daily-production-status", "latest.json"), "utf8"));
+    if (typeof value !== "object" || value === null) return unavailable("invalidFreshnessStatus");
+    const status = value as Partial<DailyTopFreshness>;
+    if (!["fresh", "stale", "unavailable"].includes(String(status.freshnessStatus))) return unavailable("invalidFreshnessStatus");
+    const observedOfficialDate = typeof status.observedOfficialDate === "string" ? status.observedOfficialDate : null;
+    const updatedAt = typeof status.updatedAt === "string" ? status.updatedAt : new Date(0).toISOString();
+    if (status.snapshotReferenceDate !== snapshot.asOfDate) {
+      return { snapshotReferenceDate: snapshot.asOfDate, observedOfficialDate, freshnessStatus: observedOfficialDate && observedOfficialDate > snapshot.asOfDate ? "stale" : "unavailable", freshnessReason: "snapshotFreshnessStatusMismatch", updatedAt };
+    }
+    return { snapshotReferenceDate: snapshot.asOfDate, observedOfficialDate, freshnessStatus: status.freshnessStatus as DailyTopFreshness["freshnessStatus"], freshnessReason: typeof status.freshnessReason === "string" ? status.freshnessReason : null, updatedAt };
+  } catch {
+    return unavailable("freshnessStatusNotAvailable");
+  }
+}
+
 export async function GET(request: NextRequest) {
   const modelParameter = request.nextUrl.searchParams.get("model")?.toUpperCase() ?? "A";
   if (!(modelParameter in MODEL_KEYS)) {
@@ -99,6 +124,7 @@ export async function GET(request: NextRequest) {
   if (!snapshot) {
     return NextResponse.json({ error: { code: "HISTORY_SNAPSHOT_NOT_FOUND", message: "실제 TOP50 데이터가 없습니다. 최신 유효 모델 스냅샷을 생성해야 합니다." } }, { status: 503 });
   }
+  const freshness = await loadDailyTopFreshness(snapshot);
 
   if (model === "A" && requestedVersion === "A-v2") {
     const hasModelAV2 =
@@ -142,7 +168,7 @@ export async function GET(request: NextRequest) {
       ...coverage,
       dataQualityGrade: snapshot.dataQuality?.overallGrade ?? "UNKNOWN", structuralStatus: snapshot.dataQuality?.structuralStatus ?? "unknown",
       eligibleForRankBacktest: snapshot.dataQuality?.certification?.eligibleForRankBacktest ?? false, sourceManifestVersion: snapshot.sourceManifest?.schemaVersion ?? null,
-      generatedAt: new Date().toISOString(), snapshotComputedAt: snapshot.computedAt ?? null, count: stocks.length, stocks,
+      generatedAt: new Date().toISOString(), snapshotComputedAt: snapshot.computedAt ?? null, freshness, count: stocks.length, stocks,
     }, { headers: { "Cache-Control": "no-store" } });
   }
 
@@ -186,6 +212,7 @@ export async function GET(request: NextRequest) {
     structuralStatus: snapshot.dataQuality?.structuralStatus ?? "unknown",
     eligibleForRankBacktest: snapshot.dataQuality?.certification?.eligibleForRankBacktest ?? false,
     sourceManifestVersion: snapshot.sourceManifest?.schemaVersion ?? null,
+    freshness,
     count: stocks.length,
     stocks,
   }, { headers: { "Cache-Control": "no-store" } });

@@ -11,6 +11,8 @@ assert.match(panel, /가격 추세와 기술적 흐름을 중심으로 보는 �
 assert.match(panel, /데이터 기준일/u);
 assert.match(panel, /분석 대상/u);
 assert.match(panel, /데이터 기준 자세히 보기/u);
+assert.match(panel, /최신 공식 일봉.*순위 생성이 아직 완료되지 않았습니다/u);
+assert.match(panel, /최신 공식 일봉 기준일을 확인할 수 없습니다/u);
 assert.match(panel, /onSelectStock\(\{ code: stock\.code, name: stock\.name \}\)/u);
 assert.match(panel, /overflow-x-auto/u);
 assert.match(page, /<TopStocksPanel onSelectStock=\{handleSearch\}/u);
