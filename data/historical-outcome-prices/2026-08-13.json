@@ -1,0 +1,4437 @@
+{
+  "schemaVersion": 1,
+  "dataset": "historical-one-day-price-ledger",
+  "signalDate": "2026-08-13",
+  "targetTradingDate": "2026-08-14",
+  "sourceSnapshotHash": "e4df77ae198cdeb8bb658f076320589c3f7625d9974e85cef1e065131100ed1b",
+  "source": "data-go-kr-official-daily-price",
+  "collectedAt": "2026-10-04T01:08:26.376Z",
+  "returnDefinition": "(targetTradingDayClose - signalDayClose) / signalDayClose * 100",
+  "records": [
+    {
+      "ticker": "000020",
+      "signalClose": 5140,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "000100",
+      "signalClose": 82500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "000120",
+      "signalClose": 74000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "000150",
+      "signalClose": 1262000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "000210",
+      "signalClose": 50900,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "000240",
+      "signalClose": 26000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "000250",
+      "signalClose": 189800,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "000270",
+      "signalClose": 137400,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "000370",
+      "signalClose": 6410,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "000400",
+      "signalClose": 1983,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "000490",
+      "signalClose": 8480,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "000500",
+      "signalClose": 167000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "000660",
+      "signalClose": 1593000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "000720",
+      "signalClose": 113700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "000810",
+      "signalClose": 611000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "000880",
+      "signalClose": 83800,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "000990",
+      "signalClose": 99700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "0009K0",
+      "signalClose": 27050,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "001040",
+      "signalClose": 137600,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "001120",
+      "signalClose": 37600,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "001200",
+      "signalClose": 4370,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "001250",
+      "signalClose": 2740,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "001290",
+      "signalClose": 1027,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "001430",
+      "signalClose": 43550,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "001440",
+      "signalClose": 30100,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "001450",
+      "signalClose": 42950,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "001510",
+      "signalClose": 2370,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "0015N0",
+      "signalClose": 8700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "001740",
+      "signalClose": 8080,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "001800",
+      "signalClose": 26350,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "001820",
+      "signalClose": 103300,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "002020",
+      "signalClose": 28400,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "002380",
+      "signalClose": 456000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "002790",
+      "signalClose": 26200,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "002990",
+      "signalClose": 14370,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "003030",
+      "signalClose": 108400,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "003160",
+      "signalClose": 26000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "003230",
+      "signalClose": 1219000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "003280",
+      "signalClose": 1695,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "003350",
+      "signalClose": 11490,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "003380",
+      "signalClose": 11200,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "003490",
+      "signalClose": 26100,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "003530",
+      "signalClose": 4630,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "003550",
+      "signalClose": 113700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "003670",
+      "signalClose": 165900,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "003690",
+      "signalClose": 14670,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "003720",
+      "signalClose": 7300,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "0039P0",
+      "signalClose": 9250,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "004000",
+      "signalClose": 46300,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "004020",
+      "signalClose": 28800,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "004090",
+      "signalClose": 10810,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "004170",
+      "signalClose": 419500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "004310",
+      "signalClose": 6490,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "004370",
+      "signalClose": 389500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "004430",
+      "signalClose": 11700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "004710",
+      "signalClose": 8160,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "004800",
+      "signalClose": 164900,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "004990",
+      "signalClose": 23500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "005070",
+      "signalClose": 40600,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "005090",
+      "signalClose": 61800,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "005290",
+      "signalClose": 43200,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "005380",
+      "signalClose": 418500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "005440",
+      "signalClose": 11650,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "005490",
+      "signalClose": 325500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "005690",
+      "signalClose": 11920,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "005830",
+      "signalClose": 166600,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "005850",
+      "signalClose": 59000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "005880",
+      "signalClose": 1991,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "005930",
+      "signalClose": 268000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "005940",
+      "signalClose": 28350,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "005950",
+      "signalClose": 15390,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "006110",
+      "signalClose": 54300,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "006220",
+      "signalClose": 9260,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "006260",
+      "signalClose": 326000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "006280",
+      "signalClose": 129500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "006340",
+      "signalClose": 15110,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "006360",
+      "signalClose": 35700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "006400",
+      "signalClose": 487000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "006650",
+      "signalClose": 88500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "006730",
+      "signalClose": 11050,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "006800",
+      "signalClose": 38050,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "006910",
+      "signalClose": 7850,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "007070",
+      "signalClose": 26750,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "007340",
+      "signalClose": 49450,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "007390",
+      "signalClose": 23600,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "007660",
+      "signalClose": 96800,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "007810",
+      "signalClose": 66400,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "008770",
+      "signalClose": 43400,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "008930",
+      "signalClose": 44350,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "009150",
+      "signalClose": 1503000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "009420",
+      "signalClose": 60400,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "009450",
+      "signalClose": 68300,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "009540",
+      "signalClose": 371500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "009830",
+      "signalClose": 36550,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "009970",
+      "signalClose": 190300,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "010060",
+      "signalClose": 278000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "010120",
+      "signalClose": 214000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "010130",
+      "signalClose": 1233000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "010140",
+      "signalClose": 22000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "010170",
+      "signalClose": 13240,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "010690",
+      "signalClose": 8790,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "010820",
+      "signalClose": 6470,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "010950",
+      "signalClose": 140900,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "011070",
+      "signalClose": 615000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "011170",
+      "signalClose": 57400,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "011200",
+      "signalClose": 21050,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "011210",
+      "signalClose": 66200,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "011780",
+      "signalClose": 128900,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "011790",
+      "signalClose": 89200,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "011930",
+      "signalClose": 16900,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "012330",
+      "signalClose": 511000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "012450",
+      "signalClose": 1185000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "0126Z0",
+      "signalClose": 403000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "012750",
+      "signalClose": 78100,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "014620",
+      "signalClose": 26750,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "014680",
+      "signalClose": 232500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "014940",
+      "signalClose": 4920,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "015760",
+      "signalClose": 33100,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "016360",
+      "signalClose": 92500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "017510",
+      "signalClose": 7940,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "017670",
+      "signalClose": 91100,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "017800",
+      "signalClose": 71900,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "017900",
+      "signalClose": 8710,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "017960",
+      "signalClose": 24300,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "018260",
+      "signalClose": 237000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "018290",
+      "signalClose": 13380,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "018670",
+      "signalClose": 228000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "018880",
+      "signalClose": 3805,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "019210",
+      "signalClose": 16630,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "020000",
+      "signalClose": 15900,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "020150",
+      "signalClose": 34650,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "021240",
+      "signalClose": 97200,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "022100",
+      "signalClose": 21800,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "023160",
+      "signalClose": 23450,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "023530",
+      "signalClose": 99500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "024060",
+      "signalClose": 10880,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "024110",
+      "signalClose": 20000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "024840",
+      "signalClose": 5670,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "024850",
+      "signalClose": 13060,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "025320",
+      "signalClose": 4650,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "025560",
+      "signalClose": 10230,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "025860",
+      "signalClose": 5800,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "025980",
+      "signalClose": 3910,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "026960",
+      "signalClose": 26200,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "027360",
+      "signalClose": 4585,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "028050",
+      "signalClose": 49000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "028260",
+      "signalClose": 365000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "028300",
+      "signalClose": 42750,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "028670",
+      "signalClose": 5630,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "029780",
+      "signalClose": 46900,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "030000",
+      "signalClose": 18710,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "030200",
+      "signalClose": 52500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "030530",
+      "signalClose": 20800,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "031330",
+      "signalClose": 9690,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "031980",
+      "signalClose": 105200,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "032350",
+      "signalClose": 12810,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "032500",
+      "signalClose": 17370,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "032580",
+      "signalClose": 4535,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "032640",
+      "signalClose": 14700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "032820",
+      "signalClose": 11760,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "032830",
+      "signalClose": 291500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "033100",
+      "signalClose": 50100,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "033160",
+      "signalClose": 17950,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "033240",
+      "signalClose": 30250,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "033640",
+      "signalClose": 18210,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "033780",
+      "signalClose": 173800,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "033790",
+      "signalClose": 6370,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "034020",
+      "signalClose": 80900,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "034220",
+      "signalClose": 9940,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "034230",
+      "signalClose": 9710,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "034730",
+      "signalClose": 553000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "035250",
+      "signalClose": 14340,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "035420",
+      "signalClose": 226500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "035720",
+      "signalClose": 40100,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "035760",
+      "signalClose": 34600,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "035900",
+      "signalClose": 40850,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "036460",
+      "signalClose": 35900,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "036540",
+      "signalClose": 6230,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "036570",
+      "signalClose": 243500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "036810",
+      "signalClose": 27150,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "036930",
+      "signalClose": 179300,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "037070",
+      "signalClose": 5610,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "037460",
+      "signalClose": 36100,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "037710",
+      "signalClose": 41350,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "038500",
+      "signalClose": 8250,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "039030",
+      "signalClose": 378500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "039200",
+      "signalClose": 38300,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "039440",
+      "signalClose": 23950,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "039490",
+      "signalClose": 297000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "039830",
+      "signalClose": 23150,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "039860",
+      "signalClose": 4000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "041020",
+      "signalClose": 3065,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "041510",
+      "signalClose": 71900,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "041830",
+      "signalClose": 66200,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "042520",
+      "signalClose": 20850,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "042660",
+      "signalClose": 90700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "042700",
+      "signalClose": 226000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "043260",
+      "signalClose": 21000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "044490",
+      "signalClose": 36500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "045100",
+      "signalClose": 33100,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "046890",
+      "signalClose": 10470,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "046970",
+      "signalClose": 5050,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "047040",
+      "signalClose": 18400,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "047050",
+      "signalClose": 54300,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "047770",
+      "signalClose": 2615,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "047810",
+      "signalClose": 151200,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "047920",
+      "signalClose": 8720,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "048410",
+      "signalClose": 8040,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "049070",
+      "signalClose": 19780,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "049720",
+      "signalClose": 9360,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "050890",
+      "signalClose": 10400,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "051160",
+      "signalClose": 10030,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "051600",
+      "signalClose": 46200,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "051900",
+      "signalClose": 303500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "051910",
+      "signalClose": 275500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "052690",
+      "signalClose": 99800,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "052710",
+      "signalClose": 13520,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "053260",
+      "signalClose": 5700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "053610",
+      "signalClose": 64800,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "053690",
+      "signalClose": 19220,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "053800",
+      "signalClose": 60500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "055550",
+      "signalClose": 106600,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "056080",
+      "signalClose": 13590,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "056190",
+      "signalClose": 24300,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "058470",
+      "signalClose": 71300,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "058610",
+      "signalClose": 112200,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "059090",
+      "signalClose": 19500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "059120",
+      "signalClose": 7440,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "060250",
+      "signalClose": 14560,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "060280",
+      "signalClose": 9530,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "060370",
+      "signalClose": 34100,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "060720",
+      "signalClose": 11770,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "061970",
+      "signalClose": 4050,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "062040",
+      "signalClose": 188000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "064260",
+      "signalClose": 5020,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "064290",
+      "signalClose": 32100,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "064350",
+      "signalClose": 147600,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "064400",
+      "signalClose": 78400,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "064760",
+      "signalClose": 227000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "065350",
+      "signalClose": 32750,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "066570",
+      "signalClose": 206500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "066590",
+      "signalClose": 2705,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "066970",
+      "signalClose": 102600,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "067160",
+      "signalClose": 42400,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "067290",
+      "signalClose": 2150,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "067310",
+      "signalClose": 36650,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "068270",
+      "signalClose": 202000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "068760",
+      "signalClose": 44650,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "069540",
+      "signalClose": 2920,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "069620",
+      "signalClose": 123300,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "069960",
+      "signalClose": 99700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "071050",
+      "signalClose": 199700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "071970",
+      "signalClose": 58000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "073240",
+      "signalClose": 8140,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "073490",
+      "signalClose": 32350,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "074600",
+      "signalClose": 30200,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "075580",
+      "signalClose": 11500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "077360",
+      "signalClose": 10350,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "077970",
+      "signalClose": 28550,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "078350",
+      "signalClose": 23850,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "078600",
+      "signalClose": 94800,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "078930",
+      "signalClose": 107400,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "079160",
+      "signalClose": 5290,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "079550",
+      "signalClose": 837000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "079650",
+      "signalClose": 5240,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "079940",
+      "signalClose": 44350,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "080220",
+      "signalClose": 88300,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "080580",
+      "signalClose": 15840,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "081660",
+      "signalClose": 42900,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "082270",
+      "signalClose": 12030,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "082740",
+      "signalClose": 48250,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "082920",
+      "signalClose": 33000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "083450",
+      "signalClose": 50500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "083650",
+      "signalClose": 56500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "084370",
+      "signalClose": 135000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "085620",
+      "signalClose": 19350,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "085660",
+      "signalClose": 9490,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "085910",
+      "signalClose": 19840,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "086280",
+      "signalClose": 204500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "086390",
+      "signalClose": 9730,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "086450",
+      "signalClose": 20450,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "086520",
+      "signalClose": 92100,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "086790",
+      "signalClose": 131000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "087010",
+      "signalClose": 196700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "088350",
+      "signalClose": 5030,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "088980",
+      "signalClose": 9610,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "089030",
+      "signalClose": 49350,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "089860",
+      "signalClose": 42500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "089890",
+      "signalClose": 24450,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "089970",
+      "signalClose": 68500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "090360",
+      "signalClose": 86000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "090430",
+      "signalClose": 134500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "090460",
+      "signalClose": 19250,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "090710",
+      "signalClose": 7720,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "092200",
+      "signalClose": 5250,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "092790",
+      "signalClose": 13090,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "092870",
+      "signalClose": 19890,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "093320",
+      "signalClose": 146100,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "093370",
+      "signalClose": 11960,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "094170",
+      "signalClose": 34550,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "095340",
+      "signalClose": 159800,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "095610",
+      "signalClose": 145000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "096530",
+      "signalClose": 31900,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "096770",
+      "signalClose": 121700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "097230",
+      "signalClose": 17910,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "097950",
+      "signalClose": 182500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "098460",
+      "signalClose": 31900,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "099320",
+      "signalClose": 81900,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "099440",
+      "signalClose": 4060,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "100090",
+      "signalClose": 14340,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "100790",
+      "signalClose": 17570,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "100840",
+      "signalClose": 28350,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "101160",
+      "signalClose": 28600,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "101490",
+      "signalClose": 44900,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "102710",
+      "signalClose": 51600,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "102940",
+      "signalClose": 17460,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "103140",
+      "signalClose": 84000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "103590",
+      "signalClose": 72400,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "104830",
+      "signalClose": 35550,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "105560",
+      "signalClose": 168100,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "107640",
+      "signalClose": 36650,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "108320",
+      "signalClose": 40150,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "108490",
+      "signalClose": 261000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "108860",
+      "signalClose": 10160,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "111770",
+      "signalClose": 84700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "112040",
+      "signalClose": 17830,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "112610",
+      "signalClose": 46900,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "114810",
+      "signalClose": 12040,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "115180",
+      "signalClose": 24950,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "119850",
+      "signalClose": 55400,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "120110",
+      "signalClose": 55700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "121440",
+      "signalClose": 6810,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "121600",
+      "signalClose": 50800,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "122640",
+      "signalClose": 29100,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "122870",
+      "signalClose": 39700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "123330",
+      "signalClose": 30150,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "124500",
+      "signalClose": 27150,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "125020",
+      "signalClose": 6350,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "125490",
+      "signalClose": 10830,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "126340",
+      "signalClose": 76700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "126640",
+      "signalClose": 4150,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "126730",
+      "signalClose": 20450,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "127120",
+      "signalClose": 41500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "128940",
+      "signalClose": 398500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "131290",
+      "signalClose": 259000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "131970",
+      "signalClose": 84000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "137400",
+      "signalClose": 32650,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "138040",
+      "signalClose": 118600,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "138080",
+      "signalClose": 24750,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "138360",
+      "signalClose": 1972,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "138930",
+      "signalClose": 14850,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "139130",
+      "signalClose": 16970,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "139480",
+      "signalClose": 78100,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "140410",
+      "signalClose": 67800,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "140860",
+      "signalClose": 282500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "141080",
+      "signalClose": 114400,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "144960",
+      "signalClose": 12490,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "145020",
+      "signalClose": 262500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "153890",
+      "signalClose": 13270,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "159010",
+      "signalClose": 22950,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "160190",
+      "signalClose": 21150,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "160980",
+      "signalClose": 34950,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "161390",
+      "signalClose": 71500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "161580",
+      "signalClose": 29900,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "161890",
+      "signalClose": 135200,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "166090",
+      "signalClose": 60000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "170920",
+      "signalClose": 40600,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "171090",
+      "signalClose": 69800,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "174900",
+      "signalClose": 31000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "175330",
+      "signalClose": 29350,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "178320",
+      "signalClose": 36950,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "180640",
+      "signalClose": 119000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "181710",
+      "signalClose": 66700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "183300",
+      "signalClose": 54400,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "187660",
+      "signalClose": 4920,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "187790",
+      "signalClose": 3385,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "189300",
+      "signalClose": 77600,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "189330",
+      "signalClose": 17610,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "192080",
+      "signalClose": 61700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "192820",
+      "signalClose": 249000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "194480",
+      "signalClose": 21350,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "194700",
+      "signalClose": 15080,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "195870",
+      "signalClose": 58500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "195940",
+      "signalClose": 41150,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "196170",
+      "signalClose": 317500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "199430",
+      "signalClose": 16310,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "200470",
+      "signalClose": 5790,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "200710",
+      "signalClose": 30150,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "203650",
+      "signalClose": 2130,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "204270",
+      "signalClose": 18370,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "204320",
+      "signalClose": 55500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "204620",
+      "signalClose": 5330,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "207940",
+      "signalClose": 1564000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "213420",
+      "signalClose": 35300,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "214150",
+      "signalClose": 39700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "214370",
+      "signalClose": 64000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "214430",
+      "signalClose": 73800,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "214450",
+      "signalClose": 425500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "217590",
+      "signalClose": 13990,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "217730",
+      "signalClose": 2685,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "218410",
+      "signalClose": 54300,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "219130",
+      "signalClose": 81100,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "222040",
+      "signalClose": 9790,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "222080",
+      "signalClose": 8210,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "222800",
+      "signalClose": 105800,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "226950",
+      "signalClose": 112500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "229640",
+      "signalClose": 48150,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "230240",
+      "signalClose": 16000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "232140",
+      "signalClose": 10830,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "232680",
+      "signalClose": 10380,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "234340",
+      "signalClose": 20400,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "237690",
+      "signalClose": 107600,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "240810",
+      "signalClose": 120000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "241560",
+      "signalClose": 64900,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "241710",
+      "signalClose": 124500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "247540",
+      "signalClose": 114500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "251270",
+      "signalClose": 38850,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "251970",
+      "signalClose": 54800,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "252990",
+      "signalClose": 15480,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "253590",
+      "signalClose": 11030,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "257720",
+      "signalClose": 40800,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "259960",
+      "signalClose": 234500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "263750",
+      "signalClose": 31500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "264850",
+      "signalClose": 6570,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "267250",
+      "signalClose": 229000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "267260",
+      "signalClose": 785000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "267270",
+      "signalClose": 139500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "270660",
+      "signalClose": 14960,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "271560",
+      "signalClose": 131800,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "272110",
+      "signalClose": 28000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "272210",
+      "signalClose": 79600,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "272290",
+      "signalClose": 22850,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "277810",
+      "signalClose": 497000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "278470",
+      "signalClose": 399500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "279570",
+      "signalClose": 5710,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "280360",
+      "signalClose": 119200,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "281740",
+      "signalClose": 13250,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "281820",
+      "signalClose": 71900,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "282330",
+      "signalClose": 142700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "285130",
+      "signalClose": 43850,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "290550",
+      "signalClose": 19880,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "290650",
+      "signalClose": 54700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "290690",
+      "signalClose": 4220,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "293490",
+      "signalClose": 9070,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "294870",
+      "signalClose": 21800,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "295310",
+      "signalClose": 53500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "298000",
+      "signalClose": 70500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "298020",
+      "signalClose": 323000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "298040",
+      "signalClose": 3017000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "298050",
+      "signalClose": 172600,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "298380",
+      "signalClose": 86800,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "302440",
+      "signalClose": 36850,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "304100",
+      "signalClose": 17050,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "307950",
+      "signalClose": 449000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "310210",
+      "signalClose": 180700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "316140",
+      "signalClose": 33300,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "317400",
+      "signalClose": 9490,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "319400",
+      "signalClose": 25300,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "319660",
+      "signalClose": 134600,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "322000",
+      "signalClose": 124200,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "322310",
+      "signalClose": 15690,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "323280",
+      "signalClose": 51000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "323410",
+      "signalClose": 22150,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "326030",
+      "signalClose": 87600,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "327260",
+      "signalClose": 37850,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "328130",
+      "signalClose": 10520,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "329180",
+      "signalClose": 496000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "330860",
+      "signalClose": 30050,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "332570",
+      "signalClose": 11160,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "333430",
+      "signalClose": 4185,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "336260",
+      "signalClose": 38100,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "336570",
+      "signalClose": 5330,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "340570",
+      "signalClose": 32000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "347700",
+      "signalClose": 25950,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "347850",
+      "signalClose": 61700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "348210",
+      "signalClose": 35300,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "348340",
+      "signalClose": 21400,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "348370",
+      "signalClose": 23950,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "352820",
+      "signalClose": 176400,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "353200",
+      "signalClose": 113000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "354320",
+      "signalClose": 33650,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "356680",
+      "signalClose": 12910,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "356860",
+      "signalClose": 31200,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "357780",
+      "signalClose": 328000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "357880",
+      "signalClose": 2050,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "358570",
+      "signalClose": 8730,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "361610",
+      "signalClose": 15880,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "368770",
+      "signalClose": 13760,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "373220",
+      "signalClose": 365500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "375500",
+      "signalClose": 73500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "376300",
+      "signalClose": 19790,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "376900",
+      "signalClose": 33700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "targetDateNotReturned",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "377300",
+      "signalClose": 44700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "382800",
+      "signalClose": 5940,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "383220",
+      "signalClose": 68800,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "383310",
+      "signalClose": 25800,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "388210",
+      "signalClose": 81700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "388720",
+      "signalClose": 72600,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "388790",
+      "signalClose": 4300,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "389260",
+      "signalClose": 15050,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "389500",
+      "signalClose": 40200,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "396300",
+      "signalClose": 4165,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "397030",
+      "signalClose": 29150,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "399720",
+      "signalClose": 47550,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "402340",
+      "signalClose": 1117000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "403870",
+      "signalClose": 41200,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "413630",
+      "signalClose": 3895,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "417200",
+      "signalClose": 12510,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "417840",
+      "signalClose": 13440,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "419530",
+      "signalClose": 23850,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "420770",
+      "signalClose": 117900,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "425420",
+      "signalClose": 38600,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "437730",
+      "signalClose": 38400,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "439090",
+      "signalClose": 17970,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "439260",
+      "signalClose": 51800,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "439960",
+      "signalClose": 16520,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "440110",
+      "signalClose": 63000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "441270",
+      "signalClose": 9100,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "443060",
+      "signalClose": 200500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "445680",
+      "signalClose": 38950,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "448900",
+      "signalClose": 63000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "450080",
+      "signalClose": 39350,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "452260",
+      "signalClose": 2100,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "452280",
+      "signalClose": 14080,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "454910",
+      "signalClose": 78000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "455900",
+      "signalClose": 22700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "456010",
+      "signalClose": 18590,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "456040",
+      "signalClose": 80500,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "456160",
+      "signalClose": 42600,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "457190",
+      "signalClose": 66700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "458870",
+      "signalClose": 24200,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "459510",
+      "signalClose": 17250,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "460930",
+      "signalClose": 14930,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "463020",
+      "signalClose": 10910,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "466100",
+      "signalClose": 28750,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "475040",
+      "signalClose": 3280,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "475150",
+      "signalClose": 57100,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "475400",
+      "signalClose": 20700,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "475830",
+      "signalClose": 66900,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "476060",
+      "signalClose": 15480,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "476830",
+      "signalClose": 35050,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "477850",
+      "signalClose": 28600,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "482630",
+      "signalClose": 14410,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "483650",
+      "signalClose": 236000,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "484810",
+      "signalClose": 17530,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "486990",
+      "signalClose": 21250,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "489460",
+      "signalClose": 12400,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "489790",
+      "signalClose": 54200,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "490470",
+      "signalClose": 18480,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "491000",
+      "signalClose": 47400,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "499790",
+      "signalClose": 43200,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "900290",
+      "signalClose": 3860,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    },
+    {
+      "ticker": "950160",
+      "signalClose": 25600,
+      "targetClose": null,
+      "status": "DATA_MISSING",
+      "reason": "requestHttp",
+      "sourceReferenceDate": "2026-08-14"
+    }
+  ],
+  "contentHash": "7ec8a586da37d4850643bafc8a91b0d077f62cc532f415349e55861b424433e1"
+}

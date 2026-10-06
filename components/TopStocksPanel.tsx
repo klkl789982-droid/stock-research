@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { TOP_INTRADAY_POLL_MS, toTopIntradayOverlay } from "../lib/top-stocks-intraday-overlay.mjs";
+import ModelTopPerformancePanel from "./ModelTopPerformancePanel";
 
 type ModelId = "A" | "B" | "C" | "D";
 type TopStock = {
@@ -176,6 +177,7 @@ export default function TopStocksPanel({ onSelectStock, compact = false, onOpenF
   }, [data?.stocks]);
 
   return (
+    <>
     <div className={`tb-card ${compact ? "mt-3 p-4" : "mt-6 p-4 sm:p-6"}`}>
       <p className={`${compact ? "text-[10px] font-medium tracking-[0.18em]" : "text-xs font-bold tracking-[0.15em]"} uppercase text-[var(--tb-orange)]`}>Daily model ranking</p>
       <div className="flex items-center justify-between gap-4"><h2 className={`${compact ? "mt-1 text-lg font-medium" : "mt-1 text-xl font-extrabold sm:text-2xl"} tracking-tight text-slate-950`}>{compact ? "모델 TOP 종목" : "시장 TOP 종목"}</h2>{compact && onOpenFull && <button type="button" onClick={onOpenFull} className="tb-focus rounded-lg px-2 py-1 text-xs font-medium text-[var(--tb-blue)] hover:bg-orange-50/50">전체 순위 보기 →</button>}</div>
@@ -259,5 +261,7 @@ export default function TopStocksPanel({ onSelectStock, compact = false, onOpenF
         </div>
       )}
     </div>
+    {!compact && <ModelTopPerformancePanel />}
+    </>
   );
 }

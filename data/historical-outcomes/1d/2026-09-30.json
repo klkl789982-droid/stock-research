@@ -1,0 +1,4435 @@
+{
+  "schemaVersion": 1,
+  "dataset": "historical-one-day-outcomes",
+  "signalDate": "2026-09-30",
+  "targetTradingDate": "2026-10-01",
+  "sourcePriceLedgerHash": "34a7e03fe0d88fba2972cfbe64ca3f0179ed79b0ccfa85c521f206945f9c0392",
+  "returnDefinition": "(targetTradingDayClose - signalDayClose) / signalDayClose * 100",
+  "records": [
+    {
+      "ticker": "000020",
+      "signalClose": 5060,
+      "targetClose": 5130,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.383399
+    },
+    {
+      "ticker": "000100",
+      "signalClose": 72800,
+      "targetClose": 74800,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.747253
+    },
+    {
+      "ticker": "000120",
+      "signalClose": 70000,
+      "targetClose": 69800,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.285714
+    },
+    {
+      "ticker": "000150",
+      "signalClose": 1368000,
+      "targetClose": 1384000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.169591
+    },
+    {
+      "ticker": "000210",
+      "signalClose": 49550,
+      "targetClose": 48600,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.917255
+    },
+    {
+      "ticker": "000240",
+      "signalClose": 25100,
+      "targetClose": 25100,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0
+    },
+    {
+      "ticker": "000250",
+      "signalClose": 172800,
+      "targetClose": 199400,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 15.393519
+    },
+    {
+      "ticker": "000270",
+      "signalClose": 112800,
+      "targetClose": 113300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.443262
+    },
+    {
+      "ticker": "000370",
+      "signalClose": 7300,
+      "targetClose": 7280,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.273973
+    },
+    {
+      "ticker": "000400",
+      "signalClose": 2015,
+      "targetClose": 2120,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.210918
+    },
+    {
+      "ticker": "000490",
+      "signalClose": 7440,
+      "targetClose": 7550,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.478495
+    },
+    {
+      "ticker": "000500",
+      "signalClose": 315000,
+      "targetClose": 318000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.952381
+    },
+    {
+      "ticker": "000660",
+      "signalClose": 1776000,
+      "targetClose": 1833000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.209459
+    },
+    {
+      "ticker": "000720",
+      "signalClose": 117500,
+      "targetClose": 117200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.255319
+    },
+    {
+      "ticker": "000810",
+      "signalClose": 633000,
+      "targetClose": 626000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.105845
+    },
+    {
+      "ticker": "000880",
+      "signalClose": 125500,
+      "targetClose": 124200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.035857
+    },
+    {
+      "ticker": "000990",
+      "signalClose": 136600,
+      "targetClose": 142500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.31918
+    },
+    {
+      "ticker": "0009K0",
+      "signalClose": 22350,
+      "targetClose": 25450,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 13.870246
+    },
+    {
+      "ticker": "001040",
+      "signalClose": 134200,
+      "targetClose": 131600,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.937407
+    },
+    {
+      "ticker": "001120",
+      "signalClose": 43300,
+      "targetClose": 42450,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.963048
+    },
+    {
+      "ticker": "001200",
+      "signalClose": 4050,
+      "targetClose": 4085,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.864198
+    },
+    {
+      "ticker": "001250",
+      "signalClose": 2845,
+      "targetClose": 2820,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.878735
+    },
+    {
+      "ticker": "001290",
+      "signalClose": 4090,
+      "targetClose": 4160,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.711491
+    },
+    {
+      "ticker": "001430",
+      "signalClose": 44950,
+      "targetClose": 47000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.560623
+    },
+    {
+      "ticker": "001440",
+      "signalClose": 29650,
+      "targetClose": 30150,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.686341
+    },
+    {
+      "ticker": "001450",
+      "signalClose": 47850,
+      "targetClose": 47250,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.253918
+    },
+    {
+      "ticker": "001510",
+      "signalClose": 2270,
+      "targetClose": 2330,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.643172
+    },
+    {
+      "ticker": "0015N0",
+      "signalClose": 10700,
+      "targetClose": 10560,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.308411
+    },
+    {
+      "ticker": "001740",
+      "signalClose": 6210,
+      "targetClose": 6450,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.864734
+    },
+    {
+      "ticker": "001800",
+      "signalClose": 23200,
+      "targetClose": 23000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.862069
+    },
+    {
+      "ticker": "001820",
+      "signalClose": 149200,
+      "targetClose": 158700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 6.367292
+    },
+    {
+      "ticker": "002020",
+      "signalClose": 23300,
+      "targetClose": 24150,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.648069
+    },
+    {
+      "ticker": "002380",
+      "signalClose": 470500,
+      "targetClose": 472500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.42508
+    },
+    {
+      "ticker": "002790",
+      "signalClose": 25850,
+      "targetClose": 25900,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.193424
+    },
+    {
+      "ticker": "002990",
+      "signalClose": 12300,
+      "targetClose": 12260,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.325203
+    },
+    {
+      "ticker": "003030",
+      "signalClose": 117600,
+      "targetClose": 111100,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -5.527211
+    },
+    {
+      "ticker": "003160",
+      "signalClose": 36700,
+      "targetClose": 41500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 13.079019
+    },
+    {
+      "ticker": "003230",
+      "signalClose": 1213000,
+      "targetClose": 1224000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.906843
+    },
+    {
+      "ticker": "003280",
+      "signalClose": 1810,
+      "targetClose": 1830,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.104972
+    },
+    {
+      "ticker": "003350",
+      "signalClose": 15030,
+      "targetClose": 16930,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 12.641384
+    },
+    {
+      "ticker": "003380",
+      "signalClose": 10800,
+      "targetClose": 10940,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.296296
+    },
+    {
+      "ticker": "003490",
+      "signalClose": 32000,
+      "targetClose": 31200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -2.5
+    },
+    {
+      "ticker": "003530",
+      "signalClose": 4450,
+      "targetClose": 4635,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.157303
+    },
+    {
+      "ticker": "003550",
+      "signalClose": 110800,
+      "targetClose": 109800,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.902527
+    },
+    {
+      "ticker": "003670",
+      "signalClose": 178800,
+      "targetClose": 182700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.181208
+    },
+    {
+      "ticker": "003690",
+      "signalClose": 14590,
+      "targetClose": 14320,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.850583
+    },
+    {
+      "ticker": "003720",
+      "signalClose": 6280,
+      "targetClose": 6470,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.025478
+    },
+    {
+      "ticker": "0039P0",
+      "signalClose": 8500,
+      "targetClose": 7980,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -6.117647
+    },
+    {
+      "ticker": "004000",
+      "signalClose": 43200,
+      "targetClose": 42600,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.388889
+    },
+    {
+      "ticker": "004020",
+      "signalClose": 30000,
+      "targetClose": 30350,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.166667
+    },
+    {
+      "ticker": "004090",
+      "signalClose": 11550,
+      "targetClose": 11660,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.952381
+    },
+    {
+      "ticker": "004170",
+      "signalClose": 336500,
+      "targetClose": 333500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.89153
+    },
+    {
+      "ticker": "004310",
+      "signalClose": 8400,
+      "targetClose": 8480,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.952381
+    },
+    {
+      "ticker": "004370",
+      "signalClose": 403500,
+      "targetClose": 400500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.743494
+    },
+    {
+      "ticker": "004430",
+      "signalClose": 11190,
+      "targetClose": 11150,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.357462
+    },
+    {
+      "ticker": "004710",
+      "signalClose": 10990,
+      "targetClose": 11830,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 7.643312
+    },
+    {
+      "ticker": "004800",
+      "signalClose": 156400,
+      "targetClose": 155600,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.511509
+    },
+    {
+      "ticker": "004990",
+      "signalClose": 24050,
+      "targetClose": 23700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.455301
+    },
+    {
+      "ticker": "005070",
+      "signalClose": 43250,
+      "targetClose": 44600,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.121387
+    },
+    {
+      "ticker": "005090",
+      "signalClose": 48000,
+      "targetClose": 48450,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.9375
+    },
+    {
+      "ticker": "005290",
+      "signalClose": 47650,
+      "targetClose": 53100,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 11.437566
+    },
+    {
+      "ticker": "005380",
+      "signalClose": 345000,
+      "targetClose": 349000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.15942
+    },
+    {
+      "ticker": "005440",
+      "signalClose": 12810,
+      "targetClose": 12540,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -2.107728
+    },
+    {
+      "ticker": "005490",
+      "signalClose": 306000,
+      "targetClose": 306500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.163399
+    },
+    {
+      "ticker": "005690",
+      "signalClose": 12160,
+      "targetClose": 12590,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.536184
+    },
+    {
+      "ticker": "005830",
+      "signalClose": 185000,
+      "targetClose": 183100,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.027027
+    },
+    {
+      "ticker": "005850",
+      "signalClose": 49300,
+      "targetClose": 52400,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 6.288032
+    },
+    {
+      "ticker": "005880",
+      "signalClose": 2050,
+      "targetClose": 2100,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.439024
+    },
+    {
+      "ticker": "005930",
+      "signalClose": 268500,
+      "targetClose": 276000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.793296
+    },
+    {
+      "ticker": "005940",
+      "signalClose": 26000,
+      "targetClose": 26500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.923077
+    },
+    {
+      "ticker": "005950",
+      "signalClose": 11120,
+      "targetClose": 11320,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.798561
+    },
+    {
+      "ticker": "006110",
+      "signalClose": 61100,
+      "targetClose": 60200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.472995
+    },
+    {
+      "ticker": "006220",
+      "signalClose": 9510,
+      "targetClose": 9550,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.42061
+    },
+    {
+      "ticker": "006260",
+      "signalClose": 308500,
+      "targetClose": 298000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -3.403566
+    },
+    {
+      "ticker": "006280",
+      "signalClose": 123000,
+      "targetClose": 129300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.121951
+    },
+    {
+      "ticker": "006340",
+      "signalClose": 12990,
+      "targetClose": 13100,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.846805
+    },
+    {
+      "ticker": "006360",
+      "signalClose": 33950,
+      "targetClose": 32950,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -2.945508
+    },
+    {
+      "ticker": "006400",
+      "signalClose": 515000,
+      "targetClose": 517000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.38835
+    },
+    {
+      "ticker": "006650",
+      "signalClose": 88500,
+      "targetClose": 88700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.225989
+    },
+    {
+      "ticker": "006730",
+      "signalClose": 10590,
+      "targetClose": 10860,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.549575
+    },
+    {
+      "ticker": "006800",
+      "signalClose": 30950,
+      "targetClose": 32150,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.877221
+    },
+    {
+      "ticker": "006910",
+      "signalClose": 7170,
+      "targetClose": 7200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.41841
+    },
+    {
+      "ticker": "007070",
+      "signalClose": 22450,
+      "targetClose": 22100,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.55902
+    },
+    {
+      "ticker": "007340",
+      "signalClose": 48700,
+      "targetClose": 49650,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.950719
+    },
+    {
+      "ticker": "007390",
+      "signalClose": 24150,
+      "targetClose": 25100,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.933747
+    },
+    {
+      "ticker": "007660",
+      "signalClose": 115100,
+      "targetClose": 123400,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 7.211121
+    },
+    {
+      "ticker": "007810",
+      "signalClose": 74300,
+      "targetClose": 79000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 6.325707
+    },
+    {
+      "ticker": "008770",
+      "signalClose": 39350,
+      "targetClose": 39200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.381194
+    },
+    {
+      "ticker": "008930",
+      "signalClose": 52800,
+      "targetClose": 52700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.189394
+    },
+    {
+      "ticker": "009150",
+      "signalClose": 1513000,
+      "targetClose": 1561000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.172505
+    },
+    {
+      "ticker": "009420",
+      "signalClose": 44100,
+      "targetClose": 48500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 9.977324
+    },
+    {
+      "ticker": "009450",
+      "signalClose": 61000,
+      "targetClose": 61300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.491803
+    },
+    {
+      "ticker": "009540",
+      "signalClose": 323500,
+      "targetClose": 325500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.618238
+    },
+    {
+      "ticker": "009830",
+      "signalClose": 33900,
+      "targetClose": 34250,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.032448
+    },
+    {
+      "ticker": "009970",
+      "signalClose": 162400,
+      "targetClose": 161800,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.369458
+    },
+    {
+      "ticker": "010060",
+      "signalClose": 223500,
+      "targetClose": 221000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.118568
+    },
+    {
+      "ticker": "010120",
+      "signalClose": 205000,
+      "targetClose": 206000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.487805
+    },
+    {
+      "ticker": "010130",
+      "signalClose": 1070000,
+      "targetClose": 1069000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.093458
+    },
+    {
+      "ticker": "010140",
+      "signalClose": 19700,
+      "targetClose": 19720,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.101523
+    },
+    {
+      "ticker": "010170",
+      "signalClose": 16680,
+      "targetClose": 17000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.918465
+    },
+    {
+      "ticker": "010690",
+      "signalClose": 7350,
+      "targetClose": 7550,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.721088
+    },
+    {
+      "ticker": "010820",
+      "signalClose": 6280,
+      "targetClose": 6410,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.070064
+    },
+    {
+      "ticker": "010950",
+      "signalClose": 161700,
+      "targetClose": 148800,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -7.977737
+    },
+    {
+      "ticker": "011070",
+      "signalClose": 564000,
+      "targetClose": 584000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.546099
+    },
+    {
+      "ticker": "011170",
+      "signalClose": 60000,
+      "targetClose": 60300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.5
+    },
+    {
+      "ticker": "011200",
+      "signalClose": 20850,
+      "targetClose": 21150,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.438849
+    },
+    {
+      "ticker": "011210",
+      "signalClose": 52100,
+      "targetClose": 52700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.151631
+    },
+    {
+      "ticker": "011780",
+      "signalClose": 115300,
+      "targetClose": 115800,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.433651
+    },
+    {
+      "ticker": "011790",
+      "signalClose": 99300,
+      "targetClose": 104800,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.538771
+    },
+    {
+      "ticker": "011930",
+      "signalClose": 17810,
+      "targetClose": 18770,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.39023
+    },
+    {
+      "ticker": "012330",
+      "signalClose": 367000,
+      "targetClose": 382000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.087193
+    },
+    {
+      "ticker": "012450",
+      "signalClose": 1007000,
+      "targetClose": 1034000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.681231
+    },
+    {
+      "ticker": "0126Z0",
+      "signalClose": 346000,
+      "targetClose": 373500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 7.947977
+    },
+    {
+      "ticker": "012750",
+      "signalClose": 82600,
+      "targetClose": 83200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.726392
+    },
+    {
+      "ticker": "014620",
+      "signalClose": 30850,
+      "targetClose": 30900,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.162075
+    },
+    {
+      "ticker": "014680",
+      "signalClose": 258500,
+      "targetClose": 279000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 7.930368
+    },
+    {
+      "ticker": "014940",
+      "signalClose": 4415,
+      "targetClose": 4500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.925255
+    },
+    {
+      "ticker": "015760",
+      "signalClose": 29950,
+      "targetClose": 30150,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.66778
+    },
+    {
+      "ticker": "016360",
+      "signalClose": 88400,
+      "targetClose": 90300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.149321
+    },
+    {
+      "ticker": "017510",
+      "signalClose": 7660,
+      "targetClose": 7760,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.305483
+    },
+    {
+      "ticker": "017670",
+      "signalClose": 85600,
+      "targetClose": 86300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.817757
+    },
+    {
+      "ticker": "017800",
+      "signalClose": 73000,
+      "targetClose": 72100,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.232877
+    },
+    {
+      "ticker": "017900",
+      "signalClose": 9560,
+      "targetClose": 9570,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.104603
+    },
+    {
+      "ticker": "017960",
+      "signalClose": 20050,
+      "targetClose": 20300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.246883
+    },
+    {
+      "ticker": "018260",
+      "signalClose": 219000,
+      "targetClose": 223000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.826484
+    },
+    {
+      "ticker": "018290",
+      "signalClose": 12160,
+      "targetClose": 12590,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.536184
+    },
+    {
+      "ticker": "018670",
+      "signalClose": 239500,
+      "targetClose": 240500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.417537
+    },
+    {
+      "ticker": "018880",
+      "signalClose": 3520,
+      "targetClose": 3675,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.403409
+    },
+    {
+      "ticker": "019210",
+      "signalClose": 12710,
+      "targetClose": 12730,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.157356
+    },
+    {
+      "ticker": "020000",
+      "signalClose": 21000,
+      "targetClose": 21250,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.190476
+    },
+    {
+      "ticker": "020150",
+      "signalClose": 42000,
+      "targetClose": 42950,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.261905
+    },
+    {
+      "ticker": "021240",
+      "signalClose": 99400,
+      "targetClose": 99300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.100604
+    },
+    {
+      "ticker": "022100",
+      "signalClose": 19910,
+      "targetClose": 20500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.963335
+    },
+    {
+      "ticker": "023160",
+      "signalClose": 27700,
+      "targetClose": 28500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.888087
+    },
+    {
+      "ticker": "023530",
+      "signalClose": 101400,
+      "targetClose": 101300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.098619
+    },
+    {
+      "ticker": "024060",
+      "signalClose": 11970,
+      "targetClose": 11980,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.083542
+    },
+    {
+      "ticker": "024110",
+      "signalClose": 20200,
+      "targetClose": 20150,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.247525
+    },
+    {
+      "ticker": "024840",
+      "signalClose": 6220,
+      "targetClose": 6370,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.411576
+    },
+    {
+      "ticker": "024850",
+      "signalClose": 16200,
+      "targetClose": 16500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.851852
+    },
+    {
+      "ticker": "025320",
+      "signalClose": 3800,
+      "targetClose": 3935,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.552632
+    },
+    {
+      "ticker": "025560",
+      "signalClose": 8150,
+      "targetClose": 8400,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.067485
+    },
+    {
+      "ticker": "025860",
+      "signalClose": 6060,
+      "targetClose": 6040,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.330033
+    },
+    {
+      "ticker": "025980",
+      "signalClose": 4830,
+      "targetClose": 5060,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.761905
+    },
+    {
+      "ticker": "026960",
+      "signalClose": 25350,
+      "targetClose": 25900,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.169625
+    },
+    {
+      "ticker": "027360",
+      "signalClose": 3740,
+      "targetClose": 3865,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.342246
+    },
+    {
+      "ticker": "028050",
+      "signalClose": 47700,
+      "targetClose": 47350,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.733753
+    },
+    {
+      "ticker": "028260",
+      "signalClose": 341500,
+      "targetClose": 347000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.610542
+    },
+    {
+      "ticker": "028300",
+      "signalClose": 41400,
+      "targetClose": 40550,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -2.05314
+    },
+    {
+      "ticker": "028670",
+      "signalClose": 5770,
+      "targetClose": 5880,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.906412
+    },
+    {
+      "ticker": "029780",
+      "signalClose": 42200,
+      "targetClose": 41850,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.829384
+    },
+    {
+      "ticker": "030000",
+      "signalClose": 18740,
+      "targetClose": 18740,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0
+    },
+    {
+      "ticker": "030200",
+      "signalClose": 52300,
+      "targetClose": 51800,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.956023
+    },
+    {
+      "ticker": "030530",
+      "signalClose": 26400,
+      "targetClose": 28000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 6.060606
+    },
+    {
+      "ticker": "031330",
+      "signalClose": 8330,
+      "targetClose": 8810,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.762305
+    },
+    {
+      "ticker": "031980",
+      "signalClose": 178600,
+      "targetClose": 194000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 8.62262
+    },
+    {
+      "ticker": "032350",
+      "signalClose": 11550,
+      "targetClose": 11750,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.731602
+    },
+    {
+      "ticker": "032500",
+      "signalClose": 18800,
+      "targetClose": 19440,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.404255
+    },
+    {
+      "ticker": "032580",
+      "signalClose": 7920,
+      "targetClose": 7630,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -3.661616
+    },
+    {
+      "ticker": "032640",
+      "signalClose": 14530,
+      "targetClose": 14540,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.068823
+    },
+    {
+      "ticker": "032820",
+      "signalClose": 12300,
+      "targetClose": 12540,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.95122
+    },
+    {
+      "ticker": "032830",
+      "signalClose": 282000,
+      "targetClose": 284000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.70922
+    },
+    {
+      "ticker": "033100",
+      "signalClose": 47600,
+      "targetClose": 48850,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.62605
+    },
+    {
+      "ticker": "033160",
+      "signalClose": 17160,
+      "targetClose": 18800,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 9.55711
+    },
+    {
+      "ticker": "033240",
+      "signalClose": 26150,
+      "targetClose": 27500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.162524
+    },
+    {
+      "ticker": "033640",
+      "signalClose": 29350,
+      "targetClose": 31700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 8.006814
+    },
+    {
+      "ticker": "033780",
+      "signalClose": 176200,
+      "targetClose": 174700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.851305
+    },
+    {
+      "ticker": "033790",
+      "signalClose": 8870,
+      "targetClose": 9010,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.578354
+    },
+    {
+      "ticker": "034020",
+      "signalClose": 81600,
+      "targetClose": 82100,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.612745
+    },
+    {
+      "ticker": "034220",
+      "signalClose": 8330,
+      "targetClose": 8580,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.0012
+    },
+    {
+      "ticker": "034230",
+      "signalClose": 9330,
+      "targetClose": 9480,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.607717
+    },
+    {
+      "ticker": "034730",
+      "signalClose": 588000,
+      "targetClose": 587000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.170068
+    },
+    {
+      "ticker": "035250",
+      "signalClose": 14260,
+      "targetClose": 14270,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.070126
+    },
+    {
+      "ticker": "035420",
+      "signalClose": 193700,
+      "targetClose": 191200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.290656
+    },
+    {
+      "ticker": "035720",
+      "signalClose": 33550,
+      "targetClose": 33550,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0
+    },
+    {
+      "ticker": "035760",
+      "signalClose": 36800,
+      "targetClose": 35750,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -2.853261
+    },
+    {
+      "ticker": "035900",
+      "signalClose": 37550,
+      "targetClose": 37750,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.532623
+    },
+    {
+      "ticker": "036460",
+      "signalClose": 34800,
+      "targetClose": 35250,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.293103
+    },
+    {
+      "ticker": "036540",
+      "signalClose": 10780,
+      "targetClose": 11000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.040816
+    },
+    {
+      "ticker": "036570",
+      "signalClose": 209000,
+      "targetClose": 230000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 10.047847
+    },
+    {
+      "ticker": "036810",
+      "signalClose": 31200,
+      "targetClose": 34700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 11.217949
+    },
+    {
+      "ticker": "036930",
+      "signalClose": 232500,
+      "targetClose": 241000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.655914
+    },
+    {
+      "ticker": "037070",
+      "signalClose": 6670,
+      "targetClose": 6620,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.749625
+    },
+    {
+      "ticker": "037460",
+      "signalClose": 30900,
+      "targetClose": 32250,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.368932
+    },
+    {
+      "ticker": "037710",
+      "signalClose": 34050,
+      "targetClose": 33750,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.881057
+    },
+    {
+      "ticker": "038500",
+      "signalClose": 6530,
+      "targetClose": 6780,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.828484
+    },
+    {
+      "ticker": "039030",
+      "signalClose": 520000,
+      "targetClose": 564000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 8.461538
+    },
+    {
+      "ticker": "039200",
+      "signalClose": 35650,
+      "targetClose": 38000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 6.591865
+    },
+    {
+      "ticker": "039440",
+      "signalClose": 23000,
+      "targetClose": 26200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 13.913043
+    },
+    {
+      "ticker": "039490",
+      "signalClose": 251500,
+      "targetClose": 262500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.373757
+    },
+    {
+      "ticker": "039830",
+      "signalClose": 15430,
+      "targetClose": 16020,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.82372
+    },
+    {
+      "ticker": "039860",
+      "signalClose": 4535,
+      "targetClose": 4595,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.323043
+    },
+    {
+      "ticker": "041020",
+      "signalClose": 3095,
+      "targetClose": 3155,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.938611
+    },
+    {
+      "ticker": "041510",
+      "signalClose": 81500,
+      "targetClose": 77700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -4.662577
+    },
+    {
+      "ticker": "041830",
+      "signalClose": 52600,
+      "targetClose": 53400,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.520913
+    },
+    {
+      "ticker": "042520",
+      "signalClose": 20750,
+      "targetClose": 22550,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 8.674699
+    },
+    {
+      "ticker": "042660",
+      "signalClose": 78800,
+      "targetClose": 78500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.380711
+    },
+    {
+      "ticker": "042700",
+      "signalClose": 256500,
+      "targetClose": 268500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.678363
+    },
+    {
+      "ticker": "043260",
+      "signalClose": 26450,
+      "targetClose": 28500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 7.750473
+    },
+    {
+      "ticker": "044490",
+      "signalClose": 37950,
+      "targetClose": 38250,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.790514
+    },
+    {
+      "ticker": "045100",
+      "signalClose": 32450,
+      "targetClose": 35450,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 9.244992
+    },
+    {
+      "ticker": "046890",
+      "signalClose": 10360,
+      "targetClose": 10980,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.984556
+    },
+    {
+      "ticker": "046970",
+      "signalClose": 7420,
+      "targetClose": 7410,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.134771
+    },
+    {
+      "ticker": "047040",
+      "signalClose": 17740,
+      "targetClose": 17760,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.11274
+    },
+    {
+      "ticker": "047050",
+      "signalClose": 56900,
+      "targetClose": 55300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -2.811951
+    },
+    {
+      "ticker": "047770",
+      "signalClose": 3480,
+      "targetClose": 3600,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.448276
+    },
+    {
+      "ticker": "047810",
+      "signalClose": 126200,
+      "targetClose": 127100,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.713154
+    },
+    {
+      "ticker": "047920",
+      "signalClose": 11770,
+      "targetClose": 11150,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -5.26763
+    },
+    {
+      "ticker": "048410",
+      "signalClose": 6900,
+      "targetClose": 7050,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.173913
+    },
+    {
+      "ticker": "049070",
+      "signalClose": 17910,
+      "targetClose": 18550,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.573423
+    },
+    {
+      "ticker": "049720",
+      "signalClose": 9110,
+      "targetClose": 9120,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.109769
+    },
+    {
+      "ticker": "050890",
+      "signalClose": 9510,
+      "targetClose": 10000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.152471
+    },
+    {
+      "ticker": "051160",
+      "signalClose": 11860,
+      "targetClose": 11680,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.517707
+    },
+    {
+      "ticker": "051600",
+      "signalClose": 43700,
+      "targetClose": 44150,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.029748
+    },
+    {
+      "ticker": "051900",
+      "signalClose": 269000,
+      "targetClose": 271500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.929368
+    },
+    {
+      "ticker": "051910",
+      "signalClose": 251000,
+      "targetClose": 257000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.390438
+    },
+    {
+      "ticker": "052690",
+      "signalClose": 122600,
+      "targetClose": 125800,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.610114
+    },
+    {
+      "ticker": "052710",
+      "signalClose": 18410,
+      "targetClose": 21600,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 17.327539
+    },
+    {
+      "ticker": "053260",
+      "signalClose": 8110,
+      "targetClose": 7460,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -8.014797
+    },
+    {
+      "ticker": "053610",
+      "signalClose": 81200,
+      "targetClose": 85200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.926108
+    },
+    {
+      "ticker": "053690",
+      "signalClose": 21000,
+      "targetClose": 21300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.428571
+    },
+    {
+      "ticker": "053800",
+      "signalClose": 75400,
+      "targetClose": 77800,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.183024
+    },
+    {
+      "ticker": "055550",
+      "signalClose": 106100,
+      "targetClose": 103800,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -2.167766
+    },
+    {
+      "ticker": "056080",
+      "signalClose": 11550,
+      "targetClose": 12230,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.887446
+    },
+    {
+      "ticker": "056190",
+      "signalClose": 28600,
+      "targetClose": 29950,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.72028
+    },
+    {
+      "ticker": "058470",
+      "signalClose": 73400,
+      "targetClose": 81400,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 10.899183
+    },
+    {
+      "ticker": "058610",
+      "signalClose": 96700,
+      "targetClose": 100100,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.516029
+    },
+    {
+      "ticker": "059090",
+      "signalClose": 23200,
+      "targetClose": 23650,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.939655
+    },
+    {
+      "ticker": "059120",
+      "signalClose": 7350,
+      "targetClose": 7710,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.897959
+    },
+    {
+      "ticker": "060250",
+      "signalClose": 13250,
+      "targetClose": 13710,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.471698
+    },
+    {
+      "ticker": "060280",
+      "signalClose": 8150,
+      "targetClose": 8640,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 6.01227
+    },
+    {
+      "ticker": "060370",
+      "signalClose": 32200,
+      "targetClose": 32700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.552795
+    },
+    {
+      "ticker": "060720",
+      "signalClose": 10960,
+      "targetClose": 11100,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.277372
+    },
+    {
+      "ticker": "061970",
+      "signalClose": 4495,
+      "targetClose": 4845,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 7.786429
+    },
+    {
+      "ticker": "062040",
+      "signalClose": 212500,
+      "targetClose": 213500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.470588
+    },
+    {
+      "ticker": "064260",
+      "signalClose": 4340,
+      "targetClose": 4470,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.995392
+    },
+    {
+      "ticker": "064290",
+      "signalClose": 53800,
+      "targetClose": 58000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 7.806691
+    },
+    {
+      "ticker": "064350",
+      "signalClose": 111600,
+      "targetClose": 112500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.806452
+    },
+    {
+      "ticker": "064400",
+      "signalClose": 68800,
+      "targetClose": 70700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.761628
+    },
+    {
+      "ticker": "064760",
+      "signalClose": 304500,
+      "targetClose": 314000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.119869
+    },
+    {
+      "ticker": "065350",
+      "signalClose": 30600,
+      "targetClose": 31950,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.411765
+    },
+    {
+      "ticker": "066570",
+      "signalClose": 212500,
+      "targetClose": 211500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.470588
+    },
+    {
+      "ticker": "066590",
+      "signalClose": 2295,
+      "targetClose": 2320,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.089325
+    },
+    {
+      "ticker": "066970",
+      "signalClose": 112100,
+      "targetClose": 113400,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.159679
+    },
+    {
+      "ticker": "067160",
+      "signalClose": 36350,
+      "targetClose": 36500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.412655
+    },
+    {
+      "ticker": "067290",
+      "signalClose": 2975,
+      "targetClose": 2990,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.504202
+    },
+    {
+      "ticker": "067310",
+      "signalClose": 47350,
+      "targetClose": 51200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 8.13094
+    },
+    {
+      "ticker": "068270",
+      "signalClose": 177700,
+      "targetClose": 183600,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.320203
+    },
+    {
+      "ticker": "068760",
+      "signalClose": 38100,
+      "targetClose": 39650,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.068241
+    },
+    {
+      "ticker": "069540",
+      "signalClose": 4115,
+      "targetClose": 4140,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.607533
+    },
+    {
+      "ticker": "069620",
+      "signalClose": 106300,
+      "targetClose": 109600,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.104421
+    },
+    {
+      "ticker": "069960",
+      "signalClose": 89600,
+      "targetClose": 89200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.446429
+    },
+    {
+      "ticker": "071050",
+      "signalClose": 177000,
+      "targetClose": 179500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.412429
+    },
+    {
+      "ticker": "071970",
+      "signalClose": 48600,
+      "targetClose": 48200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.823045
+    },
+    {
+      "ticker": "073240",
+      "signalClose": 6670,
+      "targetClose": 6880,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.148426
+    },
+    {
+      "ticker": "073490",
+      "signalClose": 32150,
+      "targetClose": 33900,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.443235
+    },
+    {
+      "ticker": "074600",
+      "signalClose": 30550,
+      "targetClose": 32600,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 6.710311
+    },
+    {
+      "ticker": "075580",
+      "signalClose": 9700,
+      "targetClose": 9970,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.783505
+    },
+    {
+      "ticker": "077360",
+      "signalClose": 13420,
+      "targetClose": 14090,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.992548
+    },
+    {
+      "ticker": "077970",
+      "signalClose": 22000,
+      "targetClose": 22500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.272727
+    },
+    {
+      "ticker": "078350",
+      "signalClose": 31950,
+      "targetClose": 36000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 12.676056
+    },
+    {
+      "ticker": "078600",
+      "signalClose": 94400,
+      "targetClose": 96800,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.542373
+    },
+    {
+      "ticker": "078930",
+      "signalClose": 107200,
+      "targetClose": 102200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -4.664179
+    },
+    {
+      "ticker": "079160",
+      "signalClose": 5060,
+      "targetClose": 5020,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.790514
+    },
+    {
+      "ticker": "079550",
+      "signalClose": 682000,
+      "targetClose": 724000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 6.158358
+    },
+    {
+      "ticker": "079650",
+      "signalClose": 5760,
+      "targetClose": 5610,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -2.604167
+    },
+    {
+      "ticker": "079940",
+      "signalClose": 39950,
+      "targetClose": 38850,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -2.753442
+    },
+    {
+      "ticker": "080220",
+      "signalClose": 78300,
+      "targetClose": 88200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 12.643678
+    },
+    {
+      "ticker": "080580",
+      "signalClose": 24650,
+      "targetClose": 26050,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.679513
+    },
+    {
+      "ticker": "081660",
+      "signalClose": 37500,
+      "targetClose": 37450,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.133333
+    },
+    {
+      "ticker": "082270",
+      "signalClose": 10320,
+      "targetClose": 11210,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 8.624031
+    },
+    {
+      "ticker": "082740",
+      "signalClose": 49000,
+      "targetClose": 48500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.020408
+    },
+    {
+      "ticker": "082920",
+      "signalClose": 28150,
+      "targetClose": 29100,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.374778
+    },
+    {
+      "ticker": "083450",
+      "signalClose": 51000,
+      "targetClose": 55000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 7.843137
+    },
+    {
+      "ticker": "083650",
+      "signalClose": 60000,
+      "targetClose": 60300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.5
+    },
+    {
+      "ticker": "084370",
+      "signalClose": 167600,
+      "targetClose": 185900,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 10.918854
+    },
+    {
+      "ticker": "085620",
+      "signalClose": 19060,
+      "targetClose": 19490,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.256034
+    },
+    {
+      "ticker": "085660",
+      "signalClose": 8190,
+      "targetClose": 8670,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.860806
+    },
+    {
+      "ticker": "085910",
+      "signalClose": 16430,
+      "targetClose": 17120,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.199635
+    },
+    {
+      "ticker": "086280",
+      "signalClose": 196800,
+      "targetClose": 198400,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.813008
+    },
+    {
+      "ticker": "086390",
+      "signalClose": 14050,
+      "targetClose": 14920,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 6.192171
+    },
+    {
+      "ticker": "086450",
+      "signalClose": 21500,
+      "targetClose": 22150,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.023256
+    },
+    {
+      "ticker": "086520",
+      "signalClose": 80600,
+      "targetClose": 85100,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.583127
+    },
+    {
+      "ticker": "086790",
+      "signalClose": 130000,
+      "targetClose": 128300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.307692
+    },
+    {
+      "ticker": "087010",
+      "signalClose": 131600,
+      "targetClose": 142500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 8.282675
+    },
+    {
+      "ticker": "088350",
+      "signalClose": 5330,
+      "targetClose": 5290,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.750469
+    },
+    {
+      "ticker": "088980",
+      "signalClose": 9790,
+      "targetClose": 9750,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.40858
+    },
+    {
+      "ticker": "089030",
+      "signalClose": 51900,
+      "targetClose": 57300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 10.404624
+    },
+    {
+      "ticker": "089860",
+      "signalClose": 50600,
+      "targetClose": 51000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.790514
+    },
+    {
+      "ticker": "089890",
+      "signalClose": 32950,
+      "targetClose": 36300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 10.16692
+    },
+    {
+      "ticker": "089970",
+      "signalClose": 63000,
+      "targetClose": 70800,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 12.380952
+    },
+    {
+      "ticker": "090360",
+      "signalClose": 75300,
+      "targetClose": 78300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.984064
+    },
+    {
+      "ticker": "090430",
+      "signalClose": 138400,
+      "targetClose": 135700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.950867
+    },
+    {
+      "ticker": "090460",
+      "signalClose": 20450,
+      "targetClose": 20750,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.466993
+    },
+    {
+      "ticker": "090710",
+      "signalClose": 6060,
+      "targetClose": 6360,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.950495
+    },
+    {
+      "ticker": "092200",
+      "signalClose": 5450,
+      "targetClose": 5680,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.220183
+    },
+    {
+      "ticker": "092790",
+      "signalClose": 14400,
+      "targetClose": 14000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -2.777778
+    },
+    {
+      "ticker": "092870",
+      "signalClose": 49000,
+      "targetClose": 53100,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 8.367347
+    },
+    {
+      "ticker": "093320",
+      "signalClose": 128200,
+      "targetClose": 124600,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -2.808112
+    },
+    {
+      "ticker": "093370",
+      "signalClose": 15000,
+      "targetClose": 15710,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.733333
+    },
+    {
+      "ticker": "094170",
+      "signalClose": 26600,
+      "targetClose": 27400,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.007519
+    },
+    {
+      "ticker": "095340",
+      "signalClose": 213500,
+      "targetClose": 224500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.152225
+    },
+    {
+      "ticker": "095610",
+      "signalClose": 167700,
+      "targetClose": 183900,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 9.660107
+    },
+    {
+      "ticker": "096530",
+      "signalClose": 35450,
+      "targetClose": 37300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.218618
+    },
+    {
+      "ticker": "096770",
+      "signalClose": 148800,
+      "targetClose": 139600,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -6.182796
+    },
+    {
+      "ticker": "097230",
+      "signalClose": 14650,
+      "targetClose": 15010,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.457338
+    },
+    {
+      "ticker": "097950",
+      "signalClose": 179000,
+      "targetClose": 178000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.558659
+    },
+    {
+      "ticker": "098460",
+      "signalClose": 30950,
+      "targetClose": 34050,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 10.016155
+    },
+    {
+      "ticker": "099320",
+      "signalClose": 75400,
+      "targetClose": 78900,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.64191
+    },
+    {
+      "ticker": "099440",
+      "signalClose": 3850,
+      "targetClose": 3840,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.25974
+    },
+    {
+      "ticker": "100090",
+      "signalClose": 11680,
+      "targetClose": 11970,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.482877
+    },
+    {
+      "ticker": "100790",
+      "signalClose": 16960,
+      "targetClose": 17990,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 6.073113
+    },
+    {
+      "ticker": "100840",
+      "signalClose": 37150,
+      "targetClose": 36500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.749664
+    },
+    {
+      "ticker": "101160",
+      "signalClose": 31700,
+      "targetClose": 33200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.731861
+    },
+    {
+      "ticker": "101490",
+      "signalClose": 45150,
+      "targetClose": 52100,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 15.393134
+    },
+    {
+      "ticker": "102710",
+      "signalClose": 47150,
+      "targetClose": 49800,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.620361
+    },
+    {
+      "ticker": "102940",
+      "signalClose": 14080,
+      "targetClose": 14800,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.113636
+    },
+    {
+      "ticker": "103140",
+      "signalClose": 77600,
+      "targetClose": 77900,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.386598
+    },
+    {
+      "ticker": "103590",
+      "signalClose": 82500,
+      "targetClose": 82900,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.484848
+    },
+    {
+      "ticker": "104830",
+      "signalClose": 40350,
+      "targetClose": 42000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.089219
+    },
+    {
+      "ticker": "105560",
+      "signalClose": 168800,
+      "targetClose": 166000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.658768
+    },
+    {
+      "ticker": "107640",
+      "signalClose": 41200,
+      "targetClose": 41700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.213592
+    },
+    {
+      "ticker": "108320",
+      "signalClose": 36600,
+      "targetClose": 38300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.644809
+    },
+    {
+      "ticker": "108490",
+      "signalClose": 286000,
+      "targetClose": 296500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.671329
+    },
+    {
+      "ticker": "108860",
+      "signalClose": 8760,
+      "targetClose": 8970,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.39726
+    },
+    {
+      "ticker": "111770",
+      "signalClose": 68800,
+      "targetClose": 69300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.726744
+    },
+    {
+      "ticker": "112040",
+      "signalClose": 14850,
+      "targetClose": 15730,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.925926
+    },
+    {
+      "ticker": "112610",
+      "signalClose": 50900,
+      "targetClose": 54600,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 7.269155
+    },
+    {
+      "ticker": "114810",
+      "signalClose": 14900,
+      "targetClose": 15670,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.167785
+    },
+    {
+      "ticker": "115180",
+      "signalClose": 22000,
+      "targetClose": 24650,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 12.045455
+    },
+    {
+      "ticker": "119850",
+      "signalClose": 57200,
+      "targetClose": 54600,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -4.545455
+    },
+    {
+      "ticker": "120110",
+      "signalClose": 55100,
+      "targetClose": 55100,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0
+    },
+    {
+      "ticker": "121440",
+      "signalClose": 7770,
+      "targetClose": 7660,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.415701
+    },
+    {
+      "ticker": "121600",
+      "signalClose": 55700,
+      "targetClose": 57000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.333932
+    },
+    {
+      "ticker": "122640",
+      "signalClose": 33600,
+      "targetClose": 34500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.678571
+    },
+    {
+      "ticker": "122870",
+      "signalClose": 42900,
+      "targetClose": 41250,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -3.846154
+    },
+    {
+      "ticker": "123330",
+      "signalClose": 23400,
+      "targetClose": 22750,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -2.777778
+    },
+    {
+      "ticker": "124500",
+      "signalClose": 28700,
+      "targetClose": 29450,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.61324
+    },
+    {
+      "ticker": "125020",
+      "signalClose": 6000,
+      "targetClose": 6030,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.5
+    },
+    {
+      "ticker": "125490",
+      "signalClose": 11640,
+      "targetClose": 12150,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.381443
+    },
+    {
+      "ticker": "126340",
+      "signalClose": 92500,
+      "targetClose": 93700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.297297
+    },
+    {
+      "ticker": "126640",
+      "signalClose": 3760,
+      "targetClose": 3835,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.994681
+    },
+    {
+      "ticker": "126730",
+      "signalClose": 23200,
+      "targetClose": 24050,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.663793
+    },
+    {
+      "ticker": "127120",
+      "signalClose": 30450,
+      "targetClose": 30350,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.328407
+    },
+    {
+      "ticker": "128940",
+      "signalClose": 499000,
+      "targetClose": 497500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.300601
+    },
+    {
+      "ticker": "131290",
+      "signalClose": 289000,
+      "targetClose": 305000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.536332
+    },
+    {
+      "ticker": "131970",
+      "signalClose": 97700,
+      "targetClose": 105800,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 8.290686
+    },
+    {
+      "ticker": "137400",
+      "signalClose": 29550,
+      "targetClose": 31100,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.245347
+    },
+    {
+      "ticker": "138040",
+      "signalClose": 126300,
+      "targetClose": 127200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.712589
+    },
+    {
+      "ticker": "138080",
+      "signalClose": 28450,
+      "targetClose": 29700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.393673
+    },
+    {
+      "ticker": "138360",
+      "signalClose": 1552,
+      "targetClose": 1537,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.966495
+    },
+    {
+      "ticker": "138930",
+      "signalClose": 15920,
+      "targetClose": 15820,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.628141
+    },
+    {
+      "ticker": "139130",
+      "signalClose": 18270,
+      "targetClose": 18380,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.60208
+    },
+    {
+      "ticker": "139480",
+      "signalClose": 71500,
+      "targetClose": 70900,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.839161
+    },
+    {
+      "ticker": "140410",
+      "signalClose": 72900,
+      "targetClose": 73600,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.960219
+    },
+    {
+      "ticker": "140860",
+      "signalClose": 274500,
+      "targetClose": 299500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 9.107468
+    },
+    {
+      "ticker": "141080",
+      "signalClose": 79800,
+      "targetClose": 86200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 8.02005
+    },
+    {
+      "ticker": "144960",
+      "signalClose": 12840,
+      "targetClose": 13150,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.41433
+    },
+    {
+      "ticker": "145020",
+      "signalClose": 179700,
+      "targetClose": 180600,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.500835
+    },
+    {
+      "ticker": "153890",
+      "signalClose": 9350,
+      "targetClose": 9740,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.171123
+    },
+    {
+      "ticker": "159010",
+      "signalClose": 29350,
+      "targetClose": 32150,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 9.540034
+    },
+    {
+      "ticker": "160190",
+      "signalClose": 28150,
+      "targetClose": 28550,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.420959
+    },
+    {
+      "ticker": "160980",
+      "signalClose": 27100,
+      "targetClose": 29400,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 8.487085
+    },
+    {
+      "ticker": "161390",
+      "signalClose": 59000,
+      "targetClose": 58900,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.169492
+    },
+    {
+      "ticker": "161580",
+      "signalClose": 39450,
+      "targetClose": 40700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.168568
+    },
+    {
+      "ticker": "161890",
+      "signalClose": 146000,
+      "targetClose": 146500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.342466
+    },
+    {
+      "ticker": "166090",
+      "signalClose": 60000,
+      "targetClose": 63500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.833333
+    },
+    {
+      "ticker": "170920",
+      "signalClose": 41200,
+      "targetClose": 44100,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 7.038835
+    },
+    {
+      "ticker": "171090",
+      "signalClose": 69700,
+      "targetClose": 72800,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.447633
+    },
+    {
+      "ticker": "174900",
+      "signalClose": 22350,
+      "targetClose": 26900,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 20.357942
+    },
+    {
+      "ticker": "175330",
+      "signalClose": 29100,
+      "targetClose": 28350,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -2.57732
+    },
+    {
+      "ticker": "178320",
+      "signalClose": 38400,
+      "targetClose": 40250,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.817708
+    },
+    {
+      "ticker": "180640",
+      "signalClose": 132400,
+      "targetClose": 133800,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.057402
+    },
+    {
+      "ticker": "181710",
+      "signalClose": 55000,
+      "targetClose": 56300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.363636
+    },
+    {
+      "ticker": "183300",
+      "signalClose": 34050,
+      "targetClose": 35700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.845815
+    },
+    {
+      "ticker": "187660",
+      "signalClose": 7700,
+      "targetClose": 7540,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -2.077922
+    },
+    {
+      "ticker": "187790",
+      "signalClose": 3035,
+      "targetClose": 3170,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.448105
+    },
+    {
+      "ticker": "189300",
+      "signalClose": 66300,
+      "targetClose": 68500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.31825
+    },
+    {
+      "ticker": "189330",
+      "signalClose": 10070,
+      "targetClose": 10600,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.263158
+    },
+    {
+      "ticker": "192080",
+      "signalClose": 58000,
+      "targetClose": 58200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.344828
+    },
+    {
+      "ticker": "192820",
+      "signalClose": 267000,
+      "targetClose": 279000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.494382
+    },
+    {
+      "ticker": "194480",
+      "signalClose": 13940,
+      "targetClose": 14270,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.367288
+    },
+    {
+      "ticker": "194700",
+      "signalClose": 10070,
+      "targetClose": 10230,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.588878
+    },
+    {
+      "ticker": "195870",
+      "signalClose": 61900,
+      "targetClose": 66500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 7.431341
+    },
+    {
+      "ticker": "195940",
+      "signalClose": 39100,
+      "targetClose": 40600,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.836317
+    },
+    {
+      "ticker": "196170",
+      "signalClose": 254500,
+      "targetClose": 265000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.125737
+    },
+    {
+      "ticker": "199430",
+      "signalClose": 17520,
+      "targetClose": 17800,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.598174
+    },
+    {
+      "ticker": "200470",
+      "signalClose": 9320,
+      "targetClose": 10220,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 9.656652
+    },
+    {
+      "ticker": "200710",
+      "signalClose": 27900,
+      "targetClose": 29300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.017921
+    },
+    {
+      "ticker": "203650",
+      "signalClose": 2715,
+      "targetClose": 2720,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.184162
+    },
+    {
+      "ticker": "204270",
+      "signalClose": 22250,
+      "targetClose": 21950,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.348315
+    },
+    {
+      "ticker": "204320",
+      "signalClose": 45650,
+      "targetClose": 46700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.30011
+    },
+    {
+      "ticker": "204620",
+      "signalClose": 5750,
+      "targetClose": 5830,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.391304
+    },
+    {
+      "ticker": "207940",
+      "signalClose": 1391000,
+      "targetClose": 1429000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.731848
+    },
+    {
+      "ticker": "213420",
+      "signalClose": 29000,
+      "targetClose": 30200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.137931
+    },
+    {
+      "ticker": "214150",
+      "signalClose": 30200,
+      "targetClose": 31350,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.807947
+    },
+    {
+      "ticker": "214370",
+      "signalClose": 40850,
+      "targetClose": 43150,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.630355
+    },
+    {
+      "ticker": "214430",
+      "signalClose": 68200,
+      "targetClose": 73300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 7.478006
+    },
+    {
+      "ticker": "214450",
+      "signalClose": 310500,
+      "targetClose": 314500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.288245
+    },
+    {
+      "ticker": "217590",
+      "signalClose": 13560,
+      "targetClose": 14190,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.646018
+    },
+    {
+      "ticker": "217730",
+      "signalClose": 2140,
+      "targetClose": 2275,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 6.308411
+    },
+    {
+      "ticker": "218410",
+      "signalClose": 58500,
+      "targetClose": 60000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.564103
+    },
+    {
+      "ticker": "219130",
+      "signalClose": 91800,
+      "targetClose": 91700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.108932
+    },
+    {
+      "ticker": "222040",
+      "signalClose": 7390,
+      "targetClose": 6730,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -8.930988
+    },
+    {
+      "ticker": "222080",
+      "signalClose": 7870,
+      "targetClose": 8050,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.287166
+    },
+    {
+      "ticker": "222800",
+      "signalClose": 150300,
+      "targetClose": 159700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 6.254158
+    },
+    {
+      "ticker": "226950",
+      "signalClose": 102500,
+      "targetClose": 116900,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 14.04878
+    },
+    {
+      "ticker": "229640",
+      "signalClose": 62000,
+      "targetClose": 63200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.935484
+    },
+    {
+      "ticker": "230240",
+      "signalClose": 13450,
+      "targetClose": 13830,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.825279
+    },
+    {
+      "ticker": "232140",
+      "signalClose": 14610,
+      "targetClose": 16000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 9.514031
+    },
+    {
+      "ticker": "232680",
+      "signalClose": 10410,
+      "targetClose": 10940,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.091258
+    },
+    {
+      "ticker": "234340",
+      "signalClose": 22200,
+      "targetClose": 23200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.504505
+    },
+    {
+      "ticker": "237690",
+      "signalClose": 91700,
+      "targetClose": 95600,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.252999
+    },
+    {
+      "ticker": "240810",
+      "signalClose": 131500,
+      "targetClose": 143500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 9.125475
+    },
+    {
+      "ticker": "241560",
+      "signalClose": 54600,
+      "targetClose": 54700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.18315
+    },
+    {
+      "ticker": "241710",
+      "signalClose": 113800,
+      "targetClose": 115400,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.405975
+    },
+    {
+      "ticker": "247540",
+      "signalClose": 109100,
+      "targetClose": 114700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.132906
+    },
+    {
+      "ticker": "251270",
+      "signalClose": 34400,
+      "targetClose": 34900,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.453488
+    },
+    {
+      "ticker": "251970",
+      "signalClose": 61300,
+      "targetClose": 63000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.773246
+    },
+    {
+      "ticker": "252990",
+      "signalClose": 19740,
+      "targetClose": 20150,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.077001
+    },
+    {
+      "ticker": "253590",
+      "signalClose": 13400,
+      "targetClose": 14550,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 8.58209
+    },
+    {
+      "ticker": "257720",
+      "signalClose": 38150,
+      "targetClose": 38300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.393185
+    },
+    {
+      "ticker": "259960",
+      "signalClose": 194900,
+      "targetClose": 199700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.462801
+    },
+    {
+      "ticker": "263750",
+      "signalClose": 33100,
+      "targetClose": 33550,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.359517
+    },
+    {
+      "ticker": "264850",
+      "signalClose": 5520,
+      "targetClose": 5780,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.710145
+    },
+    {
+      "ticker": "267250",
+      "signalClose": 202500,
+      "targetClose": 197500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -2.469136
+    },
+    {
+      "ticker": "267260",
+      "signalClose": 662000,
+      "targetClose": 673000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.661631
+    },
+    {
+      "ticker": "267270",
+      "signalClose": 123500,
+      "targetClose": 119600,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -3.157895
+    },
+    {
+      "ticker": "270660",
+      "signalClose": 13240,
+      "targetClose": 13450,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.586103
+    },
+    {
+      "ticker": "271560",
+      "signalClose": 106900,
+      "targetClose": 106100,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.748363
+    },
+    {
+      "ticker": "272110",
+      "signalClose": 30600,
+      "targetClose": 32550,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 6.372549
+    },
+    {
+      "ticker": "272210",
+      "signalClose": 75000,
+      "targetClose": 78900,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.2
+    },
+    {
+      "ticker": "272290",
+      "signalClose": 21350,
+      "targetClose": 22450,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.152225
+    },
+    {
+      "ticker": "277810",
+      "signalClose": 418000,
+      "targetClose": 439000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.023923
+    },
+    {
+      "ticker": "278470",
+      "signalClose": 366000,
+      "targetClose": 366000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0
+    },
+    {
+      "ticker": "279570",
+      "signalClose": 5390,
+      "targetClose": 5400,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.185529
+    },
+    {
+      "ticker": "280360",
+      "signalClose": 122700,
+      "targetClose": 121700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.814996
+    },
+    {
+      "ticker": "281740",
+      "signalClose": 11500,
+      "targetClose": 12110,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.304348
+    },
+    {
+      "ticker": "281820",
+      "signalClose": 87900,
+      "targetClose": 92500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.23322
+    },
+    {
+      "ticker": "282330",
+      "signalClose": 130000,
+      "targetClose": 127900,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.615385
+    },
+    {
+      "ticker": "285130",
+      "signalClose": 51300,
+      "targetClose": 50900,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.779727
+    },
+    {
+      "ticker": "290550",
+      "signalClose": 21550,
+      "targetClose": 22050,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.320186
+    },
+    {
+      "ticker": "290650",
+      "signalClose": 51800,
+      "targetClose": 56300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 8.687259
+    },
+    {
+      "ticker": "290690",
+      "signalClose": 3425,
+      "targetClose": 3170,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -7.445255
+    },
+    {
+      "ticker": "293490",
+      "signalClose": 9210,
+      "targetClose": 9950,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 8.034745
+    },
+    {
+      "ticker": "294870",
+      "signalClose": 23200,
+      "targetClose": 22650,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -2.37069
+    },
+    {
+      "ticker": "295310",
+      "signalClose": 59800,
+      "targetClose": 64600,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 8.026756
+    },
+    {
+      "ticker": "298000",
+      "signalClose": 53900,
+      "targetClose": 53300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.113173
+    },
+    {
+      "ticker": "298020",
+      "signalClose": 279000,
+      "targetClose": 274500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.612903
+    },
+    {
+      "ticker": "298040",
+      "signalClose": 2773000,
+      "targetClose": 2822000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.767039
+    },
+    {
+      "ticker": "298050",
+      "signalClose": 162100,
+      "targetClose": 162300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.123381
+    },
+    {
+      "ticker": "298380",
+      "signalClose": 48500,
+      "targetClose": 53600,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 10.515464
+    },
+    {
+      "ticker": "302440",
+      "signalClose": 36100,
+      "targetClose": 36800,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.939058
+    },
+    {
+      "ticker": "304100",
+      "signalClose": 14590,
+      "targetClose": 15250,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.523646
+    },
+    {
+      "ticker": "307950",
+      "signalClose": 369500,
+      "targetClose": 380000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.841678
+    },
+    {
+      "ticker": "310210",
+      "signalClose": 133800,
+      "targetClose": 151700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 13.378176
+    },
+    {
+      "ticker": "316140",
+      "signalClose": 34900,
+      "targetClose": 33250,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -4.727794
+    },
+    {
+      "ticker": "317400",
+      "signalClose": 9810,
+      "targetClose": 9650,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.630989
+    },
+    {
+      "ticker": "319400",
+      "signalClose": 20350,
+      "targetClose": 20700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.719902
+    },
+    {
+      "ticker": "319660",
+      "signalClose": 148500,
+      "targetClose": 161900,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 9.023569
+    },
+    {
+      "ticker": "322000",
+      "signalClose": 128300,
+      "targetClose": 131100,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.182385
+    },
+    {
+      "ticker": "322310",
+      "signalClose": 15190,
+      "targetClose": 15980,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.20079
+    },
+    {
+      "ticker": "323280",
+      "signalClose": 58300,
+      "targetClose": 61100,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.802744
+    },
+    {
+      "ticker": "323410",
+      "signalClose": 19890,
+      "targetClose": 19760,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.653595
+    },
+    {
+      "ticker": "326030",
+      "signalClose": 74400,
+      "targetClose": 76700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.091398
+    },
+    {
+      "ticker": "327260",
+      "signalClose": 49250,
+      "targetClose": 49400,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.304569
+    },
+    {
+      "ticker": "328130",
+      "signalClose": 10890,
+      "targetClose": 11100,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.928375
+    },
+    {
+      "ticker": "329180",
+      "signalClose": 433500,
+      "targetClose": 431500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.461361
+    },
+    {
+      "ticker": "330860",
+      "signalClose": 30500,
+      "targetClose": 32100,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.245902
+    },
+    {
+      "ticker": "332570",
+      "signalClose": 8930,
+      "targetClose": 9000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.783875
+    },
+    {
+      "ticker": "333430",
+      "signalClose": 3775,
+      "targetClose": 3905,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.443709
+    },
+    {
+      "ticker": "336260",
+      "signalClose": 45550,
+      "targetClose": 44800,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.646542
+    },
+    {
+      "ticker": "336570",
+      "signalClose": 4865,
+      "targetClose": 5000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.774923
+    },
+    {
+      "ticker": "340570",
+      "signalClose": 27600,
+      "targetClose": 27550,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.181159
+    },
+    {
+      "ticker": "347700",
+      "signalClose": 22100,
+      "targetClose": 22950,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.846154
+    },
+    {
+      "ticker": "347850",
+      "signalClose": 41850,
+      "targetClose": 45250,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 8.124253
+    },
+    {
+      "ticker": "348210",
+      "signalClose": 35750,
+      "targetClose": 38550,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 7.832168
+    },
+    {
+      "ticker": "348340",
+      "signalClose": 19950,
+      "targetClose": 20900,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.761905
+    },
+    {
+      "ticker": "348370",
+      "signalClose": 20550,
+      "targetClose": 21550,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.86618
+    },
+    {
+      "ticker": "352820",
+      "signalClose": 156600,
+      "targetClose": 156200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.255428
+    },
+    {
+      "ticker": "353200",
+      "signalClose": 132500,
+      "targetClose": 149400,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 12.754717
+    },
+    {
+      "ticker": "354320",
+      "signalClose": 40650,
+      "targetClose": 42300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.059041
+    },
+    {
+      "ticker": "356680",
+      "signalClose": 18200,
+      "targetClose": 18150,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.274725
+    },
+    {
+      "ticker": "356860",
+      "signalClose": 45650,
+      "targetClose": 48300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.805038
+    },
+    {
+      "ticker": "357780",
+      "signalClose": 408000,
+      "targetClose": 430000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.392157
+    },
+    {
+      "ticker": "357880",
+      "signalClose": 1821,
+      "targetClose": 1798,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.263042
+    },
+    {
+      "ticker": "358570",
+      "signalClose": 7950,
+      "targetClose": 9540,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 20
+    },
+    {
+      "ticker": "361610",
+      "signalClose": 17350,
+      "targetClose": 16230,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -6.455331
+    },
+    {
+      "ticker": "368770",
+      "signalClose": 12860,
+      "targetClose": 13670,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 6.2986
+    },
+    {
+      "ticker": "373220",
+      "signalClose": 357000,
+      "targetClose": 360500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.980392
+    },
+    {
+      "ticker": "375500",
+      "signalClose": 77800,
+      "targetClose": 76000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -2.313625
+    },
+    {
+      "ticker": "376300",
+      "signalClose": 18450,
+      "targetClose": 18880,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.330623
+    },
+    {
+      "ticker": "376900",
+      "signalClose": 26650,
+      "targetClose": 28650,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 7.50469
+    },
+    {
+      "ticker": "377300",
+      "signalClose": 39850,
+      "targetClose": 40050,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.501882
+    },
+    {
+      "ticker": "382800",
+      "signalClose": 5970,
+      "targetClose": 6160,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.18258
+    },
+    {
+      "ticker": "383220",
+      "signalClose": 68600,
+      "targetClose": 69200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.874636
+    },
+    {
+      "ticker": "383310",
+      "signalClose": 22000,
+      "targetClose": 25050,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 13.863636
+    },
+    {
+      "ticker": "388210",
+      "signalClose": 88600,
+      "targetClose": 94400,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 6.546275
+    },
+    {
+      "ticker": "388720",
+      "signalClose": 67000,
+      "targetClose": 69800,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.179104
+    },
+    {
+      "ticker": "388790",
+      "signalClose": 5150,
+      "targetClose": 5250,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.941748
+    },
+    {
+      "ticker": "389260",
+      "signalClose": 12960,
+      "targetClose": 13240,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.160494
+    },
+    {
+      "ticker": "389500",
+      "signalClose": 41200,
+      "targetClose": 42200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.427184
+    },
+    {
+      "ticker": "396300",
+      "signalClose": 5410,
+      "targetClose": 6100,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 12.754159
+    },
+    {
+      "ticker": "397030",
+      "signalClose": 20200,
+      "targetClose": 21300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.445545
+    },
+    {
+      "ticker": "399720",
+      "signalClose": 45600,
+      "targetClose": 48400,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 6.140351
+    },
+    {
+      "ticker": "402340",
+      "signalClose": 1139000,
+      "targetClose": 1155000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.404741
+    },
+    {
+      "ticker": "403870",
+      "signalClose": 63700,
+      "targetClose": 69000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 8.320251
+    },
+    {
+      "ticker": "413630",
+      "signalClose": 4100,
+      "targetClose": 4140,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.97561
+    },
+    {
+      "ticker": "417200",
+      "signalClose": 13910,
+      "targetClose": 13920,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.071891
+    },
+    {
+      "ticker": "417840",
+      "signalClose": 18570,
+      "targetClose": 18650,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.430802
+    },
+    {
+      "ticker": "419530",
+      "signalClose": 18120,
+      "targetClose": 18290,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.93819
+    },
+    {
+      "ticker": "420770",
+      "signalClose": 127100,
+      "targetClose": 134300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.664831
+    },
+    {
+      "ticker": "425420",
+      "signalClose": 63900,
+      "targetClose": 74200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 16.118936
+    },
+    {
+      "ticker": "437730",
+      "signalClose": 49450,
+      "targetClose": 51300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.741153
+    },
+    {
+      "ticker": "439090",
+      "signalClose": 14760,
+      "targetClose": 15120,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.439024
+    },
+    {
+      "ticker": "439260",
+      "signalClose": 44950,
+      "targetClose": 45950,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.224694
+    },
+    {
+      "ticker": "439960",
+      "signalClose": 7520,
+      "targetClose": 8650,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 15.026596
+    },
+    {
+      "ticker": "440110",
+      "signalClose": 81700,
+      "targetClose": 89700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 9.791922
+    },
+    {
+      "ticker": "441270",
+      "signalClose": 9320,
+      "targetClose": 9410,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.965665
+    },
+    {
+      "ticker": "443060",
+      "signalClose": 238000,
+      "targetClose": 237000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.420168
+    },
+    {
+      "ticker": "445680",
+      "signalClose": 57400,
+      "targetClose": 59200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.135889
+    },
+    {
+      "ticker": "448900",
+      "signalClose": 52000,
+      "targetClose": 54900,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.576923
+    },
+    {
+      "ticker": "450080",
+      "signalClose": 34800,
+      "targetClose": 36950,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 6.178161
+    },
+    {
+      "ticker": "452260",
+      "signalClose": 2905,
+      "targetClose": 2630,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -9.466437
+    },
+    {
+      "ticker": "452280",
+      "signalClose": 13380,
+      "targetClose": 14000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.633782
+    },
+    {
+      "ticker": "454910",
+      "signalClose": 68600,
+      "targetClose": 71800,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.664723
+    },
+    {
+      "ticker": "455900",
+      "signalClose": 21100,
+      "targetClose": 21600,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.369668
+    },
+    {
+      "ticker": "456010",
+      "signalClose": 23050,
+      "targetClose": 23550,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.169197
+    },
+    {
+      "ticker": "456040",
+      "signalClose": 75600,
+      "targetClose": 73300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -3.042328
+    },
+    {
+      "ticker": "456160",
+      "signalClose": 35350,
+      "targetClose": 43500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 23.055163
+    },
+    {
+      "ticker": "457190",
+      "signalClose": 79700,
+      "targetClose": 78400,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.631117
+    },
+    {
+      "ticker": "458870",
+      "signalClose": 25650,
+      "targetClose": 26050,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.559454
+    },
+    {
+      "ticker": "459510",
+      "signalClose": 15400,
+      "targetClose": 15620,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.428571
+    },
+    {
+      "ticker": "460930",
+      "signalClose": 12840,
+      "targetClose": 13030,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.479751
+    },
+    {
+      "ticker": "463020",
+      "signalClose": 6710,
+      "targetClose": 7010,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.470939
+    },
+    {
+      "ticker": "466100",
+      "signalClose": 22250,
+      "targetClose": 23300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.719101
+    },
+    {
+      "ticker": "475040",
+      "signalClose": 2950,
+      "targetClose": 3020,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.372881
+    },
+    {
+      "ticker": "475150",
+      "signalClose": 49350,
+      "targetClose": 49450,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 0.202634
+    },
+    {
+      "ticker": "475400",
+      "signalClose": 18110,
+      "targetClose": 18930,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 4.527885
+    },
+    {
+      "ticker": "475830",
+      "signalClose": 22150,
+      "targetClose": 23350,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 5.417607
+    },
+    {
+      "ticker": "476060",
+      "signalClose": 15350,
+      "targetClose": 15920,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.713355
+    },
+    {
+      "ticker": "476830",
+      "signalClose": 24050,
+      "targetClose": 29650,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 23.284823
+    },
+    {
+      "ticker": "477850",
+      "signalClose": 21250,
+      "targetClose": 22800,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 7.294118
+    },
+    {
+      "ticker": "482630",
+      "signalClose": 14090,
+      "targetClose": 15330,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 8.800568
+    },
+    {
+      "ticker": "483650",
+      "signalClose": 186600,
+      "targetClose": 184000,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -1.393355
+    },
+    {
+      "ticker": "484810",
+      "signalClose": 11830,
+      "targetClose": 12110,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 2.366864
+    },
+    {
+      "ticker": "486990",
+      "signalClose": 19780,
+      "targetClose": 20500,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.64004
+    },
+    {
+      "ticker": "489460",
+      "signalClose": 11400,
+      "targetClose": 11520,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 1.052632
+    },
+    {
+      "ticker": "489790",
+      "signalClose": 50400,
+      "targetClose": 52300,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 3.769841
+    },
+    {
+      "ticker": "490470",
+      "signalClose": 18270,
+      "targetClose": 20550,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 12.479475
+    },
+    {
+      "ticker": "491000",
+      "signalClose": 30650,
+      "targetClose": 36700,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 19.738989
+    },
+    {
+      "ticker": "499790",
+      "signalClose": 38400,
+      "targetClose": 38200,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": -0.520833
+    },
+    {
+      "ticker": "900290",
+      "signalClose": 3300,
+      "targetClose": 3635,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 10.151515
+    },
+    {
+      "ticker": "950160",
+      "signalClose": 15360,
+      "targetClose": 16460,
+      "status": "MATURE",
+      "reason": null,
+      "returnPercent": 7.161458
+    }
+  ],
+  "contentHash": "d01db8db175f2434ddb51fbc5f966d7dedeb05227ea812346fbe15caa0ce7170"
+}

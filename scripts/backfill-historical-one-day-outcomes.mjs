@@ -9,16 +9,29 @@ import { normalizeStockCode } from "../lib/stock-code.mjs";
 const ROOT = process.cwd();
 const PRICE_URL = "https://apis.data.go.kr/1160100/service/GetStockSecuritiesInfoService/getStockPriceInfo";
 const REQUEST_TIMEOUT_MS = 15_000;
-const CONCURRENCY = 4;
+// The public operation accepts one stock code per request. Historical backfill
+// deliberately uses one in-flight request with a small gap to avoid turning a
+// single signal-date reconciliation into a provider burst.
+const CONCURRENCY = 1;
+const REQUEST_INTERVAL_MS = 250;
 const DISCOVERY_WINDOW_DAYS = 14;
 const execute = process.argv.includes("--execute");
 const dryRun = process.argv.includes("--dry-run");
 if (execute === dryRun) throw new Error("--dry-run 또는 --execute 중 하나를 지정해야 합니다.");
+const signalDateOption = process.argv.find((argument) => argument.startsWith("--signal-date="));
+const selectedSignalDate = signalDateOption ? signalDateOption.slice("--signal-date=".length) : null;
+if (selectedSignalDate && !/^\d{4}-\d{2}-\d{2}$/u.test(selectedSignalDate)) throw new Error("--signal-date는 YYYY-MM-DD 형식이어야 합니다.");
 
 const toKstDate = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 const compact = (date) => date.replaceAll("-", "");
 const dashed = (date) => `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}`;
 const validClose = (value) => Number.isFinite(value) && value > 0;
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const nextCompactDay = (date) => {
+  const value = new Date(`${date}T00:00:00Z`);
+  value.setUTCDate(value.getUTCDate() + 1);
+  return value.toISOString().slice(0, 10).replaceAll("-", "");
+};
 
 async function readSnapshots() {
   const directory = path.join(ROOT, "data", "history");
@@ -86,7 +99,11 @@ async function collectTargetPrices({ snapshot, targetTradingDate, serviceKey }) 
   const stats = { requested: codes.length, succeeded: 0, missing: 0, failed: 0, retries: 0 };
   const prices = await mapConcurrent(codes, async (code, index) => {
     try {
-      const response = await requestRows({ serviceKey, code, beginBasDt: targetCompact, endBasDt: targetCompact, purpose: "historicalOneDayOutcomeBackfill" });
+      if (index > 0) await wait(REQUEST_INTERVAL_MS);
+      // This operation returns an empty item set for an equal begin/end bound.
+      // Keep the range to one calendar day beyond the target, then accept only
+      // an exact target basDt below; no neighbouring date becomes an outcome.
+      const response = await requestRows({ serviceKey, code, beginBasDt: targetCompact, endBasDt: nextCompactDay(targetTradingDate), purpose: "historicalOneDayOutcomeBackfill" });
       stats.retries += Math.max(0, response.attemptCount - 1);
       const exact = response.rows.filter((row) => String(row.basDt) === targetCompact);
       if (exact.length !== 1 || !validClose(Number(exact[0]?.clpr))) {
@@ -125,9 +142,12 @@ async function assertArtifactsAbsent(signals) {
 const snapshots = await readSnapshots();
 const coverageAsOfDate = toKstDate();
 const plan = buildHistoricalOneDayBackfillPlan({ snapshots, coverageAsOfDate, discoveryWindowDays: DISCOVERY_WINDOW_DAYS });
-const enrichedSignals = plan.signals.map((signal) => ({ ...signal, trackingCodes: snapshots.find((snapshot) => snapshot.asOfDate === signal.signalDate).records.map((record) => normalizeStockCode(record.code)).filter(Boolean) }));
+const enrichedSignals = plan.signals
+  .filter((signal) => !selectedSignalDate || signal.signalDate === selectedSignalDate)
+  .map((signal) => ({ ...signal, trackingCodes: snapshots.find((snapshot) => snapshot.asOfDate === signal.signalDate).records.map((record) => normalizeStockCode(record.code)).filter(Boolean) }));
+if (selectedSignalDate && enrichedSignals.length !== 1) throw new Error(`${selectedSignalDate}: historical signal snapshot이 없습니다.`);
 if (dryRun) {
-  console.log(`HISTORICAL_1D_BACKFILL_PLAN_JSON=${JSON.stringify({ coverageAsOfDate, signals: enrichedSignals.map((signal) => ({ signalDate: signal.signalDate, status: signal.status, discoveryWindow: signal.discoveryWindow, expectedRequests: signal.targetCollection?.expectedRequests ?? 0 })), expectedRequests: plan.totals.expectedTargetRequests })}`);
+  console.log(`HISTORICAL_1D_BACKFILL_PLAN_JSON=${JSON.stringify({ coverageAsOfDate, signals: enrichedSignals.map((signal) => ({ signalDate: signal.signalDate, status: signal.status, discoveryWindow: signal.discoveryWindow, expectedRequests: signal.targetCollection?.expectedRequests ?? 0 })), expectedRequests: enrichedSignals.reduce((sum, signal) => sum + (signal.targetCollection?.expectedRequests ?? 0), 0) })}`);
   process.exit(0);
 }
 
@@ -141,11 +161,13 @@ const runSignals = [];
 for (const signal of runnable) {
   const snapshot = snapshots.find((item) => item.asOfDate === signal.signalDate);
   let discovery;
+  console.log(`HISTORICAL_1D_BACKFILL_STAGE signalDate=${signal.signalDate} stage=discovering-target-date`);
   try { discovery = await discoverTargetTradingDate({ signal, serviceKey }); }
   catch (error) {
     runSignals.push({ signalDate: signal.signalDate, status: "DATA_MISSING", reason: "targetTradingDateDiscoveryFailed", detail: classifyPublicEodRequestError(error).errorCategory });
     continue;
   }
+  console.log(`HISTORICAL_1D_BACKFILL_STAGE signalDate=${signal.signalDate} stage=collecting-target-prices targetTradingDate=${discovery.targetTradingDate} requested=${snapshot.records.length}`);
   const collection = await collectTargetPrices({ snapshot, targetTradingDate: discovery.targetTradingDate, serviceKey });
   const ledger = createHistoricalOneDayPriceLedger({ signalSnapshot: snapshot, targetTradingDate: discovery.targetTradingDate, collectedAt, targetPrices: collection.prices });
   const outcome = reconcileHistoricalOneDayOutcomes({ snapshots: [snapshot], priceLedgers: [ledger] })[0];
