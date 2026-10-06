@@ -4,16 +4,16 @@
   "snapshotReferenceDate": "2026-10-02",
   "observedOfficialDate": "2026-10-02",
   "freshnessStatus": "fresh",
-  "freshnessReason": null,
-  "runStatus": "CANDIDATE_VALIDATED",
-  "updatedAt": "2026-10-06T09:56:28.796Z",
+  "freshnessReason": "sameReferenceDate",
+  "runStatus": "NO_NEW_OFFICIAL_EOD",
+  "updatedAt": "2026-10-06T17:22:58.059Z",
   "sourceEvidence": [
     {
       "source": "공공데이터포털",
       "operation": "getStockPriceInfoLatestProbe",
       "referenceDate": "2026-10-02",
-      "requestedAt": "2026-10-06T09:50:00.984Z",
-      "observedAt": "2026-10-06T09:50:03.793Z",
+      "requestedAt": "2026-10-06T17:22:54.064Z",
+      "observedAt": "2026-10-06T17:22:58.053Z",
       "sourceTimestamp": "20261002",
       "sourceTimestampSemantics": "marketDateBasDt",
       "minObservedBasDt": "20261002",
@@ -27,5 +27,5 @@
       "outcome": "success"
     }
   ],
-  "contentHash": "35881408fa1f6ef819e4d2deb340d8ebdccfcc2604e77ca6b629674bfc110753"
+  "contentHash": "6a5f2e5cbe09eae57107c4bdc4dbab58e0a2d7e7ae405ffd7871349c3b5e520e"
 }
