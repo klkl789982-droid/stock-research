@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 
 const panel = await readFile(new URL("../components/ModelTopPerformancePanel.tsx", import.meta.url), "utf8");
 const route = await readFile(new URL("../app/api/model-performance/route.ts", import.meta.url), "utf8");
+const topStocksPanel = await readFile(new URL("../components/TopStocksPanel.tsx", import.meta.url), "utf8");
 assert.match(panel, /\/api\/model-performance/);
 assert.match(panel, /모델 성과/);
 assert.match(panel, /모델 \{model\.label\}/);
@@ -16,4 +17,6 @@ assert.match(route, /historical-outcomes/);
 assert.match(route, /future5dReturn/);
 assert.match(route, /future20dReturn/);
 assert.match(route, /buildModelTopPerformance/);
+assert.match(topStocksPanel, /<ModelTopPerformancePanel \/>/);
+assert.doesNotMatch(topStocksPanel, /!compact && <ModelTopPerformancePanel \/>/, "HOME compact 화면에서도 성과판이 mount되어야 합니다.");
 console.log("model performance UI/API auto-accumulation connection test passed");

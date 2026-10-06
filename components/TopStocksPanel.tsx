@@ -261,7 +261,7 @@ export default function TopStocksPanel({ onSelectStock, compact = false, onOpenF
         </div>
       )}
     </div>
-    {!compact && <ModelTopPerformancePanel />}
+    <ModelTopPerformancePanel />
     </>
   );
 }
