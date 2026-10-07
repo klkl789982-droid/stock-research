@@ -6,8 +6,12 @@ const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8")
 assert.match(panel, /useState\("B"\)/u);
 assert.match(panel, /모델 B · 추세 강도/u);
 assert.match(panel, /모델 C · 진입 강도/u);
+assert.match(panel, /이동평균선 구조·기울기·추세 지속성/u);
+assert.match(panel, /가격·거래량·단기 모멘텀·보조지표 전환/u);
+assert.match(panel, /모멘텀·추세·거래량·MACD·RSI·52주 가격 위치/u);
+assert.match(panel, /B와 C를 결합해 중기 추세와 현재 진입 강도/u);
 assert.match(panel, /연구 모델 보기/u);
-assert.match(panel, /가격 추세와 기술적 흐름을 중심으로 보는 순위/u);
+assert.match(panel, /중기 추세 모델/u);
 assert.match(panel, /데이터 기준일/u);
 assert.match(panel, /분석 대상/u);
 assert.match(panel, /데이터 기준 자세히 보기/u);
@@ -15,6 +19,11 @@ assert.match(panel, /최신 공식 일봉.*순위 생성이 아직 완료되지 
 assert.match(panel, /최신 공식 일봉 기준일을 확인할 수 없습니다/u);
 assert.match(panel, /onSelectStock\(\{ code: stock\.code, name: stock\.name \}\)/u);
 assert.match(panel, /overflow-x-auto/u);
-assert.match(page, /<TopStocksPanel onSelectStock=\{handleSearch\}/u);
+assert.match(page, /모델 화면 탭/u);
+assert.match(page, /모델 TOP/u);
+assert.match(page, /모델 성과/u);
+assert.match(page, /<TopStocksPanel onSelectStock=\{handleSearch\} \/>/u);
+assert.match(page, /<ModelTopPerformancePanel \/>/u);
+assert.doesNotMatch(page, /compact onSelectStock=\{handleSearch\}/u);
 assert.match(page, /item\.srtnCd\.replace\(\/\^A\//u);
 console.log("시장 TOP UI 구조 테스트 통과");

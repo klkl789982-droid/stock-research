@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import TopStocksPanel from "../components/TopStocksPanel";
+import ModelTopPerformancePanel from "../components/ModelTopPerformancePanel";
+import ModelExplanationPanel from "../components/ModelExplanationPanel";
 import MarketAnalysisPanel, { type MarketAnalysisResponse, type IntradayAnalysisResponse } from "../components/market-analysis/MarketAnalysisPanel";
 import CompanyAnalysisPanel, { companyAnalysisRecordReasonLabel, type CompanyAnalysisResult } from "../components/company-analysis/CompanyAnalysisPanel";
 import TechnicalStrengthPanel from "../components/TechnicalStrengthPanel";
@@ -15,7 +17,8 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [searchedStock, setSearchedStock] = useState<string | null>(null);
 const [activeTab, setActiveTab] = useState<"technical" | "company">("technical");
-const [showFullTop, setShowFullTop] = useState(false);
+const [pageView, setPageView] = useState<"home" | "models">("home");
+const [modelPageTab, setModelPageTab] = useState<"top" | "performance" | "guide">("top");
 const [realtimePrice, setRealtimePrice] = useState<{
   price: number;
   change: number;
@@ -190,7 +193,7 @@ async function handleSearch(selection?: { code: string; name: string }) {
   if (searchTerm === "") return;
   setSearchError(null);
   if (selection) setQuery(selection.name);
-setShowFullTop(false);
+setPageView("home");
 setActiveTab("technical");
 const requestId = ++searchRequestIdRef.current;
 searchControllerRef.current?.abort();
@@ -327,7 +330,7 @@ function handleHome() {
   setPriceError(null);
   setPriceRequestStatus("idle");
   setActiveTab("technical");
-  setShowFullTop(false);
+  setPageView("home");
   setLoading(false);
   requestAnimationFrame(() => pageTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
 }
@@ -353,18 +356,18 @@ return (
       <div className="relative z-[1] flex w-full items-stretch">
         <aside className="tb-sidebar-surface hidden w-52 shrink-0 border-r border-[var(--tb-border)] px-3 py-4 lg:flex lg:min-h-[calc(100vh-60px)] lg:flex-col">
           <nav className="space-y-1" aria-label="주요 메뉴">
-            <button type="button" onClick={handleHome} className="tb-focus flex w-full items-center gap-3 rounded-lg bg-[rgba(182,91,50,0.13)] px-3 py-2.5 text-left text-sm font-semibold text-[var(--tb-orange)]"><span aria-hidden="true">⌂</span> 홈</button>
-            <button type="button" onClick={() => searchInputRef.current?.focus()} className="tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"><span aria-hidden="true">⌕</span> 종목 분석</button>
-            <button type="button" onClick={() => { handleHome(); setShowFullTop(true); }} className="tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"><span aria-hidden="true">▦</span> 모델 TOP</button>
+            <button type="button" onClick={handleHome} className={`tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold ${pageView === "home" ? "bg-[rgba(182,91,50,0.13)] text-[var(--tb-orange)]" : "text-slate-300 hover:bg-white/10 hover:text-white"}`}><span aria-hidden="true">⌂</span> 홈</button>
+            <button type="button" onClick={() => { handleHome(); requestAnimationFrame(() => searchInputRef.current?.focus()); }} className="tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"><span aria-hidden="true">⌕</span> 종목 분석</button>
+            <button type="button" onClick={() => { handleHome(); setModelPageTab("top"); setPageView("models"); }} className={`tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold ${pageView === "models" ? "bg-[rgba(182,91,50,0.13)] text-[var(--tb-orange)]" : "text-slate-300 hover:bg-white/10 hover:text-white"}`}><span aria-hidden="true">▦</span> 모델</button>
             <div className="my-3 border-t border-white/10" />
             {[["▥", "시장 현황"], ["⌁", "백테스트"], ["☆", "관심 종목"], ["▽", "스크리닝"]].map(([icon, label]) => <div key={label} className="tb-muted-nav flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium" aria-disabled="true"><span aria-hidden="true">{icon}</span><span>{label}</span><span className="ml-auto text-[8px] uppercase tracking-wider">준비 중</span></div>)}
           </nav>
         </aside>
         <div className="min-w-0 flex-1 px-3 py-3 sm:px-4 sm:py-4 lg:px-4 xl:px-5">
-        {!searchedStock && !showFullTop && <section className="mb-3 grid grid-cols-2 gap-2 xl:grid-cols-4" aria-label="시장 데이터 연결 상태">
+        {!searchedStock && pageView === "home" && <section className="mb-3 grid grid-cols-2 gap-2 xl:grid-cols-4" aria-label="시장 데이터 연결 상태">
           {[{ label: "KOSPI", note: "공식 지수 소스" }, { label: "KOSDAQ", note: "공식 지수 소스" }, { label: "KRW / USD", note: "검증 환율 소스" }, { label: "거래대금", note: "시장 집계 소스" }].map((item) => <div key={item.label} className="tb-market-status-panel px-4 py-3"><div className="flex items-center justify-between gap-3"><p className="text-[11px] font-medium tracking-[0.08em] text-slate-300">{item.label}</p><span className="rounded-full border border-white/10 px-2 py-0.5 text-[9px] text-slate-400">준비 중</span></div><p className="mt-1.5 text-sm font-light text-slate-100">데이터 연결 전</p><p className="mt-0.5 text-[10px] text-slate-400">{item.note} 확인 후 제공</p></div>)}
         </section>}
-        {!searchedStock && !showFullTop && <div>
+        {!searchedStock && pageView === "home" && <div>
         <section className="tb-matte-hero relative overflow-hidden rounded-[18px] px-6 py-6 text-white sm:px-8 sm:py-7">
           <div aria-hidden="true" className="absolute -bottom-10 right-1 z-[1] hidden opacity-90 lg:block"><BrandMark hero symbolOnly inverse /></div>
           <div className="relative z-[2] max-w-2xl lg:max-w-[74%]">
@@ -397,12 +400,25 @@ className="tb-focus min-h-11 w-full rounded-full border border-white/20 bg-[rgba
         </div>}
 
         {searchError && <p role="alert" className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{searchError === "notFound" ? "해당 종목을 찾을 수 없습니다." : "검색 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요."}</p>}
-        {!searchedStock && !showFullTop && <p className="mt-2 px-1 text-[10px] text-slate-600">
+        {!searchedStock && pageView === "home" && <p className="mt-2 px-1 text-[10px] text-slate-600">
           종목명 또는 종목코드를 입력하세요.
         </p>}
 
-         {!searchedStock && !showFullTop && <TopStocksPanel compact onSelectStock={handleSearch} onOpenFull={() => setShowFullTop(true)} />}
-        {!searchedStock && showFullTop && <><button type="button" onClick={() => setShowFullTop(false)} className="tb-focus mt-1 rounded-lg px-2 py-2 text-sm font-semibold text-[var(--tb-orange)] hover:bg-orange-50">← 대시보드로</button><TopStocksPanel onSelectStock={handleSearch} /></>}
+        {!searchedStock && pageView === "models" && (
+          <section aria-labelledby="models-heading">
+            <div className="tb-card p-4 sm:p-6">
+              <p className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--tb-orange)]">Research models</p>
+              <h1 id="models-heading" className="mt-1 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">모델</h1>
+              <p className="mt-2 text-sm text-slate-600">동결된 공식 일봉 순위와 확정된 과거 성과를 분리해 확인합니다.</p>
+              <div className="mt-5 flex gap-1 border-b border-slate-200/80" role="tablist" aria-label="모델 화면 탭">
+                <button type="button" role="tab" aria-selected={modelPageTab === "top"} onClick={() => setModelPageTab("top")} className={`tb-focus -mb-px border-b-2 px-4 py-2.5 text-sm font-semibold ${modelPageTab === "top" ? "border-[var(--tb-orange)] text-[var(--tb-orange)]" : "border-transparent text-slate-500 hover:text-slate-900"}`}>모델 TOP</button>
+                <button type="button" role="tab" aria-selected={modelPageTab === "performance"} onClick={() => setModelPageTab("performance")} className={`tb-focus -mb-px border-b-2 px-4 py-2.5 text-sm font-semibold ${modelPageTab === "performance" ? "border-[var(--tb-orange)] text-[var(--tb-orange)]" : "border-transparent text-slate-500 hover:text-slate-900"}`}>모델 성과</button>
+                <button type="button" role="tab" aria-selected={modelPageTab === "guide"} onClick={() => setModelPageTab("guide")} className={`tb-focus -mb-px border-b-2 px-4 py-2.5 text-sm font-semibold ${modelPageTab === "guide" ? "border-[var(--tb-orange)] text-[var(--tb-orange)]" : "border-transparent text-slate-500 hover:text-slate-900"}`}>모델 설명</button>
+              </div>
+            </div>
+            {modelPageTab === "top" ? <TopStocksPanel onSelectStock={handleSearch} /> : modelPageTab === "performance" ? <ModelTopPerformancePanel /> : <ModelExplanationPanel />}
+          </section>
+        )}
 
         {searchedStock && (
           <div className="tb-card mt-8 overflow-hidden p-5 sm:p-7">

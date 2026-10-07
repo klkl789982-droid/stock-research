@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { TOP_INTRADAY_POLL_MS, toTopIntradayOverlay } from "../lib/top-stocks-intraday-overlay.mjs";
-import ModelTopPerformancePanel from "./ModelTopPerformancePanel";
 
 type ModelId = "A" | "B" | "C" | "D";
 type TopStock = {
@@ -68,11 +67,11 @@ const compactTabs = [
   { id: "D", label: "D" },
 ];
 const modelDescriptions: Record<string, string> = {
-  B: "가격 추세와 기술적 흐름을 중심으로 보는 순위입니다.",
-  C: "현재 진입 조건의 상대적 강도를 중심으로 보는 순위입니다.",
-  "A-v1": "기존 기술적 강도 공식을 보존한 연구 순위입니다.",
-  "A-v2": "범위를 제한한 기술적 강도 후보 모델의 연구 순위입니다.",
-  D: "여러 기술 신호를 결합해 비교하는 연구 순위입니다.",
+  B: "이동평균선 구조·기울기·추세 지속성을 중심으로 보는 중기 추세 모델입니다.",
+  C: "가격·거래량·단기 모멘텀·보조지표 전환을 중심으로 보는 현재 진입 강도 모델입니다.",
+  "A-v1": "모멘텀·추세·거래량·MACD·RSI·52주 가격 위치 등을 종합한 기술적 강도 모델입니다.",
+  "A-v2": "기술적 강도를 범위 제한 방식으로 검증 중인 챌린저 모델입니다.",
+  D: "B와 C를 결합해 중기 추세와 현재 진입 강도를 함께 보는 모델입니다.",
 };
 const shortReferenceDate = (value: string) => {
   const parts = value.split("-");
@@ -261,7 +260,6 @@ export default function TopStocksPanel({ onSelectStock, compact = false, onOpenF
         </div>
       )}
     </div>
-    <ModelTopPerformancePanel />
     </>
   );
 }
