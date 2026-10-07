@@ -69,6 +69,7 @@ if (classification.status === "marketClosed") {
     modelSnapshot: "notRequired", marketPriceLedger: "notRequired", reason: classification.reason,
   }, root);
   await runScript("scripts/resolve-history-returns.mjs");
+  await runScript("scripts/resolve-intraday-model-top-outcomes.mjs");
   console.log(JSON.stringify({ requestedDate, ...classification, action: "marketClosed-noArtifacts" }, null, 2));
   process.exit(0);
 }
@@ -134,5 +135,6 @@ if (classification.status !== "tradingDay") {
     intradayMarketSeed: "created",
   }, root);
   await runScript("scripts/resolve-history-returns.mjs");
+  await runScript("scripts/resolve-intraday-model-top-outcomes.mjs");
   console.log(JSON.stringify({ requestedDate, status: "tradingDay", modelSnapshot: "created", marketPriceLedger: "created", resolved: true }, null, 2));
 }

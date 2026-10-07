@@ -73,6 +73,7 @@ assert.equal(assertPromotionFiles(["data/outcome-coverage/2026-09-22.json"], sna
 assert.equal(assertPromotionFiles(["data/outcome-coverage/calendar-evidence.json"], snapshot.asOfDate, runId)[0], "data/outcome-coverage/calendar-evidence.json", "derived calendar evidence는 명시적 allowlist로만 promotion해야 합니다.");
 assert.equal(assertPromotionFiles(["data/model-validation/maturity-coverage.json", "data/model-validation/maturity-coverage.md"], snapshot.asOfDate, runId).length, 2, "maturity coverage report는 명시적 파일 allowlist로만 promotion해야 합니다.");
 assert.equal(assertPromotionFiles([`data/model-history/${snapshot.asOfDate}.json`], snapshot.asOfDate, runId)[0], `data/model-history/${snapshot.asOfDate}.json`);
+assert.equal(assertPromotionFiles([`data/intraday-outcomes/model-top/${snapshot.asOfDate}.json`], snapshot.asOfDate, runId)[0], `data/intraday-outcomes/model-top/${snapshot.asOfDate}.json`);
 assert.throws(() => assertPromotionFiles(["data/model-history/"], snapshot.asOfDate, runId), "축약된 디렉터리 경로는 승격하면 안 됩니다.");
 assert.throws(() => assertPromotionFiles(["daily-production.log"], snapshot.asOfDate, runId), "runtime 로그는 승격하면 안 됩니다.");
 assert.throws(() => assertPromotionFiles([".env.local"], snapshot.asOfDate, runId));

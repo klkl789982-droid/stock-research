@@ -1,7 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
-import { buildModelTopPerformance, MODEL_PERFORMANCE_HORIZONS } from "@/lib/model-top-performance.mjs";
+import { buildIntradayModelTopPerformance, buildModelTopPerformance, MODEL_PERFORMANCE_HORIZONS } from "@/lib/model-top-performance.mjs";
 
 const HORIZON_FIELDS = {
   "1DAY": { directory: "1d", returnKey: "future1dReturn", dateKey: "future1dDate" },
@@ -79,7 +79,11 @@ export async function GET() {
       }
       return [horizon, [...bySignalDate.values()].sort((left, right) => left.signalDate.localeCompare(right.signalDate))];
     })));
-    return NextResponse.json(buildModelTopPerformance({ snapshots, outcomesByHorizon }), { headers: { "Cache-Control": "no-store" } });
+    const daily = buildModelTopPerformance({ snapshots, outcomesByHorizon });
+    let intradayOutcomes: Record<string, unknown>[] = [];
+    try { intradayOutcomes = await readJsonFiles<Record<string, unknown>>(path.join(root, "data", "intraday-outcomes", "model-top")); }
+    catch { intradayOutcomes = []; }
+    return NextResponse.json({ ...daily, performanceLayer: "DAILY_EOD", live: buildIntradayModelTopPerformance({ outcomes: intradayOutcomes }) }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({
       schemaVersion: 2,
@@ -92,6 +96,8 @@ export async function GET() {
       totalOutcomeObservationCount: 0,
       daily: [],
       summary: [],
+      performanceLayer: "DAILY_EOD",
+      live: buildIntradayModelTopPerformance({ outcomes: [] }),
     }, { headers: { "Cache-Control": "no-store" } });
   }
 }
