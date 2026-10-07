@@ -1,0 +1,74 @@
+name: Intraday Model TOP Official Signal
+
+on:
+  schedule:
+    # 14:30 Asia/Seoul (05:30 UTC), weekdays. The runner rejects late starts.
+    - cron: "30 5 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Manual runs default to a non-observational readiness dry-run."
+        required: true
+        default: dry-run
+        type: choice
+        options:
+          - dry-run
+          - live
+
+concurrency:
+  group: intraday-model-top-official-signal
+  cancel-in-progress: false
+
+jobs:
+  signal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
+      KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - id: signal
+        shell: bash
+        run: |
+          mode="${{ github.event_name == 'schedule' && 'live' || inputs.mode }}"
+          if [ "$mode" = "dry-run" ]; then args="--dry-run"; else args=""; fi
+          set +e
+          node scripts/run-intraday-model-top-official-signal.mjs $args 2>&1 | tee intraday-model-top.log
+          exit_code=${PIPESTATUS[0]}
+          result=$(grep '^INTRADAY_MODEL_TOP_RESULT_JSON=' intraday-model-top.log | tail -1 | cut -d= -f2-)
+          if [ -z "$result" ]; then
+            echo "status=FAILED" >> "$GITHUB_OUTPUT"
+            echo "mode=$mode" >> "$GITHUB_OUTPUT"
+            echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "status=$(jq -r '.status' <<<"$result")" >> "$GITHUB_OUTPUT"
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+          echo "signal_path=$(jq -r '.signalPath // ""' <<<"$result")" >> "$GITHUB_OUTPUT"
+          echo "latest_path=$(jq -r '.latestPath // ""' <<<"$result")" >> "$GITHUB_OUTPUT"
+          echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
+      - name: Stage only live observation artifacts
+        if: steps.signal.outputs.mode == 'live' && steps.signal.outputs.latest_path != ''
+        shell: bash
+        run: |
+          git add -- "${{ steps.signal.outputs.latest_path }}"
+          if [ "${{ steps.signal.outputs.status }}" = "READY" ]; then git add -- "${{ steps.signal.outputs.signal_path }}"; fi
+          git diff --cached --check
+          if git diff --cached --name-only | grep -E '(^|/)(\.env|.*(secret|token|\.tmp|\.lock|\.bak))'; then exit 1; fi
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ "${{ steps.signal.outputs.status }}" = "READY" ]; then message="chore(data): publish intraday Model TOP signal"; else message="chore(data): update intraday Model TOP signal status"; fi
+          git commit -m "$message"
+          git push origin HEAD:main
+      - name: Fail unsuccessful live observation
+        if: steps.signal.outputs.mode == 'live' && steps.signal.outputs.status != 'READY'
+        run: exit 1
