@@ -110,8 +110,13 @@ async function main() {
       }
     }
     const quoteTimes = [...collection.quotesByCode.values()].map((quote) => quote.asOfDate && quote.asOfTime ? `${quote.asOfDate}T${quote.asOfTime}` : null).filter(Boolean).sort();
+    const failureSummary = Object.entries(collection.failures.reduce((counts, failure) => {
+      const reason = /^(KIS_|KIS_MINUTE_|QUOTE_)/u.test(failure.reason) ? failure.reason : "quoteCollectionFailed";
+      counts[reason] = (counts[reason] ?? 0) + 1;
+      return counts;
+    }, {})).sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0])).slice(0, 3).map(([reason, count]) => ({ reason, count }));
     const preflightReady = collection.failures.length === 0 && quoteTimes.length === eligibleCodes.length && signalDateMatched === eligibleCodes.length && calculated === eligibleCodes.length && calculationFailures === 0;
-    console.log(`INTRADAY_MODEL_TOP_RESULT_JSON=${JSON.stringify({ status: preflightReady ? "PREFLIGHT_READY" : "PREFLIGHT_FAILED", observationType: "PREFLIGHT", signalDate, seedReferenceDate: seed.requestedDate, credentials: "present", authentication: collection.quotesByCode.size > 0 ? "verifiedByQuoteRequest" : "notVerified", collection: { requested: eligibleCodes.length, successful: collection.quotesByCode.size, failed: collection.failures.length, timestampComplete: quoteTimes.length, signalDateMatched }, calculations: { A_v1_B_v1_C_v1_D_v1: calculated, failed: calculationFailures }, quoteTimestampRange: { earliest: quoteTimes.at(0) ?? null, latest: quoteTimes.at(-1) ?? null }, liveObservationCreated: false, signalPath: null, latestPath: null })}`);
+    console.log(`INTRADAY_MODEL_TOP_RESULT_JSON=${JSON.stringify({ status: preflightReady ? "PREFLIGHT_READY" : "PREFLIGHT_FAILED", observationType: "PREFLIGHT", signalDate, seedReferenceDate: seed.requestedDate, credentials: "present", authentication: collection.quotesByCode.size > 0 ? "verifiedByQuoteRequest" : "notVerified", collection: { requested: eligibleCodes.length, successful: collection.quotesByCode.size, failed: collection.failures.length, timestampComplete: quoteTimes.length, signalDateMatched, failureSummary }, calculations: { A_v1_B_v1_C_v1_D_v1: calculated, failed: calculationFailures }, quoteTimestampRange: { earliest: quoteTimes.at(0) ?? null, latest: quoteTimes.at(-1) ?? null }, liveObservationCreated: false, signalPath: null, latestPath: null })}`);
     if (!preflightReady) {
       process.exitCode = 1;
       return;
