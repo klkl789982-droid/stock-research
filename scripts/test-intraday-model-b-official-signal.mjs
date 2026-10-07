@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { buildIntradayModelBSignal, assertImmutableOfficialSignal, mergeProvisionalCandle } from "../lib/intraday-model-b-official-signal.mjs";
-import { collectKisQuotes } from "../lib/kis-intraday-collector.mjs";
+import { collectKisQuotes, requestKisWithTransientRetry } from "../lib/kis-intraday-collector.mjs";
 const rows = Array.from({ length: 260 }, (_, index) => [`${20261001 - index}`, 100 + index, 110 + index, 90 + index, 100 + index, 1000]);
 const seed = { requestedDate: "2026-10-01", contentHash: "seed", sourceManifest: { sources: { officialDailyPrice: { normalizedInputHash: "daily" } } }, records: [{ code: "000001", name: "A", eligible: true, rows }, { code: "000002", name: "B", eligible: true, rows }, { code: "000003", name: "C", eligible: false, ineligibleReasons: ["insufficientHistory"], rows: [] }] };
 const quote = (code, price) => ({ code, source: "KIS", asOfDate: "2026-10-06", asOfTime: "14:30:10", receivedAt: "2026-10-06T05:30:11.000Z", open: price - 1, high: price + 2, low: price - 2, price, volume: 2000 });
@@ -10,4 +10,5 @@ assert.equal(signal.status, "READY"); assert.equal(signal.collection.successful,
 const partial = buildIntradayModelBSignal({ seed, quotesByCode: new Map([["000001", quote("000001", 200)]]), signalDate: "2026-10-06", collectionStartedAt: "x", collectionCompletedAt: "y" }); assert.equal(partial.status, "FAILED_COLLECTION"); assert.equal(partial.records.find((r) => r.ticker === "000002").dataStatus, "MISSING");
 const collected = await collectKisQuotes({ codes: ["1", "2"], delayMs: 0, now: () => "t", fetchQuote: async (code) => code === "2" ? Promise.reject(new Error("timeout")) : quote(code, 200) }); assert.equal(collected.quotesByCode.size, 1); assert.equal(collected.failures.length, 1);
 let active = 0, peak = 0; const bounded = await collectKisQuotes({ codes: ["1", "2", "3", "4"], delayMs: 0, concurrency: 2, fetchQuote: async (code) => { active += 1; peak = Math.max(peak, active); await new Promise((resolve) => setTimeout(resolve, 1)); active -= 1; return quote(code, 200); } }); assert.equal(bounded.quotesByCode.size, 4); assert.equal(peak, 2);
+let attempts = 0; const recovered = await requestKisWithTransientRetry({ request: async () => ({ ok: ++attempts === 2, status: attempts === 2 ? 200 : 500 }), wait: async () => {} }); assert.equal(recovered.ok, true); assert.equal(attempts, 2); attempts = 0; const rejected = await requestKisWithTransientRetry({ request: async () => ({ ok: false, status: 429 }), wait: async () => { attempts += 100; } }); assert.equal(rejected.status, 429); assert.equal(attempts, 0);
 console.log("intraday Model B provisional candle·rank·immutability·partial collection tests passed");
