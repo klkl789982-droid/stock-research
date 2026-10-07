@@ -14,6 +14,7 @@ on:
         type: choice
         options:
           - dry-run
+          - preflight
           - live
 
 concurrency:
@@ -40,7 +41,7 @@ jobs:
         shell: bash
         run: |
           mode="${{ github.event_name == 'schedule' && 'live' || inputs.mode }}"
-          if [ "$mode" = "dry-run" ]; then args="--dry-run"; else args="--wait-for-window"; fi
+          if [ "$mode" = "dry-run" ]; then args="--dry-run"; elif [ "$mode" = "preflight" ]; then args="--preflight"; else args="--wait-for-window"; fi
           set +e
           node scripts/run-intraday-model-top-official-signal.mjs $args 2>&1 | tee intraday-model-top.log
           exit_code=${PIPESTATUS[0]}
@@ -72,4 +73,7 @@ jobs:
           git push origin HEAD:main
       - name: Fail unsuccessful live observation
         if: steps.signal.outputs.mode == 'live' && steps.signal.outputs.status != 'READY'
+        run: exit 1
+      - name: Fail unsuccessful preflight
+        if: steps.signal.outputs.mode == 'preflight' && steps.signal.outputs.status != 'PREFLIGHT_READY'
         run: exit 1

@@ -5,7 +5,8 @@ import { createKisTokenManager } from "../lib/kis-token-manager-core.mjs";
 import { parseKisQuote } from "../lib/kis-quote-provider-core.mjs";
 import { collectKisQuotes } from "../lib/kis-intraday-collector.mjs";
 import { validateIntradayMarketSeed } from "../lib/intraday-market-seed.mjs";
-import { buildIntradayModelTopSignal, OFFICIAL_SIGNAL_TIME, OFFICIAL_SIGNAL_WINDOW_END, validateIntradayModelTopSignal } from "../lib/intraday-model-top-official-signal.mjs";
+import { buildIntradayModelTopSignal, calculateIntradayModelTopScores, OFFICIAL_SIGNAL_TIME, validateIntradayModelTopSignal } from "../lib/intraday-model-top-official-signal.mjs";
+import { mergeProvisionalCandle } from "../lib/intraday-model-b-official-signal.mjs";
 import { classifyOfficialSignalWindow, millisecondsUntilKstTime } from "../lib/intraday-model-top-time-policy.mjs";
 
 const root = process.cwd();
@@ -27,18 +28,22 @@ async function main() {
   const today = formatDate(parts);
   const signalDate = process.argv.find((value) => value.startsWith("--signal-date="))?.slice(14) ?? today;
   const dryRun = process.argv.includes("--dry-run");
+  const preflight = process.argv.includes("--preflight");
   const waitForWindow = process.argv.includes("--wait-for-window");
+  if (dryRun && preflight) throw new Error("INTRADAY_MODEL_TOP_MODE_CONFLICT");
   if (signalDate !== today) throw new Error("OFFICIAL_SIGNAL_DATE_MUST_BE_TODAY");
   const signalDir = path.join(statusDir, signalDate);
   const signalPath = path.join(signalDir, "1430.json");
-  try {
-    const existing = JSON.parse(await fs.readFile(signalPath, "utf8"));
-    const errors = validateIntradayModelTopSignal(existing);
-    if (errors.length || existing.status !== "READY") throw new Error(`EXISTING_OFFICIAL_SIGNAL_INVALID:${errors.join(",")}`);
-    console.log(`INTRADAY_MODEL_TOP_RESULT_JSON=${JSON.stringify({ status: "READY", signalDate, disposition: "existing", signalPath: path.relative(root, signalPath).replaceAll("\\", "/"), latestPath: "data/intraday-signals/model-top/latest.json", collection: existing.collection })}`);
-    return;
-  } catch (error) {
-    if (error?.code !== "ENOENT") throw error;
+  if (!preflight) {
+    try {
+      const existing = JSON.parse(await fs.readFile(signalPath, "utf8"));
+      const errors = validateIntradayModelTopSignal(existing);
+      if (errors.length || existing.status !== "READY") throw new Error(`EXISTING_OFFICIAL_SIGNAL_INVALID:${errors.join(",")}`);
+      console.log(`INTRADAY_MODEL_TOP_RESULT_JSON=${JSON.stringify({ status: "READY", signalDate, disposition: "existing", signalPath: path.relative(root, signalPath).replaceAll("\\", "/"), latestPath: "data/intraday-signals/model-top/latest.json", collection: existing.collection })}`);
+      return;
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+    }
   }
 
   const seedDir = path.join(root, "data", "analysis", "market-seeds");
@@ -53,19 +58,21 @@ async function main() {
     return;
   }
 
-  let currentParts = parts;
-  let time = `${currentParts.hour}:${currentParts.minute}:${currentParts.second}`;
-  let timing = classifyOfficialSignalWindow({ time, weekday: new Date(`${signalDate}T00:00:00+09:00`).getUTCDay() });
-  if (timing === "WEEKEND") throw new Error("OFFICIAL_SIGNAL_WEEKEND");
-  if (timing === "BEFORE_WINDOW" && waitForWindow) {
-    const delayMs = millisecondsUntilKstTime({ date: signalDate, time: OFFICIAL_SIGNAL_TIME, nowMs: Date.now() });
-    console.log(`INTRADAY_MODEL_TOP_WAITING_FOR_SIGNAL_WINDOW delayMs=${delayMs}`);
-    await wait(delayMs);
-    currentParts = kst(new Date());
-    time = `${currentParts.hour}:${currentParts.minute}:${currentParts.second}`;
-    timing = classifyOfficialSignalWindow({ time, weekday: new Date(`${signalDate}T00:00:00+09:00`).getUTCDay() });
+  if (!preflight) {
+    let currentParts = parts;
+    let time = `${currentParts.hour}:${currentParts.minute}:${currentParts.second}`;
+    let timing = classifyOfficialSignalWindow({ time, weekday: new Date(`${signalDate}T00:00:00+09:00`).getUTCDay() });
+    if (timing === "WEEKEND") throw new Error("OFFICIAL_SIGNAL_WEEKEND");
+    if (timing === "BEFORE_WINDOW" && waitForWindow) {
+      const delayMs = millisecondsUntilKstTime({ date: signalDate, time: OFFICIAL_SIGNAL_TIME, nowMs: Date.now() });
+      console.log(`INTRADAY_MODEL_TOP_WAITING_FOR_SIGNAL_WINDOW delayMs=${delayMs}`);
+      await wait(delayMs);
+      currentParts = kst(new Date());
+      time = `${currentParts.hour}:${currentParts.minute}:${currentParts.second}`;
+      timing = classifyOfficialSignalWindow({ time, weekday: new Date(`${signalDate}T00:00:00+09:00`).getUTCDay() });
+    }
+    if (timing !== "COLLECT") throw new Error("OFFICIAL_SIGNAL_OUTSIDE_COLLECTION_WINDOW");
   }
-  if (timing !== "COLLECT") throw new Error("OFFICIAL_SIGNAL_OUTSIDE_COLLECTION_WINDOW");
 
   const credentials = { appKey: process.env.KIS_APP_KEY ?? "", appSecret: process.env.KIS_APP_SECRET ?? "" };
   if (!credentials.appKey || !credentials.appSecret) throw new Error("KIS_CREDENTIALS_MISSING");
@@ -78,6 +85,30 @@ async function main() {
   };
   const eligibleCodes = seed.records.filter((record) => record.eligible).map((record) => record.code);
   const collection = await collectKisQuotes({ codes: eligibleCodes, fetchQuote, delayMs: 150 });
+  if (preflight) {
+    const rowsByCode = new Map(seed.records.filter((record) => record.eligible).map((record) => [record.code, record.rows]));
+    let calculated = 0;
+    let calculationFailures = 0;
+    for (const [code, quote] of collection.quotesByCode) {
+      try {
+        const rows = mergeProvisionalCandle(rowsByCode.get(code), quote);
+        if (!rows) throw new Error("PROVISIONAL_CANDLE_INVALID");
+        const scores = calculateIntradayModelTopScores(rows, quote).scores;
+        if (!["A-v1", "B-v1", "C-v1", "D-v1"].every((modelVersion) => Number.isFinite(scores[modelVersion]))) throw new Error("MODEL_SCORE_INVALID");
+        calculated += 1;
+      } catch {
+        calculationFailures += 1;
+      }
+    }
+    const quoteTimes = [...collection.quotesByCode.values()].map((quote) => quote.asOfDate && quote.asOfTime ? `${quote.asOfDate}T${quote.asOfTime}` : null).filter(Boolean).sort();
+    const preflightReady = collection.failures.length === 0 && quoteTimes.length === eligibleCodes.length && calculated === eligibleCodes.length && calculationFailures === 0;
+    console.log(`INTRADAY_MODEL_TOP_RESULT_JSON=${JSON.stringify({ status: preflightReady ? "PREFLIGHT_READY" : "PREFLIGHT_FAILED", observationType: "PREFLIGHT", signalDate, seedReferenceDate: seed.requestedDate, credentials: "present", authentication: collection.quotesByCode.size > 0 ? "verifiedByQuoteRequest" : "notVerified", collection: { requested: eligibleCodes.length, successful: collection.quotesByCode.size, failed: collection.failures.length, timestampComplete: quoteTimes.length }, calculations: { A_v1_B_v1_C_v1_D_v1: calculated, failed: calculationFailures }, quoteTimestampRange: { earliest: quoteTimes.at(0) ?? null, latest: quoteTimes.at(-1) ?? null }, liveObservationCreated: false, signalPath: null, latestPath: null })}`);
+    if (!preflightReady) {
+      process.exitCode = 1;
+      return;
+    }
+    return;
+  }
   const artifact = buildIntradayModelTopSignal({ seed, quotesByCode: collection.quotesByCode, signalDate, collectionStartedAt: collection.startedAt, collectionCompletedAt: collection.completedAt, observationType: "LIVE_OBSERVATION" });
   const validationErrors = validateIntradayModelTopSignal(artifact);
   if (validationErrors.length) throw new Error(`OFFICIAL_SIGNAL_INVALID:${validationErrors.join(",")}`);
@@ -91,6 +122,13 @@ async function main() {
 }
 
 await main().catch(async (error) => {
+  if (process.argv.includes("--preflight") || process.argv.includes("--dry-run")) {
+    const reason = error instanceof Error ? error.message.slice(0, 120) : "unknownFailure";
+    console.error(`INTRADAY_MODEL_TOP_NON_OBSERVATIONAL_FAILED reason=${reason}`);
+    console.log(`INTRADAY_MODEL_TOP_RESULT_JSON=${JSON.stringify({ status: process.argv.includes("--preflight") ? "PREFLIGHT_FAILED" : "DRY_RUN_FAILED", observationType: process.argv.includes("--preflight") ? "PREFLIGHT" : "DRY_RUN", liveObservationCreated: false, signalPath: null, latestPath: null, reason })}`);
+    process.exitCode = 1;
+    return;
+  }
   const now = new Date();
   const date = formatDate(kst(now));
   const reason = error instanceof Error ? error.message.slice(0, 120) : "unknownFailure";
