@@ -90,7 +90,7 @@ async function main() {
     return attachKisMinuteObservation(quote, await minuteResponse.json(), { requestedDate: observationDate, requestedTime: observationTime });
   };
   const eligibleCodes = seed.records.filter((record) => record.eligible).map((record) => record.code);
-  const collection = await collectKisQuotes({ codes: eligibleCodes, fetchQuote, delayMs: 150 });
+  const collection = await collectKisQuotes({ codes: eligibleCodes, fetchQuote, delayMs: 150, concurrency: 2 });
   if (preflight) {
     const rowsByCode = new Map(seed.records.filter((record) => record.eligible).map((record) => [record.code, record.rows]));
     let calculated = 0;
@@ -116,7 +116,8 @@ async function main() {
       return counts;
     }, {})).sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0])).slice(0, 3).map(([reason, count]) => ({ reason, count }));
     const preflightReady = collection.failures.length === 0 && quoteTimes.length === eligibleCodes.length && signalDateMatched === eligibleCodes.length && calculated === eligibleCodes.length && calculationFailures === 0;
-    console.log(`INTRADAY_MODEL_TOP_RESULT_JSON=${JSON.stringify({ status: preflightReady ? "PREFLIGHT_READY" : "PREFLIGHT_FAILED", observationType: "PREFLIGHT", signalDate, seedReferenceDate: seed.requestedDate, credentials: "present", authentication: collection.quotesByCode.size > 0 ? "verifiedByQuoteRequest" : "notVerified", collection: { requested: eligibleCodes.length, successful: collection.quotesByCode.size, failed: collection.failures.length, timestampComplete: quoteTimes.length, signalDateMatched, failureSummary }, calculations: { A_v1_B_v1_C_v1_D_v1: calculated, failed: calculationFailures }, quoteTimestampRange: { earliest: quoteTimes.at(0) ?? null, latest: quoteTimes.at(-1) ?? null }, liveObservationCreated: false, signalPath: null, latestPath: null })}`);
+    const authentication = collection.quotesByCode.size > 0 || failureSummary.some((failure) => failure.reason.startsWith("KIS_MINUTE_OBSERVATION_")) ? "verifiedByQuoteRequest" : "notVerified";
+    console.log(`INTRADAY_MODEL_TOP_RESULT_JSON=${JSON.stringify({ status: preflightReady ? "PREFLIGHT_READY" : "PREFLIGHT_FAILED", observationType: "PREFLIGHT", signalDate, seedReferenceDate: seed.requestedDate, credentials: "present", authentication, collection: { requested: eligibleCodes.length, successful: collection.quotesByCode.size, failed: collection.failures.length, timestampComplete: quoteTimes.length, signalDateMatched, failureSummary }, calculations: { A_v1_B_v1_C_v1_D_v1: calculated, failed: calculationFailures }, quoteTimestampRange: { earliest: quoteTimes.at(0) ?? null, latest: quoteTimes.at(-1) ?? null }, liveObservationCreated: false, signalPath: null, latestPath: null })}`);
     if (!preflightReady) {
       process.exitCode = 1;
       return;
