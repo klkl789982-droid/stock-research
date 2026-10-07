@@ -6,6 +6,7 @@ import { parseKisQuote } from "../lib/kis-quote-provider-core.mjs";
 import { collectKisQuotes } from "../lib/kis-intraday-collector.mjs";
 import { validateIntradayMarketSeed } from "../lib/intraday-market-seed.mjs";
 import { buildIntradayModelTopSignal, OFFICIAL_SIGNAL_TIME, OFFICIAL_SIGNAL_WINDOW_END, validateIntradayModelTopSignal } from "../lib/intraday-model-top-official-signal.mjs";
+import { classifyOfficialSignalWindow, millisecondsUntilKstTime } from "../lib/intraday-model-top-time-policy.mjs";
 
 const root = process.cwd();
 const statusDir = path.join(root, "data", "intraday-signals", "model-top");
@@ -18,6 +19,7 @@ const writeLatest = async (value) => {
   await fs.writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
   await fs.rename(temporary, target);
 };
+const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 async function main() {
   const now = new Date();
@@ -25,6 +27,7 @@ async function main() {
   const today = formatDate(parts);
   const signalDate = process.argv.find((value) => value.startsWith("--signal-date="))?.slice(14) ?? today;
   const dryRun = process.argv.includes("--dry-run");
+  const waitForWindow = process.argv.includes("--wait-for-window");
   if (signalDate !== today) throw new Error("OFFICIAL_SIGNAL_DATE_MUST_BE_TODAY");
   const signalDir = path.join(statusDir, signalDate);
   const signalPath = path.join(signalDir, "1430.json");
@@ -50,10 +53,19 @@ async function main() {
     return;
   }
 
-  const time = `${parts.hour}:${parts.minute}:${parts.second}`;
-  if (time < OFFICIAL_SIGNAL_TIME || time > OFFICIAL_SIGNAL_WINDOW_END) throw new Error("OFFICIAL_SIGNAL_OUTSIDE_COLLECTION_WINDOW");
-  const day = new Date(`${signalDate}T00:00:00+09:00`).getUTCDay();
-  if (day === 0 || day === 6) throw new Error("OFFICIAL_SIGNAL_WEEKEND");
+  let currentParts = parts;
+  let time = `${currentParts.hour}:${currentParts.minute}:${currentParts.second}`;
+  let timing = classifyOfficialSignalWindow({ time, weekday: new Date(`${signalDate}T00:00:00+09:00`).getUTCDay() });
+  if (timing === "WEEKEND") throw new Error("OFFICIAL_SIGNAL_WEEKEND");
+  if (timing === "BEFORE_WINDOW" && waitForWindow) {
+    const delayMs = millisecondsUntilKstTime({ date: signalDate, time: OFFICIAL_SIGNAL_TIME, nowMs: Date.now() });
+    console.log(`INTRADAY_MODEL_TOP_WAITING_FOR_SIGNAL_WINDOW delayMs=${delayMs}`);
+    await wait(delayMs);
+    currentParts = kst(new Date());
+    time = `${currentParts.hour}:${currentParts.minute}:${currentParts.second}`;
+    timing = classifyOfficialSignalWindow({ time, weekday: new Date(`${signalDate}T00:00:00+09:00`).getUTCDay() });
+  }
+  if (timing !== "COLLECT") throw new Error("OFFICIAL_SIGNAL_OUTSIDE_COLLECTION_WINDOW");
 
   const credentials = { appKey: process.env.KIS_APP_KEY ?? "", appSecret: process.env.KIS_APP_SECRET ?? "" };
   if (!credentials.appKey || !credentials.appSecret) throw new Error("KIS_CREDENTIALS_MISSING");

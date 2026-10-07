@@ -2,8 +2,9 @@ name: Intraday Model TOP Official Signal
 
 on:
   schedule:
-    # 14:30 Asia/Seoul (05:30 UTC), weekdays. The runner rejects late starts.
-    - cron: "30 5 * * 1-5"
+    # Prewarm at 14:15 KST (05:15 UTC); the runner itself waits for the exact 14:30 collection window.
+    # This protects the immutable 14:30 observation from GitHub schedule-start delay.
+    - cron: "15 5 * * 1-5"
   workflow_dispatch:
     inputs:
       mode:
@@ -22,7 +23,7 @@ concurrency:
 jobs:
   signal:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     permissions:
       contents: write
     env:
@@ -39,7 +40,7 @@ jobs:
         shell: bash
         run: |
           mode="${{ github.event_name == 'schedule' && 'live' || inputs.mode }}"
-          if [ "$mode" = "dry-run" ]; then args="--dry-run"; else args=""; fi
+          if [ "$mode" = "dry-run" ]; then args="--dry-run"; else args="--wait-for-window"; fi
           set +e
           node scripts/run-intraday-model-top-official-signal.mjs $args 2>&1 | tee intraday-model-top.log
           exit_code=${PIPESTATUS[0]}

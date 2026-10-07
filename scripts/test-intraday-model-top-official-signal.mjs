@@ -6,6 +6,7 @@ import { calculateEntryStrength } from "../lib/entry-strength.mjs";
 import { calculateCombinedTechnicalScore } from "../lib/combined-technical-score.mjs";
 import { mergeProvisionalCandle } from "../lib/intraday-model-b-official-signal.mjs";
 import { assertImmutableIntradayModelTopSignal, buildIntradayModelTopSignal, validateIntradayModelTopSignal } from "../lib/intraday-model-top-official-signal.mjs";
+import { classifyOfficialSignalWindow, millisecondsUntilKstTime } from "../lib/intraday-model-top-time-policy.mjs";
 
 const dateAt = (offset) => { const date = new Date("2026-10-02T00:00:00Z"); date.setUTCDate(date.getUTCDate() - offset); return date.toISOString().slice(0, 10).replaceAll("-", ""); };
 const rows = Array.from({ length: 260 }, (_, index) => [dateAt(index), 100 + index / 10, 102 + index / 10, 98 + index / 10, 100 + index / 10, 1000 + index]);
@@ -51,4 +52,10 @@ const future = buildIntradayModelTopSignal({ ...input, quotesByCode: new Map([["
 assert.equal(future.records.find((record) => record.ticker === "000001").reason, "quoteFromFuture");
 const rerun = buildIntradayModelTopSignal({ ...input, quotesByCode: new Map([["000001", quote("000001", 200)], ["000002", quote("000002", 190)]]) });
 assert.equal(rerun.contentHash, signal.contentHash);
+assert.equal(classifyOfficialSignalWindow({ weekday: 3, time: "14:29:59" }), "BEFORE_WINDOW");
+assert.equal(classifyOfficialSignalWindow({ weekday: 3, time: "14:30:00" }), "COLLECT");
+assert.equal(classifyOfficialSignalWindow({ weekday: 3, time: "14:35:00" }), "COLLECT");
+assert.equal(classifyOfficialSignalWindow({ weekday: 3, time: "14:35:01" }), "AFTER_WINDOW");
+assert.equal(classifyOfficialSignalWindow({ weekday: 0, time: "14:30:00" }), "WEEKEND");
+assert.equal(millisecondsUntilKstTime({ date: "2026-10-08", time: "14:30:00", nowMs: Date.parse("2026-10-08T05:29:59.000Z") }), 1000);
 console.log("intraday A/B/C/D 14:30 score·rank·provenance·immutability·no-look-ahead tests passed");
