@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { createKisApiClient } from "../lib/kis-api-client-core.mjs";
 import { createKisTokenManager } from "../lib/kis-token-manager-core.mjs";
-import { parseKisQuote } from "../lib/kis-quote-provider-core.mjs";
+import { attachKisMinuteObservation, parseKisQuote } from "../lib/kis-quote-provider-core.mjs";
 import { collectKisQuotes } from "../lib/kis-intraday-collector.mjs";
 import { validateIntradayMarketSeed } from "../lib/intraday-market-seed.mjs";
 import { buildIntradayModelTopSignal, calculateIntradayModelTopScores, OFFICIAL_SIGNAL_TIME, validateIntradayModelTopSignal } from "../lib/intraday-model-top-official-signal.mjs";
@@ -79,9 +79,15 @@ async function main() {
   const tokenManager = createKisTokenManager({ fetchImpl: fetch, getCredentials: () => credentials });
   const client = createKisApiClient({ fetchImpl: fetch, tokenManager, getCredentials: () => credentials });
   const fetchQuote = async (code) => {
+    const observationParts = kst(new Date());
+    const observationDate = formatDate(observationParts);
+    const observationTime = `${observationParts.hour}${observationParts.minute}${observationParts.second}`;
     const response = await client.request(`https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/inquire-price?FID_COND_MRKT_DIV_CODE=J&FID_INPUT_ISCD=${code}`, { headers: { "Content-Type": "application/json", tr_id: "FHKST01010100" } });
     if (!response.ok) throw new Error(`KIS_HTTP_${response.status}`);
-    return parseKisQuote(await response.json(), code, new Date().toISOString());
+    const quote = parseKisQuote(await response.json(), code, new Date().toISOString());
+    const minuteResponse = await client.request(`https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/inquire-time-itemchartprice?FID_ETC_CLS_CODE=&FID_COND_MRKT_DIV_CODE=J&FID_INPUT_ISCD=${code}&FID_INPUT_HOUR_1=${observationTime}&FID_PW_DATA_INCU_YN=N`, { headers: { "Content-Type": "application/json", tr_id: "FHKST03010200" } });
+    if (!minuteResponse.ok) throw new Error(`KIS_MINUTE_HTTP_${minuteResponse.status}`);
+    return attachKisMinuteObservation(quote, await minuteResponse.json(), { requestedDate: observationDate, requestedTime: observationTime });
   };
   const eligibleCodes = seed.records.filter((record) => record.eligible).map((record) => record.code);
   const collection = await collectKisQuotes({ codes: eligibleCodes, fetchQuote, delayMs: 150 });
@@ -89,8 +95,11 @@ async function main() {
     const rowsByCode = new Map(seed.records.filter((record) => record.eligible).map((record) => [record.code, record.rows]));
     let calculated = 0;
     let calculationFailures = 0;
+    let signalDateMatched = 0;
     for (const [code, quote] of collection.quotesByCode) {
       try {
+        if (quote.asOfDate === signalDate) signalDateMatched += 1;
+        else throw new Error("QUOTE_DATE_DOES_NOT_MATCH_PREFLIGHT_DATE");
         const rows = mergeProvisionalCandle(rowsByCode.get(code), quote);
         if (!rows) throw new Error("PROVISIONAL_CANDLE_INVALID");
         const scores = calculateIntradayModelTopScores(rows, quote).scores;
@@ -101,8 +110,8 @@ async function main() {
       }
     }
     const quoteTimes = [...collection.quotesByCode.values()].map((quote) => quote.asOfDate && quote.asOfTime ? `${quote.asOfDate}T${quote.asOfTime}` : null).filter(Boolean).sort();
-    const preflightReady = collection.failures.length === 0 && quoteTimes.length === eligibleCodes.length && calculated === eligibleCodes.length && calculationFailures === 0;
-    console.log(`INTRADAY_MODEL_TOP_RESULT_JSON=${JSON.stringify({ status: preflightReady ? "PREFLIGHT_READY" : "PREFLIGHT_FAILED", observationType: "PREFLIGHT", signalDate, seedReferenceDate: seed.requestedDate, credentials: "present", authentication: collection.quotesByCode.size > 0 ? "verifiedByQuoteRequest" : "notVerified", collection: { requested: eligibleCodes.length, successful: collection.quotesByCode.size, failed: collection.failures.length, timestampComplete: quoteTimes.length }, calculations: { A_v1_B_v1_C_v1_D_v1: calculated, failed: calculationFailures }, quoteTimestampRange: { earliest: quoteTimes.at(0) ?? null, latest: quoteTimes.at(-1) ?? null }, liveObservationCreated: false, signalPath: null, latestPath: null })}`);
+    const preflightReady = collection.failures.length === 0 && quoteTimes.length === eligibleCodes.length && signalDateMatched === eligibleCodes.length && calculated === eligibleCodes.length && calculationFailures === 0;
+    console.log(`INTRADAY_MODEL_TOP_RESULT_JSON=${JSON.stringify({ status: preflightReady ? "PREFLIGHT_READY" : "PREFLIGHT_FAILED", observationType: "PREFLIGHT", signalDate, seedReferenceDate: seed.requestedDate, credentials: "present", authentication: collection.quotesByCode.size > 0 ? "verifiedByQuoteRequest" : "notVerified", collection: { requested: eligibleCodes.length, successful: collection.quotesByCode.size, failed: collection.failures.length, timestampComplete: quoteTimes.length, signalDateMatched }, calculations: { A_v1_B_v1_C_v1_D_v1: calculated, failed: calculationFailures }, quoteTimestampRange: { earliest: quoteTimes.at(0) ?? null, latest: quoteTimes.at(-1) ?? null }, liveObservationCreated: false, signalPath: null, latestPath: null })}`);
     if (!preflightReady) {
       process.exitCode = 1;
       return;
