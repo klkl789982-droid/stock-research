@@ -1,0 +1,138 @@
+name: KIS provisional EOD (private collection)
+
+on:
+  schedule:
+    # UTC -> KST (+09:00): 15:40, then every 30 minutes through 20:40.
+    # Schedule is intentionally UNARMED in code, even if the repository variable already exists.
+    # Explicit approval must arm the job condition and enable the repository variable separately.
+    - cron: "40 6 * * 1-5"
+    - cron: "10,40 7-11 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Dry-run makes no KIS requests. Private collection requires explicit repository approval."
+        required: true
+        default: dry-run
+        type: choice
+        options:
+          - dry-run
+          - private-collect
+
+# This namespace cannot cancel or publish Daily EOD / 14:30 LIVE artifacts.
+concurrency:
+  group: kis-provisional-eod-main
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  collect:
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'workflow_dispatch' || (false && vars.KIS_EOD_COLLECTION_ENABLED == 'true'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
+      KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
+      KIS_EOD_COLLECTION_ENABLED: ${{ vars.KIS_EOD_COLLECTION_ENABLED }}
+      KIS_EOD_RUN_MODE: ${{ github.event_name == 'schedule' && 'private-collect' || inputs.mode }}
+    steps:
+      - name: Check private collection approval
+        id: approval
+        shell: bash
+        run: |
+          case "$KIS_EOD_RUN_MODE" in
+            dry-run) ;;
+            private-collect)
+              if [ "$KIS_EOD_COLLECTION_ENABLED" != "true" ]; then
+                echo "status=BLOCKED" >> "$GITHUB_OUTPUT"
+                echo "reason=COLLECTION_NOT_ENABLED" >> "$GITHUB_OUTPUT"
+                echo "KIS_PROVISIONAL_EOD_BLOCKED collectionApprovalRequired" >&2
+                exit 1
+              fi
+              ;;
+            *)
+              echo "status=BLOCKED" >> "$GITHUB_OUTPUT"
+              echo "reason=INVALID_CLI_ARGUMENTS" >> "$GITHUB_OUTPUT"
+              echo "KIS_PROVISIONAL_EOD_BLOCKED unsupportedMode" >&2
+              exit 1
+              ;;
+          esac
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Select KST calendar cache date
+        id: kst-date
+        shell: bash
+        run: echo "date=$(TZ=Asia/Seoul date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+      - name: Restore only daily KIS calendar evidence
+        id: calendar-cache
+        if: env.KIS_EOD_RUN_MODE == 'private-collect'
+        uses: actions/cache/restore@v4
+        with:
+          path: .runtime/kis-eod/calendar
+          key: kis-eod-calendar-main-${{ steps.kst-date.outputs.date }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run isolated provisional pipeline
+        id: kis-eod
+        shell: bash
+        run: |
+          set +e
+          if [ "$KIS_EOD_RUN_MODE" = "dry-run" ]; then
+            result=$(node scripts/run-kis-eod.mjs --dry-run)
+          else
+            result=$(node scripts/run-kis-eod.mjs --collect-private)
+          fi
+          exit_code=$?
+          set -e
+          KIS_EOD_CAPTURED_OUTPUT="$result" node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          import { KIS_EOD_RUNNER_STATUSES, KIS_EOD_RUNNER_REASONS } from "./scripts/run-kis-eod.mjs";
+          const prefix = "KIS_EOD_RESULT_JSON=";
+          const line = process.env.KIS_EOD_CAPTURED_OUTPUT.split("\n").findLast((value) => value.startsWith(prefix));
+          let result;
+          try { result = JSON.parse(line?.slice(prefix.length)); } catch { result = null; }
+          const status = KIS_EOD_RUNNER_STATUSES.includes(result?.status) ? result.status : "FAILED";
+          const reason = KIS_EOD_RUNNER_REASONS.includes(result?.reason) ? result.reason : "UNEXPECTED_FAILURE";
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `status=${status}\nreason=${reason}\n`);
+          console.log(`KIS_EOD_WORKFLOW status=${status} reason=${reason}`);
+          if (["FAILED", "BLOCKED"].includes(status)) process.exitCode = 1;
+          NODE
+          exit "$exit_code"
+      # Save independently of quote/model success: a collected holiday response
+      # should not be requested again at every later slot of the same KST day.
+      - name: Save only daily KIS calendar evidence
+        if: >-
+          always() && env.KIS_EOD_RUN_MODE == 'private-collect' &&
+          env.KIS_EOD_COLLECTION_ENABLED == 'true' &&
+          steps.calendar-cache.outputs.cache-hit != 'true' &&
+          steps.kst-date.outputs.date != '' && hashFiles('.runtime/kis-eod/calendar/**') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: .runtime/kis-eod/calendar
+          key: kis-eod-calendar-main-${{ steps.kst-date.outputs.date }}
+      - name: Publish safe operations summary
+        if: always()
+        env:
+          KIS_EOD_SAFE_STATUS: ${{ steps.kis-eod.outputs.status || steps.approval.outputs.status || 'UNKNOWN' }}
+          KIS_EOD_SAFE_REASON: ${{ steps.kis-eod.outputs.reason || steps.approval.outputs.reason || 'UNEXPECTED_FAILURE' }}
+        shell: bash
+        run: |
+          {
+            echo "## KIS provisional EOD"
+            echo "- mode: $KIS_EOD_RUN_MODE"
+            echo "- job result: ${{ job.status }}"
+            echo "- pipeline status: $KIS_EOD_SAFE_STATUS"
+            echo "- reason: $KIS_EOD_SAFE_REASON"
+            echo "- storage: private runner-local .runtime only; no price artifacts uploaded or committed"
+            echo "- reuse: KST-date-keyed holiday calendar only; raw prices and candidates are never cached"
+            echo "- publication: BLOCKED pending source-finality and redistribution approval"
+            echo "- schedule: UNARMED; proposed 15:40–20:40 KST weekdays, 30-minute intervals (best-effort trigger after approval)"
+          } >> "$GITHUB_STEP_SUMMARY"

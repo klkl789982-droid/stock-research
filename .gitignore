@@ -35,6 +35,9 @@ yarn-error.log*
 .pnpm-debug.log*
 /daily-production.log
 
+# KIS provisional EOD: private source data and local diagnostics, never published
+/.runtime/kis-eod/
+
 # env files (can opt-in for committing if needed)
 .env*
 
