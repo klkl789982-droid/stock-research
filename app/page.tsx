@@ -8,6 +8,7 @@ import MarketAnalysisPanel, { type MarketAnalysisResponse, type IntradayAnalysis
 import CompanyAnalysisPanel, { companyAnalysisRecordReasonLabel, type CompanyAnalysisResult } from "../components/company-analysis/CompanyAnalysisPanel";
 import TechnicalStrengthPanel from "../components/TechnicalStrengthPanel";
 import BrandMark from "../components/BrandMark";
+import StockScreenerPanel from "../components/StockScreenerPanel";
 import { searchApiErrorMessage, settleSearchRequest } from "../lib/search-request-isolation.mjs";
 import { buildSearchTechnicalStrength } from "../lib/search-technical-strength.mjs";
 import { buildSearchMarketAnalysis } from "../lib/search-market-analysis.mjs";
@@ -17,7 +18,7 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [searchedStock, setSearchedStock] = useState<string | null>(null);
 const [activeTab, setActiveTab] = useState<"technical" | "company">("technical");
-const [pageView, setPageView] = useState<"home" | "models">("home");
+const [pageView, setPageView] = useState<"home" | "models" | "screener">("home");
 const [modelPageTab, setModelPageTab] = useState<"top" | "performance" | "guide">("top");
 const [mobileNavOpen, setMobileNavOpen] = useState(false);
 const [realtimePrice, setRealtimePrice] = useState<{
@@ -354,12 +355,18 @@ const openModelsFromNavigation = () => {
   setPageView("models");
   setMobileNavOpen(false);
 };
+const openScreenerFromNavigation = () => {
+  handleHome();
+  setPageView("screener");
+  setMobileNavOpen(false);
+};
 const navigationButtons = (closeOnSelect: boolean) => <>
   <button type="button" onClick={() => { handleHome(); if (closeOnSelect) setMobileNavOpen(false); }} className={`tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold ${pageView === "home" ? "bg-[rgba(182,91,50,0.13)] text-[var(--tb-orange)]" : "text-slate-300 hover:bg-white/10 hover:text-white"}`}><span aria-hidden="true">⌂</span> 홈</button>
   <button type="button" onClick={openSearchFromNavigation} className="tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"><span aria-hidden="true">⌕</span> 종목 분석</button>
   <button type="button" onClick={openModelsFromNavigation} className={`tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold ${pageView === "models" ? "bg-[rgba(182,91,50,0.13)] text-[var(--tb-orange)]" : "text-slate-300 hover:bg-white/10 hover:text-white"}`}><span aria-hidden="true">▦</span> 모델</button>
   <div className="my-3 border-t border-white/10" />
-  {[['▥', '시장 현황'], ['⌁', '백테스트'], ['☆', '관심 종목'], ['▽', '스크리닝']].map(([icon, label]) => <div key={label} className="tb-muted-nav flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium" aria-disabled="true"><span aria-hidden="true">{icon}</span><span>{label}</span><span className="ml-auto text-[8px] uppercase tracking-wider">준비 중</span></div>)}
+  <button type="button" onClick={openScreenerFromNavigation} className={`tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold ${pageView === "screener" ? "bg-[rgba(182,91,50,0.13)] text-[var(--tb-orange)]" : "text-slate-300 hover:bg-white/10 hover:text-white"}`}><span aria-hidden="true">▽</span> 스크리닝</button>
+  {[['▥', '시장 현황'], ['⌁', '백테스트'], ['☆', '관심 종목']].map(([icon, label]) => <div key={label} className="tb-muted-nav flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium" aria-disabled="true"><span aria-hidden="true">{icon}</span><span>{label}</span><span className="ml-auto text-[8px] uppercase tracking-wider">준비 중</span></div>)}
 </>;
 return (
     <main ref={pageTopRef} className="tb-page-ambient min-h-screen text-slate-900">
@@ -392,14 +399,6 @@ return (
         <aside className="tb-sidebar-surface hidden w-52 shrink-0 border-r border-[var(--tb-border)] px-3 py-4 lg:flex lg:min-h-[calc(100vh-60px)] lg:flex-col">
           <nav className="space-y-1" aria-label="주요 메뉴">
             {navigationButtons(false)}
-            {/* desktop navigation uses the same handlers and active state as mobile */}
-            {false && <>
-            <button type="button" onClick={handleHome} className={`tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold ${pageView === "home" ? "bg-[rgba(182,91,50,0.13)] text-[var(--tb-orange)]" : "text-slate-300 hover:bg-white/10 hover:text-white"}`}><span aria-hidden="true">⌂</span> 홈</button>
-            <button type="button" onClick={() => { handleHome(); requestAnimationFrame(() => searchInputRef.current?.focus()); }} className="tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"><span aria-hidden="true">⌕</span> 종목 분석</button>
-            <button type="button" onClick={() => { handleHome(); setModelPageTab("top"); setPageView("models"); }} className={`tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold ${pageView === "models" ? "bg-[rgba(182,91,50,0.13)] text-[var(--tb-orange)]" : "text-slate-300 hover:bg-white/10 hover:text-white"}`}><span aria-hidden="true">▦</span> 모델</button>
-            <div className="my-3 border-t border-white/10" />
-            {[["▥", "시장 현황"], ["⌁", "백테스트"], ["☆", "관심 종목"], ["▽", "스크리닝"]].map(([icon, label]) => <div key={label} className="tb-muted-nav flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium" aria-disabled="true"><span aria-hidden="true">{icon}</span><span>{label}</span><span className="ml-auto text-[8px] uppercase tracking-wider">준비 중</span></div>)}
-            </>}
           </nav>
         </aside>
         <div className="min-w-0 flex-1 px-3 py-3 sm:px-4 sm:py-4 lg:px-4 xl:px-5">
@@ -458,6 +457,8 @@ className="tb-focus min-h-11 w-full rounded-full border border-white/20 bg-[rgba
             {modelPageTab === "top" ? <TopStocksPanel onSelectStock={handleSearch} /> : modelPageTab === "performance" ? <ModelTopPerformancePanel /> : <ModelExplanationPanel />}
           </section>
         )}
+
+        {!searchedStock && pageView === "screener" && <StockScreenerPanel onSelectStock={handleSearch} />}
 
         {searchedStock && (
           <div className="tb-card mt-8 overflow-hidden p-5 sm:p-7">
