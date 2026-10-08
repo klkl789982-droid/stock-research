@@ -15,12 +15,12 @@ const queryFor = (value: typeof initial) => {
   return params.toString();
 };
 
-export default function StockScreenerPanel({ onSelectStock }: { onSelectStock: (stock: Selection) => void | Promise<void> }) {
+export default function StockScreenerPanel({ onSelectStock, initialTab = "models", initialPair = "5-20", initialState = "all" }: { onSelectStock: (stock: Selection) => void | Promise<void>; initialTab?: "models" | "transition"; initialPair?: string; initialState?: string }) {
   const [filters, setFilters] = useState(initial);
   const [data, setData] = useState<Response | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<"models" | "transition">("models");
+  const [tab, setTab] = useState<"models" | "transition">(initialTab);
 
   const run = async (next = filters) => {
     setLoading(true); setError(null);
@@ -49,7 +49,7 @@ export default function StockScreenerPanel({ onSelectStock }: { onSelectStock: (
   const field = "tb-focus min-h-10 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900";
   return <section aria-label="스크리닝" className="space-y-3">
     <div role="tablist" aria-label="스크리닝 영역" className="tb-card flex gap-2 p-2">{([["models", "모델·기업 조건"], ["transition", "전환 신호"]] as const).map(([value, label]) => <button key={value} type="button" role="tab" aria-selected={tab === value} onClick={() => setTab(value)} className={`tb-focus rounded-lg px-4 py-2 text-sm font-semibold ${tab === value ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}`}>{label}</button>)}</div>
-    {tab === "transition" ? <TransitionScreenerPanel onSelectStock={onSelectStock} /> : <>
+    {tab === "transition" ? <TransitionScreenerPanel onSelectStock={onSelectStock} initialPair={initialPair} initialState={initialState} /> : <>
     <div className="tb-card p-4 sm:p-6">
       <p className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--tb-orange)]">Daily EOD screening</p>
       <h1 id="screener-heading" className="mt-1 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">스크리닝</h1>

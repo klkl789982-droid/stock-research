@@ -3,7 +3,8 @@ import { readFile } from "node:fs/promises";
 
 const panel = await readFile(new URL("../components/TopStocksPanel.tsx", import.meta.url), "utf8");
 const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
-assert.match(panel, /useState\("B"\)/u);
+assert.match(panel, /initialTab = "B"/u);
+assert.match(panel, /useState\(initialTab\)/u);
 assert.match(panel, /모델 B · 추세 강도/u);
 assert.match(panel, /모델 C · 진입 강도/u);
 assert.match(panel, /이동평균선 구조·기울기·추세 지속성/u);
@@ -22,7 +23,7 @@ assert.match(panel, /overflow-x-auto/u);
 assert.match(page, /모델 화면 탭/u);
 assert.match(page, /모델 TOP/u);
 assert.match(page, /모델 성과/u);
-assert.match(page, /<TopStocksPanel onSelectStock=\{handleSearch\} \/>/u);
+assert.match(page, /<TopStocksPanel key=\{modelInitialTab\} initialTab=\{modelInitialTab\} onSelectStock=\{handleSearch\} \/>/u);
 assert.match(page, /<ModelTopPerformancePanel \/>/u);
 assert.doesNotMatch(page, /compact onSelectStock=\{handleSearch\}/u);
 assert.match(page, /item\.srtnCd\.replace\(\/\^A\//u);

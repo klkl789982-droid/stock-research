@@ -46,7 +46,7 @@ assert.match(route, /future60dReturn/);
 assert.match(route, /targetTradingDate: typeof targetTradingDate/);
 assert.match(route, /buildModelTopPerformance/);
 assert.doesNotMatch(topStocksPanel, /ModelTopPerformancePanel/, "TOP 목록은 성과 패널을 직접 mount하지 않아야 합니다.");
-assert.match(page, /modelPageTab === "top" \? <TopStocksPanel onSelectStock=\{handleSearch\} \/> : modelPageTab === "performance" \? <ModelTopPerformancePanel \/> : <ModelExplanationPanel \/>/);
+assert.match(page, /modelPageTab === "top" \? <TopStocksPanel key=\{modelInitialTab\} initialTab=\{modelInitialTab\} onSelectStock=\{handleSearch\} \/> : modelPageTab === "performance" \? <ModelTopPerformancePanel \/> : <ModelExplanationPanel \/>/);
 assert.doesNotMatch(page, /compact onSelectStock=\{handleSearch\}/, "HOME에는 compact TOP 목록을 mount하지 않아야 합니다.");
 
 // Render the actual panel with fixed hook state; fetch stays disabled and no API is called.

@@ -47,7 +47,7 @@ type TopStocksResponse = {
 };
 
 type StockSelection = { code: string; name: string };
-type TopStocksPanelProps = { onSelectStock?: (stock: StockSelection) => void | Promise<void>; compact?: boolean; onOpenFull?: () => void };
+type TopStocksPanelProps = { onSelectStock?: (stock: StockSelection) => void | Promise<void>; compact?: boolean; onOpenFull?: () => void; initialTab?: string };
 type IntradayOverlay = { code: string; status: "available"; price: number; rate: number | null; asOfDate: string | null; asOfTime: string | null; receivedAt: string | null; source: "KIS" | null } | { code: string; status: "unavailable" };
 type IntradayModelTopResponse = { dataMode: "intradayOfficialSignal"; signalDate: string; officialSignalTime: string; model: ModelId; modelName: string | null; modelVersion: string; collectionStartedAt: string; collectionCompletedAt: string; priceBasis: "kisLastQuoteAtCollection"; rankingUniverse: { count: number } | undefined; count: number; stocks: Array<{ rank: number; code: string; name: string; market: string | null; score: number; observedPrice: number | null }> };
 
@@ -79,8 +79,8 @@ const shortReferenceDate = (value: string) => {
   return parts.length === 3 ? `${Number(parts[1])}/${Number(parts[2])}` : value;
 };
 
-export default function TopStocksPanel({ onSelectStock, compact = false, onOpenFull }: TopStocksPanelProps) {
-  const [activeTab, setActiveTab] = useState("B");
+export default function TopStocksPanel({ onSelectStock, compact = false, onOpenFull, initialTab = "B" }: TopStocksPanelProps) {
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [selectingCode, setSelectingCode] = useState<string | null>(null);
   const [data, setData] = useState<TopStocksResponse | null>(null);
   const [loading, setLoading] = useState(true);

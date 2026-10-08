@@ -33,10 +33,16 @@ assert.equal(valid.body.resultCount, 1);
 assert.equal(valid.body.results[0].name, "검증종목");
 assert.equal(valid.body.rows, undefined, "반환 결과와 원본 배열을 중복 전송하지 않습니다.");
 assert.equal(valid.body.ruleVersion, transition.TRANSITION_RULE_VERSION);
-assert.equal(valid.body.researchProposal.approved, false);
+assert.equal(valid.body.researchProposal.approved, true);
+assert.equal(valid.body.researchProposal.researchOnly, true);
 assert.equal(valid.headers["Cache-Control"], "no-store");
 assert.equal((await exports.GET(request("tab=transition&state=NONE"))).body.resultCount, 0);
-for (const query of ["tab=transition&state=APPROACHING", "tab=transition&pair=toString", "tab=transition&rsiMin=100&rsiMax=20", "tab=transition&volumeMin=-1", "tab=transition&scoreD=Infinity", "tab=unknown"]) {
+for (const state of ["APPROACHING", "CONFIRMED"]) {
+  row.transitions["5-20"].status = state;
+  assert.equal((await exports.GET(request(`tab=transition&state=${state}`))).body.resultCount, 1);
+}
+row.transitions["5-20"].status = "CROSS_OCCURRED";
+for (const query of ["tab=transition&state=INVALID", "tab=transition&pair=toString", "tab=transition&rsiMin=100&rsiMax=20", "tab=transition&volumeMin=-1", "tab=transition&scoreD=Infinity", "tab=unknown"]) {
   const before = storeCalls;
   assert.equal((await exports.GET(request(query))).status, 400);
   assert.equal(storeCalls, before, "잘못된 입력에서는 데이터 로딩을 하지 않습니다.");
@@ -70,5 +76,5 @@ const uiRequire = (name) => {
 };
 new Function("require", "exports", compile(panel, true))(uiRequire, uiExports);
 const html = renderToStaticMarkup(React.createElement(uiExports.default, { onSelectStock: () => {} }));
-for (const text of ["교차 발생", "접근 중 · 기준 승인 필요", "검증종목", "000660", "2026-10-07", "2.00x", "55.00", "80.00", "필터 입력 결측 제외", "매수 추천·상승 확률이 아닙니다", "REJECTED"]) assert.ok(html.includes(text), `UI 렌더 누락: ${text}`);
+for (const text of ["교차 발생", "접근 중 · 연구용", "교차 후 확인 · 연구용", "검증종목", "000660", "2026-10-07", "2.00x", "55.00", "80.00", "필터 입력 결측 제외", "매수 추천·상승 확률이 아닙니다", "REJECTED"]) assert.ok(html.includes(text), `UI 렌더 누락: ${text}`);
 console.log("transition screener route validation/legacy isolation/secret-safe errors/mobile SSR/stale guard UI tests passed");
