@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { prepareMarketPriceLedgers, prepareSnapshots, resolveFutureReturns, serializableSnapshot } from "../lib/future-return-resolver.mjs";
-import { classifyRequestedDate, loadTradingCalendar, updateTradingCalendarDate } from "../lib/trading-calendar-status.mjs";
+import { classifyRequestedDate, deriveMarketClosedDatesFromOfficialEodHistory, loadTradingCalendar, updateTradingCalendarDate } from "../lib/trading-calendar-status.mjs";
 
 const backtest = () => ({ status: "pendingEntryPrice", entry: { priceBasis: "nextTradingDayOpen", date: null, openPrice: null }, returns: { nextOpenToT1CloseReturn: null, nextOpenToT5CloseReturn: null, nextOpenToT20CloseReturn: null }, exits: { t1: { date: null, closePrice: null }, t5: { date: null, closePrice: null }, t20: { date: null, closePrice: null } }, resolution: { entryStatus: "pending", t1Status: "pending", t5Status: "pending", t20Status: "pending", reason: null } });
 const future = (value = null) => ({ future1dReturn: value, future5dReturn: null, future20dReturn: null, resolvedAt: { future1dDate: value == null ? null : "fixed", future5dDate: null, future20dDate: null } });
@@ -67,6 +67,25 @@ assert.equal(classifyRequestedDate({ requestedDate: "2026-01-10" }).status, "mar
 assert.equal(classifyRequestedDate({ requestedDate: "2026-01-12", observedBasDt: "2026-01-12" }).status, "tradingDay");
 assert.equal(classifyRequestedDate({ requestedDate: "2026-01-12", observedBasDt: "2026-01-09" }).status, "unchecked");
 assert.equal(classifyRequestedDate({ requestedDate: "2026-01-12", error: "HTTP 500" }).status, "collectionFailed");
+
+const marketSeed = (requestedDate, rowsByCode) => ({
+  requestedDate,
+  records: Object.entries(rowsByCode).map(([code, dates]) => ({ code, rows: dates.map((basDt) => ({ basDt })) })),
+});
+const holidayEvidence = deriveMarketClosedDatesFromOfficialEodHistory({
+  marketSeed: marketSeed("2026-10-06", { "000001": ["20261006", "20261002"], "000002": ["20261006", "20261002"] }),
+  referenceDate: "2026-10-06",
+});
+assert.deepEqual(Object.keys(holidayEvidence), ["2026-10-05"], "완전한 공식 EOD 이력 사이의 평일 공백만 휴장으로 보완해야 합니다.");
+assert.equal(holidayEvidence["2026-10-05"].evidenceRecordCount, 2);
+assert.deepEqual(deriveMarketClosedDatesFromOfficialEodHistory({
+  marketSeed: marketSeed("2026-10-06", { "000001": ["20261006", "20261005"], "000002": ["20261006", "20261005"] }),
+  referenceDate: "2026-10-06",
+}), {}, "공식 EOD 이력에 존재하는 평일을 휴장으로 분류하면 안 됩니다.");
+assert.deepEqual(deriveMarketClosedDatesFromOfficialEodHistory({
+  marketSeed: marketSeed("2026-10-06", { "000001": ["20261006", "20261002"], "000002": ["20261002"] }),
+  referenceDate: "2026-10-06",
+}), {}, "reference date coverage가 불완전하면 휴장일을 추론하면 안 됩니다.");
 
 const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "stock-calendar-test-"));
 try {

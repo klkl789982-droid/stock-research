@@ -83,7 +83,7 @@ export async function GET() {
     let intradayOutcomes: Record<string, unknown>[] = [];
     try { intradayOutcomes = await readJsonFiles<Record<string, unknown>>(path.join(root, "data", "intraday-outcomes", "model-top")); }
     catch { intradayOutcomes = []; }
-    return NextResponse.json({ ...daily, performanceLayer: "DAILY_EOD", live: buildIntradayModelTopPerformance({ outcomes: intradayOutcomes }) }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ ...daily, latestEodReferenceDate: snapshots.at(-1)?.asOfDate ?? null, performanceLayer: "DAILY_EOD", live: buildIntradayModelTopPerformance({ outcomes: intradayOutcomes }) }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({
       schemaVersion: 2,
@@ -93,6 +93,7 @@ export async function GET() {
       matureSignalDatesByHorizon: { "1DAY": [], "5DAY": [], "20DAY": [] },
       signalDateRange: null,
       lastOutcomeDate: null,
+      latestEodReferenceDate: null,
       totalOutcomeObservationCount: 0,
       daily: [],
       summary: [],

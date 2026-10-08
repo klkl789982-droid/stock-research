@@ -78,6 +78,17 @@
       "marketAnalysisSnapshot": "created",
       "intradayMarketSeed": "created",
       "checkedAt": "2026-10-07T18:04:25.382Z"
+    },
+    "2026-10-05": {
+      "status": "marketClosed",
+      "observedBasDt": null,
+      "modelSnapshot": "notRequired",
+      "marketPriceLedger": "notRequired",
+      "reason": "absentBetweenCompleteOfficialEodTradingDates",
+      "evidence": "completeOfficialEodHistoryGap",
+      "evidenceReferenceDate": "2026-10-06",
+      "evidenceRecordCount": 508,
+      "checkedAt": "2026-10-08T06:18:47.773Z"
     }
   }
 }

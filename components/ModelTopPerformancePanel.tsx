@@ -24,6 +24,7 @@ type Response = {
   matureSignalDatesByHorizon: Record<Horizon, string[]>;
   signalDateRange: { from: string; to: string } | null;
   lastOutcomeDate: string | null;
+  latestEodReferenceDate: string | null;
   totalOutcomeObservationCount: number;
   summary: ModelSummary[];
   live: {
@@ -101,7 +102,8 @@ export default function ModelTopPerformancePanel() {
         <div className="grid grid-cols-2 gap-x-5 gap-y-1 text-xs text-slate-600 sm:grid-cols-4 lg:text-right">
           <span>분석 기간</span><strong className="font-semibold text-slate-800">{metadata?.signalDateRange ? `${metadata.signalDateRange.from} ~ ${metadata.signalDateRange.to}` : "축적 중"}</strong>
           <span>신호일</span><strong className="font-semibold tabular-nums text-slate-800">{metadata?.matureSignalDates.length ?? 0}일</strong>
-          <span>최근 결과일</span><strong className="font-semibold text-slate-800">{metadata?.lastOutcomeDate ?? "—"}</strong>
+          {performanceLayer === "DAILY_EOD" && <><span>최신 EOD</span><strong className="font-semibold text-slate-800">{data?.latestEodReferenceDate ?? "—"}</strong></>}
+          <span>성과 결과 기준일</span><strong className="font-semibold text-slate-800">{metadata?.lastOutcomeDate ?? "—"}</strong>
           <span>상태</span><strong className="font-semibold text-amber-700">표본 축적 중 · 참고용</strong>
         </div>
       </div>
@@ -139,6 +141,7 @@ export default function ModelTopPerformancePanel() {
       {error && <p className="mt-3 text-sm text-red-700" role="alert">성과 데이터를 불러오지 못했습니다.</p>}
       {!error && !data && <p className="mt-3 text-sm text-slate-500">성과 데이터를 불러오는 중입니다.</p>}
       <p className="mt-3 text-xs text-slate-500">수익률이 0%인 결과와 미확정 결과는 구분됩니다. 미확정 결과는 통계와 N에 포함하지 않습니다.</p>
+      {performanceLayer === "DAILY_EOD" && <p className="mt-1 text-xs text-slate-500">최신 EOD는 모델 입력의 최신 기준일이며, 성과 결과 기준일은 미래 수익률이 실제로 확정된 마지막 청산일입니다.</p>}
     </section>
   );
 }

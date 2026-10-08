@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
-import { classifyRequestedDate, isWeekend, updateTradingCalendarDate } from "../lib/trading-calendar-status.mjs";
+import { classifyRequestedDate, deriveMarketClosedDatesFromOfficialEodHistory, isWeekend, loadTradingCalendar, updateTradingCalendarDate } from "../lib/trading-calendar-status.mjs";
 import { normalizeStockCode } from "../lib/stock-code.mjs";
 import { createPublicEodQuery, createPublicEodRequestShape, normalizePublicEodRows } from "../lib/public-eod-request.mjs";
 import { resolveUniverseForDate } from "../lib/point-in-time-universe.mjs";
@@ -127,6 +127,13 @@ if (classification.status !== "tradingDay") {
   ]);
   if (snapshot.asOfDate !== requestedDate || ledger.date !== requestedDate || universeArchive.requestedDate !== requestedDate || marketAnalysis.requestedDate !== requestedDate || marketSeed.requestedDate !== requestedDate) throw new Error("산출물 날짜가 요청 날짜와 일치하지 않습니다.");
   if (snapshot.records?.length !== universe.finalCount || ledger.records?.length < universe.finalCount || universeArchive.observedUniverse?.length !== universe.finalCount || marketAnalysis.records?.length !== universe.finalCount || marketSeed.records?.length !== universe.finalCount) throw new Error("산출물 종목 수가 Universe와 일치하지 않습니다.");
+  const calendarBeforeReconciliation = await loadTradingCalendar(root);
+  const derivedClosedDates = deriveMarketClosedDatesFromOfficialEodHistory({ marketSeed, referenceDate: requestedDate });
+  for (const [date, entry] of Object.entries(derivedClosedDates)) {
+    const existing = calendarBeforeReconciliation.dates?.[date];
+    if (existing && !["unchecked", "collectionFailed"].includes(existing.status)) continue;
+    await updateTradingCalendarDate(date, entry, root);
+  }
   await updateTradingCalendarDate(requestedDate, {
     status: "tradingDay", observedBasDt: requestedDate,
     modelSnapshot: "created", marketPriceLedger: "created", reason: null,
