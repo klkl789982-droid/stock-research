@@ -14,6 +14,7 @@ on:
         type: choice
         options:
           - dry-run
+          - connectivity
           - preflight
           - live
 
@@ -30,6 +31,7 @@ jobs:
     env:
       KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
       KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
+      INTRADAY_TRIGGER_TYPE: ${{ github.event_name }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -41,7 +43,8 @@ jobs:
         shell: bash
         run: |
           mode="${{ github.event_name == 'schedule' && 'live' || inputs.mode }}"
-          if [ "$mode" = "dry-run" ]; then args="--dry-run"; elif [ "$mode" = "preflight" ]; then args="--preflight"; else args="--wait-for-window"; fi
+          echo "INTRADAY_MODEL_TOP_WORKFLOW event=${{ github.event_name }} mode=$mode run_id=${{ github.run_id }} started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          if [ "$mode" = "dry-run" ]; then args="--dry-run"; elif [ "$mode" = "connectivity" ]; then args="--connectivity-preflight"; elif [ "$mode" = "preflight" ]; then args="--preflight"; else args="--wait-for-window"; fi
           set +e
           node scripts/run-intraday-model-top-official-signal.mjs $args 2>&1 | tee intraday-model-top.log
           exit_code=${PIPESTATUS[0]}
@@ -76,4 +79,7 @@ jobs:
         run: exit 1
       - name: Fail unsuccessful preflight
         if: steps.signal.outputs.mode == 'preflight' && steps.signal.outputs.status != 'PREFLIGHT_READY'
+        run: exit 1
+      - name: Fail unsuccessful connectivity preflight
+        if: steps.signal.outputs.mode == 'connectivity' && steps.signal.outputs.status != 'CONNECTIVITY_READY'
         run: exit 1
