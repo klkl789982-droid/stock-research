@@ -99,7 +99,7 @@ assert.deepEqual(validateSnapshot(syntheticSnapshot, 553), []);
 const historyBuffer = fs.readFileSync("data/history/2026-08-13.json");
 const canonicalHistoryContent = historyBuffer.toString("utf8").replaceAll("\r\n", "\n");
 assert.equal(createHash("sha256").update(canonicalHistoryContent).digest("hex"), "5e4d913a832d241c90808583eaee1ee7c1165535953c7ac1378c8275f8becdaa");
-assert.match(MODEL_A_V2_FORMULA_HASH, /^[a-f0-9]{64}$/);
+assert.equal(MODEL_A_V2_FORMULA_HASH, "a75a4790a30cabe9885bae8b75567fa6bb1a244626d7f74083b955e901b8e8ff", "formula hash는 OS line ending과 무관하게 canonical LF source를 사용해야 합니다.");
 
 console.log(JSON.stringify({
   formulaHash: MODEL_A_V2_FORMULA_HASH,
