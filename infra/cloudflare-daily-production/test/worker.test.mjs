@@ -1,19 +1,32 @@
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import test from "node:test";
-import { createWorker, CRONS, TARGET } from "../src/index.mjs";
+import { createWorker, CRONS, PUBLICATION_SITE, TARGET } from "../src/index.mjs";
 
 const testCredential = ["unit", "test", "not", "a", "PAT"].join("-");
-const env = { DISPATCH_ENABLED: "true", GITHUB_ACTIONS_TOKEN: testCredential };
-const event = { cron: CRONS[0], scheduledTime: Date.parse("2026-10-08T09:55:00Z") };
+const env = { DISPATCH_ENABLED: "true", GITHUB_TOKEN: testCredential };
+const event = { cron: CRONS[0], scheduledTime: Date.parse("2026-10-08T06:40:00Z") };
 const workflow = () => Response.json({ state: "active", path: `.github/workflows/${TARGET.workflow}` });
 const runs = (workflow_runs = []) => Response.json({ workflow_runs });
 const accepted = () => Response.json({ workflow_run_id: 12345, html_url: "https://untrusted.invalid/never-log-response" });
 
 function harness(responses, options = {}) {
-  const requests = [], logs = [], sleeps = [];
+  const requests = [], siteRequests = [], logs = [], sleeps = [];
+  const siteDate = options.siteDate ?? "2026-10-07";
   const worker = createWorker({
     fetchImpl: async (url, init) => {
+      if (url.startsWith(`${PUBLICATION_SITE}/`)) {
+        siteRequests.push({ url, ...init });
+        if (options.siteResponses) {
+          const response = options.siteResponses.shift();
+          assert.notEqual(response, undefined, "Unexpected site request in mock-only test");
+          if (response instanceof Error) throw response;
+          return typeof response === "function" ? response(init) : response;
+        }
+        if (url.includes("/api/top-stocks")) return Response.json({ rankingAsOfDate: siteDate, freshness: { freshnessStatus: "fresh" } });
+        if (url.includes("/api/model-performance")) return Response.json({ latestEodReferenceDate: options.performanceDate ?? siteDate });
+        return Response.json({ siteApiReferenceDate: siteDate, publicationStatus: options.publicationStatus ?? "published" });
+      }
       requests.push({ url, ...init });
       const response = responses.shift();
       assert.notEqual(response, undefined, "Unexpected outbound request in mock-only test");
@@ -25,7 +38,7 @@ function harness(responses, options = {}) {
     now: () => event.scheduledTime,
     ...options,
   });
-  return { worker, requests, logs, sleeps };
+  return { worker, requests, siteRequests, logs, sleeps };
 }
 
 test("scheduled handler accepts a request, not workflow/publishing success; exact auth/body", async () => {
@@ -61,9 +74,10 @@ test("disabled-by-default and missing secret make no request", async () => {
   const disabled = harness([]);
   assert.equal((await disabled.worker.scheduled(event, {})).reason, "DISPATCH_DISABLED");
   assert.equal(disabled.requests.length, 0);
+  assert.equal(disabled.siteRequests.length, 0);
   for (const secret of [undefined, "", "   "]) {
     const h = harness([]);
-    await assert.rejects(h.worker.scheduled(event, { DISPATCH_ENABLED: "true", GITHUB_ACTIONS_TOKEN: secret }), /SECRET_MISSING/u);
+    await assert.rejects(h.worker.scheduled(event, { DISPATCH_ENABLED: "true", GITHUB_TOKEN: secret }), /SECRET_MISSING/u);
     assert.equal(h.requests.length, 0);
   }
 });
@@ -109,6 +123,65 @@ test("same-isolate concurrent delivery/replay sends one POST", async () => {
   await h.worker.scheduled(event, env);
   assert.equal(h.requests.filter((request) => request.method === "POST").length, 1);
   assert.ok(h.logs.some((log) => log.reason === "SAME_ISOLATE_REPLAY"));
+});
+
+test("already published session skips dispatch only when all three public APIs agree", async () => {
+  for (const publicationStatus of ["published", "unchanged"]) {
+    const h = harness([workflow(), runs()], { siteDate: "2026-10-08", publicationStatus });
+    const result = await h.worker.scheduled(event, env);
+    assert.equal(result.reason, "SESSION_ALREADY_PUBLISHED");
+    assert.equal(result.publicationStatus, "VERIFIED_EXISTING");
+    assert.equal(result.workflowStatus, "NOT_VERIFIED");
+    assert.equal(h.requests.filter((request) => request.method === "POST").length, 0);
+    assert.equal(h.siteRequests.length, 3);
+    for (const request of h.siteRequests) {
+      assert.equal(request.cache, "no-store");
+      assert.equal(request.redirect, "error");
+      assert.ok(!JSON.stringify(request.headers).includes(testCredential));
+      assert.ok(!Object.hasOwn(request.headers, "Authorization"));
+    }
+  }
+});
+
+test("old/future/staggered deployment or failed publication still requests the canonical probe", async () => {
+  for (const options of [{}, { siteDate: "2026-10-09" }, { siteDate: "2026-10-08", performanceDate: "2026-10-07" }, { siteDate: "2026-10-08", publicationStatus: "failed" }]) {
+    const h = harness([workflow(), runs(), accepted()], options);
+    assert.equal((await h.worker.scheduled(event, env)).status, "DISPATCH_ACCEPTED");
+    assert.deepEqual(JSON.parse(h.requests.at(-1).body), { ref: "main", return_run_details: true });
+  }
+});
+
+test("site HTTP/JSON/network/timeout errors do not block recovery or leak exceptions", async () => {
+  const hang = (init) => new Promise((resolve, reject) => init.signal.addEventListener("abort", () => reject(new Error(testCredential)), { once: true }));
+  for (const response of [new Response(testCredential, { status: 503 }), new Response(testCredential, { status: 200 }), new Error(testCredential), hang]) {
+    const h = harness([workflow(), runs(), accepted()], { timeoutMs: 5, siteResponses: [response, Response.json({}), Response.json({})] });
+    assert.equal((await h.worker.scheduled(event, env)).status, "DISPATCH_ACCEPTED");
+    assert.equal(h.siteRequests.length, 3);
+    assert.equal(h.logs.find((log) => log.stage === "PUBLICATION_PREFLIGHT").reason, "SITE_PUBLICATION_NOT_VERIFIED");
+    assert.ok(!JSON.stringify(h.logs).includes(testCredential));
+  }
+});
+
+test("one failed site API cancels remaining reads before proceeding to dispatch", async () => {
+  let cancellations = 0;
+  const pending = (init) => new Promise((resolve, reject) => init.signal.addEventListener("abort", () => {
+    cancellations += 1;
+    reject(new Error(testCredential));
+  }, { once: true }));
+  const h = harness([workflow(), runs(), accepted()], { siteResponses: [new Response(null, { status: 503 }), pending, pending] });
+  assert.equal((await h.worker.scheduled(event, env)).status, "DISPATCH_ACCEPTED");
+  assert.equal(cancellations, 2);
+  assert.equal(h.siteRequests.length, 3);
+  assert.ok(!JSON.stringify(h.logs).includes(testCredential));
+});
+
+test("overnight slots guard the prior KST session; delayed events always re-probe", async () => {
+  const overnight = { cron: CRONS[0], scheduledTime: Date.parse("2026-10-09T17:40:00Z") };
+  const h = harness([workflow(), runs()], { siteDate: "2026-10-09", now: () => overnight.scheduledTime });
+  assert.equal((await h.worker.scheduled(overnight, env)).reason, "SESSION_ALREADY_PUBLISHED");
+  const delayed = harness([workflow(), runs(), accepted()], { siteDate: "2026-10-08", now: () => event.scheduledTime + 30 * 60 * 1000 });
+  assert.equal((await delayed.worker.scheduled(event, env)).status, "DISPATCH_ACCEPTED");
+  assert.equal(delayed.siteRequests.length, 0);
 });
 
 test("GET temporary HTTP/network failure retries with bounded backoff", async () => {
@@ -179,7 +252,7 @@ test("malformed preflight response fails closed", async () => {
 test("missed earlier Cron is recovered by later slot without date injection", async () => {
   const h = harness([workflow(), runs(), accepted()]);
   // No event delivered for the first slot; the next slot is an independent invocation.
-  const nextSlot = { cron: CRONS[1], scheduledTime: Date.parse("2026-10-08T11:25:00Z") };
+  const nextSlot = { cron: CRONS[0], scheduledTime: Date.parse("2026-10-08T07:10:00Z") };
   const result = await h.worker.scheduled(nextSlot, env);
   assert.equal(result.status, "DISPATCH_ACCEPTED");
   assert.ok(!Object.hasOwn(JSON.parse(h.requests.at(-1).body), "inputs"));
@@ -189,28 +262,33 @@ test("missed earlier Cron is recovered by later slot without date injection", as
 test("UTC to KST, Cloudflare weekday semantics, overnight and Friday boundaries", async () => {
   const config = JSON.parse(await fs.readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8"));
   assert.deepEqual(config.triggers.crons, CRONS);
-  assert.equal(CRONS.length, 2, "Five slots use only two account-level Cron Triggers");
-  const expected = ["18:55", "20:25", "22:25", "00:25", "02:25"];
-  let index = 0;
+  assert.equal(CRONS.length, 1, "28 half-hour slots use one account-level Cron Trigger");
+  const timestamps = [];
   for (const cron of CRONS) {
     const [minute, hour, day, month, weekdays] = cron.split(" ");
     assert.equal(day, "*"); assert.equal(month, "*");
     assert.equal(weekdays, "MON-FRI", "Cloudflare 1-5 means Sun-Thu, unlike GitHub");
-    for (const selectedHour of hour.split(",")) {
-      const utc = new Date(Date.UTC(2026, 9, 8, Number(selectedHour), Number(minute)));
-      const kst = new Date(utc.getTime() + 9 * 60 * 60 * 1000).toISOString();
-      assert.equal(kst.slice(11, 16), expected[index]);
-      assert.equal(kst.slice(0, 10), index >= 3 ? "2026-10-09" : "2026-10-08");
-      index += 1;
+    const [first, last] = hour.split("-").map(Number);
+    for (let selectedHour = first; selectedHour <= last; selectedHour += 1) {
+      for (const selectedMinute of minute.split(",").map(Number)) {
+        timestamps.push(Date.UTC(2026, 9, 8, selectedHour, selectedMinute));
+      }
     }
   }
-  assert.equal(index, 5);
-  assert.equal(new Date(Date.UTC(2026, 9, 9, 17, 25) + 9 * 60 * 60 * 1000).getUTCDay(), 6, "Friday UTC overnight runs Saturday KST");
+  assert.equal(timestamps.length, 28);
+  assert.equal(new Set(timestamps).size, 28, "No overlapping Cron slots");
+  const kst = timestamps.map((time) => new Date(time + 9 * 60 * 60 * 1000).toISOString());
+  assert.equal(kst[0].slice(0, 16), "2026-10-08T13:10");
+  assert.equal(kst[5].slice(0, 16), "2026-10-08T15:40", "First current-day post-close check");
+  assert.equal(kst.at(-1).slice(0, 16), "2026-10-09T02:40");
+  for (let index = 1; index < timestamps.length; index += 1) assert.equal(timestamps[index] - timestamps[index - 1], 30 * 60 * 1000);
+  assert.equal(new Date(Date.UTC(2026, 9, 9, 17, 40) + 9 * 60 * 60 * 1000).getUTCDay(), 6, "Friday UTC overnight runs Saturday KST");
   assert.equal(config.vars.DISPATCH_ENABLED, "false");
   assert.equal(config.workers_dev, false);
   assert.equal(config.preview_urls, false);
-  assert.deepEqual(config.secrets.required, ["GITHUB_ACTIONS_TOKEN"]);
-  assert.ok(!Object.hasOwn(config.vars, "GITHUB_ACTIONS_TOKEN"));
+  assert.equal(config.name, "tight-budget-eod-scheduler", "Deploy only to the existing user-created Worker");
+  assert.deepEqual(config.secrets.required, ["GITHUB_TOKEN"]);
+  assert.ok(!Object.hasOwn(config.vars, "GITHUB_TOKEN"));
 });
 
 test("existing workflow has zero inputs, same main concurrency, no cancellation/force push", async () => {

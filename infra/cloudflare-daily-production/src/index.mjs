@@ -1,13 +1,17 @@
 // Cron-only dispatcher. Never collects prices, chooses an EOD date, or writes snapshots.
+import { inspectDailyProductionDeployment } from "../../../lib/daily-production-deployment-verifier.mjs";
+
 export const TARGET = Object.freeze({
   repository: "klkl789982-droid/stock-research",
   workflow: "daily-production.yml",
   ref: "main",
 });
 export const CRONS = Object.freeze([
-  "55 9 * * MON-FRI", "25 11,13,15,17 * * MON-FRI",
+  // KST 13:10-15:10: prior-session supply recovery; 15:40-next 02:40: post-close checks.
+  "10,40 4-17 * * MON-FRI",
 ]);
 const API = `https://api.github.com/repos/${TARGET.repository}/actions/workflows/${TARGET.workflow}`;
+export const PUBLICATION_SITE = "https://stock-research-chi.vercel.app";
 const ACTIVE = new Set(["queued", "in_progress", "requested", "waiting", "pending"]);
 const MAX_ATTEMPTS = 3;
 const MAX_BACKOFF_MS = 30_000;
@@ -53,10 +57,10 @@ export function createWorker({
       return result;
     };
     if (env.DISPATCH_ENABLED !== "true") return finish("SKIPPED", "DISPATCH_DISABLED");
-    if (typeof env.GITHUB_ACTIONS_TOKEN !== "string" || !env.GITHUB_ACTIONS_TOKEN.trim()) return finish("FAILED", "SECRET_MISSING");
+    if (typeof env.GITHUB_TOKEN !== "string" || !env.GITHUB_TOKEN.trim()) return finish("FAILED", "SECRET_MISSING");
     const headers = {
       Accept: "application/vnd.github+json",
-      Authorization: `Bearer ${env.GITHUB_ACTIONS_TOKEN.trim()}`,
+      Authorization: `Bearer ${env.GITHUB_TOKEN.trim()}`,
       "X-GitHub-Api-Version": "2026-03-10",
       "User-Agent": "Tight-Budget-Daily-EOD-Cron",
       "Content-Type": "application/json",
@@ -94,6 +98,36 @@ export function createWorker({
       }
     }
 
+    async function alreadyPublished() {
+      // UTC date identifies these Cron slots' KST session, including overnight slots.
+      // This is only a conservative duplicate guard, NEVER an EOD candidate date.
+      // Delayed delivery must let the existing probe discover any newly supplied dates.
+      if (Math.abs(now() - controller.scheduledTime) >= 30 * 60 * 1_000) return false;
+      const sessionDate = base.scheduledAt.slice(0, 10);
+      const abort = new AbortController();
+      const timer = setTimeout(() => abort.abort(), timeoutMs);
+      try {
+        const { matches, actual } = await inspectDailyProductionDeployment({
+          siteUrl: PUBLICATION_SITE,
+          expectedReferenceDate: sessionDate,
+          // GitHub authorization headers must NEVER be sent to Vercel.
+          fetchImpl: (url, init) => fetchImpl(url, { ...init, redirect: "error", signal: abort.signal }),
+        });
+        return matches || (actual.publicationStatus === "unchanged"
+          && actual.topReferenceDate === sessionDate
+          && actual.performanceReferenceDate === sessionDate
+          && actual.operationsReferenceDate === sessionDate);
+      } catch {
+        // Site unavailability/inconsistent deployment cannot block supply recovery.
+        logger({ ...base, status: "CHECK_UNAVAILABLE", stage: "PUBLICATION_PREFLIGHT", reason: "SITE_PUBLICATION_NOT_VERIFIED" });
+        return false;
+      } finally {
+        // Promise.all may reject while other API reads are still in flight.
+        abort.abort();
+        clearTimeout(timer);
+      }
+    }
+
     const workflow = await read(API, "WORKFLOW_PREFLIGHT");
     if (workflow.reason) return finish("FAILED", workflow.reason, { stage: "WORKFLOW_PREFLIGHT", httpStatus: workflow.status });
     if (workflow.data?.state !== "active" || workflow.data?.path !== `.github/workflows/${TARGET.workflow}`) return finish("FAILED", "WORKFLOW_NOT_ACTIVE_OR_INVALID");
@@ -105,6 +139,7 @@ export function createWorker({
       if (!Array.isArray(runs.data?.workflow_runs) || !runs.data.workflow_runs.every((entry) => entry && Number.isSafeInteger(entry.id) && entry.id > 0 && typeof entry.head_branch === "string" && (entry.status === "completed" || ACTIVE.has(entry.status)))) return finish("FAILED", "GITHUB_INVALID_RESPONSE", { stage: "RUN_PREFLIGHT" });
       const active = runs.data.workflow_runs.find((entry) => entry.head_branch === TARGET.ref && ACTIVE.has(entry.status));
       if (active) return finish("SKIPPED", "WORKFLOW_ALREADY_ACTIVE", { runId: Number.isSafeInteger(active.id) ? active.id : null });
+      if (attempt === 1 && await alreadyPublished()) return finish("SKIPPED", "SESSION_ALREADY_PUBLISHED", { publicationStatus: "VERIFIED_EXISTING" });
 
       // return_run_details is an API option, not a workflow input. Never send a date.
       const dispatched = await request("POST", `${API}/dispatches`, { ref: TARGET.ref, return_run_details: true }, attempt);
