@@ -126,6 +126,25 @@ assert.match(runnerSource, /writeFreshnessStatus/u, "Daily Production은 latest 
 assert.match(dailyHistorySource, /updateTradingCalendarDate\(requestedDate,[\s\S]*await runScript\("scripts\/resolve-history-returns\.mjs"\)/u, "거래일 상태와 가격 원장을 확정한 뒤 전체 history resolver를 호출해야 합니다.");
 assert.match(dailyHistorySource, /updateTradingCalendarDate\(requestedDate,[\s\S]*await runScript\("scripts\/resolve-intraday-model-top-outcomes\.mjs"\)/u, "거래일 상태와 가격 원장을 확정한 뒤 14:30 LIVE outcome resolver를 자동 호출해야 합니다.");
 assert.equal((workflowSource.match(/- cron:/gu) ?? []).length, 5, "GitHub cron 지연과 공급 지연을 보완할 실행 슬롯이 필요합니다.");
+for (const step of ["Stage only allowlisted artifacts", "Commit and push atomic promotion"]) {
+  const section = workflowSource.split(`- name: ${step}`)[1].split("- name:")[0];
+  assert.match(section, /if: steps\.daily\.outputs\.freshness_path != ''/u);
+  assert.doesNotMatch(section, /if:.*NO_NEW_OFFICIAL_EOD/u, "NO_NEW probe의 점검 시각·결과도 사이트에 게시해야 합니다.");
+}
+assert.match(workflowSource, /if \[ "\$\{\{ steps.daily.outputs.status \}\}" = "CANDIDATE_VALIDATED" \]; then\s+jq -r/su, "NO_NEW 실행은 가격·모델 artifact를 승격하지 않습니다.");
+assert.match(workflowSource, /DAILY_PRODUCTION_TRIGGER event=\$GITHUB_EVENT_NAME/u);
+assert.match(workflowSource, /DAILY_SCHEDULE_EXPRESSION: \$\{\{ github.event.schedule \}\}/u);
+const delayedSupply = createDailyTopFreshnessStatus({ snapshotReferenceDate: snapshot.asOfDate, observedOfficialDate: snapshot.asOfDate, sourceAvailable: true, runStatus: DAILY_RUN_STATUS.NO_NEW_OFFICIAL_EOD, updatedAt: "2026-09-29T11:00:00.000Z", trigger: "schedule", reason: "sameReferenceDate", previousStatus: promotedFreshness });
+assert.equal(delayedSupply.lastAutomaticRunAt, delayedSupply.updatedAt);
+assert.equal(delayedSupply.lastSuccessAt, promotedFreshness.lastSuccessAt, "probe 확인은 새로운 게시 성공이 아닙니다.");
+assert.equal(delayedSupply.publicationStatus, "unchanged");
+assert.equal(delayedSupply.freshnessReason, "sameReferenceDate");
+const suppliedDates = [snapshot.asOfDate, "2026-09-29", "2026-09-30"];
+const firstRecovery = resolveOfficialCatchUpPlan({ observedTradingDates: suppliedDates, previousProductionReferenceDate: snapshot.asOfDate, collectionDate: "2026-10-01" });
+const secondRecovery = resolveOfficialCatchUpPlan({ observedTradingDates: suppliedDates, previousProductionReferenceDate: firstRecovery.referenceDate, collectionDate: "2026-10-01" });
+assert.equal(firstRecovery.referenceDate, suppliedDates[1]);
+assert.equal(secondRecovery.referenceDate, suppliedDates[2]);
+assert.equal(resolveOfficialCatchUpPlan({ observedTradingDates: suppliedDates, previousProductionReferenceDate: secondRecovery.referenceDate, collectionDate: "2026-10-01" }).status, "noNewOfficialEod");
 assert.match(workflowSource, /verify-daily-production-deployment\.mjs/u, "Git push 뒤 실제 Vercel API 기준일을 확인해야 합니다.");
 assert.match(workflowSource, /git rebase origin\/main/u, "동시 자동 commit과의 push race는 non-force rebase로 보존해야 합니다.");
 assert.doesNotMatch(workflowSource, /force-with-lease|git push --force/u, "자동화에서 force push를 사용하면 안 됩니다.");
