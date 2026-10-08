@@ -7,6 +7,7 @@ const HORIZON_FIELDS = {
   "1DAY": { directory: "1d", returnKey: "future1dReturn", dateKey: "future1dDate" },
   "5DAY": { directory: "5d", returnKey: "future5dReturn", dateKey: "future5dDate" },
   "20DAY": { directory: "20d", returnKey: "future20dReturn", dateKey: "future20dDate" },
+  "60DAY": { directory: "60d", returnKey: "future60dReturn", dateKey: "future60dDate" },
 } as const;
 
 type HistoryRecord = {
@@ -15,7 +16,7 @@ type HistoryRecord = {
   [key: string]: unknown;
 };
 type HistorySnapshot = { asOfDate: string; records: HistoryRecord[]; [key: string]: unknown };
-type OutcomeRecord = { ticker: string; status: string; reason: string | null; returnPercent: number | null };
+type OutcomeRecord = { ticker: string; status: string; reason: string | null; returnPercent: number | null; targetTradingDate?: string | null };
 type OutcomeArtifact = {
   schemaVersion: number;
   dataset: string;
@@ -41,11 +42,14 @@ function embeddedOutcome(snapshot: HistorySnapshot, horizon: keyof typeof HORIZO
   const records = (snapshot.records ?? []).map((record) => {
     const returnPercent = record.futureReturns?.[fields.returnKey];
     const finiteReturn = typeof returnPercent === "number" && Number.isFinite(returnPercent) ? returnPercent : null;
+    const resolvedAt = record.futureReturns?.resolvedAt;
+    const targetTradingDate = typeof resolvedAt === "object" && resolvedAt ? resolvedAt[fields.dateKey] : null;
     return {
       ticker: record.code,
       status: finiteReturn == null ? "PENDING" : "MATURE",
       reason: finiteReturn == null ? "outcomeNotMature" : null,
       returnPercent: finiteReturn,
+      targetTradingDate: typeof targetTradingDate === "string" ? targetTradingDate : null,
     };
   });
   if (!records.some((record) => record.status === "MATURE")) return null;
@@ -56,6 +60,7 @@ function embeddedOutcome(snapshot: HistorySnapshot, horizon: keyof typeof HORIZO
   return {
     schemaVersion: 1,
     dataset: `resolved-history-${fields.directory}-outcomes`,
+    sourceSnapshotHash: snapshot.contentHash ?? null,
     signalDate: snapshot.asOfDate,
     targetTradingDate,
     returnDefinition: `frozen signal close to T+${horizon.replace("DAY", "")} official trading-day close return`,
@@ -90,7 +95,7 @@ export async function GET() {
       dataset: "model-top-performance",
       availableHorizons: [],
       matureSignalDates: [],
-      matureSignalDatesByHorizon: { "1DAY": [], "5DAY": [], "20DAY": [] },
+      matureSignalDatesByHorizon: { "1DAY": [], "5DAY": [], "20DAY": [], "60DAY": [] },
       signalDateRange: null,
       lastOutcomeDate: null,
       latestEodReferenceDate: null,

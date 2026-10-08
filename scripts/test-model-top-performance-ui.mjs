@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import ts from "typescript";
+import * as React from "react";
+import * as jsxRuntime from "react/jsx-runtime";
+import { renderToStaticMarkup } from "react-dom/server";
 
 const panel = await readFile(new URL("../components/ModelTopPerformancePanel.tsx", import.meta.url), "utf8");
 const route = await readFile(new URL("../app/api/model-performance/route.ts", import.meta.url), "utf8");
@@ -12,6 +16,20 @@ assert.match(panel, /TOP \{size\}/);
 assert.match(panel, /1DAY/);
 assert.match(panel, /5DAY/);
 assert.match(panel, /20DAY/);
+assert.match(panel, /60DAY/);
+assert.match(panel, /최소 수익률/);
+assert.match(panel, /최대 수익률/);
+assert.match(panel, /observation\.companyName/);
+assert.match(panel, /observation\.ticker/);
+assert.match(panel, /observation\.signalDate/);
+assert.match(panel, /observation\.entryDate/);
+assert.match(panel, /observation\.evaluationEndDate/);
+assert.match(panel, /uniqueSignalDateCount/);
+assert.match(panel, /uniqueStockCount/);
+assert.match(panel, /독립 표본이 아니며/);
+assert.match(panel, /개별 종목 관측의 극단값/);
+assert.match(panel, /실제 매수 진입일을 뜻하지 않습니다/);
+assert.match(panel, /sm:grid-cols-2/, "극단값 상세는 모바일에서 한 열로 재배치해야 합니다.");
 assert.match(panel, /데이터 축적 중/);
 assert.match(panel, /N=\{metrics\.observationCount\}/);
 assert.match(panel, /coverageRate/, "LIVE 성과는 실제 MATURE observation coverage를 표시해야 합니다.");
@@ -24,8 +42,34 @@ assert.match(panel, /성과 결과 기준일/);
 assert.match(route, /latestEodReferenceDate/);
 assert.match(route, /future5dReturn/);
 assert.match(route, /future20dReturn/);
+assert.match(route, /future60dReturn/);
+assert.match(route, /targetTradingDate: typeof targetTradingDate/);
 assert.match(route, /buildModelTopPerformance/);
 assert.doesNotMatch(topStocksPanel, /ModelTopPerformancePanel/, "TOP 목록은 성과 패널을 직접 mount하지 않아야 합니다.");
 assert.match(page, /modelPageTab === "top" \? <TopStocksPanel onSelectStock=\{handleSearch\} \/> : modelPageTab === "performance" \? <ModelTopPerformancePanel \/> : <ModelExplanationPanel \/>/);
 assert.doesNotMatch(page, /compact onSelectStock=\{handleSearch\}/, "HOME에는 compact TOP 목록을 mount하지 않아야 합니다.");
+
+// Render the actual panel with fixed hook state; fetch stays disabled and no API is called.
+const compiled = ts.transpileModule(panel, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;
+const extreme = { ticker: "000660", companyName: "검증종목", signalDate: "2026-10-01", signalTime: null, entryDate: "2026-10-01", entryPriceBasis: "signalDayOfficialClose", evaluationEndDate: "2026-10-02", returnPercent: -12.5 };
+const summary = [{ modelVersion: "B-v1", groups: [{ topN: 10, horizons: [{ horizon: "1DAY", status: "DATA_AVAILABLE", evaluatedSignalDates: 2, observationCount: 6, uniqueSignalDateCount: 2, uniqueStockCount: 3, meanReturn: 0, medianReturn: 0, positiveRate: 50, minReturn: -12.5, maxReturn: 5.25, minObservation: extreme, maxObservation: { ...extreme, ticker: "005930", companyName: "최대종목", returnPercent: 5.25 } }] }] }];
+const response = { summary, matureSignalDates: ["2026-10-01"], signalDateRange: null, lastOutcomeDate: "2026-10-02", latestEodReferenceDate: "2026-10-07", live: { summary: [], matureSignalDates: [], signalDateRange: null, lastOutcomeDate: null } };
+const renderLayer = (layer) => {
+  const exports = {};
+  const states = [response, false, "B-v1", 10, layer];
+  let stateIndex = 0;
+  const require = (name) => {
+    if (name === "react/jsx-runtime") return jsxRuntime;
+    if (name === "react") return { ...React, useState: () => [states[stateIndex++], () => {}], useEffect: () => {}, useMemo: (calculate) => calculate() };
+    throw new Error(`Unexpected UI dependency: ${name}`);
+  };
+  new Function("require", "exports", compiled)(require, exports);
+  return renderToStaticMarkup(React.createElement(exports.default));
+};
+const dailyHtml = renderLayer("DAILY_EOD");
+for (const text of ["-12.50%", "+5.25%", "검증종목", "000660", "최대종목", "005930", "2026-10-01", "2026-10-02", "관측 6건", "신호일 2일", "종목 3개", "0.00%", "60DAY"]) assert.ok(dailyHtml.includes(text), `실제 렌더링 누락: ${text}`);
+assert.equal((dailyHtml.match(/데이터 축적 중/gu) ?? []).length, 3, "Daily 미확정 5/20/60D는 축적 중이어야 합니다.");
+const liveHtml = renderLayer("INTRADAY_1430_LIVE");
+assert.equal((liveHtml.match(/데이터 축적 중/gu) ?? []).length, 4);
+assert.doesNotMatch(liveHtml, /검증종목|최대종목|0\.00%|-12\.50%/, "LIVE 빈 결과에 Daily 통계나 가짜 0%를 표시하면 안 됩니다.");
 console.log("model performance UI/API model-page connection test passed");
