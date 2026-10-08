@@ -1,0 +1,10 @@
+{
+  "name": "tight-budget-daily-eod-cron",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/worker.test.mjs",
+    "check": "node --check src/index.mjs"
+  }
+}

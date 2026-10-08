@@ -1,0 +1,16 @@
+{
+  "name": "tight-budget-daily-eod-cron",
+  "main": "src/index.mjs",
+  "compatibility_date": "2026-10-09",
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": { "enabled": true },
+  "vars": { "DISPATCH_ENABLED": "false" },
+  "secrets": { "required": ["GITHUB_ACTIONS_TOKEN"] },
+  "triggers": {
+    "crons": [
+      "55 9 * * MON-FRI",
+      "25 11,13,15,17 * * MON-FRI"
+    ]
+  }
+}
