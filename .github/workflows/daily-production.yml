@@ -2,8 +2,13 @@ name: Daily production data
 
 on:
   schedule:
-    # 20:37 Asia/Seoul (11:37 UTC), weekdays. The pipeline itself verifies a new official market date.
-    - cron: "37 11 * * 1-5"
+    # GitHub cron is best-effort, so use staggered KST evening/overnight recovery slots.
+    # Every run is idempotent and processes the oldest missing official trading date first.
+    - cron: "47 9 * * 1-5"   # 18:47 KST
+    - cron: "17 11 * * 1-5"  # 20:17 KST
+    - cron: "17 13 * * 1-5"  # 22:17 KST
+    - cron: "17 15 * * 1-5"  # 00:17 KST (next calendar day)
+    - cron: "17 17 * * 1-5"  # 02:17 KST (next calendar day)
   workflow_dispatch:
 
 concurrency:
@@ -18,6 +23,7 @@ jobs:
       contents: write
     env:
       DATA_GO_KR_SERVICE_KEY: ${{ secrets.DATA_GO_KR_SERVICE_KEY }}
+      PRODUCTION_SITE_URL: https://stock-research-chi.vercel.app
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,6 +48,8 @@ jobs:
           fi
           echo "status=$(jq -r '.status' <<<"$result")" >> "$GITHUB_OUTPUT"
           echo "reference_date=$(jq -r '.referenceDate // ""' <<<"$result")" >> "$GITHUB_OUTPUT"
+          echo "observed_official_date=$(jq -r '.observedOfficialDate // ""' <<<"$result")" >> "$GITHUB_OUTPUT"
+          echo "remaining_lag_trading_days=$(jq -r '.remainingLagTradingDays // ""' <<<"$result")" >> "$GITHUB_OUTPUT"
           echo "manifest_path=$(jq -r '.manifestPath // ""' <<<"$result")" >> "$GITHUB_OUTPUT"
           echo "freshness_path=$(jq -r '.freshnessPath // ""' <<<"$result")" >> "$GITHUB_OUTPUT"
           echo "promotion_files=$(jq -c '.promotionFiles // []' <<<"$result")" >> "$GITHUB_OUTPUT"
@@ -50,7 +58,7 @@ jobs:
         if: steps.daily.outputs.status == 'CANDIDATE_VALIDATED'
         run: node scripts/run-daily-production.mjs --mark-promoted=${{ steps.daily.outputs.manifest_path }}
       - name: Stage only allowlisted artifacts
-        if: steps.daily.outputs.freshness_path != ''
+        if: steps.daily.outputs.freshness_path != '' && steps.daily.outputs.status != 'NO_NEW_OFFICIAL_EOD'
         shell: bash
         run: |
           git add -- "${{ steps.daily.outputs.freshness_path }}"
@@ -60,15 +68,47 @@ jobs:
           git diff --cached --check
           if git diff --cached --name-only | grep -E '(^|/)(\.env|.*(secret|token|\.tmp|\.lock|\.bak))' ; then exit 1; fi
       - name: Commit and push atomic promotion
-        if: steps.daily.outputs.freshness_path != ''
+        id: publish
+        if: steps.daily.outputs.freshness_path != '' && steps.daily.outputs.status != 'NO_NEW_OFFICIAL_EOD'
         shell: bash
         run: |
-          if git diff --cached --quiet; then exit 0; fi
+          if git diff --cached --quiet; then echo "committed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [ "${{ steps.daily.outputs.status }}" = "CANDIDATE_VALIDATED" ]; then message="chore(data): publish daily production ${{ steps.daily.outputs.reference_date }}"; else message="chore(data): update daily TOP freshness"; fi
           git commit -m "$message"
-          git push origin HEAD:main
+          for attempt in 1 2 3; do
+            git fetch origin main
+            if ! git rebase origin/main; then
+              git rebase --abort || true
+              echo "Concurrent main update caused a rebase conflict; preserving both histories requires operator review." >&2
+              exit 1
+            fi
+            if git push origin HEAD:main; then
+              echo "committed=true" >> "$GITHUB_OUTPUT"
+              echo "published_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "Push race detected; retrying after a fresh non-forced rebase (attempt $attempt/3)." >&2
+            sleep $((attempt * 5))
+          done
+          echo "Unable to publish after 3 non-forced attempts." >&2
+          exit 1
+      - name: Verify Vercel deployment and production APIs
+        if: steps.daily.outputs.status == 'CANDIDATE_VALIDATED' && steps.publish.outputs.committed == 'true'
+        run: >-
+          node scripts/verify-daily-production-deployment.mjs
+          --site=${{ env.PRODUCTION_SITE_URL }}
+          --date=${{ steps.daily.outputs.reference_date }}
+          --output=${{ runner.temp }}/daily-deployment-verification.json
+      - name: Upload deployment verification
+        if: always() && steps.daily.outputs.status == 'CANDIDATE_VALIDATED' && steps.publish.outputs.committed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-deployment-verification-${{ steps.daily.outputs.reference_date }}
+          path: ${{ runner.temp }}/daily-deployment-verification.json
+          if-no-files-found: warn
+          retention-days: 30
       - name: Upload safe run manifest on no-op or failure
         if: always() && steps.daily.outputs.status != 'CANDIDATE_VALIDATED' && steps.daily.outputs.manifest_path != ''
         uses: actions/upload-artifact@v4
@@ -79,3 +119,15 @@ jobs:
       - name: Fail unsuccessful run
         if: steps.daily.outputs.status == 'FAILED' || steps.daily.outputs.status == 'REVISION_REQUIRES_APPROVAL'
         run: exit 1
+      - name: Publish operations summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Daily Production"
+            echo "- run status: ${{ steps.daily.outputs.status || 'UNKNOWN' }}"
+            echo "- candidate reference date: ${{ steps.daily.outputs.reference_date || 'none' }}"
+            echo "- latest observed official EOD: ${{ steps.daily.outputs.observed_official_date || 'unknown' }}"
+            echo "- remaining lag trading days: ${{ steps.daily.outputs.remaining_lag_trading_days || 'unknown' }}"
+            echo "- git publication commit: ${{ steps.publish.outputs.published_sha || 'none' }}"
+          } >> "$GITHUB_STEP_SUMMARY"

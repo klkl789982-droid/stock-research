@@ -33,7 +33,7 @@ assert.equal(isRetryablePublicEodError({ httpStatus: 401 }, { latestMode: true }
 assert.equal(isRetryablePublicEodError({ httpStatus: 403 }, { latestMode: true }), false);
 assert.equal(isRetryablePublicEodError({ httpStatus: 429 }, { latestMode: true }), false);
 assert.equal(isRetryablePublicEodError({ httpStatus: 429 }, { latestMode: false }), true);
-assert.equal(isRetryablePublicEodError({ httpStatus: 500 }, { latestMode: true }), false);
+assert.equal(isRetryablePublicEodError({ httpStatus: 500 }, { latestMode: true }), true);
 assert.equal(isRetryablePublicEodError({ observabilityOutcome: "invalidResponse" }, { latestMode: true }), false);
 assert.equal(isRetryablePublicEodError({ businessCode: "01" }, { latestMode: true }), false);
 
