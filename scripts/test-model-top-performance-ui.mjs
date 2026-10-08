@@ -14,6 +14,7 @@ assert.match(panel, /5DAY/);
 assert.match(panel, /20DAY/);
 assert.match(panel, /데이터 축적 중/);
 assert.match(panel, /N=\{metrics\.observationCount\}/);
+assert.match(panel, /coverageRate/, "LIVE 성과는 실제 MATURE observation coverage를 표시해야 합니다.");
 assert.match(route, /historical-outcomes/);
 assert.match(route, /intraday-outcomes/);
 assert.match(panel, /14:30 LIVE/);

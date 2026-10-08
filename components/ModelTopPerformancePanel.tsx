@@ -13,6 +13,9 @@ type HorizonMetrics = {
   positiveRate: number | null;
   minReturn: number | null;
   maxReturn: number | null;
+  signalDateCount?: number;
+  expectedObservationCount?: number;
+  coverageRate?: number | null;
 };
 type Group = { topN: number; horizons: HorizonMetrics[] };
 type ModelSummary = { modelVersion: string; groups: Group[] };
@@ -128,7 +131,7 @@ export default function ModelTopPerformancePanel() {
             <span className={`text-right font-semibold tabular-nums ${returnTone(metrics.meanReturn)}`}>{formatReturn(metrics.meanReturn)}</span>
             <span className={`text-right tabular-nums ${returnTone(metrics.medianReturn)}`}>{formatReturn(metrics.medianReturn)}</span>
             <span className="text-right tabular-nums text-slate-700">{metrics.positiveRate?.toFixed(1)}%</span>
-            <span className="text-right tabular-nums text-slate-700">N={metrics.observationCount}<small className="block text-[10px] text-slate-400">{metrics.evaluatedSignalDates}일</small></span>
+            <span className="text-right tabular-nums text-slate-700">N={metrics.observationCount}<small className="block text-[10px] text-slate-400">{metrics.evaluatedSignalDates}/{metrics.signalDateCount ?? metrics.evaluatedSignalDates}일{metrics.coverageRate == null ? "" : ` · ${metrics.coverageRate.toFixed(0)}%`}</small></span>
           </> : <span className="col-span-4 text-right text-sm text-slate-400">데이터 축적 중</span>}
         </div>)}
       </div>

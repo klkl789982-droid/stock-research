@@ -20,6 +20,11 @@ assert.equal(oneDay.records[0].horizons["1DAY"].status, "MATURE");
 assert.equal(oneDay.records[0].horizons["5DAY"].status, "PENDING");
 assert.equal(oneDay.records[0].horizons["1DAY"].returnPercent, Number(((102 / 101 - 1) * 100).toFixed(6)));
 
+const beforeClose = resolveIntradayModelTopOutcomes({ signal, existing: pending, priceLedgers: ledgers.slice(0, 2), tradingCalendar: calendar(2), resolvedAt: "2026-10-07T05:00:00Z" });
+assert.equal(beforeClose.records[0].entry.status, "MATURE");
+assert.equal(beforeClose.records[0].horizons["1DAY"].status, "PENDING");
+assert.equal(beforeClose.records[0].horizons["1DAY"].reason, "targetCloseNotYetObserved", "장 마감 전에는 미래 종가를 MATURE로 사용하면 안 됩니다.");
+
 const fiveDay = resolveIntradayModelTopOutcomes({ signal, existing: oneDay, priceLedgers: ledgers.slice(0, 6), tradingCalendar: calendar(6), resolvedAt: "2026-10-13T12:00:00Z" });
 assert.equal(fiveDay.records[0].horizons["5DAY"].status, "MATURE");
 assert.equal(fiveDay.records[0].horizons["5DAY"].targetTradingDate, "2026-10-13");
@@ -28,10 +33,24 @@ assert.deepEqual(fiveDay.records[0].horizons["1DAY"], oneDay.records[0].horizons
 const missing = resolveIntradayModelTopOutcomes({ signal, priceLedgers: [], tradingCalendar: calendar(2), resolvedAt: "2026-10-07T12:00:00Z" });
 assert.equal(missing.records[0].entry.status, "DATA_MISSING");
 assert.equal(missing.records[0].horizons["1DAY"].status, "DATA_MISSING");
+const missingCalendar = resolveIntradayModelTopOutcomes({ signal, priceLedgers: ledgers.slice(0, 3), tradingCalendar: { dates: { "2026-10-06": { status: "tradingDay" }, "2026-10-08": { status: "tradingDay" } } }, resolvedAt: "2026-10-08T12:00:00Z" });
+assert.equal(missingCalendar.records[0].entry.status, "DATA_MISSING");
+assert.equal(missingCalendar.records[0].entry.reason, "missingTradingCalendarStatus");
 assert.equal(pending.summary["1DAY"].sampleCount, 0);
 assert.equal(oneDay.summary["1DAY"].sampleCount, 3);
 const performance = buildIntradayModelTopPerformance({ outcomes: [oneDay] });
 assert.equal(performance.layer, "INTRADAY_1430_LIVE");
 assert.equal(performance.summary.find((model) => model.modelVersion === "A-v1").groups.find((group) => group.topN === 5).horizons.find((horizon) => horizon.horizon === "1DAY").observationCount, 1);
 assert.equal(performance.summary.find((model) => model.modelVersion === "A-v1").groups.find((group) => group.topN === 5).horizons.find((horizon) => horizon.horizon === "60DAY").status, "ACCUMULATING");
+const a1 = performance.summary.find((model) => model.modelVersion === "A-v1").groups.find((group) => group.topN === 5).horizons.find((horizon) => horizon.horizon === "1DAY");
+assert.equal(a1.expectedObservationCount, 1);
+assert.equal(a1.coverageRate, 100);
+assert.equal(a1.signalDateCount, 1);
+const partialOutcome = structuredClone(oneDay);
+partialOutcome.records.push({ ...structuredClone(partialOutcome.records[0]), observationId: "a-pending", rank: 2, horizons: Object.fromEntries(Object.entries(partialOutcome.records[0].horizons).map(([horizon, value]) => [horizon, { ...value, status: "PENDING", returnPercent: null }])) });
+const partialPerformance = buildIntradayModelTopPerformance({ outcomes: [partialOutcome] });
+const partialA1 = partialPerformance.summary.find((model) => model.modelVersion === "A-v1").groups.find((group) => group.topN === 5).horizons.find((horizon) => horizon.horizon === "1DAY");
+assert.equal(partialA1.observationCount, 1, "실제 MATURE 종목만 성과 표본으로 집계해야 합니다.");
+assert.equal(partialA1.expectedObservationCount, 2);
+assert.equal(partialA1.coverageRate, 50);
 console.log("intraday 14:30 T+1 open execution · 1/5/20/60D maturity · isolation tests passed");
