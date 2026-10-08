@@ -2,6 +2,8 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 import { createScreeningRows, screenStocks, SCREENING_MODELS } from "@/lib/stock-screener.mjs";
+import { parseTransitionFilters, screenTransitions, TRANSITION_RULE_VERSION, TRANSITION_RESEARCH_PROPOSAL } from "@/lib/transition-screener.mjs";
+import { getTransitionData } from "@/lib/transition-screener-store.mjs";
 
 type JsonObject = Record<string, unknown>;
 
@@ -24,6 +26,28 @@ const numberParam = (request: NextRequest, name: string) => {
 };
 
 export async function GET(request: NextRequest) {
+  const tab = request.nextUrl.searchParams.get("tab") ?? "models";
+  if (!["models", "transition"].includes(tab)) return NextResponse.json({ error: { message: "지원하지 않는 검색 영역입니다." } }, { status: 400 });
+  if (tab === "transition") {
+    let filters;
+    try { filters = parseTransitionFilters(request.nextUrl.searchParams); }
+    catch { return NextResponse.json({ error: { message: "전환 신호 조건을 확인해 주세요. 접근·확인 후보 규칙은 아직 승인되지 않았습니다." } }, { status: 400 }); }
+    try {
+      const data = await getTransitionData();
+      const screened = screenTransitions(data.rows, filters);
+      const available = data.rows.filter((row: { missingReasons: string[] }) => !row.missingReasons.length);
+      const supports = (key: string) => available.some((row: { indicators: Record<string, unknown> }) => row.indicators?.[key] !== null && row.indicators?.[key] !== undefined);
+      return NextResponse.json({ ...data, rows: undefined, ruleVersion: TRANSITION_RULE_VERSION, researchProposal: TRANSITION_RESEARCH_PROPOSAL, pair: filters.pair,
+        totalUniverse: data.rows.length, indicatorCoverage: available.length, selectedModel: filters.model, resultCount: screened.results.length, ...screened,
+        supportedFilters: { rsi: supports("rsi"), macd: supports("macdState"), volume: supports("volumeMultiple"), change: supports("dailyChangePercent"),
+          models: Object.fromEntries(Object.keys(SCREENING_MODELS).map((model) => [model, available.some((row: { models: Record<string, { score: number | null }> }) => row.models[model]?.score !== null)])) },
+      }, { headers: { "Cache-Control": "no-store" } });
+    } catch (error) {
+      const allowed = ["TRANSITION_SEED_DATE_MISMATCH", "TRANSITION_SEED_INVALID", "TRANSITION_SOURCE_MISMATCH", "TRANSITION_STRUCTURAL_QUALITY_FAILED", "TRANSITION_TRADING_DATE_UNVERIFIED", "TRANSITION_HISTORY_INVALID"];
+      const diagnostic = error instanceof Error && allowed.includes(error.message) ? error.message : "TRANSITION_DATA_UNAVAILABLE";
+      return NextResponse.json({ error: { message: "동일 기준일의 검증된 공식 일봉을 사용할 수 없습니다.", diagnostic } }, { status: 503 });
+    }
+  }
   const model = request.nextUrl.searchParams.get("model") ?? "A-v1";
   if (!(model in SCREENING_MODELS)) return NextResponse.json({ error: { message: "지원하지 않는 모델입니다." } }, { status: 400 });
   const minScore = numberParam(request, "minScore");

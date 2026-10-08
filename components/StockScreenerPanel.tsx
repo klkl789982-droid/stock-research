@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import TransitionScreenerPanel from "./TransitionScreenerPanel";
 
 type Selection = { code: string; name: string };
 type Result = { code: string; name: string; market: string; referenceDate: string; score: number; rank: number; selectedModel: string; company: { available: boolean; score: number | null; grade: string | null; referenceDate: string | null } };
@@ -19,6 +20,7 @@ export default function StockScreenerPanel({ onSelectStock }: { onSelectStock: (
   const [data, setData] = useState<Response | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<"models" | "transition">("models");
 
   const run = async (next = filters) => {
     setLoading(true); setError(null);
@@ -45,7 +47,9 @@ export default function StockScreenerPanel({ onSelectStock }: { onSelectStock: (
 
   const reset = () => { setFilters(initial); void run(initial); };
   const field = "tb-focus min-h-10 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900";
-  return <section aria-labelledby="screener-heading" className="space-y-3">
+  return <section aria-label="스크리닝" className="space-y-3">
+    <div role="tablist" aria-label="스크리닝 영역" className="tb-card flex gap-2 p-2">{([["models", "모델·기업 조건"], ["transition", "전환 신호"]] as const).map(([value, label]) => <button key={value} type="button" role="tab" aria-selected={tab === value} onClick={() => setTab(value)} className={`tb-focus rounded-lg px-4 py-2 text-sm font-semibold ${tab === value ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}`}>{label}</button>)}</div>
+    {tab === "transition" ? <TransitionScreenerPanel onSelectStock={onSelectStock} /> : <>
     <div className="tb-card p-4 sm:p-6">
       <p className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--tb-orange)]">Daily EOD screening</p>
       <h1 id="screener-heading" className="mt-1 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">스크리닝</h1>
@@ -67,5 +71,6 @@ export default function StockScreenerPanel({ onSelectStock }: { onSelectStock: (
       <div className="overflow-x-auto"><table className="min-w-[720px] w-full text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-500"><tr><th className="px-4 py-3">순위</th><th className="px-4 py-3">종목</th><th className="px-4 py-3 text-right">모델 점수</th><th className="px-4 py-3">기업분석</th><th className="px-4 py-3">기준일</th><th className="px-4 py-3"><span className="sr-only">종목 분석</span></th></tr></thead><tbody className="divide-y divide-slate-100">{data.results.map((row) => <tr key={row.code} className="hover:bg-slate-50"><td className="px-4 py-3 font-semibold text-slate-700">{row.rank}</td><td className="px-4 py-3"><p className="font-bold text-slate-950">{row.name}</p><p className="text-xs text-slate-500">{row.code} · {row.market}</p></td><td className="px-4 py-3 text-right font-bold tabular-nums">{row.score.toFixed(2)}</td><td className="px-4 py-3">{row.company.available ? <><span className="font-semibold">{row.company.grade}</span><span className="ml-2 text-xs text-slate-500">{row.company.score}</span></> : <span className="text-xs text-slate-400">분석 불가</span>}</td><td className="px-4 py-3 text-xs text-slate-500">{row.referenceDate}</td><td className="px-4 py-3 text-right"><button type="button" onClick={() => void onSelectStock({ code: row.code, name: row.name })} className="tb-focus rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-[var(--tb-orange)]">종목 분석</button></td></tr>)}</tbody></table></div>
       {data.results.length === 0 && <p className="px-4 py-10 text-center text-sm text-slate-500">조건에 해당하는 계산 가능 종목이 없습니다.</p>}
     </div>}
+    </>}
   </section>;
 }
