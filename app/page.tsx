@@ -19,6 +19,7 @@ export default function Home() {
 const [activeTab, setActiveTab] = useState<"technical" | "company">("technical");
 const [pageView, setPageView] = useState<"home" | "models">("home");
 const [modelPageTab, setModelPageTab] = useState<"top" | "performance" | "guide">("top");
+const [mobileNavOpen, setMobileNavOpen] = useState(false);
 const [realtimePrice, setRealtimePrice] = useState<{
   price: number;
   change: number;
@@ -334,10 +335,37 @@ function handleHome() {
   setLoading(false);
   requestAnimationFrame(() => pageTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
 }
+useEffect(() => {
+  if (!mobileNavOpen) return;
+  const handleEscape = (event: KeyboardEvent) => {
+    if (event.key === "Escape") setMobileNavOpen(false);
+  };
+  document.addEventListener("keydown", handleEscape);
+  return () => document.removeEventListener("keydown", handleEscape);
+}, [mobileNavOpen]);
+const openSearchFromNavigation = () => {
+  handleHome();
+  setMobileNavOpen(false);
+  requestAnimationFrame(() => searchInputRef.current?.focus());
+};
+const openModelsFromNavigation = () => {
+  handleHome();
+  setModelPageTab("top");
+  setPageView("models");
+  setMobileNavOpen(false);
+};
+const navigationButtons = (closeOnSelect: boolean) => <>
+  <button type="button" onClick={() => { handleHome(); if (closeOnSelect) setMobileNavOpen(false); }} className={`tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold ${pageView === "home" ? "bg-[rgba(182,91,50,0.13)] text-[var(--tb-orange)]" : "text-slate-300 hover:bg-white/10 hover:text-white"}`}><span aria-hidden="true">⌂</span> 홈</button>
+  <button type="button" onClick={openSearchFromNavigation} className="tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"><span aria-hidden="true">⌕</span> 종목 분석</button>
+  <button type="button" onClick={openModelsFromNavigation} className={`tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold ${pageView === "models" ? "bg-[rgba(182,91,50,0.13)] text-[var(--tb-orange)]" : "text-slate-300 hover:bg-white/10 hover:text-white"}`}><span aria-hidden="true">▦</span> 모델</button>
+  <div className="my-3 border-t border-white/10" />
+  {[['▥', '시장 현황'], ['⌁', '백테스트'], ['☆', '관심 종목'], ['▽', '스크리닝']].map(([icon, label]) => <div key={label} className="tb-muted-nav flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium" aria-disabled="true"><span aria-hidden="true">{icon}</span><span>{label}</span><span className="ml-auto text-[8px] uppercase tracking-wider">준비 중</span></div>)}
+</>;
 return (
     <main ref={pageTopRef} className="tb-page-ambient min-h-screen text-slate-900">
       <header className="tb-brand-shell sticky top-0 z-30 border-b border-white/10 text-white shadow-[0_8px_25px_rgba(7,18,40,0.14)]">
-        <div className="flex w-full items-center gap-4 px-4 py-2 sm:px-6 lg:px-6">
+        <div className="flex w-full items-center gap-3 px-3 py-2 sm:gap-4 sm:px-6 lg:px-6">
+          <button type="button" onClick={() => setMobileNavOpen(true)} aria-label="메뉴 열기" aria-expanded={mobileNavOpen} className="tb-focus inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/15 text-xl leading-none text-white hover:bg-white/10 sm:hidden">☰</button>
           <button type="button" onClick={handleHome} className="tb-focus shrink-0 rounded-xl text-left" aria-label="Tight Budget 홈으로">
             <BrandMark inverse />
           </button>
@@ -353,14 +381,25 @@ return (
           <button type="submit" disabled={loading} className="tb-focus rounded-full bg-[var(--tb-orange)] px-4 py-2 text-sm font-bold text-white disabled:opacity-40">{loading ? "조회 중" : "검색"}</button>
         </form>}
       </header>
+      {mobileNavOpen && <div className="fixed inset-0 z-50 sm:hidden" role="presentation">
+        <button type="button" aria-label="메뉴 바깥 닫기" onClick={() => setMobileNavOpen(false)} className="absolute inset-0 h-full w-full bg-slate-950/55" />
+        <aside role="dialog" aria-modal="true" aria-label="모바일 주요 메뉴" className="tb-sidebar-surface relative flex h-full w-[min(18rem,calc(100vw-2.5rem))] max-w-full flex-col overflow-y-auto px-3 py-4 shadow-2xl">
+          <div className="mb-4 flex items-center justify-between gap-3 border-b border-white/10 px-2 pb-3"><span className="text-sm font-semibold text-white">주요 메뉴</span><button type="button" onClick={() => setMobileNavOpen(false)} aria-label="메뉴 닫기" className="tb-focus rounded-lg px-2 py-1 text-xl leading-none text-slate-200 hover:bg-white/10">×</button></div>
+          <nav className="space-y-1" aria-label="모바일 주요 메뉴">{navigationButtons(true)}</nav>
+        </aside>
+      </div>}
       <div className="relative z-[1] flex w-full items-stretch">
         <aside className="tb-sidebar-surface hidden w-52 shrink-0 border-r border-[var(--tb-border)] px-3 py-4 lg:flex lg:min-h-[calc(100vh-60px)] lg:flex-col">
           <nav className="space-y-1" aria-label="주요 메뉴">
+            {navigationButtons(false)}
+            {/* desktop navigation uses the same handlers and active state as mobile */}
+            {false && <>
             <button type="button" onClick={handleHome} className={`tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold ${pageView === "home" ? "bg-[rgba(182,91,50,0.13)] text-[var(--tb-orange)]" : "text-slate-300 hover:bg-white/10 hover:text-white"}`}><span aria-hidden="true">⌂</span> 홈</button>
             <button type="button" onClick={() => { handleHome(); requestAnimationFrame(() => searchInputRef.current?.focus()); }} className="tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"><span aria-hidden="true">⌕</span> 종목 분석</button>
             <button type="button" onClick={() => { handleHome(); setModelPageTab("top"); setPageView("models"); }} className={`tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold ${pageView === "models" ? "bg-[rgba(182,91,50,0.13)] text-[var(--tb-orange)]" : "text-slate-300 hover:bg-white/10 hover:text-white"}`}><span aria-hidden="true">▦</span> 모델</button>
             <div className="my-3 border-t border-white/10" />
             {[["▥", "시장 현황"], ["⌁", "백테스트"], ["☆", "관심 종목"], ["▽", "스크리닝"]].map(([icon, label]) => <div key={label} className="tb-muted-nav flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium" aria-disabled="true"><span aria-hidden="true">{icon}</span><span>{label}</span><span className="ml-auto text-[8px] uppercase tracking-wider">준비 중</span></div>)}
+            </>}
           </nav>
         </aside>
         <div className="min-w-0 flex-1 px-3 py-3 sm:px-4 sm:py-4 lg:px-4 xl:px-5">
