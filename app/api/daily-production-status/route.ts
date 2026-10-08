@@ -21,6 +21,8 @@ type StoredStatus = {
   trigger?: string;
 };
 
+type WorkflowRun = { run_started_at?: string; created_at?: string; conclusion?: string | null; status?: string; html_url?: string };
+
 async function latestSnapshotReferenceDate(root: string) {
   const names = (await readdir(path.join(root, "data", "history")))
     .filter((name) => /^\d{4}-\d{2}-\d{2}\.json$/u.test(name))
@@ -28,12 +30,27 @@ async function latestSnapshotReferenceDate(root: string) {
   return names.at(-1)?.slice(0, 10) ?? null;
 }
 
+async function latestScheduledRun(): Promise<WorkflowRun | null> {
+  try {
+    const response = await fetch("https://api.github.com/repos/klkl789982-droid/stock-research/actions/workflows/daily-production.yml/runs?event=schedule&per_page=1", {
+      headers: { Accept: "application/vnd.github+json", "User-Agent": "Tight-Budget-Operations-Status" },
+      next: { revalidate: 300 },
+    });
+    if (!response.ok) return null;
+    const body = await response.json() as { workflow_runs?: WorkflowRun[] };
+    return body.workflow_runs?.[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function GET() {
   const root = process.cwd();
   try {
-    const [stored, siteApiReferenceDate] = await Promise.all([
+    const [stored, siteApiReferenceDate, scheduledRun] = await Promise.all([
       readFile(path.join(root, "data", "daily-production-status", "latest.json"), "utf8").then((value) => JSON.parse(value) as StoredStatus),
       latestSnapshotReferenceDate(root),
+      latestScheduledRun(),
     ]);
     const publishedReferenceDate = stored.publishedReferenceDate ?? stored.snapshotReferenceDate ?? null;
     const publicationStatus = stored.publicationStatus ?? (publishedReferenceDate === siteApiReferenceDate ? "published" : "unknown");
@@ -41,7 +58,10 @@ export async function GET() {
       schemaVersion: 1,
       dataset: "daily-production-operations-status",
       lastAttemptAt: stored.lastAttemptAt ?? stored.updatedAt ?? null,
-      lastAutomaticRunAt: stored.lastAutomaticRunAt ?? null,
+      lastAutomaticRunAt: scheduledRun?.run_started_at ?? scheduledRun?.created_at ?? stored.lastAutomaticRunAt ?? null,
+      lastAutomaticRunStatus: scheduledRun?.status ?? null,
+      lastAutomaticRunConclusion: scheduledRun?.conclusion ?? null,
+      lastAutomaticRunUrl: scheduledRun?.html_url ?? null,
       lastSuccessAt: stored.lastSuccessAt ?? stored.updatedAt ?? null,
       lastOfficialEodDate: stored.lastOfficialEodDate ?? stored.observedOfficialDate ?? null,
       latestConfirmedTradingDate: stored.observedOfficialDate ?? null,
