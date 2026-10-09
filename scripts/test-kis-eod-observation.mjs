@@ -45,7 +45,11 @@ function fixture({ now = () => stamp, telemetry = [], failTicker = null, calenda
         adjustmentMetadata: [{ date, exDividendCode: "00", splitRatio: 0, changed: "N", reevaluationReason: "00" }], dailyChangeMetadata: [{ date, reportedDifference: 1, reportedSign: "2" }], unexpectedRaw: "PRIVATE_BODY_MUST_NOT_LEAK" };
     } };
 }
-const run = (root, provider, options = {}) => runKisEodObservations({ root, provider, now: () => stamp, collectPrivate: true, observationEnabled: "true", slot: "15:40", ...options });
+// Collector behavior fixtures use an isolated in-memory sink. Remote protocol,
+// actual configuration gates and persistence failure are tested separately.
+const fixtureStore = () => ({ preflight: async () => {}, readCompleted: async () => null, claim: async () => true,
+  persistArtifact: async () => {}, readCalendar: async () => null, persistCalendar: async () => {}, recordOutcome: async () => {} });
+const run = (root, provider, options = {}) => runKisEodObservations({ root, provider, now: () => stamp, collectPrivate: true, observationEnabled: "true", slot: "15:40", durableStore: fixtureStore(), ...options });
 async function artifacts(root, slot = "1540") {
   const directory = path.join(root, ".runtime", "kis-eod", "observations", date, slot);
   const names = (await fs.readdir(directory)).filter((name) => name.endsWith(".json") && name !== "completed.json");
@@ -122,6 +126,21 @@ test("different real receipt timestamps do not change data or deterministic meta
   const a = (await artifacts(root))[0].value, b = (await artifacts(root, "1610"))[0].value;
   assert.notEqual(a.artifactHash, b.artifactHash); assert.notEqual(a.observations[0].receivedAt, b.observations[0].receivedAt);
   assert.equal(a.observations[0].dataHash, b.observations[0].dataHash); assert.equal(a.observations[0].metadataHash, b.observations[0].metadataHash);
+});
+
+test("past retention failures occur after all actual slots and cannot suppress today's collection", async (t) => {
+  const root = await sandbox(t); let current = Date.parse("2026-10-08T06:25:00.000Z");
+  const now = () => current, provider = fixture({ now }), store = fixtureStore(), emitted = [];
+  store.auditDay = async () => { assert.equal(provider.calls.histories.length, 9); throw new Error("PAST_PRIVATE_STORE_ERROR"); };
+  const results = await run(root, provider, { durableStore: store, now, slot: null, waitForSlots: true,
+    wait: async (ms) => { current += ms; }, onResult: (value) => { emitted.push(value); } });
+  assert.deepEqual(results.slice(0, 3).map((value) => value.status), ["OBSERVED", "OBSERVED", "OBSERVED"]);
+  assert.equal(results[3].reason, "PRIVATE_RETENTION_AUDIT_FAILED"); assert.equal(emitted.length, 4);
+  const first = (await artifacts(root))[0].value;
+  assert.equal(first.executionStartedAt, "2026-10-08T06:25:00.000Z");
+  assert.equal(first.observedStartedAt, stamp); assert.equal(first.executionStartBasis, "NODE_PROCESS_CLOCK");
+  assert.equal(first.runnerBootstrapStartBasis, "FIRST_WORKFLOW_STEP_CLOCK_NOT_GITHUB_JOB_CREATED_AT");
+  assert.ok(!JSON.stringify(results).includes("PAST_PRIVATE_STORE_ERROR"));
 });
 
 test("a changed later bar is compared and never overwrites its earlier private version", async (t) => {
@@ -234,7 +253,8 @@ test("prepared observation workflow is statically unarmed, read-only and preserv
   assert.equal(workflow.on.schedule[0].cron, "25 6 * * 1-5"); assert.match(job.if, /false && vars[.]KIS_EOD_OBSERVATION_ENABLED == 'true'/u);
   assert.match(job.if, /inputs[.]mode == 'dry-run'/u); assert.equal(job["timeout-minutes"], 90);
   assert.equal(job.steps.find((step) => step.uses === "actions/checkout@v4").with["persist-credentials"], false);
-  assert.match(text, /--collect-private --wait-for-slots/u); assert.match(text, /runner disposal loses private source evidence/u);
+  assert.match(text, /--collect-private --wait-for-slots/u); assert.match(text, /exact hash readback before completion/u);
+  assert.match(text, /secrets[.]KIS_OBSERVATION_STORE_TOKEN/u); assert.match(text, /--storage-preflight/u);
   assert.doesNotMatch(text, /actions\/(?:cache|upload-artifact)|git\s+(?:add|commit|push)|--(?:publish|force|now|date)\b/u);
   assert.doesNotMatch(text, /data\/(?:history|model-history|intraday)|KIS_EOD_OBSERVATION_ENABLED:\s*(?:true|"true"|'true')/u);
   assert.equal(workflow.concurrency.group, "kis-eod-private-three-slot-observation-main");

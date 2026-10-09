@@ -130,3 +130,57 @@ fixture에서 증분·전체260행과5개 모델 출력이 일치했지만 실�
 - TypeScript, 변경 JS 관련 ESLint 경고0, Production Build, `git diff --check` 통과. 기존 TOP route의 whole-project tracing 경고는 범위 밖이며 수정하지 않았다. 실제20개 build trace를 확인해 private namespace/.env 참조는0개였다.
 - 자체 검토 후 수정: cached verdict 대신 current evaluator 재검증, source operation/date/basis/ticker/receipt 필수 확인, retained/returned row 통계 분리, quarantine과 별개 input/provenance 오류 집계, auth telemetry 정확성, 거부 응답의 private 보존, caller/provider invocation과 실제 HTTP 시각 구분, 미사용 import 제거.
 - 새 게시 데이터, 공식 데이터, 기존 immutable artifact, 모델 공식/가중치/순위/성과 정의, 기존 Daily/LIVE/Cloudflare 운영 설정은 변경하지 않았다. 원천 시세/후보/log/환경파일은 커밋하지 않는다.
+
+## 3종목 관측의 영구 보존 준비 (2026-10-09)
+
+### 선택과 실제 운영 상태
+
+전용 **private GitHub evidence repository**를 기본 adapter로 준비했다. 기존 GitHub 계정/Actions를 재사용할 수 있고 [GitHub Free의 비공개 저장소](https://docs.github.com/en/get-started/learning-about-github/githubs-plans)를 이용할 수 있다. 기존 다른 프로젝트의 private 저장소에는 임의로 자료를 넣지 않는다.
+
+R2는 실제 Wrangler 인증으로 bucket 목록을 조회했으나 Cloudflare `10042`(R2 활성화 필요)로 거부됐다. [R2 가입/checkout](https://developers.cloudflare.com/r2/get-started/) 및 [무료 한도 초과 과금](https://developers.cloudflare.com/r2/pricing/) 가능성이 있으므로 신규 subscription/bucket/token을 만들지 않았다. 로컬 디스크는 이미 비공개 자료를 보존하지만 GitHub-hosted runner의 영구 저장소가 될 수 없다. 공개 Actions artifact/cache는 대안으로 사용하지 않는다.
+
+**현재 실제 영구 저장은 미검증, 자동 관측은 UNARMED다.** 로컬 전용 저장 환경변수와 연결된 전용 evidence 저장소를 확인하지 못했다. actual storage preflight는 `BLOCKED / PRIVATE_STORE_NOT_CONFIGURED`였다. 실제 KIS 인증/`chk-holiday` 요청은 성공했지만 10/09의 `opnd_yn=N, tr_day_yn=Y`는 기존 정책상 `UNKNOWN`으로 유지했다. 휴장일이라고 임의 정상화하거나 가격을 요청하지 않았다. GitHub runner의 전용 Secret 전달/실제 쓰기는 설정 후 별도 검증해야 한다.
+
+### 보존 계약
+
+`lib/kis-eod-private-store.mjs`는 GitHub Contents API만 사용한다. 고정 `api.github.com`, redirect 차단, 15초 timeout, 최대 3회 bounded retry, 안전한 고정 오류 코드, 900KB 이하 JSON을 사용한다. 대상은 public `stock-research`가 아닌 **private/non-fork/non-archived** 저장소여야 한다. 각 새 PUT 직전에도 private 상태를 재확인한다. credentials/header/URL 형태의 필드는 보존 payload에서 거부한다.
+
+- 매 실행 새 UUID의 **가격 없는 probe**를 create하고 다시 GET하여 바이트 SHA256을 검증한다. 과거 probe가 존재한다는 이유로 읽기 전용 토큰을 쓰기 가능으로 인정하지 않는다.
+- [Contents create API](https://docs.github.com/en/rest/repos/contents#create-or-update-file-contents)에 수정용 `sha`를 보내지 않는다. 같은 경로의 동일 bytes는 dedupe, 다른 bytes/불일치 hash는 immutable conflict로 차단한다. 업데이트/삭제 API는 제공하지 않는다.
+- 기존 journal JSON과 artifact/data/metadata hash를 유지하고, `evidence/kis-eod-private-slot-observation/journal/<date>/<slot>/<actualTime-hash>.json`에 보존한다. 원격 GET/hash 검증 후에만 create-only `completed/<date>/<slot>.json` 및 로컬 completed marker를 만든다.
+- `claims/<date>/<slot>.json`은 원격 create-only claim이다. 다른 runner는 같은 slot을 재수집하지 않는다. 프로세스가 종료돼 남은 claim은 자동 삭제/탈취하지 않는다. 원격 journal 저장 후 marker 전에 종료된 orphan은 이후 감사·수동 검증 대상이지 자동 재관측/성공 처리가 아니다.
+- 로컬 JSON도 임시 inode 작성→읽기/hash 확인→hard-link create-only로 기록한다. 중단된 부분 쓰기를 sealed journal로 인정하지 않는다. 기존 정상 관측을 덮어쓰거나 삭제하지 않는다.
+- `operations/`는 실제 시작한 runner의 실패/지연/누락 상태를 **가격 없이** 보존한다. 다음 실제 runner는 지난 7일의 평일을 exact KIS calendar로 확인하고 `reconciliation/`에 OBSERVED / CLAIMED_NOT_COMPLETED / SCHEDULE_OR_RUNNER_MISSING / MARKET_CLOSED / CALENDAR_UNKNOWN을 기록한다. 예약 이벤트 누락의 구체적 원인을 추측하지 않는다. 누락 slot의 시세는 소급 수집하지 않는다.
+
+이는 기존 journal과 같은 **애플리케이션 수준 append-only + hash 감사**다. 저장소 관리자/PAT 소유자의 외부 삭제·수정·공개 전환까지 물리적으로 차단하는 WORM은 아니다. 그 위협까지 막는 보존이 필요하면 [R2 Bucket Lock](https://developers.cloudflare.com/r2/buckets/bucket-locks/) 등 별도 retention 정책/비용 승인이 필요하다. private 저장소의 visibility/접근 권한은 계속 유지해야 한다.
+
+### 최소 설정 및 활성화 순서
+
+1. 별도 전용 GitHub **private** 저장소(예: `klkl789982-droid/tight-budget-kis-evidence`)를 만들고 README로 `main`을 초기화한다. public/fork/Vercel 연결/Pages 공개 경로를 만들지 않는다. 예시 저장소는 실제 생성된 저장소라는 뜻이 아니다.
+2. 사용자 계정에서 fine-grained PAT를 생성한다. Repository access는 위 evidence 저장소 **하나만**, Contents: Read and write, 기본 Metadata: Read만 허용한다. Actions/Admin/다른 저장소 권한은 필요 없다. 유효기간·만료 알림을 설정한다. 토큰은 채팅/명령 인수/Git/env 파일에 넣지 않는다.
+3. `stock-research`의 Settings → Secrets and variables → Actions에 Secret `KIS_OBSERVATION_STORE_TOKEN`을 등록한다. Variables: `KIS_OBSERVATION_STORE_REPOSITORY=owner/private-evidence-repo`, `KIS_OBSERVATION_STORE_BRANCH=main`. 기존 `KIS_APP_KEY/KIS_APP_SECRET` Secret을 그대로 사용한다. 아직 observation enable 변수는 켜지 않는다.
+4. observation workflow의 수동 **storage-preflight**를 실행한다. source 가격/KIS 요청 없이 private 저장소에 새 price-free probe를 쓰고 읽어 hash를 확인한다. 성공 조건: `READY / PRIVATE_STORE_VERIFIED`, `verificationStatus=PRIVATE_WRITE_READ_HASH_VERIFIED`. 공개 job summary에는 status/count만 남으며 raw/Secret artifact upload는 없다.
+5. 실제 private write/read/hash, KIS Secret 전달/인증, calendar, 고정 3종목, UTC/KST/중복/격리 검증을 완료한 뒤에만 workflow의 static `false` guard를 arm하고 `KIS_EOD_OBSERVATION_ENABLED=true`로 설정한다. **이번 커밋에서는 guard/운영 flag를 활성화하지 않았다.** 저장소 preflight는 활성화 후에도 매 runner에서 다시 수행하며 실패하면 KIS 가격 요청 전에 종료한다.
+
+예약은 UTC **06:25 평일 = 15:25 KST prewarm**, 실제 clock으로 **15:40 / 16:10 / 16:40**까지 기다린다. 각 slot 시작창 `[slot, slot+5분)`을 그대로 보존한다. runner 준비가 늦어지면 늦은 slot을 기록하고 나머지 실제 slot만 시도한다. 과거 자료 감사/공식 비교는 현재 세 slot **이후**에 실행해 당일 관측창을 방해하지 않는다. job timeout 90분, 전용 concurrency/cancel=false이며 기존 공식 Cloudflare Worker·Daily/LIVE workflow와 분리돼 있다. bootstrap 첫 workflow step 시각과 Node 실행 시작 시각도 별도로 기록하며 GitHub job 생성 시각으로 위장하지 않는다. 553종목 자동 수집 및 KIS 모델 TOP 공개 게시 gate는 여전히 비활성이다.
+
+GitHub cron 자체 누락을 방지하는 독립 관측 scheduler는 아직 없다. 기존 공식 Cloudflare Worker의 역할을 확대하지 않았다. 별도 관측 Worker/Secret 또는 다른 scheduler는 추가 승인 대상이며, 이미 놓친 시점의 데이터를 복구하는 수단이 아니다. 현재 설정이 없으므로 다음 정상 거래일의 실제 자동 관측 준비 완료라고 보고하지 않는다.
+
+### 후속 공식 EOD 비교
+
+`compare-kis-eod-observations`는 실제 slot journal만 읽는다. 과거 날짜를 나중에 수집한 full audit 자료를 slot 관측으로 사용하지 않는다. 기본 official 입력은 기존 `data/analysis/market-seeds/<date>.json`, 추가 입력은 `.runtime/kis-eod/official-comparison-inputs/*.json`의 explicit normalized public-source evidence다.
+
+동일 날짜/ticker의 open/high/low/close/volume/tradingValue를 field별 비교하고 data/metadata/artifact/official hash를 보존한다. official 부재/당일 행 부재/가격 결측은 PENDING이며 0으로 바꾸지 않는다. seed에 없는 tradingValue와 미정 adjustment 기준은 명시적 missing/UNVERIFIED다. 차이는 price/volume/trading-value/adjustment/update-timing/session-scope 후보 범주로만 기록하며 원인을 단정하거나 값을 고치지 않는다. 세 slot의 동일값도 source finality의 증거로 승격하지 않는다.
+
+원본 관측과 별도의 `observation-comparisons/<date>/<slot>/<comparisonHash>.json`에 immutable 보고서를 쓰고, remote `comparisons/`에도 보존한다. 동일 입력 재실행은 최초 `comparedAt`를 유지한다. 다음 실제 관측 runner는 지난 7일 journal을 private 복원 후 저장된 official EOD와 재비교한다. 공식 공급이 늦으면 PENDING 보고서를 유지하고 다음 기회에 별도 hash 보고서를 추가한다. Daily 공식 pipeline/성과 resolver는 수정하지 않는다.
+
+```sh
+# 기본 dry-run: 네트워크/쓰기 없음
+npm run kis:eod-observe
+# 저장소 설정 후 실제 private price-free 쓰기/읽기 검증 (Secret은 Actions에서 전달)
+npm run kis:eod-storage-preflight
+# 이미 private 로컬에 복원된 실제 관측의 비교; 가격은 stdout에 나오지 않음
+npm run kis:eod-compare -- --date=YYYY-MM-DD
+```
+
+실제 private 저장소 연결, GitHub-hosted runner 보존, 다음 거래일 세 slot, 후속 official 수치 일치는 아직 미래/설정 후 실증 대상이다. fixture 통과를 실제 운영 성공으로 표시하지 않는다.

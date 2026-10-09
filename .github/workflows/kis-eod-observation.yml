@@ -4,12 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: Preparation is unarmed; only read-only dry-run is executable
+        description: Collection is unarmed; storage-preflight writes only a private price-free probe
         type: choice
         required: true
         default: dry-run
         options:
           - dry-run
+          - storage-preflight
           - private-observe
   schedule:
     # Best-effort prewarm at 15:25 KST. The real-clock runner waits for each
@@ -29,7 +30,7 @@ jobs:
     # A repository variable alone cannot arm this workflow.
     if: >-
       github.ref == 'refs/heads/main' &&
-      ((github.event_name == 'workflow_dispatch' && inputs.mode == 'dry-run') ||
+      ((github.event_name == 'workflow_dispatch' && (inputs.mode == 'dry-run' || inputs.mode == 'storage-preflight')) ||
       (false && vars.KIS_EOD_OBSERVATION_ENABLED == 'true'))
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -38,12 +39,16 @@ jobs:
       KIS_EOD_OBSERVATION_MODE: ${{ github.event_name == 'schedule' && 'private-observe' || inputs.mode }}
       KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
       KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
+      KIS_OBSERVATION_STORE_REPOSITORY: ${{ vars.KIS_OBSERVATION_STORE_REPOSITORY }}
+      KIS_OBSERVATION_STORE_BRANCH: ${{ vars.KIS_OBSERVATION_STORE_BRANCH || 'main' }}
+      KIS_OBSERVATION_STORE_TOKEN: ${{ secrets.KIS_OBSERVATION_STORE_TOKEN }}
     steps:
       - name: Check private observation gate
         shell: bash
         run: |
+          echo "KIS_EOD_RUNNER_BOOTSTRAP_AT=$(date -u +'%Y-%m-%dT%H:%M:%S.%3NZ')" >> "$GITHUB_ENV"
           case "$KIS_EOD_OBSERVATION_MODE" in
-            dry-run) ;;
+            dry-run|storage-preflight) ;;
             private-observe)
               if [ "$KIS_EOD_OBSERVATION_ENABLED" != "true" ]; then
                 echo "Private observation approval required."
@@ -61,13 +66,15 @@ jobs:
           node-version: 22
       - run: npm ci --ignore-scripts
       - name: Verify observation isolation
-        run: node --test scripts/test-kis-eod-observation.mjs
+        run: node --test scripts/test-kis-eod-observation.mjs scripts/test-kis-eod-private-store.mjs scripts/test-kis-eod-observation-comparison.mjs
       - name: Observe actual designated slots on one private runner
         shell: bash
         run: |
           set +e
           if [ "$KIS_EOD_OBSERVATION_MODE" = "dry-run" ]; then
             node scripts/observe-kis-eod.mjs --dry-run > "$RUNNER_TEMP/kis-eod-observation-safe.log" 2> "$RUNNER_TEMP/kis-eod-observation-private-stderr.log"
+          elif [ "$KIS_EOD_OBSERVATION_MODE" = "storage-preflight" ]; then
+            node scripts/observe-kis-eod.mjs --storage-preflight > "$RUNNER_TEMP/kis-eod-observation-safe.log" 2> "$RUNNER_TEMP/kis-eod-observation-private-stderr.log"
           else
             node scripts/observe-kis-eod.mjs --collect-private --wait-for-slots > "$RUNNER_TEMP/kis-eod-observation-safe.log" 2> "$RUNNER_TEMP/kis-eod-observation-private-stderr.log"
           fi
@@ -102,7 +109,8 @@ jobs:
             echo "Slots: 15:40 / 16:10 / 16:40 Asia/Seoul, actual clock only; five-minute exclusive start window."
             echo "The scheduler is best-effort. Missed slots remain PENDING; no retrospective timestamp is manufactured."
             echo "Source finality: NOT_CONFIRMED; observed stability is not proof of finalized bars."
-            echo "Private source persistence: runner-local .runtime/kis-eod/observations only."
-            echo "The same job compares slots; GitHub-hosted runner disposal loses private source evidence after the job."
-            echo "No raw price cache, artifact upload, commit, push, Daily/LIVE change or publication."
+            echo "Private persistence: separate private evidence repository, dedicated Contents token, create-only files and exact hash readback before completion."
+            echo "Collection remains UNARMED until actual private retention preflight and activation checks succeed."
+            echo "Next runner audits the previous seven calendar days and compares available official EOD; missing slots are never backfilled."
+            echo "No public raw price cache/artifact/commit, Daily/LIVE change or publication."
           } >> "$GITHUB_STEP_SUMMARY"
