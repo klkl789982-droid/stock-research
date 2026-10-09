@@ -1,10 +1,15 @@
-name: KIS EOD private three-slot observation (UNARMED)
+name: KIS EOD private three-slot observation
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/kis-eod-observation.yml
+  # A code-change push runs PLAN ONLY, never a designated-slot collection.
   workflow_dispatch:
     inputs:
       mode:
-        description: Collection is unarmed; storage-preflight writes only a private price-free probe
+        description: Approved three-symbol observation; storage-preflight writes only a private price-free probe
         type: choice
         required: true
         default: dry-run
@@ -26,17 +31,20 @@ concurrency:
 
 jobs:
   observe:
-    # Both scheduled and manual source collection remain statically disabled.
-    # A repository variable alone cannot arm this workflow.
+    # Three-symbol activation approved after actual Actions preflight 37903668011.
+    # An explicit false repository variable remains an emergency kill switch.
+    # This does NOT enable either 553 collection workflow or public publishing.
     if: >-
       github.ref == 'refs/heads/main' &&
-      ((github.event_name == 'workflow_dispatch' && (inputs.mode == 'dry-run' || inputs.mode == 'storage-preflight')) ||
-      (false && vars.KIS_EOD_OBSERVATION_ENABLED == 'true'))
+      (github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' && (inputs.mode == 'dry-run' || inputs.mode == 'storage-preflight')) ||
+      ((github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'private-observe')) &&
+      vars.KIS_EOD_OBSERVATION_ENABLED != 'false'))
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
-      KIS_EOD_OBSERVATION_ENABLED: ${{ vars.KIS_EOD_OBSERVATION_ENABLED }}
-      KIS_EOD_OBSERVATION_MODE: ${{ github.event_name == 'schedule' && 'private-observe' || inputs.mode }}
+      KIS_EOD_OBSERVATION_ENABLED: ${{ vars.KIS_EOD_OBSERVATION_ENABLED || 'true' }}
+      KIS_EOD_OBSERVATION_MODE: ${{ github.event_name == 'schedule' && 'private-observe' || (github.event_name == 'push' && 'dry-run' || inputs.mode) }}
       KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
       KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
       KIS_OBSERVATION_STORE_REPOSITORY: ${{ vars.KIS_OBSERVATION_STORE_REPOSITORY || 'klkl789982-droid/tight-budget-private-data' }}
@@ -59,7 +67,7 @@ jobs:
           esac
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.sha }}
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
@@ -105,12 +113,13 @@ jobs:
         shell: bash
         run: |
           {
-            echo "Schedule: UNARMED (static false guard; repository variables cannot enable it)."
+            echo "Schedule: approved three-symbol private observation; explicit false variable disables it."
             echo "Slots: 15:40 / 16:10 / 16:40 Asia/Seoul, actual clock only; five-minute exclusive start window."
             echo "The scheduler is best-effort. Missed slots remain PENDING; no retrospective timestamp is manufactured."
             echo "Source finality: NOT_CONFIRMED; observed stability is not proof of finalized bars."
             echo "Private persistence: separate private evidence repository, dedicated Contents token, create-only files and exact hash readback before completion."
-            echo "Collection remains UNARMED until actual private retention preflight and activation checks succeed."
+            echo "Actual activation preflight verified: Actions run 37903668011; every collection rechecks private retention."
+            echo "553 regular collection and public model publication remain UNARMED."
             echo "Next runner audits the previous seven calendar days and compares available official EOD; missing slots are never backfilled."
             echo "No public raw price cache/artifact/commit, Daily/LIVE change or publication."
           } >> "$GITHUB_STEP_SUMMARY"

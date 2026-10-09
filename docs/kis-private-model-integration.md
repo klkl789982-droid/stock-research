@@ -2,6 +2,12 @@
 
 ## Approval boundaries
 
+Actual Actions preflight [37903668011](https://github.com/klkl789982-droid/stock-research/actions/runs/37903668011)
+verified private write/read/hash, KIS authentication, exact baseline calendar and
+all three ticker reads on 2026-10-09. Three-symbol scheduling is now armed; an
+explicit `KIS_EOD_OBSERVATION_ENABLED=false` repository variable disables it.
+No actual designated-slot observation was created by that preflight.
+
 - Only three-symbol observations (005930, 000660, 064290) can be armed after the
   actual Actions activation preflight succeeds. Weekday UTC 06:25 prewarm means
   15:25 KST; one real-clock runner waits for 15:40, 16:10, 16:40. Exclusive

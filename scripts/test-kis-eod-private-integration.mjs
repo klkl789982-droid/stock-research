@@ -4,12 +4,17 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { createRequire } from "node:module";
-import { runPrivateKisModels } from "./run-kis-eod-private-models.mjs";
+import { runPrivateKisModels, classifyPrivateCollectionResult } from "./run-kis-eod-private-models.mjs";
 import { preflightPrivateIntegration } from "./preflight-kis-eod-private-integration.mjs";
 import { memoryPrivateStore, modelFixture } from "./test-kis-eod-private-models.mjs";
 import { createLocalPrivateModelStore } from "../lib/kis-eod-private-local-store.mjs";
 
 const yaml = createRequire(import.meta.url)("js-yaml");
+test("prior-date and partly available current bars are distinguished without manufacturing a date", () => {
+  assert.deepEqual(classifyPrivateCollectionResult({ status: "FAILED", collectedCount: 0, failures: [{ reason: "KIS_EOD_REFERENCE_DATE_MISSING" }] }), { status: "PENDING", reason: "CURRENT_DATE_BARS_NOT_AVAILABLE" });
+  assert.deepEqual(classifyPrivateCollectionResult({ status: "VALIDATED", collectedCount: 12, failures: [{ reason: "KIS_EOD_REFERENCE_DATE_MISSING" }] }), { status: "PENDING", reason: "PARTIAL_LATEST_DATE_AVAILABILITY" });
+  assert.equal(classifyPrivateCollectionResult({ failures: [{ reason: "KIS_EOD_RATE_LIMITED" }] }).reason, "KIS_RATE_LIMIT_RETRY_NEXT_RUN");
+});
 test("actual-day selection distinguishes pre-close, weekends, old/partial bars and closed calendar", async () => {
   for (const [now, reason] of [["2026-10-08T06:29:59Z", "BEFORE_MARKET_CLOSE"], ["2026-10-10T07:00:00Z", "WEEKEND"]]) {
     let calls = 0;

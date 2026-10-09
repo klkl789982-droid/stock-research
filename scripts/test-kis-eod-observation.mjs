@@ -247,12 +247,17 @@ test("CLI has no fake clock, historical date, publication or force options", () 
   assert.equal(output.status, 1); assert.match(output.stdout, /INVALID_CLI_ARGUMENTS/u); assert.doesNotMatch(output.stdout, /2026-10-08T06:40/u);
 });
 
-test("prepared observation workflow is statically unarmed, read-only and preserves all slots in one job", async () => {
+test("approved three-symbol workflow is armed with a kill switch, read-only and preserves all slots in one job", async () => {
   const text = await fs.readFile(new URL("../.github/workflows/kis-eod-observation.yml", import.meta.url), "utf8"), workflow = yaml.load(text), job = workflow.jobs.observe;
   assert.deepEqual(workflow.permissions, { contents: "read" }); assert.deepEqual(Object.keys(workflow.jobs), ["observe"]);
-  assert.equal(workflow.on.schedule[0].cron, "25 6 * * 1-5"); assert.match(job.if, /false && vars[.]KIS_EOD_OBSERVATION_ENABLED == 'true'/u);
+  assert.equal(workflow.on.schedule[0].cron, "25 6 * * 1-5"); assert.match(job.if, /vars[.]KIS_EOD_OBSERVATION_ENABLED != 'false'/u);
+  assert.match(job.if, /github[.]event_name == 'schedule'/u);
+  assert.equal(job.env.KIS_EOD_OBSERVATION_ENABLED, "${{ vars.KIS_EOD_OBSERVATION_ENABLED || 'true' }}");
+  assert.match(job.env.KIS_EOD_OBSERVATION_MODE, /github[.]event_name == 'push' && 'dry-run'/u);
+  assert.deepEqual(workflow.on.push.paths, [".github/workflows/kis-eod-observation.yml"]);
   assert.match(job.if, /inputs[.]mode == 'dry-run'/u); assert.equal(job["timeout-minutes"], 90);
   assert.equal(job.steps.find((step) => step.uses === "actions/checkout@v4").with["persist-credentials"], false);
+  assert.equal(job.steps.find((step) => step.uses === "actions/checkout@v4").with.ref, "${{ github.sha }}");
   assert.match(text, /--collect-private --wait-for-slots/u); assert.match(text, /exact hash readback before completion/u);
   assert.match(text, /secrets[.]KIS_OBSERVATION_STORE_TOKEN/u); assert.match(text, /--storage-preflight/u);
   assert.doesNotMatch(text, /actions\/(?:cache|upload-artifact)|git\s+(?:add|commit|push)|--(?:publish|force|now|date)\b/u);

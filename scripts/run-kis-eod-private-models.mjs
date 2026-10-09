@@ -6,6 +6,14 @@ import { runKisEod, getKisEodLocalClock } from "./run-kis-eod.mjs";
 import { kisEodPrivateStoreFromEnv } from "../lib/kis-eod-private-store.mjs";
 import { readPrivateModelHead, persistPrivateModelBundle, recordPrivateModelOperation } from "../lib/kis-eod-private-models.mjs";
 
+export function classifyPrivateCollectionResult(collected) {
+  const reasons = (collected.failures ?? []).map((failure) => failure.reason);
+  if (reasons.some((reason) => ["KIS_EOD_AUTHENTICATION_FAILED", "KIS_EOD_AUTHORIZATION_FAILED"].includes(reason))) return { status: "FAILED", reason: "KIS_AUTHENTICATION_FAILED" };
+  if (reasons.includes("KIS_EOD_REFERENCE_DATE_MISSING")) return { status: "PENDING", reason: collected.collectedCount > 0 ? "PARTIAL_LATEST_DATE_AVAILABILITY" : "CURRENT_DATE_BARS_NOT_AVAILABLE" };
+  if (reasons.includes("KIS_EOD_RATE_LIMITED")) return { status: "PENDING", reason: "KIS_RATE_LIMIT_RETRY_NEXT_RUN" };
+  return { status: ["PENDING", "BLOCKED", "FAILED"].includes(collected.status) ? collected.status : "PENDING", reason: collected.reason };
+}
+
 // No user-supplied date/clock/force/publication CLI. The existing collector checks
 // the actual KST date/calendar and requires every bar's exact requested date.
 export async function runPrivateKisModels({ root = process.cwd(), now = () => new Date(), collectPrivate = false,
@@ -24,7 +32,9 @@ export async function runPrivateKisModels({ root = process.cwd(), now = () => ne
     else if (head?.referenceDate === local.referenceDate) result = { status: "ALREADY_STORED", reason: "LATEST_DATE_ALREADY_STORED" };
     else {
       const collected = await runCollector({ ...collectorOptions, root, now, collectPrivate: true, collectionEnabled: "true" });
-      result = { status: ["PENDING", "BLOCKED", "FAILED"].includes(collected.status) ? collected.status : "PENDING", reason: collected.reason };
+      result = { ...classifyPrivateCollectionResult(collected),
+        collectedCount: Number.isSafeInteger(collected.collectedCount) ? collected.collectedCount : 0,
+        failedCount: Number.isSafeInteger(collected.failedCount) ? collected.failedCount : 0 };
       if (collected.status === "VALIDATED" && collected.reason === "PRIVATE_CANDIDATE_READY" && collected.collectionComplete === true) {
         const privateRead = async (relativePath) => {
           const base = path.resolve(root, ".runtime", "kis-eod"), target = path.resolve(root, relativePath ?? "");
@@ -35,7 +45,7 @@ export async function runPrivateKisModels({ root = process.cwd(), now = () => ne
         };
         const raw = await privateRead(collected.rawPath), candidate = await privateRead(collected.candidatePath);
         if (candidate.referenceDate !== local.referenceDate) throw new Error("PRIVATE_MODEL_DATE_INVALID");
-        result = { ...await persistPrivateModelBundle({ store: privateStore, candidate, raw, runId }), reason: "PRIVATE_MODEL_HEAD_VERIFIED" };
+        result = { ...result, ...await persistPrivateModelBundle({ store: privateStore, candidate, raw, runId }), reason: "PRIVATE_MODEL_HEAD_VERIFIED" };
       }
     }
   } catch { result = { status: "FAILED", reason: "PRIVATE_MODEL_COLLECTION_OR_PERSISTENCE_FAILED" }; }
