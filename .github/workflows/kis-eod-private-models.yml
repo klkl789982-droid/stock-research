@@ -1,0 +1,54 @@
+name: KIS full private model integration (UNARMED)
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        required: true
+        default: dry-run
+        options: [dry-run, private-collect]
+  schedule:
+    - cron: "40 6 * * 1-5"
+    - cron: "10,40 7-11 * * 1-5"
+permissions:
+  contents: read
+concurrency:
+  # Share with the existing full collector, never Daily/LIVE/three-symbol jobs.
+  group: kis-provisional-eod-main
+  cancel-in-progress: false
+jobs:
+  collect:
+    # 553 recurring collection is not approved. Static guard is intentional.
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || (false && vars.KIS_EOD_COLLECTION_ENABLED == 'true'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
+      KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
+      KIS_EOD_COLLECTION_ENABLED: ${{ vars.KIS_EOD_COLLECTION_ENABLED }}
+      KIS_OBSERVATION_STORE_REPOSITORY: klkl789982-droid/tight-budget-private-data
+      KIS_OBSERVATION_STORE_BRANCH: main
+      KIS_OBSERVATION_STORE_TOKEN: ${{ secrets.KIS_OBSERVATION_STORE_TOKEN }}
+      KIS_PRIVATE_RUN_MODE: ${{ github.event_name == 'schedule' && 'private-collect' || inputs.mode }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts
+      - name: Collect and persist only to private store
+        shell: bash
+        run: |
+          case "$KIS_PRIVATE_RUN_MODE" in
+            dry-run) node scripts/run-kis-eod-private-models.mjs --dry-run ;;
+            private-collect)
+              [ "$KIS_EOD_COLLECTION_ENABLED" = "true" ] || exit 1
+              node scripts/run-kis-eod-private-models.mjs --collect-private ;;
+            *) exit 1 ;;
+          esac
+      - name: Isolation
+        if: always()
+        run: echo "553 schedule UNARMED; no public artifacts, no public API publication; private append-only head after exact readback only." >> "$GITHUB_STEP_SUMMARY"

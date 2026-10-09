@@ -46,6 +46,7 @@ export function evaluateKisEodAuditHistory(history, referenceDate, quarantined =
   const eligibility = Object.fromEntries(KIS_EOD_MODEL_VERSIONS.map((version) => [version, !commonReason && normalized.length >= MODEL_HISTORY_REQUIREMENTS[version]]));
   const exclusions = Object.fromEntries(KIS_EOD_MODEL_VERSIONS.map((version) => [version, eligibility[version] ? null : commonReason ?? "insufficientHistory"]));
   let scores = Object.fromEntries(KIS_EOD_MODEL_VERSIONS.map((version) => [version, null]));
+  let rawAV2Score = null;
   let deterministic = null;
   if (Object.values(eligibility).some(Boolean)) {
     try {
@@ -53,6 +54,7 @@ export function evaluateKisEodAuditHistory(history, referenceDate, quarantined =
       const second = calculateEligibleSnapshotModels(normalized.slice(0, 260), eligibility);
       deterministic = sha256Canonical(first) === sha256Canonical(second);
       scores = scoresOf(first);
+      rawAV2Score = first.modelAV2?.rawScore ?? null;
       for (const version of KIS_EOD_MODEL_VERSIONS) if (eligibility[version] && (!deterministic || !Number.isFinite(scores[version]))) {
         eligibility[version] = false; scores[version] = null; exclusions[version] = deterministic ? "modelResultNotFinite" : "nonDeterministicModelResult";
       }
@@ -67,7 +69,7 @@ export function evaluateKisEodAuditHistory(history, referenceDate, quarantined =
     currentNonTrading: rows[0]?.observationStatus === "tradingHaltOrNoTrade", nonTradingRows: rows.filter((row) => row.observationStatus === "tradingHaltOrNoTrade").length,
     shortHistoryCandidateNotConfirmedIpo: rows.length < 260, adjustment: history?.adjustment ?? null, inputFailure, proofFailure,
     fieldCompleteness: Object.fromEntries(["mkp", "hipr", "lopr", "clpr", "trqu", "trPrc"].map((field) => [field, rows.length > 0 && rows.every((row) => Number.isFinite(row[field]))])),
-    dailyChangeRateBasis: rate.basis, officialQuarantinePreserved: quarantined, eligibility, exclusions, scores, deterministic };
+    dailyChangeRateBasis: rate.basis, officialQuarantinePreserved: quarantined, eligibility, exclusions, scores, rawScores: { "A-v2": eligibility["A-v2"] ? rawAV2Score : null }, deterministic };
 }
 
 async function privateDirectory(root, parts) {

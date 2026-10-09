@@ -16,7 +16,7 @@ const instant = (now) => {
 };
 const outcome = (status, reason, detail = {}) => ({ status, reason, sourceFinality: "NOT_CONFIRMED", publicationEligible: false, productionChanged: false, ...detail });
 
-function createPrivateProvider(now, telemetry) {
+export function createPrivateProvider(now, telemetry) {
   const getCredentials = () => ({ appKey: process.env.KIS_APP_KEY, appSecret: process.env.KIS_APP_SECRET });
   const fetchImpl = (input, init = {}) => fetch(input, { ...init, redirect: "error", signal: init.signal ?? AbortSignal.timeout(15_000) });
   const tokenManager = createKisTokenManager({ fetchImpl, getCredentials, now: () => instant(now).getTime() });

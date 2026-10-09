@@ -1,0 +1,39 @@
+name: KIS private observation activation preflight
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/kis-eod-private-integration-preflight.yml
+      - scripts/preflight-kis-eod-private-integration.mjs
+permissions:
+  contents: read
+concurrency:
+  group: kis-private-integration-preflight-main
+  cancel-in-progress: false
+jobs:
+  preflight:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
+      KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
+      KIS_OBSERVATION_STORE_REPOSITORY: klkl789982-droid/tight-budget-private-data
+      KIS_OBSERVATION_STORE_BRANCH: main
+      KIS_OBSERVATION_STORE_TOKEN: ${{ secrets.KIS_OBSERVATION_STORE_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts
+      - run: node --test scripts/test-kis-eod-private-models.mjs scripts/test-kis-eod-private-integration.mjs
+      - name: Actual private store and three-symbol KIS authentication preflight
+        run: node scripts/preflight-kis-eod-private-integration.mjs
+      - name: Isolation
+        if: always()
+        run: echo "Only three preflight bar reads in memory. No 553 collection, raw upload, slot artifact, public API, Daily/LIVE or Cloudflare changes." >> "$GITHUB_STEP_SUMMARY"
