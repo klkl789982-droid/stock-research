@@ -39,7 +39,7 @@ jobs:
       KIS_EOD_OBSERVATION_MODE: ${{ github.event_name == 'schedule' && 'private-observe' || inputs.mode }}
       KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
       KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
-      KIS_OBSERVATION_STORE_REPOSITORY: ${{ vars.KIS_OBSERVATION_STORE_REPOSITORY }}
+      KIS_OBSERVATION_STORE_REPOSITORY: ${{ vars.KIS_OBSERVATION_STORE_REPOSITORY || 'klkl789982-droid/tight-budget-private-data' }}
       KIS_OBSERVATION_STORE_BRANCH: ${{ vars.KIS_OBSERVATION_STORE_BRANCH || 'main' }}
       KIS_OBSERVATION_STORE_TOKEN: ${{ secrets.KIS_OBSERVATION_STORE_TOKEN }}
     steps:

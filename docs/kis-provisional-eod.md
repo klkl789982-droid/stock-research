@@ -184,3 +184,11 @@ npm run kis:eod-compare -- --date=YYYY-MM-DD
 ```
 
 실제 private 저장소 연결, GitHub-hosted runner 보존, 다음 거래일 세 slot, 후속 official 수치 일치는 아직 미래/설정 후 실증 대상이다. fixture 통과를 실제 운영 성공으로 표시하지 않는다.
+
+### 등록된 비공개 저장소 연결 검증
+
+사용자가 등록한 전용 저장소는 `klkl789982-droid/tight-budget-private-data`다. observation workflow는 repository variable이 없으면 이 주소를 사용한다. `KIS_OBSERVATION_STORE_TOKEN`은 기존 Actions Secret에서만 주입하며 값은 코드·로그에 출력하지 않는다. 관측 static false gate는 그대로 유지한다.
+
+`kis-eod-private-storage-verification.yml`은 main의 검증 파일 변경(push) 또는 수동 실행으로만 동작하는 가격 없는 연결 테스트다. KIS 인증정보를 주입하지 않고 provider/observer를 실행하지 않는다. 기존 adapter로 `evidence/kis-eod-private-slot-observation/tests/store-connection/<run-id>-<attempt>/<fresh-uuid>.json` 한 개만 create-only 저장한 후 GET/독립 SHA256 검증, 동일 내용 중복 저장, 다른 내용 충돌 거부 및 원본 hash 보존을 검증한다. 같은 attempt 재호출도 새 UUID를 쓰므로 과거 성공 fixture만 읽어 현재 쓰기 권한이 있다고 오판하지 않는다. 다른 namespace에 가격·원본 관측을 업로드하지 않는다. 401/403 실패 시나리오는 별도의 모의 테스트이며 실제 Actions PAT의 Contents 권한은 실제 PUT/GET 성공으로만 인정한다.
+
+로컬에 store Secret이 없어도 Actions에서 검증할 수 있다. 공개 출력은 고정 status/check/hash만 사용하며 raw response나 Secret, 시세 artifact/cache를 게시하지 않는다. 실패하면 workflow가 실패하고 source 관측은 계속 UNARMED다. 실제 실행 결과와 첫 비공개 fixture 저장을 확인하기 전에는 연결 성공이라고 보고하지 않는다. 저장 연결 성공만으로 KIS/calendar 등 나머지 활성화 조건을 충족했다고 간주하지 않는다.

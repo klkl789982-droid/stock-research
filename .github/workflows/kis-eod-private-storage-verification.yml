@@ -1,0 +1,45 @@
+name: KIS private storage fixture verification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/kis-eod-private-storage-verification.yml
+      - scripts/verify-kis-eod-private-storage.mjs
+      - scripts/test-kis-eod-private-storage-verification.mjs
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kis-private-storage-fixture-verification
+  cancel-in-progress: false
+
+jobs:
+  verify-fixture:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      KIS_OBSERVATION_STORE_REPOSITORY: klkl789982-droid/tight-budget-private-data
+      KIS_OBSERVATION_STORE_BRANCH: main
+      KIS_OBSERVATION_STORE_TOKEN: ${{ secrets.KIS_OBSERVATION_STORE_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts
+      - name: Test create-only storage and simulated authentication errors
+        run: node --test scripts/test-kis-eod-private-store.mjs scripts/test-kis-eod-private-storage-verification.mjs
+      - name: Actual private price-free fixture create read and SHA256
+        run: node scripts/verify-kis-eod-private-storage.mjs
+      - name: State test isolation
+        if: always()
+        run: |
+          echo "Only tests/store-connection objects; no KIS requests, prices, artifacts, activation or production changes." >> "$GITHUB_STEP_SUMMARY"
+          echo "401/403 negative scenarios are simulated; actual read/write authorization is proved by the preceding fixture step." >> "$GITHUB_STEP_SUMMARY"
