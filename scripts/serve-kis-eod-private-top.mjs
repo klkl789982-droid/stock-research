@@ -18,7 +18,11 @@ export function createPrivateTopServer({ store, query = queryPrivateModelTop } =
       || (request.headers["sec-fetch-site"] && !["same-origin", "none"].includes(request.headers["sec-fetch-site"]))) {
       response.writeHead(403); response.end('{"status":"PRIVATE_ACCESS_DENIED"}'); return;
     }
-    const url = new URL(request.url, `http://${request.headers.host}`);
+    let url;
+    try {
+      url = new URL(request.url, `http://${request.headers.host}`);
+      if (url.protocol !== "http:" || url.host !== request.headers.host) throw new Error("INVALID_TARGET");
+    } catch { response.writeHead(400); response.end('{"status":"INVALID_QUERY"}'); return; }
     if (request.method !== "GET" || url.pathname !== "/api/kis-eod-private-top-stocks") { response.writeHead(404); response.end('{"status":"NOT_FOUND"}'); return; }
     const permitted = new Set(["model", "version", "limit", "mode"]);
     if ([...url.searchParams.keys()].some((key) => !permitted.has(key) || url.searchParams.getAll(key).length !== 1)) { response.writeHead(400); response.end('{"status":"INVALID_QUERY"}'); return; }

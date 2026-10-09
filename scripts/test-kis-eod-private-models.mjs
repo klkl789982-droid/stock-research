@@ -84,6 +84,8 @@ test("partial failures, altered inputs, fixture promotion and timestamp conflict
   await assert.rejects(persistPrivateModelBundle({ store, raw: bundle.raw, candidate: buildKisEodCandidate(partial) }), { code: "PRIVATE_MODEL_CANDIDATE_NOT_READY" });
   bundle.raw.histories[0].rows[0].clpr += 1;
   await assert.rejects(persistPrivateModelBundle({ store, ...bundle }), { code: "PRIVATE_MODEL_INPUT_MISMATCH" });
+  const alteredMetadata = modelFixture(); alteredMetadata.raw.histories[0].receivedAt = "2026-10-08T06:49:00.000Z";
+  await assert.rejects(persistPrivateModelBundle({ store, ...alteredMetadata }), { code: "PRIVATE_MODEL_INPUT_MISMATCH" });
   const fixture = modelFixture(); fixture.candidate.observationType = "TEST_FIXTURE";
   await assert.rejects(persistPrivateModelBundle({ store, ...fixture }), { code: "PRIVATE_MODEL_CANDIDATE_NOT_READY" });
   assert.equal(await readPrivateModelHead(store), null);
@@ -135,6 +137,11 @@ test("local-only private API blocks hostile Host/Origin and never returns raw pr
     request.on("error", reject);
   });
   assert.equal(hostileHostStatus, 403);
+  const invalidTargetStatus = await new Promise((resolve, reject) => {
+    const request = http.get({ hostname: "127.0.0.1", port: server.address().port, path: "http://[invalid" }, (response) => { response.resume(); resolve(response.statusCode); });
+    request.on("error", reject);
+  });
+  assert.equal(invalidTargetStatus, 400);
   assert.equal((await fetch(`${url}&model=A`)).status, 400);
   assert.equal((await fetch(`${base}/api/kis-eod-private-top-stocks?limit=100`)).status, 400);
   assert.equal((await fetch(url, { method: "POST" })).status, 404);

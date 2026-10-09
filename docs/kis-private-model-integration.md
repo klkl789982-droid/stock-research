@@ -89,6 +89,13 @@ not synthetic scores or a false fresh state.
 
 ## Still requires actual time or approval
 
+Official KIS references: [service/partnership application](https://apiportal.koreainvestment.com/provider-apply)
+and [official API samples](https://github.com/koreainvestment/open-trading-api).
+API availability/sample code is not a license for private third-party cloud
+storage, friend-sharing or external derived-score publication. Those contract
+permissions have not been verified here; obtain provider confirmation before
+extending access or enabling public publication.
+
 Future scheduled trigger/runner arrival, each slot's real availability and later
 official comparisons require future observations. GitHub cron is best-effort;
 no independent observation scheduler is deployed. 553 recurring collection and

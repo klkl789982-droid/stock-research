@@ -76,7 +76,9 @@ test("full schedule remains unarmed; preflight cannot publish or upload raw data
   assert.match(full.jobs.collect.if, /false && vars[.]KIS_EOD_COLLECTION_ENABLED/u);
   assert.equal(full.concurrency.group, "kis-provisional-eod-main"); assert.deepEqual(full.permissions, { contents: "read" });
   const text = await fs.readFile(new URL("../.github/workflows/kis-eod-private-integration-preflight.yml", import.meta.url), "utf8"), preflight = yaml.load(text);
-  assert.deepEqual(preflight.permissions, { contents: "read" }); assert.ok(preflight.on.push.paths.every((item) => /preflight/u.test(item)));
+  assert.deepEqual(preflight.permissions, { contents: "read" });
+  assert.ok(preflight.on.push.paths.includes("scripts/preflight-kis-eod-private-integration.mjs"));
+  assert.ok(preflight.on.push.paths.every((item) => /(?:kis-eod-private|kis-eod-private-top)/u.test(item)));
   for (const content of [text, fullText]) assert.doesNotMatch(content, /upload-artifact|git\s+(?:add|commit|push)|--(?:date|now|publish|force)\b/u);
 });
 
