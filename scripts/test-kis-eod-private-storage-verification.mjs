@@ -93,6 +93,17 @@ test("CLI does not expose invalid arguments or credentials", () => {
   assert.doesNotMatch(result.stdout + result.stderr, /PRIVATE_ARGUMENT_MUST_NOT_LEAK|FIXTURE_ONLY_CREDENTIAL/u);
 });
 
+test("missing Actions secret is classified explicitly without requests or sensitive output", async () => {
+  let requested = false;
+  await assert.rejects(verifyKisEodPrivateStorage({ env: { ...env, KIS_OBSERVATION_STORE_TOKEN: "" },
+    fetchImpl: () => { requested = true; } }), { code: "PRIVATE_STORE_TOKEN_UNAVAILABLE" });
+  assert.equal(requested, false);
+  const result = spawnSync(process.execPath, ["scripts/verify-kis-eod-private-storage.mjs"],
+    { cwd: new URL("../", import.meta.url), env: { ...process.env, ...env, KIS_OBSERVATION_STORE_TOKEN: "" }, encoding: "utf8" });
+  assert.equal(result.status, 1); assert.match(result.stdout, /PRIVATE_STORE_TOKEN_UNAVAILABLE/u);
+  assert.doesNotMatch(result.stdout + result.stderr, /FIXTURE_ONLY_CREDENTIAL/u);
+});
+
 test("test workflow injects only storage secret and never enables source collection or public uploads", async () => {
   const text = await fs.readFile(new URL("../.github/workflows/kis-eod-private-storage-verification.yml", import.meta.url), "utf8");
   const workflow = yaml.load(text), job = workflow.jobs["verify-fixture"];

@@ -6,6 +6,7 @@ import { kisEodPrivateStoreFromEnv } from "../lib/kis-eod-private-store.mjs";
 export const APPROVED_PRIVATE_REPOSITORY = "klkl789982-droid/tight-budget-private-data";
 const failure = (code) => Object.assign(new Error(code), { code });
 const safeErrors = new Set(["PRIVATE_STORE_NOT_CONFIGURED", "PRIVATE_STORE_REPOSITORY_NOT_PRIVATE", "PRIVATE_STORE_AUTHORIZATION_FAILED",
+  "PRIVATE_STORE_TOKEN_UNAVAILABLE",
   "PRIVATE_STORE_NETWORK_FAILED", "PRIVATE_STORE_RETRY_EXHAUSTED", "PRIVATE_STORE_REQUEST_FAILED", "PRIVATE_STORE_RESPONSE_INVALID",
   "PRIVATE_STORE_CREATE_FAILED", "PRIVATE_STORE_READBACK_FAILED", "PRIVATE_STORE_IMMUTABLE_CONFLICT", "FIXTURE_CONFIGURATION_INVALID",
   "FIXTURE_HASH_MISMATCH", "FIXTURE_DUPLICATE_FAILED", "FIXTURE_CONFLICT_FAILED"]);
@@ -17,6 +18,8 @@ export async function verifyKisEodPrivateStorage({ env = process.env, fetchImpl 
   if (env.KIS_OBSERVATION_STORE_REPOSITORY !== APPROVED_PRIVATE_REPOSITORY
     || (env.KIS_OBSERVATION_STORE_BRANCH ?? "main") !== "main"
     || !/^[0-9]{1,24}$/u.test(runId ?? "") || !/^[0-9]{1,6}$/u.test(attempt ?? "")) throw failure("FIXTURE_CONFIGURATION_INVALID");
+  if (typeof env.KIS_OBSERVATION_STORE_TOKEN !== "string" || !env.KIS_OBSERVATION_STORE_TOKEN.trim())
+    throw failure("PRIVATE_STORE_TOKEN_UNAVAILABLE");
   let createRequests = 0;
   const store = kisEodPrivateStoreFromEnv(env, { fetchImpl: (url, init) => {
     if (init.method === "PUT") createRequests += 1;
