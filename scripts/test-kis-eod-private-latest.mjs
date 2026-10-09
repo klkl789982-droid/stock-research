@@ -8,8 +8,25 @@ import { persistPrivateModelBundle, queryLatestPrivateModelTop } from "../lib/ki
 import { sha256Canonical } from "../lib/snapshot-quality-pipeline.mjs";
 import { verifyRemotePrivateTop } from "./verify-kis-eod-private-remote-top.mjs";
 import { createPrivateTopServer } from "./serve-kis-eod-private-top.mjs";
+import { createPrivateAuthFetch } from "../lib/kis-private-auth-fetch.mjs";
 
 const now = () => "2026-10-09T08:00:00.000Z";
+test("private token issuance retry is one bounded 65s retry for EGW00133 only", async () => {
+  const endpoint = "https://openapi.koreainvestment.com:9443/oauth2/tokenP";
+  for (const code of ["EGW00133", "EGW00102"]) {
+    let calls = 0; const waits = [];
+    const transport = createPrivateAuthFetch({ wait: async (ms) => waits.push(ms), fetchImpl: async () => {
+      calls += 1; return calls === 1 ? Response.json({ error_code: code }, { status: 403 }) : Response.json({ access_token: "FIXTURE_ONLY" });
+    } });
+    const response = await transport(endpoint, { method: "POST" });
+    assert.equal(calls, code === "EGW00133" ? 2 : 1); assert.deepEqual(waits, code === "EGW00133" ? [65000] : []);
+    assert.equal(response.status, code === "EGW00133" ? 200 : 403);
+  }
+  let calls = 0;
+  const exhausted = createPrivateAuthFetch({ wait: async () => {}, fetchImpl: async () => { calls += 1; return Response.json({ error_code: "EGW00133" }, { status: 403 }); } });
+  assert.equal((await exhausted(endpoint, { method: "POST" })).status, 403); assert.equal(calls, 2);
+  calls = 0; await exhausted("https://openapi.koreainvestment.com:9443/other", { method: "GET" }); assert.equal(calls, 1);
+});
 const providerFor = (openDate) => ({ async getTradingDay(date) { const open = date === openDate;
   return { source: "KIS", operation: "chk-holiday", referenceDate: date, receivedAt: now(), isTradingDay: open,
     sourceFields: { bass_dt: date.replaceAll("-", ""), opnd_yn: open ? "Y" : "N", tr_day_yn: open ? "Y" : "N" } }; } });

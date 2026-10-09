@@ -2,6 +2,7 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { randomUUID } from "node:crypto";
+import { createPrivateAuthFetch } from "../lib/kis-private-auth-fetch.mjs";
 import { getKisEodLocalClock } from "./run-kis-eod.mjs";
 import { runPrivateKisModels } from "./run-kis-eod-private-models.mjs";
 import { createPrivateProvider } from "./observe-kis-eod.mjs";
@@ -43,7 +44,7 @@ export async function runPrivateLatest({ root = process.cwd(), now = () => new D
   let referenceDate = getKisEodLocalClock(now()).referenceDate, mode = "live", result;
   try {
     await privateStore.preflight();
-    const source = provider ?? createPrivateProvider(now, []);
+    const source = provider ?? createPrivateProvider(now, [], { transport: createPrivateAuthFetch() });
     const selected = await selectLatestClosedKisDate(source, now);
     if (selected.status !== "READY") result = selected;
     else {

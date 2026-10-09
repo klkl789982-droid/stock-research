@@ -134,3 +134,9 @@ no independent observation scheduler is deployed. 553 recurring collection and
 public publication require separate explicit activation approval and public
 rights/finality evidence. Enabling only the repository variable cannot bypass
 the full-collection static schedule guard.
+
+Private full collection additionally retries ONLY token-issuance HTTP 403
+`EGW00133` once after 65 seconds. This exact failure was reproduced after a
+successful preflight issued the same app key's token less than a minute earlier.
+Other 403/authentication failures remain failures; no token is cached on disk or
+uploaded. Existing observation defaults and Daily/LIVE transports are unchanged.
