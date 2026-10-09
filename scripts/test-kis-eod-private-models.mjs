@@ -78,6 +78,25 @@ test("older date and concurrent promotions never overwrite newer latest head", a
   assert.equal((await readPrivateModelHead(store)).referenceDate, "2026-10-12"); assert.ok(store.files.size >= count);
 });
 
+test("same-date identical market inputs deduplicate, but later changed provisional inputs append", async () => {
+  const store = memoryPrivateStore(), first = modelFixture();
+  const initial = await persistPrivateModelBundle({ store, ...first, runId: "first" });
+  const writes = store.writes, same = modelFixture();
+  same.input.now = same.input.collectionCompletedAt = "2026-10-08T07:10:00.000Z";
+  same.input.collectionStartedAt = "2026-10-08T07:00:00.000Z";
+  for (const history of same.raw.histories) history.receivedAt = "2026-10-08T07:05:00.000Z";
+  same.candidate = buildKisEodCandidate(same.input);
+  assert.equal((await persistPrivateModelBundle({ store, ...same, runId: "same" })).status, "ALREADY_STORED");
+  assert.equal(store.writes, writes);
+  for (const field of ["mkp", "hipr", "lopr", "clpr"]) same.raw.histories[0].rows[0][field] += 2;
+  same.candidate = buildKisEodCandidate(same.input);
+  const changed = await persistPrivateModelBundle({ store, ...same, runId: "changed" });
+  assert.equal(changed.status, "PRIVATE_STORED_AND_VERIFIED");
+  assert.notEqual(changed.promotionHash, initial.promotionHash);
+  assert.equal((await readPrivateModelHead(store)).promotionHash, changed.promotionHash);
+  assert.ok([...store.files.keys()].some((key) => key.includes(initial.promotionHash)));
+});
+
 test("partial failures, altered inputs, fixture promotion and timestamp conflicts fail closed", async () => {
   const store = memoryPrivateStore(), bundle = modelFixture();
   const partial = structuredClone(bundle.input); partial.historiesByCode.delete("000002");
@@ -127,10 +146,14 @@ test("real adapter directory list is bounded, path constrained and token never e
 
 test("local-only private API blocks hostile Host/Origin and never returns raw prices", async (t) => {
   const store = memoryPrivateStore(); await persistPrivateModelBundle({ store, ...modelFixture(), runId: "test" });
-  const server = createPrivateTopServer({ store }); await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const accessToken = "fixture-only-query-access-token-32-characters";
+  const headers = { Authorization: `Bearer ${accessToken}` };
+  const server = createPrivateTopServer({ store, accessToken }); await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   t.after(() => new Promise((resolve) => server.close(resolve)));
   const base = `http://127.0.0.1:${server.address().port}`, url = `${base}/api/kis-eod-private-top-stocks?model=B&limit=5`;
-  assert.equal((await (await fetch(url)).json()).stocks.length, 3);
+  assert.equal((await fetch(url)).status, 401);
+  assert.equal((await fetch(url, { headers: { Authorization: "Bearer wrong" } })).status, 401);
+  assert.equal((await (await fetch(url, { headers })).json()).stocks.length, 3);
   assert.equal((await fetch(url, { headers: { Origin: "https://hostile.invalid" } })).status, 403);
   const hostileHostStatus = await new Promise((resolve, reject) => {
     const request = http.get(url, { headers: { Host: "hostile.invalid" } }, (response) => { response.resume(); resolve(response.statusCode); });
@@ -142,9 +165,9 @@ test("local-only private API blocks hostile Host/Origin and never returns raw pr
     request.on("error", reject);
   });
   assert.equal(invalidTargetStatus, 400);
-  assert.equal((await fetch(`${url}&model=A`)).status, 400);
-  assert.equal((await fetch(`${base}/api/kis-eod-private-top-stocks?limit=100`)).status, 400);
-  assert.equal((await fetch(url, { method: "POST" })).status, 404);
+  assert.equal((await fetch(`${url}&model=A`, { headers })).status, 400);
+  assert.equal((await fetch(`${base}/api/kis-eod-private-top-stocks?limit=100`, { headers })).status, 400);
+  assert.equal((await fetch(url, { method: "POST", headers })).status, 404);
 });
 
 test("no resolved private data is an accumulating state, not fabricated scores", async () => {

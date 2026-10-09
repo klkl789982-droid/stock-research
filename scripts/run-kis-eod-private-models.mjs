@@ -29,7 +29,6 @@ export async function runPrivateKisModels({ root = process.cwd(), now = () => ne
     const head = await readPrivateModelHead(privateStore);
     if (head?.referenceDate > local.referenceDate) throw new Error("PRIVATE_MODEL_FUTURE_HEAD");
     if (local.weekend || local.time < "15:30:00") result = { status: "PENDING", reason: local.weekend ? "WEEKEND" : "BEFORE_MARKET_CLOSE" };
-    else if (head?.referenceDate === local.referenceDate) result = { status: "ALREADY_STORED", reason: "LATEST_DATE_ALREADY_STORED" };
     else {
       const collected = await runCollector({ ...collectorOptions, root, now, collectPrivate: true, collectionEnabled: "true" });
       result = { ...classifyPrivateCollectionResult(collected),
@@ -45,7 +44,9 @@ export async function runPrivateKisModels({ root = process.cwd(), now = () => ne
         };
         const raw = await privateRead(collected.rawPath), candidate = await privateRead(collected.candidatePath);
         if (candidate.referenceDate !== local.referenceDate) throw new Error("PRIVATE_MODEL_DATE_INVALID");
-        result = { ...result, ...await persistPrivateModelBundle({ store: privateStore, candidate, raw, runId }), reason: "PRIVATE_MODEL_HEAD_VERIFIED" };
+        result = { ...result, ...await persistPrivateModelBundle({ store: privateStore, candidate, raw, runId }), reason: "PRIVATE_MODEL_HEAD_VERIFIED",
+          requestedCount: candidate.records.length, quarantineCount: candidate.universe.officialQuarantinePreserved,
+          rankingCounts: Object.fromEntries(Object.entries(candidate.rankingUniverse).map(([version, universe]) => [version, universe.count])) };
       }
     }
   } catch { result = { status: "FAILED", reason: "PRIVATE_MODEL_COLLECTION_OR_PERSISTENCE_FAILED" }; }

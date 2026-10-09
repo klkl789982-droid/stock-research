@@ -22,10 +22,14 @@ jobs:
     if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || (false && vars.KIS_EOD_COLLECTION_ENABLED == 'true'))
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    outputs:
+      stored: ${{ steps.collect.outputs.stored }}
+      reference_date: ${{ steps.collect.outputs.reference_date }}
     env:
       KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
       KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
-      KIS_EOD_COLLECTION_ENABLED: ${{ vars.KIS_EOD_COLLECTION_ENABLED }}
+      # Only explicit private-collect dispatch is approved; cron remains blocked.
+      KIS_EOD_COLLECTION_ENABLED: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'private-collect' && 'true' || 'false' }}
       KIS_OBSERVATION_STORE_REPOSITORY: klkl789982-droid/tight-budget-private-data
       KIS_OBSERVATION_STORE_BRANCH: main
       KIS_OBSERVATION_STORE_TOKEN: ${{ secrets.KIS_OBSERVATION_STORE_TOKEN }}
@@ -40,15 +44,37 @@ jobs:
           node-version: 22
       - run: npm ci --ignore-scripts
       - name: Collect and persist only to private store
+        id: collect
         shell: bash
         run: |
           case "$KIS_PRIVATE_RUN_MODE" in
-            dry-run) node scripts/run-kis-eod-private-models.mjs --dry-run ;;
+            dry-run) node scripts/run-kis-eod-private-latest.mjs --dry-run ;;
             private-collect)
               [ "$KIS_EOD_COLLECTION_ENABLED" = "true" ] || exit 1
-              node scripts/run-kis-eod-private-models.mjs --collect-private ;;
+              node scripts/run-kis-eod-private-latest.mjs --collect-private ;;
             *) exit 1 ;;
           esac
       - name: Isolation
         if: always()
         run: echo "553 schedule UNARMED; no public artifacts, no public API publication; private append-only head after exact readback only." >> "$GITHUB_STEP_SUMMARY"
+  verify-retention:
+    needs: collect
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'private-collect' && needs.collect.outputs.stored == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      KIS_OBSERVATION_STORE_REPOSITORY: klkl789982-droid/tight-budget-private-data
+      KIS_OBSERVATION_STORE_BRANCH: main
+      KIS_OBSERVATION_STORE_TOKEN: ${{ secrets.KIS_OBSERVATION_STORE_TOKEN }}
+      KIS_PRIVATE_EXPECTED_REFERENCE_DATE: ${{ needs.collect.outputs.reference_date }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts
+      - name: Fresh runner remote source hash and authenticated TOP readback
+        run: node scripts/verify-kis-eod-private-remote-top.mjs

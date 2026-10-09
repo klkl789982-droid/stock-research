@@ -23,10 +23,35 @@ No actual designated-slot observation was created by that preflight.
 
 `run-kis-eod-private-models.mjs` wraps the existing collector. Actual KST clock,
 15:30 close gate, exact KIS calendar and exact response date determine readiness.
-Closed/unknown calendars, prior-date responses and partial collections cannot
-advance the head. Previously verified results remain available, alongside a
-separate last-operation status. Same-date verified results skip recollection.
+Unknown calendars, prior-date responses and partial collections cannot
+advance the current-day head. Previously verified results remain available, alongside a
+separate last-operation status. Current-day provisional data is reobserved rather
+than frozen at the first complete slot: identical market inputs deduplicate only
+AFTER collection/validation and previous raw/model readback; changed inputs append
+an immutable new version. An already-verified historical catch-up date is reused.
 There is no user-supplied date, fake clock, force or publication CLI.
+
+`run-kis-eod-private-latest.mjs` is the automation entrypoint. After the actual
+15:30 KST close gate, it searches at most 15 calendar days for an EXACT KIS Y/Y
+trading-day response. Invalid fields or Y/N stop the run. N/Y is skipped ONLY in
+this private lookback because the [official KIS sample](https://github.com/koreainvestment/open-trading-api/blob/main/examples_llm/domestic_stock/chk_holiday/chk_holiday.py)
+defines `opnd_yn` as the day when orders can be placed. It is never accepted as a
+normal candidate; all selected dates still require exact Y/Y, and the original
+provider, Daily and LIVE calendar policies are untouched. If today is open it uses
+the unchanged current-day collector and never falls back when today's bars are
+unavailable. If today is closed it uses the existing strict historical audit for
+the latest confirmed trading day; this remains `HISTORICAL_RESEARCH_REQUEST` in
+the separate research namespace with ACTUAL collection timestamps, not a
+backdated LIVE observation. This does not weaken current-day quality gates.
+
+`workflow_dispatch` mode `private-collect` authorizes a single private 553 run
+without changing a repository activation variable. Schedule jobs remain
+statically blocked. Cron preparation is 15:40, 16:10/16:40 through 20:10/20:40 KST.
+An independent runner then rereads source/model hashes and tests all five model
+versions TOP5/10/20 via authenticated loopback HTTP. No public upload or commit
+of raw data occurs. GitHub scheduling is best effort; an independent observation
+Worker would need separate approval/credentials and must not reuse/expand the
+existing official Daily Cloudflare Worker.
 
 The existing five model formulas and tie policy are unchanged. The unchanged
 completeness check permits existing quarantine, insufficient history and halt
@@ -78,6 +103,13 @@ local empirical E2E, not GitHub remote retention or automatic scheduled executio
 GET `http://127.0.0.1:3101/api/kis-eod-private-top-stocks?model=B&limit=10&mode=research`
 supports A (default A-v2), B, C, D, or explicit `version=A-v1`, limits 5/10/20.
 No OHLCV, tokens, source payloads or private repository URLs are returned.
+The server additionally requires `KIS_PRIVATE_TOP_ACCESS_TOKEN` (at least 32
+non-whitespace characters) and `Authorization: Bearer <token>` on EVERY request;
+missing/wrong credentials return 401. The access token is separate from the store
+token, stays in the caller's environment, and is never logged. Default mode
+`latest` chooses ONE newest frozen KIS dataset across current-day/research heads,
+retaining explicit observationType/dataMode; scores are never blended. Explicit
+`live`/`research` selection remains supported.
 The server binds only loopback, rejects hostile Host/Origin/fetch-site, has no
 CORS and no Vercel/Next route. Local OS account/filesystem is the trust boundary.
 

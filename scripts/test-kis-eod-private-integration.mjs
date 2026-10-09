@@ -41,7 +41,7 @@ test("full integrated fixture collects, stores, queries and skips a duplicate da
     runCollector: async () => { calls += 1; return { status: "VALIDATED", reason: "PRIVATE_CANDIDATE_READY", collectionComplete: true,
       rawPath: ".runtime/kis-eod/raw.json", candidatePath: ".runtime/kis-eod/candidate.json" }; } };
   assert.equal((await runPrivateKisModels(options)).status, "PRIVATE_STORED_AND_VERIFIED");
-  assert.equal((await runPrivateKisModels(options)).status, "ALREADY_STORED"); assert.equal(calls, 1);
+  assert.equal((await runPrivateKisModels(options)).status, "ALREADY_STORED"); assert.equal(calls, 2);
 });
 
 test("dry-run, disabled collection and unavailable storage never authenticate KIS", async () => {
