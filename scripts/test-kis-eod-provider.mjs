@@ -182,12 +182,39 @@ await test("logs and exceptions omit token, URL, payload and raw failures", asyn
   const serialized = JSON.stringify({ logs, failure });
   assert.ok(!serialized.includes(secret)); assert.ok(!serialized.includes("https://")); assert.ok(!serialized.includes("authorization"));
   assert.equal(failure, "KIS_EOD_NETWORK_ERROR");
-  assert.equal(logs.length, 3);
+  assert.equal(logs.filter((entry) => entry.status === "RETRYABLE_FAILURE").length, 3);
+  assert.equal(logs.filter((entry) => entry.status === "ATTEMPT_FAILURE").length, 3);
+});
+await test("safe request telemetry includes timestamps/duration and cannot alter results", async () => {
+  const logs = [];
+  const provider = create(async () => response(payload()), { logger: (event) => logs.push(event) });
+  const history = await provider.getHistory(code, referenceDate, { requiredRows: 1 });
+  assert.equal(history.requestedAt, receivedAt);
+  assert.equal(logs.length, 1);
+  assert.equal(logs[0].status, "SUCCESS");
+  assert.equal(logs[0].httpStatus, 200);
+  assert.equal(logs[0].businessCode, "SUCCESS");
+  assert.equal(logs[0].requestStartedAt, receivedAt);
+  assert.equal(logs[0].receivedAt, receivedAt);
+  assert.equal(logs[0].durationMs, 0);
+  assert.ok(!JSON.stringify(logs).includes("stck_clpr"));
+  const ignored = await create(async () => response(payload()), { logger: () => { throw new Error("logger unavailable"); } }).getHistory(code, referenceDate, { requiredRows: 1 });
+  assert.equal(ignored.rows.length, 1);
 });
 await test("invalid caller options fail before network", async () => {
   let calls = 0; const provider = create(async () => { calls += 1; return response(payload()); });
   for (const options of [{ adjustment: "guess" }, { requiredRows: 0 }, { requiredRows: 261 }, { maxPages: 6 }]) await assert.rejects(provider.getHistory(code, referenceDate, options), /KIS_EOD_REQUEST_INVALID/u);
   await assert.rejects(provider.getHistory(code, "2026-02-30"), /KIS_EOD_DATE_INVALID/u);
   assert.equal(calls, 0);
+});
+await test("optional private rejection sink retains rejection and never logs raw fields", async () => {
+  const captured = [], logs = [];
+  const provider = create(async () => response(payload([bar("20261008", { stck_hgpr: "99" })])), {
+    onRejectedResponse: async (context) => captured.push(context), logger: (event) => logs.push(event) });
+  await assert.rejects(provider.getHistory(code, referenceDate), /KIS_EOD_OHLCV_INVALID/u);
+  assert.equal(captured.length, 1); assert.equal(captured[0].code, code); assert.equal(captured[0].reason, "KIS_EOD_OHLCV_INVALID");
+  assert.ok(!JSON.stringify(logs).includes("stck_hgpr"));
+  const brokenSink = create(async () => response(payload([bar("20261008", { stck_hgpr: "99" })])), { onRejectedResponse: async () => { throw new Error("private storage inaccessible"); } });
+  await assert.rejects(brokenSink.getHistory(code, referenceDate), /KIS_EOD_REJECTION_CAPTURE_FAILED/u);
 });
 console.log(`KIS EOD provider: ${checks} synthetic tests passed (no live API requests).`);

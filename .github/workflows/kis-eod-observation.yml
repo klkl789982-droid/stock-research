@@ -1,0 +1,108 @@
+name: KIS EOD private three-slot observation (UNARMED)
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Preparation is unarmed; only read-only dry-run is executable
+        type: choice
+        required: true
+        default: dry-run
+        options:
+          - dry-run
+          - private-observe
+  schedule:
+    # Best-effort prewarm at 15:25 KST. The real-clock runner waits for each
+    # designated slot and rejects a start delayed by five minutes or more.
+    - cron: "25 6 * * 1-5"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kis-eod-private-three-slot-observation-main
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    # Both scheduled and manual source collection remain statically disabled.
+    # A repository variable alone cannot arm this workflow.
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      ((github.event_name == 'workflow_dispatch' && inputs.mode == 'dry-run') ||
+      (false && vars.KIS_EOD_OBSERVATION_ENABLED == 'true'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      KIS_EOD_OBSERVATION_ENABLED: ${{ vars.KIS_EOD_OBSERVATION_ENABLED }}
+      KIS_EOD_OBSERVATION_MODE: ${{ github.event_name == 'schedule' && 'private-observe' || inputs.mode }}
+      KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
+      KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
+    steps:
+      - name: Check private observation gate
+        shell: bash
+        run: |
+          case "$KIS_EOD_OBSERVATION_MODE" in
+            dry-run) ;;
+            private-observe)
+              if [ "$KIS_EOD_OBSERVATION_ENABLED" != "true" ]; then
+                echo "Private observation approval required."
+                exit 1
+              fi
+              ;;
+            *) exit 1 ;;
+          esac
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts
+      - name: Verify observation isolation
+        run: node --test scripts/test-kis-eod-observation.mjs
+      - name: Observe actual designated slots on one private runner
+        shell: bash
+        run: |
+          set +e
+          if [ "$KIS_EOD_OBSERVATION_MODE" = "dry-run" ]; then
+            node scripts/observe-kis-eod.mjs --dry-run > "$RUNNER_TEMP/kis-eod-observation-safe.log" 2> "$RUNNER_TEMP/kis-eod-observation-private-stderr.log"
+          else
+            node scripts/observe-kis-eod.mjs --collect-private --wait-for-slots > "$RUNNER_TEMP/kis-eod-observation-safe.log" 2> "$RUNNER_TEMP/kis-eod-observation-private-stderr.log"
+          fi
+          exit_code=$?
+          set -e
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { KIS_EOD_OBSERVATION_STATUSES, KIS_EOD_OBSERVATION_REASONS } from './lib/kis-eod-observation.mjs';
+          const lines = fs.readFileSync(path.join(process.env.RUNNER_TEMP, 'kis-eod-observation-safe.log'), 'utf8').split('\n');
+          const summary = [];
+          for (const line of lines.filter(value => value.startsWith('KIS_EOD_OBSERVATION_JSON='))) {
+            let result;
+            try { result = JSON.parse(line.slice('KIS_EOD_OBSERVATION_JSON='.length)); } catch { result = null; }
+            const status = KIS_EOD_OBSERVATION_STATUSES.includes(result?.status) ? result.status : 'FAILED';
+            const reason = KIS_EOD_OBSERVATION_REASONS.includes(result?.reason) ? result.reason : 'UNEXPECTED_FAILURE';
+            const slot = ['15:40', '16:10', '16:40'].includes(result?.slot) ? result.slot : 'plan';
+            const count = key => Number.isSafeInteger(result?.[key]) && result[key] >= 0 ? result[key] : 0;
+            const delay = Number.isFinite(result?.delayMs) && result.delayMs >= 0 ? Math.floor(result.delayMs) : 0;
+            summary.push(`- ${slot}: ${status} / ${reason}; start delay ${delay} ms; collected ${count('collectedCount')}, failed ${count('failedCount')}, changed ${count('changedCount')}, unchanged ${count('unchangedCount')}`);
+          }
+          if (!summary.length) summary.push('- FAILED / UNEXPECTED_FAILURE');
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary.join('\n') + '\n');
+          NODE
+          exit "$exit_code"
+      - name: State preparation and retention limits
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "Schedule: UNARMED (static false guard; repository variables cannot enable it)."
+            echo "Slots: 15:40 / 16:10 / 16:40 Asia/Seoul, actual clock only; five-minute exclusive start window."
+            echo "The scheduler is best-effort. Missed slots remain PENDING; no retrospective timestamp is manufactured."
+            echo "Source finality: NOT_CONFIRMED; observed stability is not proof of finalized bars."
+            echo "Private source persistence: runner-local .runtime/kis-eod/observations only."
+            echo "The same job compares slots; GitHub-hosted runner disposal loses private source evidence after the job."
+            echo "No raw price cache, artifact upload, commit, push, Daily/LIVE change or publication."
+          } >> "$GITHUB_STEP_SUMMARY"
