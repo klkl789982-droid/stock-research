@@ -16,13 +16,16 @@ const instant = (now) => {
 };
 const outcome = (status, reason, detail = {}) => ({ status, reason, sourceFinality: "NOT_CONFIRMED", publicationEligible: false, productionChanged: false, ...detail });
 
-export function createPrivateProvider(now, telemetry, { transport = null } = {}) {
-  const getCredentials = () => ({ appKey: process.env.KIS_APP_KEY, appSecret: process.env.KIS_APP_SECRET });
+export function createPrivateProvider(now, telemetry, { transport = null,
+  getCredentials = () => ({ appKey: process.env.KIS_APP_KEY, appSecret: process.env.KIS_APP_SECRET }) } = {}) {
   const fetchImpl = transport ?? ((input, init = {}) => fetch(input, { ...init, redirect: "error", signal: init.signal ?? AbortSignal.timeout(15_000) }));
   const tokenManager = createKisTokenManager({ fetchImpl, getCredentials, now: () => instant(now).getTime() });
   const client = createKisApiClient({ fetchImpl, tokenManager, getCredentials });
-  return createKisEodProvider({ client, now: () => instant(now).getTime(), delayMs: 350, maxAttempts: 3, timeoutMs: 15_000,
+  const provider = createKisEodProvider({ client, now: () => instant(now).getTime(), delayMs: 350, maxAttempts: 3, timeoutMs: 15_000,
     logger: (event) => { const safe = sanitizeKisEodObservationEvent(event); if (safe) telemetry.push(safe); } });
+  // Optional private orchestration warmup, outside the per-quote timeout. Never
+  // returns the token; existing slot callers retain their unchanged behavior.
+  return { ...provider, authenticate: async () => { await tokenManager.getToken(); } };
 }
 
 export async function runKisEodObservations({ root = process.cwd(), now = () => new Date(), wait = waitDefault, provider = null, telemetry = [],

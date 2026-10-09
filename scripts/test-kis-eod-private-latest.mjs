@@ -9,6 +9,7 @@ import { sha256Canonical } from "../lib/snapshot-quality-pipeline.mjs";
 import { verifyRemotePrivateTop } from "./verify-kis-eod-private-remote-top.mjs";
 import { createPrivateTopServer } from "./serve-kis-eod-private-top.mjs";
 import { createPrivateAuthFetch } from "../lib/kis-private-auth-fetch.mjs";
+import { createPrivateProvider } from "./observe-kis-eod.mjs";
 
 const now = () => "2026-10-09T08:00:00.000Z";
 test("private token issuance retry is one bounded 65s retry for EGW00133 only", async () => {
@@ -26,6 +27,21 @@ test("private token issuance retry is one bounded 65s retry for EGW00133 only", 
   const exhausted = createPrivateAuthFetch({ wait: async () => {}, fetchImpl: async () => { calls += 1; return Response.json({ error_code: "EGW00133" }, { status: 403 }); } });
   assert.equal((await exhausted(endpoint, { method: "POST" })).status, 403); assert.equal(calls, 2);
   calls = 0; await exhausted("https://openapi.koreainvestment.com:9443/other", { method: "GET" }); assert.equal(calls, 1);
+});
+test("private auth warmup consumes issuance backoff outside quote timeout and exposes no token", async () => {
+  let authCalls = 0; const waits = [];
+  const transport = createPrivateAuthFetch({ wait: async (ms) => waits.push(ms), fetchImpl: async (url) => {
+    if (url.includes("/oauth2/tokenP")) {
+      authCalls += 1;
+      return authCalls === 1 ? Response.json({ error_code: "EGW00133" }, { status: 403 }) : Response.json({ access_token: "FIXTURE_ONLY", expires_in: 86400 });
+    }
+    return Response.json({ rt_cd: "0", output: [{ bass_dt: "20261008", opnd_yn: "Y", tr_day_yn: "Y" }] });
+  } });
+  const provider = createPrivateProvider(() => "2026-10-09T08:00:00Z", [], { transport,
+    getCredentials: () => ({ appKey: "FIXTURE_ONLY", appSecret: "FIXTURE_ONLY" }) });
+  assert.equal(await provider.authenticate(), undefined);
+  assert.equal((await provider.getTradingDay("2026-10-08")).isTradingDay, true);
+  assert.equal(authCalls, 2); assert.deepEqual(waits, [65000]);
 });
 const providerFor = (openDate) => ({ async getTradingDay(date) { const open = date === openDate;
   return { source: "KIS", operation: "chk-holiday", referenceDate: date, receivedAt: now(), isTradingDay: open,

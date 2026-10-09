@@ -45,6 +45,7 @@ export async function runPrivateLatest({ root = process.cwd(), now = () => new D
   try {
     await privateStore.preflight();
     const source = provider ?? createPrivateProvider(now, [], { transport: createPrivateAuthFetch() });
+    await source.authenticate?.();
     const selected = await selectLatestClosedKisDate(source, now);
     if (selected.status !== "READY") result = selected;
     else {
