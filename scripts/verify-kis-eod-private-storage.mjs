@@ -50,7 +50,7 @@ export async function verifyKisEodPrivateStorage({ env = process.env, fetchImpl 
   return { status: "VERIFIED", repository: APPROVED_PRIVATE_REPOSITORY, testPath: key, sha256: expectedHash,
     createOnly: written.status, readAndHash: "VERIFIED", duplicate: "DEDUPLICATED_WITHOUT_PUT",
     conflict: "REJECTED_ORIGINAL_PRESERVED", authentication: "ACTUAL_ACTIONS_SECRET_ACCEPTED",
-    contentsReadWrite: "ACTUAL_VERIFIED", sourcePricesIncluded: false, observationActivation: "UNCHANGED_UNARMED" };
+    contentsReadWrite: "ACTUAL_VERIFIED", sourcePricesIncluded: false, observationActivation: "UNCHANGED" };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
@@ -60,12 +60,12 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     result = await verifyKisEodPrivateStorage();
   } catch (error) {
     result = { status: "FAILED", reason: safeErrors.has(error?.code) ? error.code : "PRIVATE_STORAGE_VERIFICATION_FAILED",
-      sourcePricesIncluded: false, observationActivation: "UNCHANGED_UNARMED" };
+      sourcePricesIncluded: false, observationActivation: "UNCHANGED" };
     process.exitCode = 1;
   }
   console.log(`KIS_PRIVATE_STORAGE_VERIFICATION_JSON=${JSON.stringify(result)}`);
   if (process.env.GITHUB_STEP_SUMMARY) await fs.appendFile(process.env.GITHUB_STEP_SUMMARY,
     `Private storage fixture: ${result.status}\n\n${result.status === "VERIFIED"
       ? `Create/read/SHA256, duplicate and conflict: VERIFIED\n\nSHA256: ${result.sha256}`
-      : `Reason: ${result.reason}`}\n\nNo KIS requests or source prices. Collection remains UNARMED.\n`);
+      : `Reason: ${result.reason}`}\n\nNo KIS requests or source prices. This test never changes collection activation.\n`);
 }

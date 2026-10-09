@@ -7,6 +7,7 @@ on:
       - .github/workflows/kis-eod-private-integration-preflight.yml
       - scripts/preflight-kis-eod-private-integration.mjs
       - lib/kis-eod-private-models.mjs
+      - lib/kis-eod-private-store.mjs
       - lib/kis-eod-private-local-store.mjs
       - scripts/run-kis-eod-private-models.mjs
       - scripts/serve-kis-eod-private-top.mjs

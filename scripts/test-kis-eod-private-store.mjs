@@ -11,6 +11,7 @@ const stamp = "2026-10-08T06:40:00.000Z", date = "2026-10-08", repo = "fixture/p
 function backend(options = {}) {
   const files = new Map(), requests = [], waits = [];
   let transient = options.transient ?? 0;
+  let branchConflicts = options.branchConflicts ?? 0;
   const fetchImpl = async (url, init) => {
     requests.push({ url, method: init.method, body: init.body });
     assert.equal(new URL(url).origin, "https://api.github.com"); assert.equal(init.redirect, "error"); assert.ok(init.signal);
@@ -30,6 +31,7 @@ function backend(options = {}) {
       return Response.json({ type: "file", encoding: "base64", size: Buffer.byteLength(bytes), content: Buffer.from(bytes).toString("base64") });
     }
     if (options.readOnly) return new Response("", { status: 403 });
+    if (branchConflicts-- > 0) return new Response("", { status: 409 });
     const payload = JSON.parse(init.body); assert.equal(payload.sha, undefined); assert.equal(payload.branch, "main");
     if (files.has(key)) return new Response("", { status: 409 });
     files.set(key, Buffer.from(payload.content, "base64").toString("utf8"));
@@ -63,6 +65,16 @@ test("private repository is verified and each fresh probe proves write/read/hash
   const { store, requests } = backend();
   assert.equal((await store.preflight()).status, "PRIVATE_WRITE_READ_HASH_VERIFIED"); await store.preflight();
   assert.equal(requests.filter((entry) => entry.method === "PUT").length, 2);
+});
+
+test("unrelated concurrent branch commit retries create-only while existing originals remain protected", async () => {
+  const store = backend({ branchConflicts: 1 });
+  assert.equal((await store.store.writeImmutable("tests/branch-conflict.json", { fixtureOnly: true })).status, "STORED_AND_VERIFIED");
+  assert.deepEqual(store.waits, [750]);
+  assert.ok(store.requests.filter((request) => request.method === "PUT").every((request) => !Object.hasOwn(JSON.parse(request.body), "sha")));
+  const failed = backend({ branchConflicts: 10 });
+  await assert.rejects(failed.store.writeImmutable("tests/branch-conflict.json", { fixtureOnly: true }), { code: "PRIVATE_STORE_READBACK_FAILED" });
+  assert.equal(failed.requests.filter((request) => request.method === "PUT").length, 3);
 });
 test("public or newly-public repository refuses any write", async () => {
   const b = backend({ isPrivate: false }); await assert.rejects(b.store.preflight(), { code: "PRIVATE_STORE_REPOSITORY_NOT_PRIVATE" });

@@ -119,6 +119,8 @@ test("test workflow injects only storage secret and never enables source collect
   const script = await fs.readFile(new URL("./verify-kis-eod-private-storage.mjs", import.meta.url), "utf8");
   assert.doesNotMatch(script, /import.*(?:provider|observe-kis|token-manager)/u);
   const observation = await fs.readFile(new URL("../.github/workflows/kis-eod-observation.yml", import.meta.url), "utf8");
-  assert.match(observation, /false && vars[.]KIS_EOD_OBSERVATION_ENABLED/u);
+  assert.match(observation, /vars[.]KIS_EOD_OBSERVATION_ENABLED != 'false'/u);
+  const full = await fs.readFile(new URL("../.github/workflows/kis-eod-private-models.yml", import.meta.url), "utf8");
+  assert.match(full, /false && vars[.]KIS_EOD_COLLECTION_ENABLED/u);
   assert.match(observation, /vars[.]KIS_OBSERVATION_STORE_REPOSITORY \|\| 'klkl789982-droid\/tight-budget-private-data'/u);
 });
