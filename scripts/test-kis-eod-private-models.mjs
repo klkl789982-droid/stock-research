@@ -142,6 +142,7 @@ test("real adapter directory list is bounded, path constrained and token never e
   assert.deepEqual(await store.listKeys("model-top/live/heads"), [{ name: "2026-10-08", type: "dir" }]);
   await assert.rejects(store.listKeys("../outside"), { code: "PRIVATE_STORE_PATH_INVALID" });
   assert.ok(requests.every((request) => request.method === "GET"));
+  assert.ok(requests.every((request) => !new URL(request.url).pathname.endsWith("/")));
 });
 
 test("local-only private API blocks hostile Host/Origin and never returns raw prices", async (t) => {
