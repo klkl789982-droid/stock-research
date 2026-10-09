@@ -1,5 +1,27 @@
 # KIS private observation and model integration
 
+## Actual full remote E2E evidence (2026-10-09)
+
+[Manual workflow 37909789773](https://github.com/klkl789982-droid/stock-research/actions/runs/37909789773)
+selected 2026-10-08 without a date input, collected 523/553 and preserved the
+existing 30 quarantine exclusions. A-v1/A-v2/B-v1/D-v1 ranked 508; C-v1 ranked 523.
+Collection took 1174 seconds on the actual hosted runner. All source/model JSON
+was stored create-only in the private repository, read back and hashed before
+promotion `bfd24d176ddb3fb6d6f6d17d3727b0aaf5bbb5d05e5400a34b0ced3f49867a06`.
+A DIFFERENT runner then reread the complete remote source/model data and passed
+all 15 authenticated TOP5/10/20 HTTP queries. Unauthenticated HTTP returned 401.
+Public GitHub artifacts: zero. This was HISTORICAL_RESEARCH_REQUEST with actual
+2026-10-09 receipts, not fabricated 2026-10-08 close-time observation, not official
+EOD promotion and not a scheduled 553 collection. Recurring and public gates
+remain disabled pending separate approval/finality/rights verification.
+
+Two actual blockers were fixed before this success: token issuance 403 EGW00133
+(one private-only bounded retry), and directory Contents URLs ending in slash
+(GitHub returns 302; canonical no-slash URL returns 200). Redirect blocking is
+still enforced. Latest query preserves ONE dataset's scores and independently
+shows the most recent pending/failed operation across the private namespaces,
+so an older historical head cannot hide today's collection failure.
+
 ## Approval boundaries
 
 Actual Actions preflight [37903668011](https://github.com/klkl789982-droid/stock-research/actions/runs/37903668011)

@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 import fs from "node:fs/promises";
 import { selectLatestClosedKisDate, runPrivateLatest } from "./run-kis-eod-private-latest.mjs";
 import { memoryPrivateStore, modelFixture } from "./test-kis-eod-private-models.mjs";
-import { persistPrivateModelBundle, queryLatestPrivateModelTop } from "../lib/kis-eod-private-models.mjs";
+import { persistPrivateModelBundle, queryLatestPrivateModelTop, recordPrivateModelOperation } from "../lib/kis-eod-private-models.mjs";
 import { sha256Canonical } from "../lib/snapshot-quality-pipeline.mjs";
 import { verifyRemotePrivateTop } from "./verify-kis-eod-private-remote-top.mjs";
 import { createPrivateTopServer } from "./serve-kis-eod-private-top.mjs";
@@ -99,6 +99,11 @@ test("latest selects one namespace without score mixing and refuses corrupted pr
   assert.equal((await queryLatestPrivateModelTop(store)).dataMode, "kisPrivate-live");
   await persistPrivateModelBundle({ store, ...researchFixture("2026-10-09"), mode: "research" });
   assert.equal((await queryLatestPrivateModelTop(store)).referenceDate, "2026-10-09");
+  await recordPrivateModelOperation(store, { mode: "live", status: "PENDING", reason: "CURRENT_DATE_BARS_NOT_AVAILABLE",
+    checkedAt: "2026-10-12T07:00:00Z", referenceDate: "2026-10-12", runId: "pending-current-day" });
+  const preserved = await queryLatestPrivateModelTop(store);
+  assert.equal(preserved.referenceDate, "2026-10-09"); assert.equal(preserved.lastOperation.status, "PENDING");
+  assert.equal(preserved.lastOperation.referenceDate, "2026-10-12");
   assert.throws(() => createPrivateTopServer({ store }), /ACCESS_TOKEN_REQUIRED/u);
 });
 test("manual authorization never arms scheduled collection; independent readback has no KIS secret", async () => {
