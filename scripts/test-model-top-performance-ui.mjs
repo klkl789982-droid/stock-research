@@ -60,6 +60,7 @@ const renderLayer = (layer) => {
   let stateIndex = 0;
   const require = (name) => {
     if (name === "react/jsx-runtime") return jsxRuntime;
+    if (name === "./ModelPerformanceResearchPanel") return { default: () => React.createElement("div", null, "실행 연구 분리 패널") };
     if (name === "react") return { ...React, useState: () => [states[stateIndex++], () => {}], useEffect: () => {}, useMemo: (calculate) => calculate() };
     throw new Error(`Unexpected UI dependency: ${name}`);
   };

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import ModelPerformanceResearchPanel from "./ModelPerformanceResearchPanel";
 
 type Horizon = "1DAY" | "5DAY" | "20DAY" | "60DAY";
 type ExtremeObservation = {
@@ -83,7 +84,7 @@ export default function ModelTopPerformancePanel() {
   const [error, setError] = useState(false);
   const [modelVersion, setModelVersion] = useState("B-v1");
   const [topN, setTopN] = useState(10);
-  const [performanceLayer, setPerformanceLayer] = useState<"DAILY_EOD" | "INTRADAY_1430_LIVE">("DAILY_EOD");
+  const [performanceLayer, setPerformanceLayer] = useState<"DAILY_EOD" | "INTRADAY_1430_LIVE" | "RESEARCH">("DAILY_EOD");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -131,19 +132,21 @@ export default function ModelTopPerformancePanel() {
           <h2 id="model-performance-heading" className="mt-1 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">모델 성과</h2>
           <p className="mt-1 text-sm text-slate-600">Daily EOD와 14:30 LIVE 성과를 서로 섞지 않고 별도로 집계합니다.</p>
         </div>
-        <div className="grid grid-cols-2 gap-x-5 gap-y-1 text-xs text-slate-600 sm:grid-cols-4 lg:text-right">
+        {performanceLayer !== "RESEARCH" && <div className="grid grid-cols-2 gap-x-5 gap-y-1 text-xs text-slate-600 sm:grid-cols-4 lg:text-right">
           <span>분석 기간</span><strong className="font-semibold text-slate-800">{metadata?.signalDateRange ? `${metadata.signalDateRange.from} ~ ${metadata.signalDateRange.to}` : "축적 중"}</strong>
           <span>신호일</span><strong className="font-semibold tabular-nums text-slate-800">{metadata?.matureSignalDates.length ?? 0}일</strong>
           {performanceLayer === "DAILY_EOD" && <><span>최신 EOD</span><strong className="font-semibold text-slate-800">{data?.latestEodReferenceDate ?? "—"}</strong></>}
           <span>성과 결과 기준일</span><strong className="font-semibold text-slate-800">{metadata?.lastOutcomeDate ?? "—"}</strong>
           <span>상태</span><strong className="font-semibold text-amber-700">표본 축적 중 · 참고용</strong>
-        </div>
+        </div>}
       </div>
 
-      <div className="mt-4 inline-flex rounded-lg bg-slate-100/90 p-1" role="tablist" aria-label="성과 계층 선택">
+      <div className="mt-4 inline-flex max-w-full flex-wrap rounded-lg bg-slate-100/90 p-1" role="tablist" aria-label="성과 계층 선택">
         <button type="button" role="tab" aria-selected={performanceLayer === "DAILY_EOD"} onClick={() => setPerformanceLayer("DAILY_EOD")} className={`rounded-md px-3 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tb-orange)] ${performanceLayer === "DAILY_EOD" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}>Daily EOD</button>
         <button type="button" role="tab" aria-selected={performanceLayer === "INTRADAY_1430_LIVE"} onClick={() => setPerformanceLayer("INTRADAY_1430_LIVE")} className={`rounded-md px-3 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tb-orange)] ${performanceLayer === "INTRADAY_1430_LIVE" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}>14:30 LIVE</button>
+        <button type="button" role="tab" aria-selected={performanceLayer === "RESEARCH"} onClick={() => setPerformanceLayer("RESEARCH")} className={`rounded-md px-3 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tb-orange)] ${performanceLayer === "RESEARCH" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}>실행 연구</button>
       </div>
+      {performanceLayer === "RESEARCH" ? <ModelPerformanceResearchPanel /> : <>
       <p className="mt-2 text-xs text-slate-500">{performanceLayer === "DAILY_EOD" ? "동결된 EOD 순위와 공식 종가 결과" : "14:30 동결 신호 · 다음 거래일 공식 시가 진입 · 거래일 종가 성과"}</p>
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-3">
@@ -186,6 +189,7 @@ export default function ModelTopPerformancePanel() {
       <p className="mt-1 text-xs text-slate-500">평균·중앙값·상승비율은 개별 관측 기준입니다. 같은 종목의 반복 선정과 같은 날의 관측은 독립 표본이 아니며, N만으로 모델의 유효성을 판단할 수 없습니다.</p>
       <p className="mt-1 text-xs text-slate-500">{performanceLayer === "DAILY_EOD" ? "Daily 기준가격일은 신호일 공식 종가 기준이며 실제 매수 진입일을 뜻하지 않습니다." : "LIVE 진입일은 기존 계약의 다음 거래일 공식 시가 기준입니다. 실제 체결, 비용·슬리피지를 반영한 실현 수익률이 아닙니다."}</p>
       {performanceLayer === "DAILY_EOD" && <p className="mt-1 text-xs text-slate-500">최신 EOD는 모델 입력의 최신 기준일이며, 성과 결과 기준일은 미래 수익률이 실제로 확정된 마지막 청산일입니다.</p>}
+      </>}
     </section>
   );
 }
