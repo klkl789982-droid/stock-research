@@ -15,7 +15,7 @@ and no Vercel/GitHub secrets have been provisioned by this change.
 | Variable | Setup |
 | --- | --- |
 | `TB_ADMIN_USERNAME` | Choose the sole administrator ID, maximum 100 characters. |
-| `TB_ADMIN_PASSWORD_HASH` | Run `node scripts/hash-admin-password.mjs` locally. Enter a unique 16+ character password in the hidden prompt; copy only the generated hash. Never commit the password or hash. |
+| `TB_ADMIN_PASSWORD_HASH` | Run `node scripts/hash-admin-password.mjs` locally. Enter a unique password of at least 8 characters containing an English letter and a digit; special characters are optional (maximum 1024 bytes). Copy only the generated hash. Never commit the password or hash. |
 | `TB_SESSION_SECRET` | Generate 32 random bytes using the command below. |
 | `TB_AUTH_ORIGIN` | Exact canonical HTTPS origin, e.g. `https://stock-research-chi.vercel.app`, no trailing slash. Preview deployments need their own exact origin. |
 | `TB_AUTH_REDIS_URL` | HTTPS Redis REST endpoint (Upstash-compatible). |
@@ -46,6 +46,10 @@ parameters: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Chea
 
 ## Security contract
 
+- New password generation uses the same server-side policy as the hidden-prompt
+  script: 8+ characters, at least one English letter and one digit; special
+  characters are optional. Existing configured hashes are still verified as-is
+  at login; this change does not rotate credentials or invalidate existing sessions.
 - Random 256-bit session ID, HMAC signature, credential-bound server record.
 - Eight-hour absolute expiry; password/username/session secret rotation revokes
   existing sessions. Logout deletes the server record; replay is rejected.

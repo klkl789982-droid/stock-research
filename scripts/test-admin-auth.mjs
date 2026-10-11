@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { randomBytes } from "node:crypto";
+import { randomBytes, scryptSync } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import ts from "typescript";
 import * as auth from "../lib/admin-auth.mjs";
@@ -13,6 +13,39 @@ const hash = await auth.hashAdminPassword(password);
 const env = { NODE_ENV: "development", TB_ADMIN_USERNAME: "fixture-admin", TB_ADMIN_PASSWORD_HASH: hash, TB_SESSION_SECRET: randomBytes(32).toString("base64url"), TB_AUTH_ORIGIN: "http://127.0.0.1:3000", TB_AUTH_REDIS_URL: "http://127.0.0.1:9999", TB_AUTH_REDIS_TOKEN: "fixture-only", TB_AUTOMATION_READ_TOKEN: randomBytes(32).toString("base64url") };
 const config = auth.authConfig(env);
 const req = (path, init) => new Request(`http://127.0.0.1:3000${path}`, init);
+test("new password policy: 8+ characters, English letter and digit, optional special characters", async () => {
+  for (const value of ["Abcdef12", "Abcdef1!", "a1234567", "ABCDEFG1", "a1가나다라마바사"]) assert.equal(auth.isValidNewAdminPassword(value), true);
+  for (const value of ["Abcdef1", "abcdefgh", "12345678", "가나다라마바사1", "a1😀😀😀", "", null, 12345678, "a1" + "가".repeat(341)]) {
+    assert.equal(auth.isValidNewAdminPassword(value), false);
+    await assert.rejects(auth.hashAdminPassword(value), error => error.message === auth.ADMIN_PASSWORD_POLICY_MESSAGE);
+  }
+  assert.equal(auth.isValidNewAdminPassword("a" + "1".repeat(1023)), true);
+  const shortHash = await auth.hashAdminPassword("Abcdef12");
+  assert.match(shortHash, /^scrypt\$131072\$8\$1\$[a-f0-9]{32}\$[a-f0-9]{64}$/u);
+  const shortConfig = auth.authConfig({ ...env, TB_ADMIN_PASSWORD_HASH: shortHash });
+  const service = auth.createAdminAuth(shortConfig, memoryAuthStore());
+  const result = await service.login(env.TB_ADMIN_USERNAME, "Abcdef12", "policy-fixture");
+  assert.equal(result.status, 200);
+  assert.equal((await service.verify(result.token)).role, "admin");
+  await service.logout(result.token);
+  assert.equal(await service.verify(result.token), null);
+  const script = await readFile("scripts/hash-admin-password.mjs", "utf8");
+  assert.match(script, /ADMIN_PASSWORD_POLICY_MESSAGE/u);
+  assert.ok(!script.includes("16+"));
+});
+test("existing administrator hashes remain usable without credential or session rotation", async () => {
+  const legacyPassword = "LegacyOnlyLetters"; // Synthetic old-policy password; never an existing user's credential.
+  assert.equal(auth.isValidNewAdminPassword(legacyPassword), false);
+  const salt = "a".repeat(32);
+  const key = scryptSync(legacyPassword, salt, 32, { N: 131072, r: 8, p: 1, maxmem: 256 * 1024 * 1024 });
+  const legacyHash = `scrypt$131072$8$1$${salt}$${key.toString("hex")}`;
+  const legacyEnv = { ...env, TB_ADMIN_PASSWORD_HASH: legacyHash };
+  const legacyConfig = auth.authConfig(legacyEnv), store = memoryAuthStore();
+  const result = await auth.createAdminAuth(legacyConfig, store).login(env.TB_ADMIN_USERNAME, legacyPassword, "legacy-fixture");
+  assert.equal(result.status, 200);
+  assert.equal((await auth.createAdminAuth(auth.authConfig(legacyEnv), store).verify(result.token)).role, "admin");
+  assert.equal(legacyEnv.TB_ADMIN_PASSWORD_HASH, legacyHash);
+});
 test("scrypt hash, wrong ID/password, rotation, expiration, tamper and server logout revocation", async () => {
   assert.match(hash, /^scrypt\$131072\$8\$1\$/u);
   let clock = Date.now(); const store = memoryAuthStore(() => clock), service = auth.createAdminAuth(config, store, () => clock);

@@ -11,7 +11,7 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const portServer = http.createServer(); await new Promise(resolve => portServer.listen(0, "127.0.0.1", resolve));
 const port = portServer.address().port; await new Promise(resolve => portServer.close(resolve));
 const origin = `http://127.0.0.1:${port}`;
-const password = "Local-auth-test-only!2026", username = "local-test-admin"; // Never real administrator credentials.
+const password = "Abcdef12", username = "local-test-admin"; // Synthetic eight-character fixture, not real administrator credentials.
 const token = randomBytes(32).toString("base64url"), fixture = await redisFixtureServer(token);
 const machine = randomBytes(32).toString("base64url");
 const env = { ...process.env, NODE_ENV: "development", TB_AUTH_TEST_BUILD: "1", TB_ADMIN_USERNAME: username, TB_ADMIN_PASSWORD_HASH: await hashAdminPassword(password), TB_SESSION_SECRET: randomBytes(32).toString("base64url"), TB_AUTH_ORIGIN: origin, TB_AUTH_REDIS_URL: fixture.url, TB_AUTH_REDIS_TOKEN: token, TB_AUTOMATION_READ_TOKEN: machine };
@@ -56,7 +56,7 @@ try {
   if (process.argv.includes("--preview")) {
     fixture.reset();
     console.log(`AUTH_TEST_PREVIEW_URL=${origin}/login`);
-    console.log("Synthetic UI fixture credentials: local-test-admin / Local-auth-test-only!2026 (not a real account)");
+    console.log("Synthetic UI fixture credentials: local-test-admin / Abcdef12 (not a real account)");
     await new Promise(resolve => { process.on("SIGINT", resolve); process.on("SIGTERM", resolve); });
   }
 } finally { await cleanup(); }
