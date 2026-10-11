@@ -6,20 +6,23 @@ import { HOME_MODELS, summarizeModelChanges, summarizeTransitions, latestOneDayP
 import { createHomeDashboardStore } from "../lib/home-dashboard-store.mjs";
 
 const record = (code, rank, eligible = true) => ({ code, name: `긴종목명${code}`, market: "KOSPI", qualityEligibility: { eligible }, scoresByVersion: { "A-v1": 80 }, ranksByVersion: { "A-v1": rank }, scores: { modelB: 80, modelC: 70, modelD: 60 }, ranks: { modelB: rank, modelC: rank, modelD: rank } });
-const snapshot = (date, records) => ({ asOfDate: date, records, dataQuality: { structuralStatus: "passed" }, sourceManifest: { modelFormulaHashes: Object.fromEntries(HOME_MODELS.map((m) => [m, "same-frozen-formula"])) } });
-const before = snapshot("2026-10-06", [record("001", 1), record("002", 6), record("003", 4), record("004", 7), record("005", 3)]);
-const now = snapshot("2026-10-07", [record("001", 6), record("002", 2), record("003", 1), record("004", 7), record("005", null, false), record("006", 4)]);
+const snapshot = (date, records) => ({ asOfDate: date, records, modelDefinitions: Object.fromEntries(HOME_MODELS.map((m) => [m[0], { modelVersion: m }])), dataQuality: { structuralStatus: "passed" }, sourceManifest: { modelFormulaHashes: Object.fromEntries(HOME_MODELS.map((m) => [m, "same-frozen-formula"])) } });
+const before = snapshot("2026-10-06", [record("001", 1), record("002", 6), record("003", 4), record("004", 7), record("005", 3), record("006", 2), record("007", 5)]);
+const now = snapshot("2026-10-07", [record("001", 6), record("002", 2), record("003", 1), record("004", 7), record("005", 3), record("006", 4), record("007", 5)]);
 const frozen = structuredClone({ before, now });
 const result = summarizeModelChanges(now, before, before.asOfDate, 5);
 for (const model of result.models) {
   assert.deepEqual(model.entered.map((r) => r.code), ["002"]);
   assert.deepEqual(model.exited.map((r) => r.code), ["001"]);
   assert.deepEqual(model.risers.map((r) => r.code), ["003", "002"]);
-  assert.deepEqual(model.universeAddedTop.map((r) => r.code), ["006"]);
-  assert.deepEqual(model.universeRemovedTop.map((r) => r.code), ["005"]);
-  assert.equal(model.commonUniverseCount, 4);
+  assert.deepEqual(model.universeAddedTop, []);
+  assert.deepEqual(model.universeRemovedTop, []);
+  assert.equal(model.commonUniverseCount, 7);
+  assert.equal(model.top.find((r) => r.code === "003").rankChange, 3);
+  assert.equal(model.top.find((r) => r.code === "006").rankChange, -2);
+  assert.equal(model.top.find((r) => r.code === "005").rankChange, 0);
 }
-assert.equal(result.overlap.length, 3);
+assert.equal(result.overlap.length, 5);
 assert.deepEqual({ before, now }, frozen);
 assert.deepEqual(summarizeModelChanges(now, before, before.asOfDate, 5), result);
 assert.equal(summarizeModelChanges(now, null, before.asOfDate).models[0].entered, null);
@@ -28,6 +31,18 @@ const changed = structuredClone(before); changed.sourceManifest.modelFormulaHash
 assert.equal(summarizeModelChanges(now, changed, before.asOfDate).models[0].comparisonReason, "FORMULA_PROVENANCE_CHANGED_OR_MISSING");
 assert.throws(() => summarizeModelChanges(now, before, before.asOfDate, 6));
 assert.equal(summarizeModelChanges(now, before, before.asOfDate, 10).models[0].entered.length, 0, "같은 TOP 범위로 비교합니다.");
+for (const modify of [s => { s.records[6].code = "new"; }, s => { s.records[6].qualityEligibility.eligible = false; }, s => { s.records[6].market = "KOSDAQ"; }]) {
+  const altered = structuredClone(before); modify(altered);
+  const summary = summarizeModelChanges(now, altered, before.asOfDate).models[0];
+  assert.equal(summary.comparisonReason, "RANKING_UNIVERSE_CHANGED");
+  assert.equal(summary.entered, null); assert.equal(summary.risers, null);
+  assert.ok(summary.top.every(r => r.rankChange === null && r.previousRank === null));
+}
+const wrongVersion = structuredClone(before); wrongVersion.modelDefinitions.A.modelVersion = "A-v2";
+assert.equal(summarizeModelChanges(now, wrongVersion, before.asOfDate).models[0].comparisonReason, "MODEL_VERSION_CHANGED_OR_MISSING");
+const badRanks = structuredClone(before); badRanks.records[6].ranksByVersion["A-v1"] = 1;
+assert.equal(summarizeModelChanges(now, badRanks, before.asOfDate).models[0].comparisonReason, "RANKING_STRUCTURE_INVALID");
+assert.equal(summarizeModelChanges(now, now, now.asOfDate).models[0].comparisonStatus, "UNAVAILABLE");
 const transition = { referenceDate: now.asOfDate, sourceQualityGrade: "REJECTED", isPartialRanking: true, rows: [
   { code: "003", name: "전환종목", missingReasons: [], transitions: { "5-20": { status: "APPROACHING", gapPercent: -1 }, "20-60": { status: "CROSS_OCCURRED", gapPercent: 0.2 } } },
   { code: "005", name: "격리", missingReasons: ["qualityIneligible"], transitions: null },

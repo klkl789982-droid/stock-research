@@ -73,7 +73,7 @@ assert.match(parent, /<TransitionScreenerPanel onSelectStock=\{onSelectStock\}/)
 assert.match(panel, /AbortController/);
 assert.match(panel, /request === sequence\.current/);
 assert.match(panel, /controller\.current\?\.abort\(\)/);
-assert.match(panel, /onSelectStock\(\{ code: row\.code, name: row\.name \}\)/);
+assert.match(panel, /onSelectStock\(\{ code: row\.code, name: row\.name, market: row\.market \}\)/);
 assert.match(panel, /PAGE_SIZE = 30/);
 assert.match(panel, /md:grid-cols-2 xl:hidden/);
 assert.match(panel, /hidden overflow-x-auto xl:block/);
@@ -86,9 +86,13 @@ const uiRequire = (name) => {
   if (name === "react/jsx-runtime") return jsx;
   if (name === "react") return { ...React, useState: () => [states[stateIndex++], () => {}], useRef: () => ({ current: null }), useEffect: () => {}, useCallback: (value) => value };
   if (name === "../lib/directional-transition.mjs") return directional;
+  if (name === "./ApproachStrengthDetails") return { __esModule: true, default: () => null };
   throw new Error(`Unexpected UI dependency: ${name}`);
 };
 new Function("require", "exports", compile(panel, true))(uiRequire, uiExports);
 const html = renderToStaticMarkup(React.createElement(uiExports.default, { onSelectStock: () => {} }));
 for (const text of ["교차 발생", "접근 중 · 연구용", "교차 후 확인 · 연구용", "데드크로스 접근", "75.00", "검증종목", "000660", "2026-10-07", "2.00x", "55.00", "80.00", "필터 입력 결측 제외", "매수 추천·상승 확률이 아닙니다", "REJECTED"]) assert.ok(html.includes(text), `UI 렌더 누락: ${text}`);
+assert.ok(html.includes("지표 상세 펼치기"));
+assert.match(panel, /<details className="relative mt-2/u);
+assert.doesNotMatch(panel, /<article[^>]+onClick/u, "details에서 버블링으로 종목 이동이 발생하지 않습니다.");
 console.log("transition screener route validation/legacy isolation/secret-safe errors/mobile SSR/stale guard UI tests passed");

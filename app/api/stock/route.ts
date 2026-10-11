@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
     );
   }
   const normalizedQuery = query.trim().toUpperCase();
+  const codeSearch = /^[0-9A-Z]{6}$/u.test(normalizedQuery);
 
   const serviceKey = process.env.DATA_GO_KR_SERVICE_KEY;
 
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
     `&pageNo=1` +
     `&numOfRows=20` +
     `&resultType=json` +
-    `&likeItmsNm=${encodeURIComponent(normalizedQuery)}`;
+    `&${codeSearch ? "likeSrtnCd" : "likeItmsNm"}=${encodeURIComponent(normalizedQuery)}`;
 
   try {
     const response = await fetch(url, {
@@ -45,7 +46,9 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json();
 
-    const items = data?.response?.body?.items?.item ?? [];
+    const rawItems = data?.response?.body?.items?.item ?? [];
+    const rows = Array.isArray(rawItems) ? rawItems : [rawItems];
+    const items = codeSearch ? rows.filter((item: { srtnCd?: string }) => String(item.srtnCd ?? "").replace(/^A(?=[0-9A-Z]{6}$)/u, "") === normalizedQuery) : rows;
 
     return NextResponse.json({
       query,

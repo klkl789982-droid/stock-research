@@ -52,7 +52,8 @@ assert.match(page, /Promise\.allSettled\(tasks\)/u);
 assert.match(page, /setStockInfo\(null\)/u);
 assert.match(page, /setSearchedStock\(null\)/u);
 assert.match(page, /requestId === searchRequestIdRef\.current && selectedCodeRef\.current === stockCode/u);
-assert.match(page, /alert\("종목을 찾을 수 없습니다\."\)/u);
+assert.match(page, /setSearchError\("notFound"\)/u);
+assert.doesNotMatch(page, /alert\(/u);
 assert.doesNotMatch(page, /console\.log\("가격 API 원본:/u);
 assert.doesNotMatch(page, /console\.log\("실시간 데이터:/u);
 

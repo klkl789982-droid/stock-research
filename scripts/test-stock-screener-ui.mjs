@@ -17,7 +17,7 @@ assert.doesNotMatch(page, /\['▽', '스크리닝'\].*준비 중/u);
 assert.match(panel, /\/api\/screener/u);
 assert.match(panel, /조건 초기화/u);
 assert.match(panel, /모델 데이터 \{data\.modelCoverage\}\/\{data\.totalUniverse\}/u);
-assert.match(panel, /onSelectStock\(\{ code: row\.code, name: row\.name \}\)/u);
+assert.match(panel, /onSelectStock\(\{ code: row\.code, name: row\.name, market: row\.market \}\)/u);
 assert.match(panel, /overflow-x-auto/u);
 assert.match(panel, /AbortController/);
 assert.match(panel, /request !== sequence.current/);

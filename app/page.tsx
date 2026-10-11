@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import TopStocksPanel from "../components/TopStocksPanel";
 import ModelTopPerformancePanel from "../components/ModelTopPerformancePanel";
 import ModelExplanationPanel from "../components/ModelExplanationPanel";
@@ -12,7 +12,7 @@ import StockScreenerPanel from "../components/StockScreenerPanel";
 import HomeDashboard from "../components/HomeDashboard";
 import StockPriceChart from "../components/StockPriceChart";
 import StockResearchPanel from "../components/StockResearchPanel";
-import { searchApiErrorMessage, settleSearchRequest } from "../lib/search-request-isolation.mjs";
+import { searchApiErrorMessage, settleSearchRequest, selectVerifiedStock } from "../lib/search-request-isolation.mjs";
 import { buildSearchTechnicalStrength } from "../lib/search-technical-strength.mjs";
 import { buildSearchMarketAnalysis } from "../lib/search-market-analysis.mjs";
 import { analysisAvailabilityMessage } from "../lib/analysis-availability.mjs";
@@ -84,6 +84,8 @@ const searchControllerRef = useRef<AbortController | null>(null);
 const selectedCodeRef = useRef<string | null>(null);
 const pageTopRef = useRef<HTMLElement | null>(null);
 const searchInputRef = useRef<HTMLInputElement | null>(null);
+const explorerOriginRef = useRef<{ view: "home" | "models" | "screener"; query: string; scrollY: number } | null>(null);
+const routeInitializedRef = useRef(false);
 const technicalStrength = useMemo(() => buildSearchTechnicalStrength({
   priceHistory,
   priceRequestStatus,
@@ -195,12 +197,12 @@ useEffect(() => {
   void fetchInvestorData();
   return () => controller.abort();
 }, [stockInfo]);
-async function handleSearch(selection?: { code: string; name: string }) {
-  const searchTerm = selection?.name ?? query.trim();
+const handleSearch = useCallback(async (selection?: { code: string; name: string; market?: string }, updateHistory = true) => {
+  const searchTerm = selection?.code ?? query.trim();
   if (searchTerm === "") return;
   setSearchError(null);
-  if (selection) setQuery(selection.name);
-setPageView("home");
+  if (!explorerOriginRef.current) explorerOriginRef.current = { view: pageView, query, scrollY: window.scrollY };
+  if (selection) setQuery(selection.name || selection.code);
 setActiveTab("technical");
 const requestId = ++searchRequestIdRef.current;
 searchControllerRef.current?.abort();
@@ -233,19 +235,20 @@ setLoading(true);
     if (!response.ok) throw new Error(data?.error ?? "종목 검색에 실패했습니다.");
 
     if (data.items && data.items.length > 0) {
-      const exactMatch = data.items.find(
-  (item: { itmsNm: string; srtnCd: string }) => selection
-    ? item.srtnCd.replace(/^A/, "") === selection.code
-    : item.itmsNm === searchTerm
-);
-
-const selectedItem = exactMatch ?? data.items[0];
+const selectedItem = selectVerifiedStock(data.items, selection, searchTerm);
+if (!selectedItem) { setSearchError("notFound"); return; }
  setStockInfo(selectedItem);
 setSearchedStock(selectedItem.itmsNm);
 if (selection) requestAnimationFrame(() => pageTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
 
 const stockCode = selectedItem.srtnCd.replace(/^A/, "");
 selectedCodeRef.current = stockCode;
+if (updateHistory) {
+  const url = new URL(window.location.href); url.searchParams.set("stock", stockCode);
+  const state = { ...window.history.state, tbStock: { code: stockCode, name: selectedItem.itmsNm, market: selectedItem.mrktCtg, returnToExplorer: window.history.state?.tbStock?.returnToExplorer || !new URL(window.location.href).searchParams.has("stock") } };
+  if (new URL(window.location.href).searchParams.has("stock")) window.history.replaceState(state, "", url);
+  else window.history.pushState(state, "", url);
+}
 
 const isCurrentSearch = () => requestId === searchRequestIdRef.current && selectedCodeRef.current === stockCode;
 const tasks = [
@@ -311,8 +314,8 @@ if (aborted?.status === "rejected") throw aborted.reason;
   if (requestId === searchRequestIdRef.current) setCompanyAnalysisLoading(false);
   if (requestId === searchRequestIdRef.current) setLoading(false);
 }
-}
-function handleHome() {
+}, [pageView, query]);
+const handleHome = useCallback((clearRoute = true) => {
   searchRequestIdRef.current += 1;
   searchControllerRef.current?.abort();
   searchControllerRef.current = null;
@@ -339,8 +342,32 @@ function handleHome() {
   setActiveTab("technical");
   setPageView("home");
   setLoading(false);
+  if (clearRoute) {
+    explorerOriginRef.current = null;
+    const url = new URL(window.location.href); url.searchParams.delete("stock");
+    const state = { ...window.history.state }; delete state.tbStock;
+    window.history.replaceState(state, "", url);
+  }
   requestAnimationFrame(() => pageTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
-}
+}, []);
+const restoreExplorer = useCallback(() => {
+  const origin = explorerOriginRef.current;
+  handleHome(false);
+  if (origin) { setPageView(origin.view); setQuery(origin.query); requestAnimationFrame(() => window.scrollTo({ top: origin.scrollY, behavior: "instant" })); }
+  explorerOriginRef.current = null;
+}, [handleHome]);
+useEffect(() => {
+  const restoreRoute = () => {
+    const code = new URL(window.location.href).searchParams.get("stock");
+    if (!code) { if (explorerOriginRef.current) restoreExplorer(); return; }
+    if (!/^[0-9A-Z]{6}$/u.test(code)) return;
+    const saved = window.history.state?.tbStock;
+    void handleSearch({ code, name: saved?.code === code ? saved.name : "", market: saved?.code === code ? saved.market : undefined }, false);
+  };
+  window.addEventListener("popstate", restoreRoute);
+  if (!routeInitializedRef.current) { routeInitializedRef.current = true; if (new URL(window.location.href).searchParams.has("stock")) restoreRoute(); }
+  return () => window.removeEventListener("popstate", restoreRoute);
+}, [handleSearch, restoreExplorer]);
 useEffect(() => {
   if (!mobileNavOpen) return;
   const handleEscape = (event: KeyboardEvent) => {
@@ -380,7 +407,7 @@ return (
       <header className="tb-brand-shell sticky top-0 z-30 border-b border-white/10 text-white shadow-[0_8px_25px_rgba(7,18,40,0.14)]">
         <div className="flex w-full items-center gap-3 px-3 py-2 sm:gap-4 sm:px-6 lg:px-6">
           <button type="button" onClick={() => setMobileNavOpen(true)} aria-label="메뉴 열기" aria-expanded={mobileNavOpen} className="tb-focus inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/15 text-xl leading-none text-white hover:bg-white/10 lg:hidden">☰</button>
-          <button type="button" onClick={handleHome} className="tb-focus shrink-0 rounded-xl text-left" aria-label="Tight Budget 홈으로">
+          <button type="button" onClick={() => handleHome()} className="tb-focus shrink-0 rounded-xl text-left" aria-label="Tight Budget 홈으로">
             <BrandMark inverse />
           </button>
           <form className="ml-auto hidden min-w-0 flex-1 gap-2 sm:flex sm:max-w-xl" onSubmit={(event) => { event.preventDefault(); void handleSearch(); }}>
@@ -410,13 +437,13 @@ return (
         </aside>
         <div className="min-w-0 flex-1 px-3 py-3 sm:px-4 sm:py-4 lg:px-4 xl:px-5">
         {searchError && <p role="alert" className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{searchError === "notFound" ? "해당 종목을 찾을 수 없습니다." : "검색 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요."}</p>}
-        {!searchedStock && pageView === "home" && <HomeDashboard
+        {pageView === "home" && <div hidden={Boolean(searchedStock)}><HomeDashboard
           onSelectStock={handleSearch}
           onOpenModel={(model) => { openModelsFromNavigation(); setModelInitialTab(model); }}
           onOpenPerformance={() => { openModelsFromNavigation(); setModelPageTab("performance"); }}
           onOpenSearch={openSearchFromNavigation}
           onOpenTransition={(pair, state, direction) => { openScreenerFromNavigation(); setScreenerEntry({ tab: "transition", pair, state, direction }); }}
-        />}
+        /></div>}
 
         {!searchedStock && pageView === "models" && (
           <section aria-labelledby="models-heading">
@@ -430,15 +457,15 @@ return (
                 <button type="button" role="tab" aria-selected={modelPageTab === "guide"} onClick={() => setModelPageTab("guide")} className={`tb-focus -mb-px border-b-2 px-4 py-2.5 text-sm font-semibold ${modelPageTab === "guide" ? "border-[var(--tb-orange)] text-[var(--tb-orange)]" : "border-transparent text-slate-500 hover:text-slate-900"}`}>모델 설명</button>
               </div>
             </div>
-            {modelPageTab === "top" ? <TopStocksPanel key={modelInitialTab} initialTab={modelInitialTab} onSelectStock={handleSearch} /> : modelPageTab === "performance" ? <ModelTopPerformancePanel /> : <ModelExplanationPanel />}
+            {modelPageTab === "top" ? <TopStocksPanel key={modelInitialTab} initialTab={modelInitialTab} onTabChange={setModelInitialTab} onSelectStock={handleSearch} /> : modelPageTab === "performance" ? <ModelTopPerformancePanel /> : <ModelExplanationPanel />}
           </section>
         )}
 
-        {!searchedStock && pageView === "screener" && <StockScreenerPanel onSelectStock={handleSearch} key={`${screenerEntry.tab}:${screenerEntry.pair}:${screenerEntry.state}:${screenerEntry.direction}`} initialTab={screenerEntry.tab} initialPair={screenerEntry.pair} initialState={screenerEntry.state} initialDirection={screenerEntry.direction} />}
+        {pageView === "screener" && <div hidden={Boolean(searchedStock)}><StockScreenerPanel onSelectStock={handleSearch} key={`${screenerEntry.tab}:${screenerEntry.pair}:${screenerEntry.state}:${screenerEntry.direction}`} initialTab={screenerEntry.tab} initialPair={screenerEntry.pair} initialState={screenerEntry.state} initialDirection={screenerEntry.direction} /></div>}
 
         {searchedStock && (
           <div className="tb-card mt-3 overflow-hidden p-4 sm:p-5">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--tb-blue)]">Stock Detail</p>
+            <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--tb-blue)]">Stock Detail</p><button type="button" onClick={() => { if (window.history.state?.tbStock?.returnToExplorer) window.history.back(); else { restoreExplorer(); const url = new URL(window.location.href); url.searchParams.delete("stock"); window.history.replaceState(window.history.state, "", url); } }} className="tb-focus rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium">← 탐색 결과로 돌아가기</button></div>
 
             <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">
               {searchedStock}
@@ -564,7 +591,7 @@ return (
 )}
 
 <StockPriceChart rows={priceHistory} meta={priceMeta} />
-{stockInfo?.srtnCd && <StockResearchPanel key={String(stockInfo.srtnCd)} code={String(stockInfo.srtnCd).replace(/^A/, "")} />}
+
 <details className="mt-3 text-xs text-gray-500">
   <summary className="cursor-pointer font-medium text-gray-600">종목·가격 데이터 기준 자세히 보기</summary>
   <div className="mt-3 grid gap-2 rounded-xl bg-gray-50 p-4 sm:grid-cols-2">
@@ -574,7 +601,7 @@ return (
   </div>
 </details>
 
-            <section className="mt-3 border-t border-gray-100 pt-3">
+            <section id="stock-technical" className="mt-3 scroll-mt-32 border-t border-gray-100 pt-3">
               <div className="flex items-end justify-between gap-4"><div><p className="text-sm font-semibold text-gray-500">분석 요약</p><h3 className="mt-1 text-xl font-bold text-gray-950">핵심 결과를 한눈에</h3></div><span className="text-xs text-gray-400">검증된 데이터만 표시</span></div>
               <div className="mt-4 divide-y divide-slate-100 rounded-2xl border border-[var(--tb-border)] bg-slate-50/70 px-4 sm:grid sm:grid-cols-3 sm:divide-x sm:divide-y-0 sm:px-0">
                 <div className="flex items-center justify-between py-4 sm:block sm:px-5"><span className="text-sm text-gray-500">기술 흐름</span><div className="text-right sm:mt-2 sm:text-left">{technicalStrength.status === "available" ? <><strong className="text-xl text-gray-950">{technicalStrength.score}</strong><span className="ml-1 text-xs text-gray-400">/ 100</span><p className="text-sm font-semibold text-gray-700">분석 모델 검증 중</p></> : <strong className="text-sm text-gray-700">{technicalStrength.status === "loading" ? "분석 준비 중" : analysisAvailabilityMessage(technicalStrength.reason)}</strong>}</div></div>
@@ -583,6 +610,7 @@ return (
               </div>
             </section>
 
+            {stockInfo?.srtnCd && <StockResearchPanel key={String(stockInfo.srtnCd)} code={String(stockInfo.srtnCd).replace(/^A/, "")} />}
             <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1.5" role="tablist" aria-label="상세 분석">
               <button
   onClick={() => setActiveTab("technical")}

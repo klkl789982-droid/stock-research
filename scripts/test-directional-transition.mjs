@@ -35,6 +35,11 @@ const notApplicable = { ...active, directionalTransitions: { "5-20": { ...active
 const excluded = screenTransitions([notApplicable], filters("crossDirection=dead&strengthMin=0"));
 assert.equal(excluded.exclusions.conditionNotMet, 1); assert.equal(excluded.exclusions.filterMissing, 0, "비접근 상태의 강도 해당없음은 데이터 결측이 아닙니다.");
 assert.equal(screenTransitions([active], filters("code=000009")).results.length, 0);
+for (const direction of ["golden", "dead"]) {
+  const rows = [40, 90, 60].map((strength, i) => ({ ...active, code: `00000${i + 1}`, directionalTransitions: { "5-20": { [direction]: { ...observe(direction === "golden" ? golden : dead, direction), approachStrength: strength } } } }));
+  assert.deepEqual(screenTransitions(rows, filters(`crossDirection=${direction}&state=APPROACHING&sort=strength&direction=desc`)).results.map(r => r.approachStrength), [90, 60, 40]);
+  assert.deepEqual(screenTransitions(rows, filters(`crossDirection=${direction}&state=APPROACHING&sort=strength&direction=asc`)).results.map(r => r.approachStrength), [40, 60, 90]);
+}
 for (const q of ["strengthMin=101", "strengthMin=-1", "strengthMin=NaN", "crossDirection=unknown", "code=bad", "rules=legacy-v1&strengthMin=2"]) {
   const params = new URLSearchParams(q.includes("rules=") ? q : `rules=directional-v2&${q}`);
   assert.throws(() => parseTransitionFilters(params));

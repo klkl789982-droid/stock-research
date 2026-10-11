@@ -3,14 +3,20 @@ import { readFile } from "node:fs/promises";
 
 const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
 
-assert.match(page, /function handleHome\(\)/u);
+assert.match(page, /const handleHome = useCallback/u);
 assert.match(page, /searchControllerRef\.current\?\.abort\(\)/u);
 assert.match(page, /searchRequestIdRef\.current \+= 1/u);
 assert.match(page, /setSearchedStock\(null\)/u);
 assert.match(page, /setStockInfo\(null\)/u);
 assert.match(page, /aria-label="Tight Budget 홈으로"/u);
-assert.match(page, /onClick=\{handleHome\}/u);
-assert.match(page, /onClick=\{handleHome\}/u);
+assert.match(page, /onClick=\{\(\) => handleHome\(\)\}/u);
+assert.match(page, /selectVerifiedStock\(data.items, selection, searchTerm\)/u);
+assert.doesNotMatch(page, /exactMatch \?\? data.items\[0\]/u);
+assert.match(page, /selection\?\.code \?\? query.trim\(\)/u);
+assert.match(page, /window.history.pushState/u);
+assert.match(page, /window.addEventListener\("popstate"/u);
+assert.match(page, /hidden=\{Boolean\(searchedStock\)\}><StockScreenerPanel/u);
+assert.match(page, /탐색 결과로 돌아가기/u);
 assert.match(page, /requestId !== searchRequestIdRef\.current \|\| \(error instanceof DOMException/u);
 assert.doesNotMatch(page, /alert\(/u);
 assert.match(page, /searchError/u);
