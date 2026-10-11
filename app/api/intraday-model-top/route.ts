@@ -1,3 +1,4 @@
+import { withAdminAccess } from "@/lib/admin-access";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
@@ -25,7 +26,7 @@ function resolveSignalFilePath(signalPath: string) {
   return path.join(process.cwd(), "data", "intraday-signals", "model-top", match[1], "1430.json");
 }
 
-export async function GET(request: NextRequest) {
+async function handleGet(request: NextRequest) {
   const requestedModel = (request.nextUrl.searchParams.get("model") ?? "B").toUpperCase();
   if (!(requestedModel in MODEL_VERSIONS)) return NextResponse.json({ error: { code: "INVALID_MODEL", message: "model은 A, B, C, D 중 하나여야 합니다." } }, { status: 400 });
   const requestedLimit = Number(request.nextUrl.searchParams.get("limit") ?? "5");
@@ -51,3 +52,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: { code: "INTRADAY_OFFICIAL_SIGNAL_UNAVAILABLE", message: "14:30 공식 신호를 사용할 수 없습니다.", reason } }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
 }
+
+export const GET = withAdminAccess(handleGet);

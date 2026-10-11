@@ -15,6 +15,7 @@ const compiled = (source) => ts.transpileModule(source, { compilerOptions: { mod
 function makeRoute(loader) {
   const exports = {};
   new Function("require", "exports", compiled(routeSource))((name) => {
+    if (name === "@/lib/admin-access") return { withAdminAccess: handler => handler }; // Authorized data-contract fixture; auth independently tested.
     if (name === "next/server") return { NextResponse: { json: (body, options) => ({ body, options }) } };
     if (name === "@/lib/model-performance-research.mjs") return researchEngine;
     if (name === "@/lib/model-performance-research-store.mjs") return { loadModelPerformanceResearch: loader };

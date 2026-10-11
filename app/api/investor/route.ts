@@ -1,7 +1,8 @@
+import { withAdminAccess } from "@/lib/admin-access";
 import { NextRequest, NextResponse } from "next/server";
 import { classifyKisHttpStatus, kisRequest, safeKisError } from "@/lib/kis-token-manager";
 
-export async function GET(request: NextRequest) {
+async function handleGet(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
 
@@ -36,3 +37,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: { code: safe.code, message: safe.message } }, { status: safe.httpStatus });
   }
 }
+
+export const GET = withAdminAccess(handleGet);

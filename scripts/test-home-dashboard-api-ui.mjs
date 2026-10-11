@@ -13,6 +13,7 @@ const source = await readFile(new URL("../app/api/home-dashboard/route.ts", impo
 const exports = {};
 let calls = 0, fail = false;
 const require = (name) => {
+  if (name === "@/lib/admin-access") return { withAdminAccess: handler => handler }; // Authorized data-contract fixture; auth independently tested.
   if (name === "next/server") return { NextResponse: { json: (body, init) => ({ body, status: init?.status ?? 200, headers: init?.headers }) } };
   if (name === "node:path") return path;
   if (name === "node:fs/promises") return { readFile: async () => JSON.stringify({ status: "FAILED", signalDate: "2026-10-08", updatedAt: "2026-10-08T12:00:00Z", credential: "must-not-leak" }) };

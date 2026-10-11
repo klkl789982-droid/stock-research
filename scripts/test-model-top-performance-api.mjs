@@ -22,6 +22,7 @@ const files = {
 async function loadRoute(fixtureFiles) {
   const exports = {};
   const require = (name) => {
+    if (name === "@/lib/admin-access") return { withAdminAccess: handler => handler }; // Authorized data-contract fixture; auth independently tested.
     if (name === "node:fs/promises") return {
       readdir: async (dir) => Object.keys(fixtureFiles).filter((file) => normalize(path.dirname(file)) === normalize(dir)).map((file) => path.basename(file)),
       readFile: async (file) => JSON.stringify(fixtureFiles[normalize(file)]),

@@ -18,6 +18,7 @@ const exports = {};
 const loadError = { message: "credential-or-private-url-must-not-leak" };
 let fail = false;
 const require = (name) => {
+  if (name === "@/lib/admin-access") return { withAdminAccess: handler => handler }; // Authorized data-contract fixture; auth independently tested.
   if (name === "next/server") return { NextResponse: { json: (body, init) => ({ body, status: init?.status ?? 200, headers: init?.headers }) } };
   if (name === "node:fs/promises") return { readdir: async () => ["2026-10-07.json"], readFile: async () => JSON.stringify({ asOfDate: row.referenceDate, records: [] }) };
   if (name === "node:path") return path;

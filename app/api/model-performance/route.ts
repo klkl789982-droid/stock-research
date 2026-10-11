@@ -1,3 +1,4 @@
+import { withAdminAccess } from "@/lib/admin-access";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
@@ -68,7 +69,7 @@ function embeddedOutcome(snapshot: HistorySnapshot, horizon: keyof typeof HORIZO
   };
 }
 
-export async function GET() {
+async function handleGet() {
   const root = process.cwd();
   const historyDir = path.join(root, "data", "history");
   try {
@@ -107,3 +108,5 @@ export async function GET() {
     }, { headers: { "Cache-Control": "no-store" } });
   }
 }
+
+export const GET = withAdminAccess(handleGet);

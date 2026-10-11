@@ -1,3 +1,4 @@
+import { withAdminAccess } from "@/lib/admin-access";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
@@ -26,7 +27,7 @@ const numberParam = (request: NextRequest, name: string) => {
   return Number.isFinite(parsed) ? parsed : Number.NaN;
 };
 
-export async function GET(request: NextRequest) {
+async function handleGet(request: NextRequest) {
   const tab = request.nextUrl.searchParams.get("tab") ?? "models";
   if (!["models", "transition"].includes(tab)) return NextResponse.json({ error: { message: "지원하지 않는 검색 영역입니다." } }, { status: 400 });
   if (tab === "transition") {
@@ -82,3 +83,5 @@ export async function GET(request: NextRequest) {
     supportedFilters: { models: Object.keys(SCREENING_MODELS), companyGrades: allowedGrades },
   }, { headers: { "Cache-Control": "no-store" } });
 }
+
+export const GET = withAdminAccess(handleGet);

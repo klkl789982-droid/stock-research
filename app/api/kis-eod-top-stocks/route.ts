@@ -1,10 +1,11 @@
+import { withAdminAccess } from "@/lib/admin-access";
 import { NextRequest, NextResponse } from "next/server";
 import { latestOfficialKisFallbackDate, readKisEodTopStocks } from "@/lib/kis-eod-publication.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(request: NextRequest) {
+async function handleGet(request: NextRequest) {
   const model = (request.nextUrl.searchParams.get("model") ?? "B").toUpperCase();
   const version = request.nextUrl.searchParams.get("version");
   const limit = Number(request.nextUrl.searchParams.get("limit") ?? "5");
@@ -18,3 +19,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ available: false, dataMode: "kisProvisionalEod", status: "KIS_EOD_FAILED", reason: "PUBLICATION_READ_FAILED" }, { headers: { "Cache-Control": "no-store" } });
   }
 }
+
+export const GET = withAdminAccess(handleGet);

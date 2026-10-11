@@ -1,9 +1,10 @@
+import { withAdminAccess } from "@/lib/admin-access";
 import "server-only";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
+async function handleGet(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code")?.trim() ?? "";
   if (!/^\d{6}$/.test(code)) return NextResponse.json({ error: { code: "INVALID_STOCK_CODE", message: "6자리 종목코드가 필요합니다." } }, { status: 400 });
   const directory = path.join(process.cwd(), "data", "analysis", "market");
@@ -23,3 +24,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: { code: "MARKET_ANALYSIS_SNAPSHOT_INVALID", message: "최신 시장분석 스냅샷이 손상되었습니다." } }, { status: 500 });
   }
 }
+
+export const GET = withAdminAccess(handleGet);

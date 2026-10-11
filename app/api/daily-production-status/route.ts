@@ -1,3 +1,4 @@
+import { withAdminAccess } from "@/lib/admin-access";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
@@ -44,7 +45,7 @@ async function latestScheduledRun(): Promise<WorkflowRun | null> {
   }
 }
 
-export async function GET() {
+async function handleGet() {
   const root = process.cwd();
   try {
     const [stored, siteApiReferenceDate, scheduledRun] = await Promise.all([
@@ -89,3 +90,5 @@ export async function GET() {
     }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
 }
+
+export const GET = withAdminAccess(handleGet);

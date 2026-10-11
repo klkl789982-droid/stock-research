@@ -33,7 +33,8 @@ const oldFetch = globalThis.fetch, oldKey = process.env.DATA_GO_KR_SERVICE_KEY;
 process.env.DATA_GO_KR_SERVICE_KEY = "non-sensitive-fixture";
 globalThis.fetch = async url => { upstream = new URL(url); return { ok: true, json: async () => ({ response: { body: { items: { item: items } } } }) }; };
 try {
-  new Function("require", "exports", compile(routeSource))(name => name === "next/server" ? { NextResponse: { json: (body, init) => ({ body, status: init?.status ?? 200 }) } } : (() => { throw new Error(name); })(), exports);
+  // Authorized data-contract fixture; server authentication is tested separately.
+  new Function("require", "exports", compile(routeSource))(name => name === "@/lib/admin-access" ? { withAdminAccess: handler => handler } : name === "next/server" ? { NextResponse: { json: (body, init) => ({ body, status: init?.status ?? 200 }) } } : (() => { throw new Error(name); })(), exports);
   const response = await exports.GET({ url: "https://fixture/api/stock?query=000002" });
   assert.equal(upstream.searchParams.get("likeSrtnCd"), "000002"); assert.equal(upstream.searchParams.has("likeItmsNm"), false);
   assert.deepEqual(response.body.items, [items[1]]);

@@ -1,6 +1,7 @@
+import { withAdminAccess } from "@/lib/admin-access";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
+async function handleGet(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
   if (!code || !/^[0-9A-Z]{6}$/.test(code)) return NextResponse.json({ error: "유효한 종목코드가 필요합니다." }, { status: 400 });
   const serviceKey = process.env.DATA_GO_KR_SERVICE_KEY;
@@ -25,3 +26,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "공식 일봉 처리 중 오류가 발생했습니다." }, { status: 502 });
   }
 }
+
+export const GET = withAdminAccess(handleGet);

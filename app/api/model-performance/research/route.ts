@@ -1,3 +1,4 @@
+import { withAdminAccess } from "@/lib/admin-access";
 import { NextResponse } from "next/server";
 import { loadModelPerformanceResearch } from "@/lib/model-performance-research-store.mjs";
 import { validateResearchOptions } from "@/lib/model-performance-research.mjs";
@@ -6,7 +7,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 const headers = { "Cache-Control": "no-store" };
 
-export async function GET(request: Request) {
+async function handleGet(request: Request) {
   const query = new URL(request.url).searchParams;
   let options;
   try {
@@ -31,3 +32,5 @@ export async function GET(request: Request) {
     return NextResponse.json({ status: "RESEARCH_DATA_UNAVAILABLE", message: "공식 연구 입력의 무결성을 확인할 수 없습니다. 기존 성과 데이터는 유지됩니다." }, { status: 503, headers });
   }
 }
+
+export const GET = withAdminAccess(handleGet);

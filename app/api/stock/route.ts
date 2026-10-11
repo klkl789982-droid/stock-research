@@ -1,6 +1,7 @@
+import { withAdminAccess } from "@/lib/admin-access";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
+async function handleGet(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get("query");
 
@@ -63,3 +64,5 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export const GET = withAdminAccess(handleGet);

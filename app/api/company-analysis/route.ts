@@ -1,10 +1,11 @@
+import { withAdminAccess } from "@/lib/admin-access";
 import "server-only";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 
 const normalizeCode = (value: string | null) => { if (!value) return null; const code = value.length === 7 && value.startsWith("A") ? value.slice(1) : value.toUpperCase(); return /^[0-9A-Z]{6}$/.test(code) ? code : null; };
-export async function GET(request: NextRequest) {
+async function handleGet(request: NextRequest) {
   const code = normalizeCode(request.nextUrl.searchParams.get("code")); const date = request.nextUrl.searchParams.get("date");
   if (!code) return NextResponse.json({ status: "failed", error: { code: "INVALID_STOCK_CODE", message: "유효한 6자리 종목코드가 필요합니다." } }, { status: 400 });
   if (date != null && !/^\d{4}-\d{2}-\d{2}$/.test(date)) return NextResponse.json({ status: "failed", error: { code: "INVALID_DATE", message: "date는 YYYY-MM-DD 형식이어야 합니다." } }, { status: 400 });
@@ -23,3 +24,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ status: "failed", error: { code: "COMPANY_ANALYSIS_READ_FAILED", message: "기업분석 저장 결과를 읽지 못했습니다." } }, { status: 500 });
   }
 }
+
+export const GET = withAdminAccess(handleGet);

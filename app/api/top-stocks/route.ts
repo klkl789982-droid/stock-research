@@ -1,3 +1,4 @@
+import { withAdminAccess } from "@/lib/admin-access";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
@@ -123,7 +124,7 @@ async function loadOfficialModelBStatus(): Promise<{ status: IntradayModelBStatu
   } catch { return { status: { signalDate: null, status: "UNAVAILABLE", reason: "officialSignalNotAvailable", officialSignalTime: null }, signal: null }; }
 }
 
-export async function GET(request: NextRequest) {
+async function handleGet(request: NextRequest) {
   const modelParameter = request.nextUrl.searchParams.get("model")?.toUpperCase() ?? "A";
   if (!(modelParameter in MODEL_KEYS)) {
     return NextResponse.json({ error: { code: "INVALID_MODEL", message: "model은 A, B, C, D 중 하나여야 합니다." } }, { status: 400 });
@@ -244,3 +245,5 @@ export async function GET(request: NextRequest) {
     stocks,
   }, { headers: { "Cache-Control": "no-store" } });
 }
+
+export const GET = withAdminAccess(handleGet);

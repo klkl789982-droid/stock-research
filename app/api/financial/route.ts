@@ -1,3 +1,4 @@
+import { withAdminAccess } from "@/lib/admin-access";
 import { NextRequest, NextResponse } from "next/server";
 import corpMap from "@/data/corp-map.json";
 
@@ -11,7 +12,7 @@ function getTagValue(xml: string, tag: string) {
   const match = xml.match(new RegExp(`<${tag}>(.*?)</${tag}>`));
   return match ? match[1].trim() : "";
 }
-let corpCodeCache:
+const corpCodeCache:
   | Record<
       string,
       {
@@ -41,7 +42,7 @@ function findCorpCode(stockCode: string) {
   };
 }
 
-export async function GET(request: NextRequest) {
+async function handleGet(request: NextRequest) {
   const apiKey = process.env.DART_API_KEY;
 
   if (!apiKey) {
@@ -98,15 +99,16 @@ if (financialData.status !== "000") {
   );
 }
 
-const list = financialData.list ?? [];
+type DartAccount = { account_nm: string; sj_div?: string; thstrm_amount?: string; bfefrmtrm_amount?: string };
+const list: DartAccount[] = financialData.list ?? [];
 console.log(
   "이자 관련 계정:",
   list
-    .filter((row: any) =>
+    .filter((row: DartAccount) =>
       row.account_nm?.includes("이자") ||
       row.account_nm?.includes("금융")
     )
-    .map((row: any) => ({
+    .map((row: DartAccount) => ({
       account_nm: row.account_nm,
       amount: row.thstrm_amount,
     }))
@@ -114,14 +116,14 @@ console.log(
 console.log(
   "현금흐름표 계정:",
   list
-    .filter((row: any) => row.sj_div === "CF")
-    .map((row: any) => ({
+    .filter((row: DartAccount) => row.sj_div === "CF")
+    .map((row: DartAccount) => ({
       account_nm: row.account_nm,
       amount: row.thstrm_amount,
     }))
 );
 function findAmount(names: string[]) {
-  const item = list.find((row: any) =>
+  const item = list.find((row: DartAccount) =>
     names.includes(row.account_nm)
   );
 
@@ -134,7 +136,7 @@ function findAmount(names: string[]) {
   return Number(String(raw).replace(/,/g, ""));
 }
 function findThreeYearAmounts(names: string[]) {
-  const item = list.find((row: any) =>
+  const item = list.find((row: DartAccount) =>
     names.includes(row.account_nm)
   );
 
@@ -281,3 +283,5 @@ equity,
     );
   }
 }
+
+export const GET = withAdminAccess(handleGet);

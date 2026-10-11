@@ -12,6 +12,7 @@ import StockScreenerPanel from "../components/StockScreenerPanel";
 import HomeDashboard from "../components/HomeDashboard";
 import StockPriceChart from "../components/StockPriceChart";
 import StockResearchPanel from "../components/StockResearchPanel";
+import AdminLogout from "../components/AdminLogout";
 import { searchApiErrorMessage, settleSearchRequest, selectVerifiedStock } from "../lib/search-request-isolation.mjs";
 import { buildSearchTechnicalStrength } from "../lib/search-technical-strength.mjs";
 import { buildSearchMarketAnalysis } from "../lib/search-market-analysis.mjs";
@@ -415,6 +416,7 @@ return (
             <input ref={searchInputRef} id="header-stock-search" value={query} onChange={(event) => setQuery(event.target.value)} disabled={loading} placeholder="종목명 또는 종목코드 검색" className="tb-focus min-w-0 flex-1 rounded-full border border-white/15 bg-white/10 px-5 py-2.5 text-sm text-white placeholder:text-slate-300 focus:border-white/35 focus:bg-white/15 focus:outline-none" />
             <button type="submit" disabled={loading} className="tb-focus rounded-full bg-[var(--tb-orange)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[var(--tb-orange-bright)] disabled:opacity-40">{loading ? "조회 중" : "검색"}</button>
           </form>
+          <AdminLogout />
         </div>
         {<form className="flex gap-2 border-t border-white/10 px-4 py-2.5 sm:hidden" onSubmit={(event) => { event.preventDefault(); void handleSearch(); }}>
           <label className="sr-only" htmlFor="mobile-header-stock-search">종목명 또는 종목코드 검색</label>

@@ -1,3 +1,4 @@
+import { withAdminAccess } from "@/lib/admin-access";
 import "server-only";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -38,7 +39,7 @@ const createBlockedResult = (reasons: string[], input: BlockedInput) => ({
   scoreDifference: null,
 });
 
-export async function GET(request: NextRequest) {
+async function handleGet(request: NextRequest) {
   const code = codeOf(request.nextUrl.searchParams.get("code"));
   if (!code) return NextResponse.json({ status: "blocked", blockingReasons: ["invalidCode"] }, { status: 400 });
   const root = process.cwd();
@@ -100,3 +101,5 @@ export async function GET(request: NextRequest) {
     officialReference: official ? { asOfDate: official.asOfDate, calculatorVersion: officialSnapshot.calculatorVersion, finalTechnicalScore: official.finalTechnicalScore } : null,
   }, { headers: { "Cache-Control": "no-store" } });
 }
+
+export const GET = withAdminAccess(handleGet);

@@ -1,9 +1,10 @@
+import { withAdminAccess } from "@/lib/admin-access";
 import { NextRequest, NextResponse } from "next/server";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { getHomeDashboard } from "@/lib/home-dashboard-store.mjs";
 
-export async function GET(request: NextRequest) {
+async function handleGet(request: NextRequest) {
   const raw = request.nextUrl.searchParams.get("topN") ?? "5";
   if (!["5", "10", "20"].includes(raw)) return NextResponse.json({ error: "TOP 범위는 5/10/20이어야 합니다." }, { status: 400 });
   const [summary, live] = await Promise.allSettled([
@@ -17,3 +18,5 @@ export async function GET(request: NextRequest) {
     liveStatus: live.status === "fulfilled" ? live.value : null,
   }, { headers: { "Cache-Control": "no-store" } });
 }
+
+export const GET = withAdminAccess(handleGet);

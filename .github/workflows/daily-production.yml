@@ -23,6 +23,8 @@ jobs:
       contents: write
     env:
       DATA_GO_KR_SERVICE_KEY: ${{ secrets.DATA_GO_KR_SERVICE_KEY }}
+      # Read-only deployment verification; independent of administrator cookies.
+      TB_AUTOMATION_READ_TOKEN: ${{ secrets.TB_AUTOMATION_READ_TOKEN }}
       PRODUCTION_SITE_URL: https://stock-research-chi.vercel.app
       DAILY_SCHEDULE_EXPRESSION: ${{ github.event.schedule }}
     steps:
