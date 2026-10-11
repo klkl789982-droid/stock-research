@@ -7,16 +7,19 @@ import * as jsx from "react/jsx-runtime";
 import { renderToStaticMarkup } from "react-dom/server";
 import * as helpers from "../lib/home-dashboard.mjs";
 import * as directional from "../lib/directional-transition.mjs";
+import * as schedule from "../lib/production-schedule.mjs";
+import * as liveTiming from "../lib/intraday-model-top-time-policy.mjs";
 
 const compile = (source, jsxFile = false) => ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true, ...(jsxFile ? { jsx: ts.JsxEmit.ReactJSX } : {}) } }).outputText;
 const source = await readFile(new URL("../app/api/home-dashboard/route.ts", import.meta.url), "utf8");
 const exports = {};
 let calls = 0, fail = false;
 const require = (name) => {
+  if (name === "@/lib/production-schedule.mjs") return schedule;
   if (name === "@/lib/admin-access") return { withAdminAccess: handler => handler }; // Authorized data-contract fixture; auth independently tested.
   if (name === "next/server") return { NextResponse: { json: (body, init) => ({ body, status: init?.status ?? 200, headers: init?.headers }) } };
   if (name === "node:path") return path;
-  if (name === "node:fs/promises") return { readFile: async () => JSON.stringify({ status: "FAILED", signalDate: "2026-10-08", updatedAt: "2026-10-08T12:00:00Z", credential: "must-not-leak" }) };
+  if (name === "node:fs/promises") return { readFile: async () => JSON.stringify({ status: "FAILED", reason: "private-path-secret", runStartedAt: "must-not-leak", signalDate: "2026-10-08", updatedAt: "2026-10-08T12:00:00Z", credential: "must-not-leak" }) };
   if (name === "@/lib/home-dashboard-store.mjs") return { getHomeDashboard: async (topN) => { calls += 1; if (fail) throw new Error("private-path-secret"); return { models: { topN }, transitions: null }; } };
   throw new Error(name);
 };
@@ -26,7 +29,7 @@ const response = await exports.GET(request("topN=10"));
 assert.equal(response.status, 200); assert.equal(response.body.models.topN, 10);
 assert.equal(response.body.liveStatus.status, "FAILED");
 assert.equal(response.headers["Cache-Control"], "no-store");
-assert.doesNotMatch(JSON.stringify(response), /must-not-leak|credential/);
+assert.doesNotMatch(JSON.stringify(response), /must-not-leak|credential|private-path-secret/);
 for (const query of ["topN=6", "topN=NaN", "topN=05", "topN=-5"]) assert.equal((await exports.GET(request(query))).status, 400);
 assert.equal(calls, 1);
 fail = true;
@@ -55,6 +58,7 @@ const render = (data = dashboard, failedPerformance = false) => {
   let index = 0;
   const uiExports = {};
   const requireUi = (name) => {
+    if (name === "../lib/intraday-model-top-time-policy.mjs") return liveTiming;
     if (name === "react/jsx-runtime") return jsx;
     if (name === "react") return { ...React, useState: () => [resources[index++], () => {}], useRef: () => ({ current: 0 }), useEffect: () => {} };
     if (name === "../lib/home-dashboard.mjs") return helpers;
@@ -65,7 +69,7 @@ const render = (data = dashboard, failedPerformance = false) => {
   return renderToStaticMarkup(React.createElement(uiExports.default, { onSelectStock: () => {}, onOpenModel: () => {}, onOpenPerformance: () => {}, onOpenTransition: () => {} }));
 };
 const html = render();
-for (const text of ["오늘의 분석 대시보드", "모델 TOP3", "긴종목명검증", "000660", "골든크로스 접근", "골든크로스 확인", "해당 조건 종목 없음", "508/553", "미연결", "데이터 축적 중", "-1.25%", "관측 4건", "수집 실패", "확인 불가", "Daily EOD", "14:30 LIVE", "REJECTED", "↑2"]) assert.ok(html.includes(text), text);
+for (const text of ["오늘의 분석 대시보드", "모델 TOP3", "긴종목명검증", "000660", "골든크로스 접근", "골든크로스 확인", "해당 조건 종목 없음", "508/553", "미연결", "데이터 축적 중", "-1.25%", "관측 4건", "수집·검증 실패", "확인 불가", "Daily EOD", "14:30 LIVE", "REJECTED", "↑2"]) assert.ok(html.includes(text), text);
 assert.ok(render(dashboard, true).includes("성과 조회 실패"));
 assert.ok(render({ ...dashboard, transitions: null }).includes("전환 지표 데이터 없음"));
 const noComparison = render({ ...dashboard, models: { ...dashboard.models, models: [{ ...model, comparisonStatus: "UNAVAILABLE", comparisonReason: "FORMULA_PROVENANCE_CHANGED_OR_MISSING" }] } });

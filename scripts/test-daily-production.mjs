@@ -125,7 +125,7 @@ assert.match(runnerSource, /"--porcelain=v1", "-uall"/u, "새 compact history는
 assert.match(runnerSource, /writeFreshnessStatus/u, "Daily Production은 latest official EOD와 snapshot freshness 상태를 별도로 기록해야 합니다.");
 assert.match(dailyHistorySource, /updateTradingCalendarDate\(requestedDate,[\s\S]*await runScript\("scripts\/resolve-history-returns\.mjs"\)/u, "거래일 상태와 가격 원장을 확정한 뒤 전체 history resolver를 호출해야 합니다.");
 assert.match(dailyHistorySource, /updateTradingCalendarDate\(requestedDate,[\s\S]*await runScript\("scripts\/resolve-intraday-model-top-outcomes\.mjs"\)/u, "거래일 상태와 가격 원장을 확정한 뒤 14:30 LIVE outcome resolver를 자동 호출해야 합니다.");
-assert.equal((workflowSource.match(/- cron:/gu) ?? []).length, 5, "GitHub cron 지연과 공급 지연을 보완할 실행 슬롯이 필요합니다.");
+assert.equal((workflowSource.match(/- cron:/gu) ?? []).length, 7, "익영업일 오전 공급 재확인과 기존 야간 복구 슬롯을 유지합니다.");
 for (const step of ["Stage only allowlisted artifacts", "Commit and push atomic promotion"]) {
   const section = workflowSource.split(`- name: ${step}`)[1].split("- name:")[0];
   assert.match(section, /if: steps\.daily\.outputs\.freshness_path != ''/u);

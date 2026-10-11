@@ -2,6 +2,7 @@ import { withAdminAccess } from "@/lib/admin-access";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
+import { nextProductionSchedule } from "@/lib/production-schedule.mjs";
 
 type StoredStatus = {
   snapshotReferenceDate?: string | null;
@@ -20,6 +21,11 @@ type StoredStatus = {
   publishedReferenceDate?: string | null;
   publicationStatus?: string;
   trigger?: string;
+  sourceStatus?: string;
+  lastKnownOfficialEodDate?: string | null;
+  lastSourceCheckAt?: string | null;
+  latestCollectedReferenceDate?: string | null;
+  latestValidatedReferenceDate?: string | null;
 };
 
 type WorkflowRun = { run_started_at?: string; created_at?: string; conclusion?: string | null; status?: string; html_url?: string };
@@ -58,12 +64,19 @@ async function handleGet() {
     return NextResponse.json({
       schemaVersion: 1,
       dataset: "daily-production-operations-status",
+      sourceStatus: stored.sourceStatus ?? "UNKNOWN",
+      lastKnownOfficialEodDate: stored.lastKnownOfficialEodDate ?? stored.observedOfficialDate ?? null,
+      lastSourceCheckAt: stored.lastSourceCheckAt ?? null,
+      latestCollectedReferenceDate: stored.latestCollectedReferenceDate ?? null,
+      latestValidatedReferenceDate: stored.latestValidatedReferenceDate ?? null,
+      nextScheduledAt: nextProductionSchedule("DAILY"),
+      scheduleTimingGuaranteed: false,
       lastAttemptAt: stored.lastAttemptAt ?? stored.updatedAt ?? null,
       lastAutomaticRunAt: scheduledRun?.run_started_at ?? scheduledRun?.created_at ?? stored.lastAutomaticRunAt ?? null,
       lastAutomaticRunStatus: scheduledRun?.status ?? null,
       lastAutomaticRunConclusion: scheduledRun?.conclusion ?? null,
       lastAutomaticRunUrl: scheduledRun?.html_url ?? null,
-      lastSuccessAt: stored.lastSuccessAt ?? stored.updatedAt ?? null,
+      lastSuccessAt: stored.lastSuccessAt ?? null,
       lastOfficialEodDate: stored.lastOfficialEodDate ?? stored.observedOfficialDate ?? null,
       latestConfirmedTradingDate: stored.observedOfficialDate ?? null,
       lagTradingDays: Number.isInteger(stored.lagTradingDays) ? stored.lagTradingDays : stored.snapshotReferenceDate === stored.observedOfficialDate ? 0 : null,

@@ -7,15 +7,21 @@ import { collectKisQuotes, requestKisWithTransientRetry } from "../lib/kis-intra
 import { validateIntradayMarketSeed } from "../lib/intraday-market-seed.mjs";
 import { buildIntradayModelTopSignal, calculateIntradayModelTopScores, OFFICIAL_SIGNAL_TIME, OFFICIAL_SIGNAL_WINDOW_END, validateIntradayModelTopSignal } from "../lib/intraday-model-top-official-signal.mjs";
 import { mergeProvisionalCandle } from "../lib/intraday-model-b-official-signal.mjs";
-import { classifyOfficialSignalWindow, millisecondsUntilKstTime } from "../lib/intraday-model-top-time-policy.mjs";
+import { classifyOfficialSignalWindow, millisecondsUntilKstTime, signalWeekday, liveAttemptStatus } from "../lib/intraday-model-top-time-policy.mjs";
+import { createKisEodProvider } from "../lib/kis-eod-provider.mjs";
 
 const root = process.cwd();
+const runStartedAt = new Date().toISOString();
 const statusDir = path.join(root, "data", "intraday-signals", "model-top");
 const kst = (date = new Date()) => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" }).formatToParts(date).reduce((out, part) => ({ ...out, [part.type]: part.value }), {});
 const formatDate = (parts) => `${parts.year}-${parts.month}-${parts.day}`;
 const writeLatest = async (value) => {
   await fs.mkdir(statusDir, { recursive: true });
   const target = path.join(statusDir, "latest.json");
+  let previous = null;
+  try { previous = JSON.parse(await fs.readFile(target, "utf8")); } catch (error) { if (error?.code !== "ENOENT") throw error; }
+  if (previous?.signalDate > value.signalDate) throw new Error("LIVE_STATUS_DATE_REGRESSION");
+  value = liveAttemptStatus(previous, { ...value, runStartedAt, trigger: safeTrigger(), runId: process.env.GITHUB_RUN_ID ?? null });
   const temporary = `${target}.${process.pid}.tmp`;
   await fs.writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
   await fs.rename(temporary, target);
@@ -29,7 +35,6 @@ const failureSummary = (failures) => Object.entries(failures.reduce((counts, fai
 const safeTrigger = () => ["schedule", "workflow_dispatch"].includes(process.env.INTRADAY_TRIGGER_TYPE ?? "") ? process.env.INTRADAY_TRIGGER_TYPE : "local_or_unknown";
 
 async function main() {
-  const runStartedAt = new Date().toISOString();
   const now = new Date();
   const parts = kst(now);
   const today = formatDate(parts);
@@ -49,6 +54,7 @@ async function main() {
       const existing = JSON.parse(await fs.readFile(signalPath, "utf8"));
       const errors = validateIntradayModelTopSignal(existing);
       if (errors.length || existing.status !== "READY") throw new Error(`EXISTING_OFFICIAL_SIGNAL_INVALID:${errors.join(",")}`);
+      await writeLatest({ schemaVersion: 1, artifactType: "intradayModelTopLatestStatus", signalDate, officialSignalTime: OFFICIAL_SIGNAL_TIME, status: "READY", signalPath: path.relative(root, signalPath).replaceAll("\\", "/"), contentHash: existing.contentHash, collection: existing.collection, collectionStartedAt: existing.collectionStartedAt, collectionCompletedAt: existing.collectionCompletedAt, updatedAt: new Date().toISOString() });
       console.log(`INTRADAY_MODEL_TOP_RESULT_JSON=${JSON.stringify({ status: "READY", signalDate, disposition: "existing", signalPath: path.relative(root, signalPath).replaceAll("\\", "/"), latestPath: "data/intraday-signals/model-top/latest.json", collection: existing.collection })}`);
       return;
     } catch (error) {
@@ -70,7 +76,7 @@ async function main() {
 
   if (preflight) {
     const time = `${parts.hour}:${parts.minute}:${parts.second}`;
-    const timing = classifyOfficialSignalWindow({ time, weekday: new Date(`${signalDate}T00:00:00+09:00`).getUTCDay() });
+    const timing = classifyOfficialSignalWindow({ time, weekday: signalWeekday(signalDate) });
     if (timing !== "COLLECT") {
       console.log(`INTRADAY_MODEL_TOP_RESULT_JSON=${JSON.stringify({ status: "PREFLIGHT_NOT_OBSERVABLE", observationType: "MARKET_DATA_PREFLIGHT", signalDate, liveObservationCreated: false, signalPath: null, latestPath: null, reason: timing, officialWindow: { startsAt: OFFICIAL_SIGNAL_TIME, endsAt: OFFICIAL_SIGNAL_WINDOW_END } })}`);
       process.exitCode = 1;
@@ -78,30 +84,44 @@ async function main() {
     }
   }
 
-  if (!preflight && !connectivityPreflight) {
-    let currentParts = parts;
-    let time = `${currentParts.hour}:${currentParts.minute}:${currentParts.second}`;
-    let timing = classifyOfficialSignalWindow({ time, weekday: new Date(`${signalDate}T00:00:00+09:00`).getUTCDay() });
-    if (timing === "WEEKEND") throw new Error("OFFICIAL_SIGNAL_WEEKEND");
-    if (timing === "BEFORE_WINDOW" && waitForWindow) {
-      const delayMs = millisecondsUntilKstTime({ date: signalDate, time: OFFICIAL_SIGNAL_TIME, nowMs: Date.now() });
-      console.log(`INTRADAY_MODEL_TOP_WAITING_FOR_SIGNAL_WINDOW delayMs=${delayMs}`);
-      await wait(delayMs);
-      currentParts = kst(new Date());
-      time = `${currentParts.hour}:${currentParts.minute}:${currentParts.second}`;
-      timing = classifyOfficialSignalWindow({ time, weekday: new Date(`${signalDate}T00:00:00+09:00`).getUTCDay() });
-    }
-    if (timing !== "COLLECT") throw new Error("OFFICIAL_SIGNAL_OUTSIDE_COLLECTION_WINDOW");
-  }
-
   const credentials = { appKey: process.env.KIS_APP_KEY ?? "", appSecret: process.env.KIS_APP_SECRET ?? "" };
   if (!credentials.appKey || !credentials.appSecret) throw new Error("KIS_CREDENTIALS_MISSING");
   const tokenManager = createKisTokenManager({ fetchImpl: fetch, getCredentials: () => credentials });
   const client = createKisApiClient({ fetchImpl: fetch, tokenManager, getCredentials: () => credentials });
+  if (!preflight && !connectivityPreflight) {
+    if ([0, 6].includes(signalWeekday(signalDate))) {
+      await writeLatest({ schemaVersion: 1, artifactType: "intradayModelTopLatestStatus", signalDate, officialSignalTime: OFFICIAL_SIGNAL_TIME, status: "MARKET_CLOSED", reason: "WEEKEND", updatedAt: new Date().toISOString() });
+      console.log(`INTRADAY_MODEL_TOP_RESULT_JSON=${JSON.stringify({ status: "MARKET_CLOSED", signalDate, latestPath: "data/intraday-signals/model-top/latest.json" })}`);
+      return;
+    }
+    const calendar = await createKisEodProvider({ client }).getTradingDay(signalDate);
+    if (calendar.isTradingDay === false) {
+      await writeLatest({ schemaVersion: 1, artifactType: "intradayModelTopLatestStatus", signalDate, officialSignalTime: OFFICIAL_SIGNAL_TIME, status: "MARKET_CLOSED", reason: "VERIFIED_MARKET_CLOSED", calendar, updatedAt: new Date().toISOString() });
+      console.log(`INTRADAY_MODEL_TOP_RESULT_JSON=${JSON.stringify({ status: "MARKET_CLOSED", signalDate, latestPath: "data/intraday-signals/model-top/latest.json" })}`);
+      return;
+    }
+    if (calendar.isTradingDay !== true) throw new Error("LIVE_TRADING_CALENDAR_UNAVAILABLE");
+    let currentParts = parts;
+    let time = `${currentParts.hour}:${currentParts.minute}:${currentParts.second}`;
+    let timing = classifyOfficialSignalWindow({ time, weekday: signalWeekday(signalDate) });
+    if (timing === "WEEKEND") throw new Error("OFFICIAL_SIGNAL_WEEKEND");
+    if (timing === "BEFORE_WINDOW" && waitForWindow) {
+      const delayMs = millisecondsUntilKstTime({ date: signalDate, time: OFFICIAL_SIGNAL_TIME, nowMs: Date.now() });
+      if (delayMs > 20 * 60_000) throw new Error("OFFICIAL_SIGNAL_PREWARM_TOO_EARLY");
+      console.log(`INTRADAY_MODEL_TOP_WAITING_FOR_SIGNAL_WINDOW delayMs=${delayMs}`);
+      await wait(delayMs);
+      currentParts = kst(new Date());
+      time = `${currentParts.hour}:${currentParts.minute}:${currentParts.second}`;
+      timing = classifyOfficialSignalWindow({ time, weekday: signalWeekday(signalDate) });
+    }
+    if (timing !== "COLLECT") throw new Error("OFFICIAL_SIGNAL_OUTSIDE_COLLECTION_WINDOW");
+  }
+
   const fetchQuoteParts = async (code) => {
     const observationParts = kst(new Date());
     const observationDate = formatDate(observationParts);
     const observationTime = `${observationParts.hour}${observationParts.minute}${observationParts.second}`;
+    if (!connectivityPreflight && (observationDate !== signalDate || classifyOfficialSignalWindow({ time: `${observationParts.hour}:${observationParts.minute}:${observationParts.second}`, weekday: signalWeekday(observationDate) }) !== "COLLECT")) throw new Error("QUOTE_COLLECTION_WINDOW_EXPIRED");
     const response = await requestKisWithTransientRetry({ request: () => client.request(`https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/inquire-price?FID_COND_MRKT_DIV_CODE=J&FID_INPUT_ISCD=${code}`, { headers: { "Content-Type": "application/json", tr_id: "FHKST01010100" } }) });
     if (!response.ok) throw new Error(`KIS_HTTP_${response.status}`);
     const quote = parseKisQuote(await response.json(), code, new Date().toISOString());

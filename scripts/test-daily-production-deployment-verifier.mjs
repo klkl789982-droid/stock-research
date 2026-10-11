@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { waitForDailyProductionDeployment } from "../lib/daily-production-deployment-verifier.mjs";
+import { waitForDailyProductionDeployment, inspectLiveProductionDeployment } from "../lib/daily-production-deployment-verifier.mjs";
 
 const jsonResponse = (value, status = 200) => new Response(JSON.stringify(value), { status, headers: { "content-type": "application/json" } });
 
@@ -48,4 +48,9 @@ const recoveredNetwork = await waitForDailyProductionDeployment({
 });
 assert.equal(recoveredNetwork.status, "VERIFIED", "일시적 배포/API 네트워크 오류는 제한된 재확인으로 복구합니다.");
 
-console.log("daily production deployment verifier tests passed");
+const unauthorized = await waitForDailyProductionDeployment({ siteUrl: "https://example.test", expectedReferenceDate: "2026-10-07", fetchImpl: async () => jsonResponse({}, 401), sleep: async () => { throw new Error("auth must not retry"); } });
+assert.equal(unauthorized.attemptCount, 1); assert.equal(unauthorized.reason, "HTTP_401");
+for (const [date, type, expected] of [["2026-10-08", "LIVE_OBSERVATION", true], ["2026-10-07", "LIVE_OBSERVATION", false], ["2026-10-08", "TEST_FIXTURE", false]]) {
+  assert.equal(await inspectLiveProductionDeployment({ siteUrl: "https://example.test", expectedSignalDate: "2026-10-08", fetchImpl: async () => jsonResponse({ signalDate: date, observationType: type, collectionCompletedAt: "2026-10-08T05:34:00Z" }) }), expected);
+}
+console.log("daily/LIVE production deployment verifier tests passed");

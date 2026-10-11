@@ -102,8 +102,9 @@ test("all existing data APIs use a server-only boundary; no broad static/RSC/ima
 });
 test("machine token scope and redacted publication response, never private KIS or ranking access", async () => {
   const headers = { Authorization: `Bearer ${env.TB_AUTOMATION_READ_TOKEN}` };
-  for (const path of ["/api/top-stocks", "/api/model-performance", "/api/daily-production-status"]) assert.equal(auth.isAutomationRequest(req(path, { headers }), env), true);
-  for (const path of ["/", "/api/model-performance/research", "/api/stock", "/api/kis-eod-top-stocks", "/api/intraday-model-top"]) assert.equal(auth.isAutomationRequest(req(path, { headers }), env), false);
+  for (const path of ["/api/top-stocks", "/api/model-performance", "/api/daily-production-status", "/api/intraday-model-top"]) assert.equal(auth.isAutomationRequest(req(path, { headers }), env), true);
+  for (const path of ["/", "/api/model-performance/research", "/api/stock", "/api/kis-eod-top-stocks"]) assert.equal(auth.isAutomationRequest(req(path, { headers }), env), false);
+  assert.deepEqual(auth.automationPublicationDto("/api/intraday-model-top", { signalDate: "2026-10-08", observationType: "LIVE_OBSERVATION", collectionCompletedAt: "2026-10-08T05:34:00Z", stocks: [{ observedPrice: 123 }], source: "private" }), { signalDate: "2026-10-08", observationType: "LIVE_OBSERVATION", collectionCompletedAt: "2026-10-08T05:34:00Z" });
   assert.equal(auth.isAutomationRequest(req("/api/top-stocks", { method: "POST", headers }), env), false);
   assert.equal(auth.isAutomationRequest(req("/api/top-stocks", { headers: { Authorization: "Bearer wrong" } }), env), false);
   assert.deepEqual(auth.automationPublicationDto("/api/top-stocks", { rankingAsOfDate: "2026-10-07", stocks: [{ price: 123 }], freshness: { freshnessStatus: "fresh", secret: "hidden" } }), { rankingAsOfDate: "2026-10-07", freshness: { freshnessStatus: "fresh" } });

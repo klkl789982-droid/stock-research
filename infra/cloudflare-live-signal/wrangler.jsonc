@@ -1,0 +1,9 @@
+{
+  "name": "tight-budget-live-prewarm",
+  "main": "src/index.mjs",
+  "compatibility_date": "2026-10-09",
+  "workers_dev": false,
+  "preview_urls": false,
+  "vars": { "DISPATCH_ENABLED": "false" },
+  "triggers": { "crons": ["12,22 5 * * MON-FRI"] }
+}

@@ -2,6 +2,10 @@ name: Daily production data
 
 on:
   schedule:
+    # Public EOD may arrive on the following business day. Recover before the
+    # evening slots too; holidays/weekends never invent a new reference date.
+    - cron: "23 23 * * 0-4"  # 08:23 KST Monday-Friday
+    - cron: "23 0-4 * * 1-5" # 09:23-13:23 KST
     # GitHub cron is best-effort, so use staggered KST evening/overnight recovery slots.
     # Every run is idempotent and processes the oldest missing official trading date first.
     - cron: "47 9 * * 1-5"   # 18:47 KST
@@ -101,14 +105,16 @@ jobs:
           echo "Unable to publish after 3 non-forced attempts." >&2
           exit 1
       - name: Verify Vercel deployment and production APIs
-        if: steps.daily.outputs.status == 'CANDIDATE_VALIDATED' && steps.publish.outputs.committed == 'true'
+        # Recheck an existing publication too: a previous deployment can fail
+        # after Git succeeds and must not be forgotten by subsequent no-op runs.
+        if: (steps.daily.outputs.status == 'CANDIDATE_VALIDATED' || steps.daily.outputs.status == 'NO_NEW_OFFICIAL_EOD') && steps.daily.outputs.reference_date != ''
         run: >-
           node scripts/verify-daily-production-deployment.mjs
           --site=${{ env.PRODUCTION_SITE_URL }}
           --date=${{ steps.daily.outputs.reference_date }}
           --output=${{ runner.temp }}/daily-deployment-verification.json
       - name: Upload deployment verification
-        if: always() && steps.daily.outputs.status == 'CANDIDATE_VALIDATED' && steps.publish.outputs.committed == 'true'
+        if: always() && (steps.daily.outputs.status == 'CANDIDATE_VALIDATED' || steps.daily.outputs.status == 'NO_NEW_OFFICIAL_EOD') && steps.daily.outputs.reference_date != ''
         uses: actions/upload-artifact@v4
         with:
           name: daily-deployment-verification-${{ steps.daily.outputs.reference_date }}

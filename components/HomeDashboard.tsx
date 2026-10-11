@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { dailyOperationState, latestOneDayPerformance } from "../lib/home-dashboard.mjs";
+import { liveStatusLabel } from "../lib/intraday-model-top-time-policy.mjs";
 import { transitionLabel } from "../lib/directional-transition.mjs";
 type Stock = { code: string; name: string; market?: string };
 type Ranked = Stock & { rank: number; score: number; previousRank?: number | null; rankChange?: number | null };
@@ -29,7 +30,7 @@ function useResource<T>(url: string) {
   }, [url]);
   return state?.url === url ? state : { url, data: null, error: false };
 }
-const labels: Record<string, string> = { NORMAL: "정상", WAITING: "지연 · 갱신 대기", DELAYED: "지연", FAILED: "실패", UNKNOWN: "확인 불가" };
+const labels: Record<string, string> = { NORMAL: "정상", SOURCE_WAITING: "추가 공식 EOD 제공 대기", WAITING: "지연 · 갱신 대기", DELAYED: "지연", FAILED: "실패", UNKNOWN: "확인 불가" };
 const pct = (v: number | null) => Number.isFinite(v) ? (Number(v) > 0 ? "+" : "") + Number(v).toFixed(2) + "%" : "미확인";
 const time = (v?: string | null) => v && Number.isFinite(Date.parse(v)) ? new Date(v).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", hour12: false }) + " KST" : "확인 불가";
 export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerformance, onOpenTransition, onOpenSearch }: {
@@ -43,7 +44,7 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
   const data = dashboard.data, transitions = data?.transitions;
   const outcome = performance.data ? latestOneDayPerformance(performance.data, 5) : null;
   const operation = dailyOperationState(operations.data, data?.calendar);
-  const liveStatus = ["FAILED", "FAILED_COLLECTION"].includes(data?.liveStatus?.status ?? "") ? "수집 실패" : live.data ? "최근 관측 " + live.data.signalDate : "관측 대기 / 확인 불가";
+  const liveStatus = liveStatusLabel(data?.liveStatus) ?? (live.data ? "최근 관측 " + live.data.signalDate : "관측 대기 / 확인 불가");
   const stockButton = (stock: Stock) => <button type="button" onClick={() => void onSelectStock(stock)} className="tb-focus pointer-events-auto min-w-0 rounded text-left hover:text-[var(--tb-orange)]"><span className="block truncate font-medium">{stock.name}</span><span className="text-[10px] text-slate-600">{stock.code}</span></button>;
   return <section className="space-y-3" aria-labelledby="home-dashboard-heading">
     <div className="flex flex-wrap items-center justify-between gap-2 text-slate-100"><div><p className="text-[10px] tracking-[0.14em] text-[#dbb296]">TIGHT BUDGET · DAILY RESEARCH</p><h1 id="home-dashboard-heading" className="text-xl font-medium">오늘의 분석 대시보드</h1></div><button type="button" onClick={onOpenSearch} className="tb-focus rounded-lg bg-[var(--tb-orange)] px-4 py-2 text-sm text-white">종목 검색 →</button></div>
