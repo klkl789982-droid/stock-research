@@ -13,5 +13,5 @@ for (let attempt = 1; attempt <= 24; attempt += 1) {
   }
   if (attempt < 24) await new Promise((resolve) => setTimeout(resolve, 15000));
 }
-console.log(`LIVE_PUBLICATION_RESULT_JSON=${JSON.stringify({ status: verified ? "VERIFIED" : "FAILED", expectedSignalDate: date, reason: verified ? null : reason })}`);
+console.log(`LIVE_PUBLICATION_RESULT_JSON=${JSON.stringify({ status: verified ? "VERIFIED" : "FAILED", expectedSignalDate: date, publicationVerifiedAt: verified ? new Date().toISOString() : null, checkedAt: new Date().toISOString(), reason: verified ? null : reason })}`);
 if (!verified) process.exitCode = 1;

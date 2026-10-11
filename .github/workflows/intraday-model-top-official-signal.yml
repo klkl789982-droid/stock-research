@@ -17,6 +17,14 @@ on:
           - connectivity
           - preflight
           - live
+      scheduled_at:
+        description: "Optional scheduler timestamp for diagnostics only; never overrides the quote clock."
+        required: false
+        type: string
+      trigger_source:
+        description: "Optional scheduler identity for diagnostics only."
+        required: false
+        type: string
 
 concurrency:
   group: intraday-model-top-official-signal
@@ -32,8 +40,13 @@ jobs:
       KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
       KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
       INTRADAY_TRIGGER_TYPE: ${{ github.event_name }}
+      INTRADAY_SCHEDULED_AT: ${{ inputs.scheduled_at }}
+      INTRADAY_TRIGGER_SOURCE: ${{ inputs.trigger_source }}
       TB_AUTOMATION_READ_TOKEN: ${{ secrets.TB_AUTOMATION_READ_TOKEN }}
     steps:
+      - name: Record first runner step
+        shell: bash
+        run: echo "INTRADAY_RUNNER_FIRST_STEP_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -68,6 +81,10 @@ jobs:
         if: steps.signal.outputs.mode == 'live' && steps.signal.outputs.latest_path != ''
         shell: bash
         run: |
+          if [ "${{ steps.signal.outputs.latest_path }}" != "data/intraday-signals/model-top/latest.json" ]; then echo "LIVE_STAGE_PATH_REJECTED" >&2; exit 1; fi
+          if [ "${{ steps.signal.outputs.status }}" = "READY" ]; then
+            if [[ ! "${{ steps.signal.outputs.signal_date }}" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || [ "${{ steps.signal.outputs.signal_path }}" != "data/intraday-signals/model-top/${{ steps.signal.outputs.signal_date }}/1430.json" ]; then echo "LIVE_STAGE_PATH_REJECTED" >&2; exit 1; fi
+          fi
           git add -- "${{ steps.signal.outputs.latest_path }}"
           if [ "${{ steps.signal.outputs.status }}" = "READY" ]; then git add -- "${{ steps.signal.outputs.signal_path }}"; fi
           git diff --cached --check
@@ -84,7 +101,7 @@ jobs:
               echo "LIVE_PUBLICATION_CONFLICT: original signal preserved; no force push." >&2
               exit 1
             fi
-            if git push origin HEAD:main; then exit 0; fi
+            if git push origin HEAD:main; then echo "LIVE_GITHUB_PUBLISHED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)"; exit 0; fi
             sleep $((attempt * 5))
           done
           echo "LIVE_PUBLICATION_PUSH_FAILED" >&2
@@ -100,4 +117,7 @@ jobs:
         run: exit 1
       - name: Fail unsuccessful connectivity preflight
         if: steps.signal.outputs.mode == 'connectivity' && steps.signal.outputs.status != 'CONNECTIVITY_READY'
+        run: exit 1
+      - name: Fail unsuccessful dry-run
+        if: steps.signal.outputs.mode == 'dry-run' && steps.signal.outputs.status != 'DRY_RUN_READY'
         run: exit 1

@@ -7,11 +7,12 @@ import { collectKisQuotes, requestKisWithTransientRetry } from "../lib/kis-intra
 import { validateIntradayMarketSeed } from "../lib/intraday-market-seed.mjs";
 import { buildIntradayModelTopSignal, calculateIntradayModelTopScores, OFFICIAL_SIGNAL_TIME, OFFICIAL_SIGNAL_WINDOW_END, validateIntradayModelTopSignal } from "../lib/intraday-model-top-official-signal.mjs";
 import { mergeProvisionalCandle } from "../lib/intraday-model-b-official-signal.mjs";
-import { classifyOfficialSignalWindow, millisecondsUntilKstTime, signalWeekday, liveAttemptStatus } from "../lib/intraday-model-top-time-policy.mjs";
+import { classifyOfficialSignalWindow, millisecondsUntilKstTime, signalWeekday, liveAttemptStatus, liveSchedulerMetadata } from "../lib/intraday-model-top-time-policy.mjs";
 import { createKisEodProvider } from "../lib/kis-eod-provider.mjs";
 
 const root = process.cwd();
 const runStartedAt = new Date().toISOString();
+const operations = { ...liveSchedulerMetadata(process.env, runStartedAt), phase: "validation", firstDataRequestAt: null, lastDataRequestAt: null, lastDataResponseAt: null, calculationCompletedAt: null, storedAt: null };
 const statusDir = path.join(root, "data", "intraday-signals", "model-top");
 const kst = (date = new Date()) => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" }).formatToParts(date).reduce((out, part) => ({ ...out, [part.type]: part.value }), {});
 const formatDate = (parts) => `${parts.year}-${parts.month}-${parts.day}`;
@@ -21,7 +22,7 @@ const writeLatest = async (value) => {
   let previous = null;
   try { previous = JSON.parse(await fs.readFile(target, "utf8")); } catch (error) { if (error?.code !== "ENOENT") throw error; }
   if (previous?.signalDate > value.signalDate) throw new Error("LIVE_STATUS_DATE_REGRESSION");
-  value = liveAttemptStatus(previous, { ...value, runStartedAt, trigger: safeTrigger(), runId: process.env.GITHUB_RUN_ID ?? null });
+  value = liveAttemptStatus(previous, { ...value, operations: { ...operations }, runStartedAt, trigger: safeTrigger(), runId: process.env.GITHUB_RUN_ID ?? null });
   const temporary = `${target}.${process.pid}.tmp`;
   await fs.writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
   await fs.rename(temporary, target);
@@ -89,6 +90,7 @@ async function main() {
   const tokenManager = createKisTokenManager({ fetchImpl: fetch, getCredentials: () => credentials });
   const client = createKisApiClient({ fetchImpl: fetch, tokenManager, getCredentials: () => credentials });
   if (!preflight && !connectivityPreflight) {
+    operations.phase = "calendar";
     if ([0, 6].includes(signalWeekday(signalDate))) {
       await writeLatest({ schemaVersion: 1, artifactType: "intradayModelTopLatestStatus", signalDate, officialSignalTime: OFFICIAL_SIGNAL_TIME, status: "MARKET_CLOSED", reason: "WEEKEND", updatedAt: new Date().toISOString() });
       console.log(`INTRADAY_MODEL_TOP_RESULT_JSON=${JSON.stringify({ status: "MARKET_CLOSED", signalDate, latestPath: "data/intraday-signals/model-top/latest.json" })}`);
@@ -101,7 +103,7 @@ async function main() {
       return;
     }
     if (calendar.isTradingDay !== true) throw new Error("LIVE_TRADING_CALENDAR_UNAVAILABLE");
-    let currentParts = parts;
+    let currentParts = kst(new Date());
     let time = `${currentParts.hour}:${currentParts.minute}:${currentParts.second}`;
     let timing = classifyOfficialSignalWindow({ time, weekday: signalWeekday(signalDate) });
     if (timing === "WEEKEND") throw new Error("OFFICIAL_SIGNAL_WEEKEND");
@@ -118,14 +120,25 @@ async function main() {
   }
 
   const fetchQuoteParts = async (code) => {
+    operations.phase = "collection";
     const observationParts = kst(new Date());
     const observationDate = formatDate(observationParts);
     const observationTime = `${observationParts.hour}${observationParts.minute}${observationParts.second}`;
     if (!connectivityPreflight && (observationDate !== signalDate || classifyOfficialSignalWindow({ time: `${observationParts.hour}:${observationParts.minute}:${observationParts.second}`, weekday: signalWeekday(observationDate) }) !== "COLLECT")) throw new Error("QUOTE_COLLECTION_WINDOW_EXPIRED");
-    const response = await requestKisWithTransientRetry({ request: () => client.request(`https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/inquire-price?FID_COND_MRKT_DIV_CODE=J&FID_INPUT_ISCD=${code}`, { headers: { "Content-Type": "application/json", tr_id: "FHKST01010100" } }) });
+    const request = async (url, init) => {
+      // Recheck every actual retry, not only the first request for this ticker.
+      const actual = kst(new Date());
+      if (!connectivityPreflight && (formatDate(actual) !== signalDate || classifyOfficialSignalWindow({ time: `${actual.hour}:${actual.minute}:${actual.second}`, weekday: signalWeekday(formatDate(actual)) }) !== "COLLECT")) throw new Error("QUOTE_COLLECTION_WINDOW_EXPIRED");
+      operations.lastDataRequestAt = new Date().toISOString();
+      operations.firstDataRequestAt ??= operations.lastDataRequestAt;
+      const response = await client.request(url, init);
+      operations.lastDataResponseAt = new Date().toISOString();
+      return response;
+    };
+    const response = await requestKisWithTransientRetry({ retryRateLimit: true, backoffMs: 1000, request: () => request(`https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/inquire-price?FID_COND_MRKT_DIV_CODE=J&FID_INPUT_ISCD=${code}`, { headers: { "Content-Type": "application/json", tr_id: "FHKST01010100" } }) });
     if (!response.ok) throw new Error(`KIS_HTTP_${response.status}`);
     const quote = parseKisQuote(await response.json(), code, new Date().toISOString());
-    const minuteResponse = await requestKisWithTransientRetry({ request: () => client.request(`https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/inquire-time-itemchartprice?FID_ETC_CLS_CODE=&FID_COND_MRKT_DIV_CODE=J&FID_INPUT_ISCD=${code}&FID_INPUT_HOUR_1=${observationTime}&FID_PW_DATA_INCU_YN=N`, { headers: { "Content-Type": "application/json", tr_id: "FHKST03010200" } }) });
+    const minuteResponse = await requestKisWithTransientRetry({ retryRateLimit: true, backoffMs: 1000, request: () => request(`https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/inquire-time-itemchartprice?FID_ETC_CLS_CODE=&FID_COND_MRKT_DIV_CODE=J&FID_INPUT_ISCD=${code}&FID_INPUT_HOUR_1=${observationTime}&FID_PW_DATA_INCU_YN=N`, { headers: { "Content-Type": "application/json", tr_id: "FHKST03010200" } }) });
     if (!minuteResponse.ok) throw new Error(`KIS_MINUTE_HTTP_${minuteResponse.status}`);
     return { quote, minutePayload: await minuteResponse.json(), observationDate, observationTime };
   };
@@ -177,15 +190,24 @@ async function main() {
     }
     return;
   }
+  operations.phase = "calculation";
   const artifact = buildIntradayModelTopSignal({ seed, quotesByCode: collection.quotesByCode, signalDate, collectionStartedAt: collection.startedAt, collectionCompletedAt: collection.completedAt, observationType: "LIVE_OBSERVATION" });
+  operations.calculationCompletedAt = new Date().toISOString();
+  operations.phase = "validation";
   const validationErrors = validateIntradayModelTopSignal(artifact);
   if (validationErrors.length) throw new Error(`OFFICIAL_SIGNAL_INVALID:${validationErrors.join(",")}`);
-  if (artifact.status !== "READY") throw new Error(`OFFICIAL_SIGNAL_COLLECTION_INCOMPLETE:${artifact.collection.failed}`);
+  if (artifact.status !== "READY") {
+    operations.phase = collection.failures.length ? "collection" : "validation";
+    throw new Error(`OFFICIAL_SIGNAL_COLLECTION_INCOMPLETE:${artifact.collection.failed}`);
+  }
 
+  operations.phase = "storage";
   await fs.mkdir(signalDir, { recursive: true });
   await fs.writeFile(signalPath, `${JSON.stringify(artifact, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
+  operations.storedAt = new Date().toISOString();
   const latest = { schemaVersion: 1, artifactType: "intradayModelTopLatestStatus", signalDate, officialSignalTime: OFFICIAL_SIGNAL_TIME, status: artifact.status, signalPath: path.relative(root, signalPath).replaceAll("\\", "/"), contentHash: artifact.contentHash, collection: artifact.collection, collectionStartedAt: artifact.collectionStartedAt, collectionCompletedAt: artifact.collectionCompletedAt, updatedAt: new Date().toISOString() };
   await writeLatest(latest);
+  operations.phase = "stored_not_published";
   console.log(`INTRADAY_MODEL_TOP_RESULT_JSON=${JSON.stringify({ status: artifact.status, signalDate, disposition: "created", signalPath: latest.signalPath, latestPath: "data/intraday-signals/model-top/latest.json", collection: artifact.collection })}`);
 }
 
@@ -202,8 +224,14 @@ await main().catch(async (error) => {
   const now = new Date();
   const date = formatDate(kst(now));
   const reason = error instanceof Error ? error.message.slice(0, 120) : "unknownFailure";
-  await writeLatest({ schemaVersion: 1, artifactType: "intradayModelTopLatestStatus", signalDate: date, officialSignalTime: OFFICIAL_SIGNAL_TIME, status: "FAILED", reason, updatedAt: now.toISOString() });
+  let latestPath = null;
+  try {
+    await writeLatest({ schemaVersion: 1, artifactType: "intradayModelTopLatestStatus", signalDate: date, officialSignalTime: OFFICIAL_SIGNAL_TIME, status: "FAILED", reason, failureStage: operations.phase, updatedAt: now.toISOString() });
+    latestPath = "data/intraday-signals/model-top/latest.json";
+  } catch {
+    console.error("INTRADAY_MODEL_TOP_STATUS_WRITE_FAILED");
+  }
   console.error(`INTRADAY_MODEL_TOP_FAILED reason=${reason}`);
-  console.log(`INTRADAY_MODEL_TOP_RESULT_JSON=${JSON.stringify({ status: "FAILED", signalDate: date, latestPath: "data/intraday-signals/model-top/latest.json", reason })}`);
+  console.log(`INTRADAY_MODEL_TOP_RESULT_JSON=${JSON.stringify({ status: "FAILED", signalDate: date, latestPath, reason, failureStage: operations.phase })}`);
   process.exitCode = 1;
-});
+}).finally(() => console.log(`LIVE_OPERATION_TIMING_JSON=${JSON.stringify(operations)}`));
