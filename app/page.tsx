@@ -10,6 +10,8 @@ import TechnicalStrengthPanel from "../components/TechnicalStrengthPanel";
 import BrandMark from "../components/BrandMark";
 import StockScreenerPanel from "../components/StockScreenerPanel";
 import HomeDashboard from "../components/HomeDashboard";
+import StockPriceChart from "../components/StockPriceChart";
+import StockResearchPanel from "../components/StockResearchPanel";
 import { searchApiErrorMessage, settleSearchRequest } from "../lib/search-request-isolation.mjs";
 import { buildSearchTechnicalStrength } from "../lib/search-technical-strength.mjs";
 import { buildSearchMarketAnalysis } from "../lib/search-market-analysis.mjs";
@@ -22,7 +24,7 @@ const [activeTab, setActiveTab] = useState<"technical" | "company">("technical")
 const [pageView, setPageView] = useState<"home" | "models" | "screener">("home");
 const [modelPageTab, setModelPageTab] = useState<"top" | "performance" | "guide">("top");
 const [modelInitialTab, setModelInitialTab] = useState("B");
-const [screenerEntry, setScreenerEntry] = useState<{ tab: "models" | "transition"; pair: string; state: string }>({ tab: "models", pair: "5-20", state: "all" });
+const [screenerEntry, setScreenerEntry] = useState<{ tab: "models" | "transition"; pair: string; state: string; direction?: string }>({ tab: "models", pair: "5-20", state: "all" });
 const [mobileNavOpen, setMobileNavOpen] = useState(false);
 const [realtimePrice, setRealtimePrice] = useState<{
   price: number;
@@ -377,7 +379,7 @@ return (
     <main ref={pageTopRef} className="tb-page-ambient min-h-screen text-slate-900">
       <header className="tb-brand-shell sticky top-0 z-30 border-b border-white/10 text-white shadow-[0_8px_25px_rgba(7,18,40,0.14)]">
         <div className="flex w-full items-center gap-3 px-3 py-2 sm:gap-4 sm:px-6 lg:px-6">
-          <button type="button" onClick={() => setMobileNavOpen(true)} aria-label="메뉴 열기" aria-expanded={mobileNavOpen} className="tb-focus inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/15 text-xl leading-none text-white hover:bg-white/10 sm:hidden">☰</button>
+          <button type="button" onClick={() => setMobileNavOpen(true)} aria-label="메뉴 열기" aria-expanded={mobileNavOpen} className="tb-focus inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/15 text-xl leading-none text-white hover:bg-white/10 lg:hidden">☰</button>
           <button type="button" onClick={handleHome} className="tb-focus shrink-0 rounded-xl text-left" aria-label="Tight Budget 홈으로">
             <BrandMark inverse />
           </button>
@@ -393,7 +395,7 @@ return (
           <button type="submit" disabled={loading} className="tb-focus rounded-full bg-[var(--tb-orange)] px-4 py-2 text-sm font-bold text-white disabled:opacity-40">{loading ? "조회 중" : "검색"}</button>
         </form>}
       </header>
-      {mobileNavOpen && <div className="fixed inset-0 z-50 sm:hidden" role="presentation">
+      {mobileNavOpen && <div className="fixed inset-0 z-50 lg:hidden" role="presentation">
         <button type="button" aria-label="메뉴 바깥 닫기" onClick={() => setMobileNavOpen(false)} className="absolute inset-0 h-full w-full bg-slate-950/55" />
         <aside role="dialog" aria-modal="true" aria-label="모바일 주요 메뉴" className="tb-sidebar-surface relative flex h-full w-[min(18rem,calc(100vw-2.5rem))] max-w-full flex-col overflow-y-auto px-3 py-4 shadow-2xl">
           <div className="mb-4 flex items-center justify-between gap-3 border-b border-white/10 px-2 pb-3"><span className="text-sm font-semibold text-white">주요 메뉴</span><button type="button" onClick={() => setMobileNavOpen(false)} aria-label="메뉴 닫기" className="tb-focus rounded-lg px-2 py-1 text-xl leading-none text-slate-200 hover:bg-white/10">×</button></div>
@@ -412,7 +414,8 @@ return (
           onSelectStock={handleSearch}
           onOpenModel={(model) => { openModelsFromNavigation(); setModelInitialTab(model); }}
           onOpenPerformance={() => { openModelsFromNavigation(); setModelPageTab("performance"); }}
-          onOpenTransition={(pair, state) => { openScreenerFromNavigation(); setScreenerEntry({ tab: "transition", pair, state }); }}
+          onOpenSearch={openSearchFromNavigation}
+          onOpenTransition={(pair, state, direction) => { openScreenerFromNavigation(); setScreenerEntry({ tab: "transition", pair, state, direction }); }}
         />}
 
         {!searchedStock && pageView === "models" && (
@@ -431,21 +434,21 @@ return (
           </section>
         )}
 
-        {!searchedStock && pageView === "screener" && <StockScreenerPanel onSelectStock={handleSearch} key={`${screenerEntry.tab}:${screenerEntry.pair}:${screenerEntry.state}`} initialTab={screenerEntry.tab} initialPair={screenerEntry.pair} initialState={screenerEntry.state} />}
+        {!searchedStock && pageView === "screener" && <StockScreenerPanel onSelectStock={handleSearch} key={`${screenerEntry.tab}:${screenerEntry.pair}:${screenerEntry.state}:${screenerEntry.direction}`} initialTab={screenerEntry.tab} initialPair={screenerEntry.pair} initialState={screenerEntry.state} initialDirection={screenerEntry.direction} />}
 
         {searchedStock && (
-          <div className="tb-card mt-8 overflow-hidden p-5 sm:p-7">
+          <div className="tb-card mt-3 overflow-hidden p-4 sm:p-5">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--tb-blue)]">Stock Detail</p>
 
-            <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">
+            <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">
               {searchedStock}
             </h2>
 
            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500">
-  <span>{stockInfo?.srtnCd?.replace(/^A/, "")}</span><span>{stockInfo?.mrktCtg}</span>
+  <span>{stockInfo?.srtnCd?.replace(/^A/, "")}</span><span>{stockInfo?.mrktCtg}</span><span>공식 EOD {priceMeta?.asOfDate ?? "기준일 미확인"}</span>
 </div>
 {(priceInfo || realtimePrice || priceError || realtimeError) && (
-  <div className="mt-5 rounded-xl bg-gray-50 p-4">
+  <div className="mt-3 rounded-xl bg-[#f7f3eb] p-3">
     <p className="text-sm font-semibold text-gray-900">
       최근 시세
     </p>
@@ -560,7 +563,9 @@ return (
   </div>
 )}
 
-<details className="mt-4 text-xs text-gray-500">
+<StockPriceChart rows={priceHistory} meta={priceMeta} />
+{stockInfo?.srtnCd && <StockResearchPanel key={String(stockInfo.srtnCd)} code={String(stockInfo.srtnCd).replace(/^A/, "")} />}
+<details className="mt-3 text-xs text-gray-500">
   <summary className="cursor-pointer font-medium text-gray-600">종목·가격 데이터 기준 자세히 보기</summary>
   <div className="mt-3 grid gap-2 rounded-xl bg-gray-50 p-4 sm:grid-cols-2">
     <span>법인명 {stockInfo?.corpNm || "정보 없음"}</span><span>ISIN {stockInfo?.isinCd || "정보 없음"}</span>
@@ -569,7 +574,7 @@ return (
   </div>
 </details>
 
-            <section className="mt-6 border-t border-gray-100 pt-6">
+            <section className="mt-3 border-t border-gray-100 pt-3">
               <div className="flex items-end justify-between gap-4"><div><p className="text-sm font-semibold text-gray-500">분석 요약</p><h3 className="mt-1 text-xl font-bold text-gray-950">핵심 결과를 한눈에</h3></div><span className="text-xs text-gray-400">검증된 데이터만 표시</span></div>
               <div className="mt-4 divide-y divide-slate-100 rounded-2xl border border-[var(--tb-border)] bg-slate-50/70 px-4 sm:grid sm:grid-cols-3 sm:divide-x sm:divide-y-0 sm:px-0">
                 <div className="flex items-center justify-between py-4 sm:block sm:px-5"><span className="text-sm text-gray-500">기술 흐름</span><div className="text-right sm:mt-2 sm:text-left">{technicalStrength.status === "available" ? <><strong className="text-xl text-gray-950">{technicalStrength.score}</strong><span className="ml-1 text-xs text-gray-400">/ 100</span><p className="text-sm font-semibold text-gray-700">분석 모델 검증 중</p></> : <strong className="text-sm text-gray-700">{technicalStrength.status === "loading" ? "분석 준비 중" : analysisAvailabilityMessage(technicalStrength.reason)}</strong>}</div></div>
@@ -578,7 +583,7 @@ return (
               </div>
             </section>
 
-            <div className="mt-7 grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1.5" role="tablist" aria-label="상세 분석">
+            <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1.5" role="tablist" aria-label="상세 분석">
               <button
   onClick={() => setActiveTab("technical")}
   role="tab" aria-selected={activeTab === "technical"}

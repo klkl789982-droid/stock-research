@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createScreeningRows, screenStocks, SCREENING_MODELS } from "@/lib/stock-screener.mjs";
 import { parseTransitionFilters, screenTransitions, TRANSITION_RULE_VERSION, TRANSITION_RESEARCH_PROPOSAL } from "@/lib/transition-screener.mjs";
 import { getTransitionData } from "@/lib/transition-screener-store.mjs";
+import { DIRECTIONAL_RULE_VERSION, approachPolicy } from "@/lib/directional-transition.mjs";
 
 type JsonObject = Record<string, unknown>;
 
@@ -31,14 +32,14 @@ export async function GET(request: NextRequest) {
   if (tab === "transition") {
     let filters;
     try { filters = parseTransitionFilters(request.nextUrl.searchParams); }
-    catch { return NextResponse.json({ error: { message: "전환 신호 조건을 확인해 주세요. 접근·확인 후보 규칙은 아직 승인되지 않았습니다." } }, { status: 400 }); }
+    catch { return NextResponse.json({ error: { message: "전환 신호 조건과 수치 범위를 확인해 주세요." } }, { status: 400 }); }
     try {
       const data = await getTransitionData();
       const screened = screenTransitions(data.rows, filters);
       const available = data.rows.filter((row: { missingReasons: string[] }) => !row.missingReasons.length);
       const supports = (key: string) => available.some((row: { indicators: Record<string, unknown> }) => row.indicators?.[key] !== null && row.indicators?.[key] !== undefined);
-      return NextResponse.json({ ...data, rows: undefined, ruleVersion: TRANSITION_RULE_VERSION, researchProposal: TRANSITION_RESEARCH_PROPOSAL, pair: filters.pair,
-        totalUniverse: data.rows.length, indicatorCoverage: available.length, selectedModel: filters.model, resultCount: screened.results.length, ...screened,
+      return NextResponse.json({ ...data, rows: undefined, ruleVersion: filters.rules === "directional-v2" ? DIRECTIONAL_RULE_VERSION : TRANSITION_RULE_VERSION, researchProposal: TRANSITION_RESEARCH_PROPOSAL, approachPolicy: filters.rules === "directional-v2" ? approachPolicy : undefined, pair: filters.pair,
+        totalUniverse: data.rows.length, indicatorCoverage: available.length, selectedModel: filters.model, resultCount: screened.results.length, uniqueStockCount: new Set(screened.results.map((row: { code: string }) => row.code)).size, ...screened,
         supportedFilters: { rsi: supports("rsi"), macd: supports("macdState"), volume: supports("volumeMultiple"), change: supports("dailyChangePercent"),
           models: Object.fromEntries(Object.keys(SCREENING_MODELS).map((model) => [model, available.some((row: { models: Record<string, { score: number | null }> }) => row.models[model]?.score !== null)])) },
       }, { headers: { "Cache-Control": "no-store" } });

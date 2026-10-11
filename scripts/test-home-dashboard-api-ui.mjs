@@ -6,6 +6,7 @@ import * as React from "react";
 import * as jsx from "react/jsx-runtime";
 import { renderToStaticMarkup } from "react-dom/server";
 import * as helpers from "../lib/home-dashboard.mjs";
+import * as directional from "../lib/directional-transition.mjs";
 
 const compile = (source, jsxFile = false) => ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true, ...(jsxFile ? { jsx: ts.JsxEmit.ReactJSX } : {}) } }).outputText;
 const source = await readFile(new URL("../app/api/home-dashboard/route.ts", import.meta.url), "utf8");
@@ -41,7 +42,7 @@ assert.ok(page.indexOf('{searchError && <p role="alert"') < page.indexOf('<HomeD
 assert.match(panel, /col-span-2 sm:col-span-4/);
 assert.doesNotMatch(page, /BrandMark hero|tb-matte-hero/);
 assert.match(page, /ref=\{searchInputRef\} id="header-stock-search"/);
-assert.match(page, /setScreenerEntry\(\{ tab: "transition", pair, state \}\)/);
+assert.match(page, /setScreenerEntry\(\{ tab: "transition", pair, state, direction \}\)/);
 assert.match(page, /initialTab=\{modelInitialTab\}/);
 assert.match(top, /initialTab = "B"/);
 const model = { modelVersion: "B-v1", rankingUniverseCount: 523, comparisonStatus: "AVAILABLE", top: [{ code: "000660", name: "긴종목명검증", rank: 1, score: 88 }], entered: [{ code: "000660", name: "긴종목명검증", rank: 1, score: 88 }], exited: [], risers: [], universeAddedTop: [], universeRemovedTop: [] };
@@ -49,22 +50,25 @@ const dashboard = { referenceDate: "2026-10-07", models: { referenceDate: "2026-
 const performance = { daily: [{ modelVersion: "B-v1", topN: 5, horizon: "1DAY", signalDate: "2026-10-06", targetTradingDate: "2026-10-07", observationCount: 4, meanReturn: -1.25, positiveRate: 25 }], live: { daily: [] } };
 const operations = { freshnessStatus: "fresh", publicationStatus: "published", siteApiMatchesPublished: true, siteApiReferenceDate: "2026-10-07", lastAutomaticRunConclusion: "success" };
 const render = (data = dashboard, failedPerformance = false) => {
-  const resources = [5, { url: "/api/home-dashboard?topN=5", data, error: false }, { url: "/api/model-performance", data: failedPerformance ? null : performance, error: failedPerformance }, { url: "/api/daily-production-status", data: operations, error: false }, { url: "/api/intraday-model-top?model=B&limit=1", data: null, error: true }];
+  const resources = [{ url: "/api/home-dashboard?topN=5", data, error: false }, { url: "/api/model-performance", data: failedPerformance ? null : performance, error: failedPerformance }, { url: "/api/daily-production-status", data: operations, error: false }, { url: "/api/intraday-model-top?model=B&limit=1", data: null, error: true }];
   let index = 0;
   const uiExports = {};
   const requireUi = (name) => {
     if (name === "react/jsx-runtime") return jsx;
     if (name === "react") return { ...React, useState: () => [resources[index++], () => {}], useRef: () => ({ current: 0 }), useEffect: () => {} };
     if (name === "../lib/home-dashboard.mjs") return helpers;
+    if (name === "../lib/directional-transition.mjs") return directional;
     throw new Error(name);
   };
   new Function("require", "exports", compile(panel, true))(requireUi, uiExports);
   return renderToStaticMarkup(React.createElement(uiExports.default, { onSelectStock: () => {}, onOpenModel: () => {}, onOpenPerformance: () => {}, onOpenTransition: () => {} }));
 };
 const html = render();
-for (const text of ["오늘의 분석 대시보드", "긴종목명검증", "000660", "접근 중", "교차 후 확인", "해당 조건 종목 없음", "508/553", "미연결", "데이터 축적 중", "-1.25%", "관측 4건", "수집 실패", "확인 불가", "Daily EOD", "14:30 LIVE", "REJECTED"]) assert.ok(html.includes(text), text);
+for (const text of ["오늘의 분석 대시보드", "모델 TOP3", "긴종목명검증", "000660", "골든크로스 접근", "골든크로스 확인", "해당 조건 종목 없음", "508/553", "미연결", "데이터 축적 중", "-1.25%", "관측 4건", "수집 실패", "확인 불가", "Daily EOD", "14:30 LIVE", "REJECTED"]) assert.ok(html.includes(text), text);
 assert.ok(render(dashboard, true).includes("성과 조회 실패"));
 assert.ok(render({ ...dashboard, transitions: null }).includes("전환 지표 데이터 없음"));
-assert.ok(render({ ...dashboard, models: { ...dashboard.models, models: [{ ...model, comparisonStatus: "UNAVAILABLE", comparisonReason: "FORMULA_PROVENANCE_CHANGED_OR_MISSING" }] } }).includes("비교 보류"));
+const noComparison = render({ ...dashboard, models: { ...dashboard.models, models: [{ ...model, comparisonStatus: "UNAVAILABLE", comparisonReason: "FORMULA_PROVENANCE_CHANGED_OR_MISSING" }] } });
+assert.ok(noComparison.includes("긴종목명검증"));
+assert.doesNotMatch(noComparison, /신규 진입|순위 상승/, "홈 요약은 전일 비교 가능성을 주장하지 않습니다.");
 assert.doesNotMatch(html, /최고 모델|매수 추천 모델|LIVE.*0\.00%/);
 console.log("home API allowlist/isolated failure/SSR/navigation/mobile hierarchy/stale guard tests passed");

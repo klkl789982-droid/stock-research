@@ -90,6 +90,7 @@ assert.equal(observations.futureOutcomes.entryContract, null);
 assert.equal(observations.futureOutcomes.status, "NOT_OBSERVED");
 assert.equal(observations.records.length, 2);
 assert.deepEqual(observations, createTransitionObservationSnapshot({ rows: built, history, seed }));
+assert.deepEqual(observations, createTransitionObservationSnapshot({ rows: built.map(({ directionalTransitions, ...legacy }) => { void directionalTransitions; return legacy; }), history, seed }), "v2 연구 필드는 기존 v1 관측 ID·contentHash에 영향을 주지 않습니다.");
 
 const root = await mkdtemp(path.join(os.tmpdir(), "tb-transition-test-"));
 try {

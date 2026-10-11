@@ -18,6 +18,8 @@ assert.match(page, /해당 종목을 찾을 수 없습니다/u);
 assert.match(page, /검색 중 문제가 발생했습니다/u);
 assert.match(page, /role="alert"/u);
 assert.match(page, /aria-label="메뉴 열기"/u);
+assert.match(page, /aria-label="메뉴 열기"[^\n]+lg:hidden/u, "640~1023px에서도 메뉴 버튼을 제공해야 합니다.");
+assert.match(page, /mobileNavOpen && <div className="fixed inset-0 z-50 lg:hidden"/u);
 assert.match(page, /aria-label="모바일 주요 메뉴"/u);
 assert.match(page, /aria-label="메뉴 바깥 닫기"/u);
 assert.match(page, /aria-label="메뉴 닫기"/u);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import TransitionScreenerPanel from "./TransitionScreenerPanel";
 
 type Selection = { code: string; name: string };
@@ -15,46 +15,43 @@ const queryFor = (value: typeof initial) => {
   return params.toString();
 };
 
-export default function StockScreenerPanel({ onSelectStock, initialTab = "models", initialPair = "5-20", initialState = "all" }: { onSelectStock: (stock: Selection) => void | Promise<void>; initialTab?: "models" | "transition"; initialPair?: string; initialState?: string }) {
+export default function StockScreenerPanel({ onSelectStock, initialTab = "models", initialPair = "5-20", initialState = "all", initialDirection = "all" }: { onSelectStock: (stock: Selection) => void | Promise<void>; initialTab?: "models" | "transition"; initialPair?: string; initialState?: string; initialDirection?: string }) {
   const [filters, setFilters] = useState(initial);
   const [data, setData] = useState<Response | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<"models" | "transition">(initialTab);
+  const controller = useRef<AbortController | null>(null);
+  const sequence = useRef(0);
 
-  const run = async (next = filters) => {
-    setLoading(true); setError(null);
-    try {
-      const response = await fetch(`/api/screener?${queryFor(next)}`, { cache: "no-store" });
+  const run = useCallback((next: typeof initial) => {
+    controller.current?.abort();
+    const abort = new AbortController(); controller.current = abort;
+    const request = ++sequence.current;
+    return fetch(`/api/screener?${queryFor(next)}`, { cache: "no-store", signal: abort.signal }).then(async (response) => {
       const body = await response.json();
+      if (abort.signal.aborted || request !== sequence.current) return;
       if (!response.ok) throw new Error(body?.error?.message ?? "스크리닝 결과를 불러오지 못했습니다.");
       setData(body);
-    } catch (caught) { setError(caught instanceof Error ? caught.message : "스크리닝 결과를 불러오지 못했습니다."); }
-    finally { setLoading(false); }
-  };
-  useEffect(() => {
-    let active = true;
-    fetch(`/api/screener?${queryFor(initial)}`, { cache: "no-store" })
-      .then(async (response) => ({ response, body: await response.json() }))
-      .then(({ response, body }) => {
-        if (!active) return;
-        if (!response.ok) throw new Error(body?.error?.message ?? "스크리닝 결과를 불러오지 못했습니다.");
-        setData(body); setLoading(false);
-      })
-      .catch((caught) => { if (active) { setError(caught instanceof Error ? caught.message : "스크리닝 결과를 불러오지 못했습니다."); setLoading(false); } });
-    return () => { active = false; };
+    }).catch((caught) => { if (!abort.signal.aborted && request === sequence.current) setError(caught instanceof Error ? caught.message : "스크리닝 결과를 불러오지 못했습니다."); })
+      .finally(() => { if (!abort.signal.aborted && request === sequence.current) setLoading(false); });
   }, []);
+  useEffect(() => {
+    void run(initial);
+    return () => { controller.current?.abort(); };
+  }, [run]);
 
-  const reset = () => { setFilters(initial); void run(initial); };
+  const search = (next: typeof initial) => { setLoading(true); setError(null); void run(next); };
+  const reset = () => { setFilters(initial); search(initial); };
   const field = "tb-focus min-h-10 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900";
   return <section aria-label="스크리닝" className="space-y-3">
     <div role="tablist" aria-label="스크리닝 영역" className="tb-card flex gap-2 p-2">{([["models", "모델·기업 조건"], ["transition", "전환 신호"]] as const).map(([value, label]) => <button key={value} type="button" role="tab" aria-selected={tab === value} onClick={() => setTab(value)} className={`tb-focus rounded-lg px-4 py-2 text-sm font-semibold ${tab === value ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}`}>{label}</button>)}</div>
-    {tab === "transition" ? <TransitionScreenerPanel onSelectStock={onSelectStock} initialPair={initialPair} initialState={initialState} /> : <>
+    {tab === "transition" ? <TransitionScreenerPanel onSelectStock={onSelectStock} initialPair={initialPair} initialState={initialState} initialDirection={initialDirection} /> : <>
     <div className="tb-card p-4 sm:p-6">
       <p className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--tb-orange)]">Daily EOD screening</p>
       <h1 id="screener-heading" className="mt-1 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">스크리닝</h1>
       <p className="mt-2 text-sm text-slate-600">확정된 공식 일봉 모델 순위와 기업분석 결과를 조건별로 비교합니다.</p>
-      <form className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" onSubmit={(event) => { event.preventDefault(); void run(); }}>
+      <form className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" onSubmit={(event) => { event.preventDefault(); search(filters); }}>
         <label className="text-xs font-semibold text-slate-600">모델<select value={filters.model} onChange={(event) => setFilters({ ...filters, model: event.target.value })} className={`${field} mt-1 w-full`}>{Object.entries(MODEL_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
         <label className="text-xs font-semibold text-slate-600">최소 점수<input inputMode="decimal" value={filters.minScore} onChange={(event) => setFilters({ ...filters, minScore: event.target.value })} placeholder="예: 70" className={`${field} mt-1 w-full`} /></label>
         <label className="text-xs font-semibold text-slate-600">최대 점수<input inputMode="decimal" value={filters.maxScore} onChange={(event) => setFilters({ ...filters, maxScore: event.target.value })} placeholder="예: 100" className={`${field} mt-1 w-full`} /></label>
