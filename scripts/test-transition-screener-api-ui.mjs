@@ -8,9 +8,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 import * as transition from "../lib/transition-screener.mjs";
 import * as screener from "../lib/stock-screener.mjs";
 import * as directional from "../lib/directional-transition.mjs";
+import * as evidence from "../lib/transition-evidence.mjs";
+import * as evidencePolicy from "../lib/transition-evidence-policy.mjs";
 
 const row = { code: "000660", name: "검증종목", market: "KOSPI", referenceDate: "2026-10-07", qualityStatus: "PARTIAL_VALIDATED", missingReasons: [], models: Object.fromEntries(["A", "B", "C", "D"].map((m) => [`${m}-v1`, { score: 80, rank: 1 }])), indicators: { rsi: 55, volumeMultiple: 2, macdState: "rising", dailyChangePercent: 1.5 }, transitions: { "5-20": { status: "CROSS_OCCURRED", gapPercent: 0.5, crossDate: "2026-10-07", aboveTradingDays: 1, aboveDaysLowerBound: false }, "20-60": { status: "NONE", gapPercent: -1, crossDate: null, aboveTradingDays: 0, aboveDaysLowerBound: false } } };
 const store = { rows: [row], referenceDate: row.referenceDate, sourceQualityGrade: "REJECTED", isPartialRanking: true, quarantinedCount: 30 };
+row.upwardEvidence = { "5-20": evidence.evaluateTransitionEvidence({ pair: "5-20", points: [90, 92, 95, 99].map(ma5 => ({ ma5, ma20: 100, ma60: 110 })), current: { rsi: 45, rsiChange: 2, macd: -2, signal: -1, histogram: -1, previousHistogram: -2, volumeRatio: 150 }, bars: [{ clpr: 105, trqu: 200 }, { clpr: 100, trqu: 100 }] }) };
 const source = await readFile(new URL("../app/api/screener/route.ts", import.meta.url), "utf8");
 const compile = (source, isJsx = false) => ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true, ...(isJsx ? { jsx: ts.JsxEmit.ReactJSX } : {}) } }).outputText;
 let storeCalls = 0;
@@ -25,6 +28,8 @@ const require = (name) => {
   if (name === "@/lib/transition-screener.mjs") return transition;
   if (name === "@/lib/stock-screener.mjs") return screener;
   if (name === "@/lib/directional-transition.mjs") return directional;
+  if (name === "@/lib/transition-evidence.mjs") return evidence;
+  if (name === "@/lib/transition-evidence-policy.mjs") return evidencePolicy;
   if (name === "@/lib/transition-screener-store.mjs") return { getTransitionData: async () => { storeCalls += 1; if (fail) throw loadError; return store; } };
   throw new Error(`Unexpected dependency: ${name}`);
 };
@@ -39,6 +44,10 @@ assert.equal(valid.body.ruleVersion, transition.TRANSITION_RULE_VERSION);
 assert.equal(valid.body.researchProposal.approved, true);
 assert.equal(valid.body.researchProposal.researchOnly, true);
 assert.equal(valid.headers["Cache-Control"], "no-store");
+assert.equal(valid.body.evidencePolicy.version, "transition-evidence-research-v1");
+assert.equal(valid.body.evidenceConfigHash, evidence.evidenceConfigHash);
+assert.equal(valid.body.results[0].evidence.fulfilledCount, 4);
+assert.equal((await exports.GET(request("tab=transition&momentumEvidence=improving&volumeEvidence=met&evidenceMin=4"))).body.resultCount, 1);
 assert.equal((await exports.GET(request("tab=transition&state=NONE"))).body.resultCount, 0);
 for (const state of ["APPROACHING", "CONFIRMED"]) {
   row.transitions["5-20"].status = state;
@@ -56,7 +65,7 @@ assert.equal(v2.body.approachPolicy.approvedForTrading, false);
 const both = await exports.GET(request("tab=transition&rules=directional-v2"));
 assert.equal(both.body.resultCount, 2); assert.equal(both.body.uniqueStockCount, 1);
 assert.equal((await exports.GET(request("tab=transition&rules=directional-v2&code=000999"))).body.resultCount, 0);
-for (const query of ["tab=transition&state=INVALID", "tab=transition&pair=toString", "tab=transition&rsiMin=100&rsiMax=20", "tab=transition&volumeMin=-1", "tab=transition&scoreD=Infinity", "tab=unknown"]) {
+for (const query of ["tab=transition&state=INVALID", "tab=transition&pair=toString", "tab=transition&rsiMin=100&rsiMax=20", "tab=transition&volumeMin=-1", "tab=transition&scoreD=Infinity", "tab=transition&evidenceMin=5", "tab=transition&momentumEvidence=INVALID", "tab=unknown"]) {
   const before = storeCalls;
   assert.equal((await exports.GET(request(query))).status, 400);
   assert.equal(storeCalls, before, "잘못된 입력에서는 데이터 로딩을 하지 않습니다.");
@@ -83,10 +92,18 @@ const filters = { pair: "5-20", state: "all", market: "all", macd: "all", model:
 const states = [filters, v2.body, false, null, 0];
 let stateIndex = 0;
 const uiExports = {};
+const detailExports = {};
+new Function("require", "exports", compile(await readFile(new URL("../components/TransitionEvidenceDetails.tsx", import.meta.url), "utf8"), true))((name) => {
+  if (name === "react/jsx-runtime") return jsx;
+  if (name === "../lib/transition-evidence-policy.mjs") return evidencePolicy;
+  throw new Error(`Unexpected detail dependency: ${name}`);
+}, detailExports);
 const uiRequire = (name) => {
   if (name === "react/jsx-runtime") return jsx;
   if (name === "react") return { ...React, useState: () => [states[stateIndex++], () => {}], useRef: () => ({ current: null }), useEffect: () => {}, useCallback: (value) => value };
   if (name === "../lib/directional-transition.mjs") return directional;
+  if (name === "../lib/transition-evidence-policy.mjs") return evidencePolicy;
+  if (name === "./TransitionEvidenceDetails") return { __esModule: true, ...detailExports };
   if (name === "./ApproachStrengthDetails") return { __esModule: true, default: () => null };
   throw new Error(`Unexpected UI dependency: ${name}`);
 };
@@ -94,6 +111,10 @@ new Function("require", "exports", compile(panel, true))(uiRequire, uiExports);
 const html = renderToStaticMarkup(React.createElement(uiExports.default, { onSelectStock: () => {} }));
 for (const text of ["교차 발생", "접근 중 · 연구용", "교차 후 확인 · 연구용", "데드크로스 접근", "75.00", "검증종목", "000660", "2026-10-07", "2.00x", "55.00", "80.00", "필터 입력 결측 제외", "매수 추천·상승 확률이 아닙니다", "REJECTED"]) assert.ok(html.includes(text), `UI 렌더 누락: ${text}`);
 assert.ok(html.includes("지표 상세 펼치기"));
+for (const text of ["상승 전환 초기 후보", "상승 전환 확인 후보", "강한 상승 초기 후보", "4/4 충족", "4/4 평가 가능", "RSI 변화", "히스토그램 변화", "이평선 간격 개선", "단기 추세 개선", "상승 거래량 동반", evidence.evidenceConfigHash]) assert.ok(html.includes(text), text);
+const unavailable = renderToStaticMarkup(React.createElement(detailExports.default, { evidence: null })); assert.ok(unavailable.includes("확인 불가"));
+const missing = structuredClone(row.upwardEvidence["5-20"]); missing.categories.momentum.status = "DATA_MISSING"; missing.categories.momentum.metrics.rsiChange = null; missing.evaluableCount = 3; missing.fulfilledCount = 3;
+const missingHtml = renderToStaticMarkup(React.createElement(detailExports.default, { evidence: missing })); assert.ok(missingHtml.includes("3/4 평가 가능")); assert.ok(missingHtml.includes("데이터 부족"));
 assert.match(panel, /<details className="relative mt-2/u);
 assert.doesNotMatch(panel, /<article[^>]+onClick/u, "details에서 버블링으로 종목 이동이 발생하지 않습니다.");
 console.log("transition screener route validation/legacy isolation/secret-safe errors/mobile SSR/stale guard UI tests passed");

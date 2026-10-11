@@ -6,6 +6,8 @@ import { createScreeningRows, screenStocks, SCREENING_MODELS } from "@/lib/stock
 import { parseTransitionFilters, screenTransitions, TRANSITION_RULE_VERSION, TRANSITION_RESEARCH_PROPOSAL } from "@/lib/transition-screener.mjs";
 import { getTransitionData } from "@/lib/transition-screener-store.mjs";
 import { DIRECTIONAL_RULE_VERSION, approachPolicy } from "@/lib/directional-transition.mjs";
+import { evidencePolicy } from "@/lib/transition-evidence-policy.mjs";
+import { evidenceConfigHash } from "@/lib/transition-evidence.mjs";
 
 type JsonObject = Record<string, unknown>;
 
@@ -40,6 +42,7 @@ async function handleGet(request: NextRequest) {
       const available = data.rows.filter((row: { missingReasons: string[] }) => !row.missingReasons.length);
       const supports = (key: string) => available.some((row: { indicators: Record<string, unknown> }) => row.indicators?.[key] !== null && row.indicators?.[key] !== undefined);
       return NextResponse.json({ ...data, rows: undefined, ruleVersion: filters.rules === "directional-v2" ? DIRECTIONAL_RULE_VERSION : TRANSITION_RULE_VERSION, researchProposal: TRANSITION_RESEARCH_PROPOSAL, approachPolicy: filters.rules === "directional-v2" ? approachPolicy : undefined, pair: filters.pair,
+        evidencePolicy, evidenceConfigHash,
         totalUniverse: data.rows.length, indicatorCoverage: available.length, selectedModel: filters.model, resultCount: screened.results.length, uniqueStockCount: new Set(screened.results.map((row: { code: string }) => row.code)).size, ...screened,
         supportedFilters: { rsi: supports("rsi"), macd: supports("macdState"), volume: supports("volumeMultiple"), change: supports("dailyChangePercent"),
           models: Object.fromEntries(Object.keys(SCREENING_MODELS).map((model) => [model, available.some((row: { models: Record<string, { score: number | null }> }) => row.models[model]?.score !== null)])) },

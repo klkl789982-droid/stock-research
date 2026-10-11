@@ -33,6 +33,7 @@ try {
   assert.equal((await request("/", { headers: { RSC: "1", "x-middleware-subrequest": "proxy:proxy:proxy:proxy:proxy" } })).status, 307);
   const apis = ["backtests/rank", "company-analysis", "daily-production-status", "financial", "home-dashboard", "intraday-market-analysis", "intraday-model-top", "investor", "kis-eod-top-stocks", "market-analysis", "model-performance", "model-performance/research", "price", "realtime", "screener", "stock", "top-stocks"];
   for (const api of apis) { const r = await request(`/api/${api}`); assert.equal(r.status, 401, api); assert.ok(r.headers.get("cache-control").includes("no-store")); }
+  assert.equal((await request("/api/screener?tab=transition&rules=directional-v2&sort=evidence&trendEvidence=improving")).status, 401, "Research evidence never bypasses admin authentication");
   const csrf = await request("/api/auth/login", { method: "POST", headers: { Origin: "https://attacker.test", "Content-Type": "application/json" }, body: JSON.stringify({ username, password }) }); assert.equal(csrf.status, 403);
   assert.equal((await login({ username, password: "incorrect" })).status, 401);
   assert.equal((await login({ username: "nonexistent", password })).status, 401);
@@ -43,6 +44,8 @@ try {
   assert.equal((await request("/api/auth/session", { headers })).status, 200);
   assert.equal((await request("/", { headers })).status, 200);
   assert.equal((await request("/api/model-performance", { headers })).status, 200);
+  const research = await request("/api/screener?tab=transition&rules=directional-v2&sort=evidence", { headers });
+  assert.equal(research.status, 200); assert.equal((await research.json()).evidencePolicy.version, "transition-evidence-research-v1");
   assert.equal((await request("/api/auth/session", { headers: { Cookie: `${cookie}tampered` } })).status, 401);
   const badLogout = await request("/api/auth/logout", { method: "POST", headers: { ...headers, Origin: "https://attacker.test" } }); assert.equal(badLogout.status, 403);
   const logout = await request("/api/auth/logout", { method: "POST", headers: { ...headers, Origin: origin } }); assert.equal(logout.status, 200); assert.match(logout.headers.get("set-cookie"), /Max-Age=0/);
