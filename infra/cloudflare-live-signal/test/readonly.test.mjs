@@ -57,7 +57,7 @@ test("diagnostic rejects arbitrary paths, query strings and methods", async () =
 });
 test("diagnostic is not part of production scheduler", async () => {
   const config = JSON.parse(await readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8"));
-  assert.equal(config.main, "src/index.mjs"); assert.equal(config.vars.DISPATCH_ENABLED, "false");
+  assert.equal(config.main, "src/index.mjs"); assert.equal(config.vars.DISPATCH_ENABLED, "true");
   assert.equal(config.workers_dev, false); assert.equal(config.preview_urls, false);
   const main = await readFile(new URL("../src/index.mjs", import.meta.url), "utf8");
   assert.doesNotMatch(main, /verifyGitHubReadonly|verify-github-readonly/u);

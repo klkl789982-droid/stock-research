@@ -65,11 +65,11 @@ test("same-isolate concurrent/replayed events coalesce; completed preflight is n
   assert.equal(calls, 2); assert.deepEqual(results[0], results[1]);
   await scheduledOnce(event, env, options); assert.equal(calls, 2);
 });
-test("workflow compatibility, disabled deployment and isolated target", async () => {
+test("workflow compatibility, approved activation and isolated target", async () => {
   const text = await readFile(new URL("../../../.github/workflows/intraday-model-top-official-signal.yml", import.meta.url), "utf8");
   for (const key of ["mode:", "scheduled_at:", "trigger_source:", "cancel-in-progress: false", "Fail unsuccessful dry-run", "LIVE_STAGE_PATH_REJECTED"]) assert.ok(text.includes(key), key);
   const config = JSON.parse(await readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8"));
-  assert.equal(config.name, "tight-budget-live-prewarm"); assert.equal(config.vars.DISPATCH_ENABLED, "false");
+  assert.equal(config.name, "tight-budget-live-prewarm"); assert.equal(config.vars.DISPATCH_ENABLED, "true");
   assert.deepEqual(config.triggers.crons, CRONS); assert.equal(config.workers_dev, false);
 });
 test("active run, late event, HTTP/auth error, ambiguous POST", async () => {
