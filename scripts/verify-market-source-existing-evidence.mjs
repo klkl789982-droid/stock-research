@@ -51,7 +51,7 @@ export async function verifyExistingSourceEvidence(root = process.cwd()) {
     const official = JSON.parse(await fs.readFile(path.join(root, "data/model-history", `${date}.json`), "utf8"));
     const records = manifest.universe.map(({ code }) => { const check = calculated.get(code); return { ticker: code,
       scores: check?.scores ?? Object.fromEntries(KIS_EOD_MODEL_VERSIONS.map((v) => [v, null])),
-      rawScores: { "A-v2": check?.rawAV2Score ?? null }, ranks: Object.fromEntries(KIS_EOD_MODEL_VERSIONS.map((v) => [v, null])) }; });
+      rawScores: { "A-v2": check?.rawScores?.["A-v2"] ?? null }, ranks: Object.fromEntries(KIS_EOD_MODEL_VERSIONS.map((v) => [v, null])) }; });
     rankKisEodRecords(records);
     modelDiagnostics = Object.fromEntries(KIS_EOD_MODEL_VERSIONS.map((v) => {
       const pairs = records.map((r) => ({ local: r, official: official.records.find((a) => a.ticker === r.ticker)?.models?.[v] }))

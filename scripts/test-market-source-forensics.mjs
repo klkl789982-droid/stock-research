@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { forensicComparison, diagnoseObservationRevision, decodeOfficialSeedRow } from '../lib/market-source-forensics.mjs';
+const row = { basDt:'20261008', srtnCd:'000020', mkp:100, hipr:120, lopr:90, clpr:110, trqu:50, trPrc:5500 };
+const diagnose = (overrides={}) => diagnoseObservationRevision({cached:row,fresh:row,official:row,saved:{...row,trPrc:null},rawKisMapped:row,observationHashVerified:true,...overrides});
+test('missing trading value remains unknown, not zero',()=>assert.equal(forensicComparison(row,{...row,trPrc:null}).fields.trPrc,null));
+test('trade-value-only parser discrepancy is detected',()=>assert.equal(diagnose({rawKisMapped:{...row,trPrc:1}}).diagnosis,'PARSING_OR_MAPPING_MISMATCH'));
+test('trade-value-only provider discrepancy is detected',()=>assert.equal(diagnose({official:{...row,trPrc:1}}).diagnosis,'CURRENT_PROVIDER_DISCREPANCY'));
+test('prior observation revision never certifies source equivalence',()=>{const r=diagnose({cached:{...row,clpr:109}});assert.equal(r.diagnosis,'PRIOR_OBSERVATION_DIFFERS_CURRENT_RESPONSE');assert.equal(r.equivalenceCertified,false);assert.equal(r.supplierInternalCauseConfirmed,false);assert.equal(r.productionChanged,false);});
+test('hash and identity errors fail closed',()=>{assert.throws(()=>diagnose({observationHashVerified:false}));assert.throws(()=>forensicComparison(row,{...row,srtnCd:'20'}));assert.throws(()=>forensicComparison(row,{...row,basDt:'20260230'}));assert.throws(()=>forensicComparison(row,{...row,hipr:100}));});
+test('seed tuple and exact date contract',()=>{const seed={requestedDate:'2026-10-08',tupleFields:['date','open','high','low','close','volume'],records:[{code:'000020',rows:[['2026-10-08',100,120,90,110,50]]}]};assert.equal(decodeOfficialSeedRow(seed,'000020','2026-10-08').clpr,110);assert.throws(()=>decodeOfficialSeedRow({...seed,tupleFields:[]},'000020','2026-10-08'));assert.throws(()=>decodeOfficialSeedRow({...seed,records:[{code:'000020',rows:[...seed.records[0].rows,...seed.records[0].rows]}]},'000020','2026-10-08'));});
