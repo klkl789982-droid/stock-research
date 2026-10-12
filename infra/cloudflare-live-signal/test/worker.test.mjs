@@ -5,6 +5,22 @@ import { CRONS, dispatchLivePrewarm, scheduledOnce } from "../src/index.mjs";
 const time = Date.parse("2026-10-12T05:12:00Z"), event = { cron: CRONS[0], scheduledTime: time };
 const env = { DISPATCH_ENABLED: "true", GITHUB_TOKEN: "fixture-token" };
 test("disabled until approval", async () => assert.equal((await dispatchLivePrewarm(event, {})).status, "DISABLED"));
+test("actual Cloudflare nonzero seconds do not reject the cron minute or extend its deadline", async () => {
+  for (const minute of [12, 22]) {
+    const slot = Date.parse(`2026-10-12T05:${minute}:00Z`);
+    const actualEvent = { cron: CRONS[0], scheduledTime: slot + 25000 };
+    let calls = 0;
+    const fetchImpl = async (_, init) => { calls++; return init.method === "POST" ? new Response(null, { status: 204 }) : Response.json({ workflow_runs: [] }); };
+    const result = await dispatchLivePrewarm(actualEvent, env, { now: () => slot + 25854, fetchImpl });
+    assert.equal(result.status, "DISPATCH_ACCEPTED_NOT_OBSERVATION_SUCCESS");
+    assert.equal(result.scheduledAt, new Date(slot + 25000).toISOString());
+    assert.equal(result.schedulerDelayMs, 854);
+    assert.equal(calls, 2);
+    const late = await dispatchLivePrewarm(actualEvent, env, { now: () => slot + 120001, fetchImpl });
+    assert.equal(late.reason, "PREWARM_WINDOW_MISSED");
+    assert.equal(calls, 2);
+  }
+});
 test("exact target, KST prewarm, mode and authorization", async () => {
   const calls = [];
   const result = await dispatchLivePrewarm(event, env, { now: () => time, fetchImpl: async (url, init) => {

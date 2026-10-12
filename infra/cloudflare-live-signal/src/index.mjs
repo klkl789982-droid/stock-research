@@ -3,10 +3,13 @@ export const CRONS = ["12,22 5 * * MON-FRI"]; // 14:12 / 14:22 KST
 const API = "https://api.github.com/repos/klkl789982-droid/stock-research/actions/workflows/intraday-model-top-official-signal.yml";
 const validSlot = (event, nowMs) => {
   const scheduled = new Date(event.scheduledTime);
+  // Cloudflare scheduledTime includes seconds (observed :25); cron selects a minute.
+  // Keep the original two-minute prewarm deadline anchored to that nominal minute.
+  const slotMs = Math.floor(scheduled.getTime() / 60000) * 60000;
   return CRONS.includes(event.cron) && Number.isFinite(scheduled.getTime()) && Number.isFinite(nowMs)
     && ![0, 6].includes(scheduled.getUTCDay()) && scheduled.getUTCHours() === 5
-    && [12, 22].includes(scheduled.getUTCMinutes()) && scheduled.getUTCSeconds() === 0
-    && nowMs >= scheduled.getTime() && nowMs - scheduled.getTime() <= 120000;
+    && [12, 22].includes(scheduled.getUTCMinutes())
+    && nowMs >= scheduled.getTime() && nowMs - slotMs <= 120000;
 };
 export async function dispatchLivePrewarm(event, env, { fetchImpl = fetch, now = Date.now, wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms)) } = {}) {
   const started = now();
