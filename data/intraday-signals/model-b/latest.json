@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "artifactType": "intradayModelBLatestStatus",
-  "signalDate": "2026-10-09",
+  "signalDate": "2026-10-12",
   "officialSignalTime": "14:30:00",
   "status": "FAILED",
   "reason": "OFFICIAL_SIGNAL_OUTSIDE_COLLECTION_WINDOW",
-  "updatedAt": "2026-10-09T12:01:34.116Z"
+  "updatedAt": "2026-10-12T13:23:53.629Z"
 }
