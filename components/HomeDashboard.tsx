@@ -52,7 +52,7 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
     <div className="tb-market-status-panel grid gap-2 rounded-xl px-3 py-3 text-xs text-slate-200 sm:grid-cols-2 xl:grid-cols-5" aria-label="데이터 최신성 요약">
       <div><span className="text-slate-400">공식 EOD</span><p className="mt-1 font-medium">{data?.referenceDate ?? "확인 불가"}</p></div>
       <div><span className="text-slate-400">모델 TOP 갱신</span><p className="mt-1">{data?.models ? "저장 순위 · " + data.models.referenceDate : "검증 불가"}</p></div>
-      <div><span className="text-slate-400">14:30 LIVE</span><p className="mt-1">{liveStatus}</p><p className="mt-1 text-[10px] text-slate-400">마지막 정상 관측 {live.data?.signalDate ?? data?.liveStatus?.lastGoodDate ?? "없음 / 미확인"}</p></div>
+      <div><span className="text-slate-400">14:30 LIVE</span><p className="mt-1">{liveStatus}</p><p className="mt-1 text-[10px] text-slate-400">상태 기준일 {data?.liveStatus?.signalDate ?? "확인 불가"} · 마지막 정상 관측 {live.data?.signalDate ?? data?.liveStatus?.lastGoodDate ?? "없음 / 미확인"}</p></div>
       <div><span className="text-slate-400">마지막 정상 갱신 (API 기록)</span><p className="mt-1">{time(operations.data?.lastSuccessAt)}</p></div>
       <div><span className="text-slate-400">운영 상태</span><p className="mt-1">{labels[operation]}</p></div>
     </div>

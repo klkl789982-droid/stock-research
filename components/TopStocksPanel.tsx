@@ -98,7 +98,7 @@ export default function TopStocksPanel({ onSelectStock, compact = false, onOpenF
       : null;
   const officialSignalMessage = activeTab === "B" && data?.dataMode !== "intradayOfficialSignal" && data?.officialSignal?.status !== "READY"
     ? data?.officialSignal?.status === "FAILED" || data?.officialSignal?.status === "FAILED_COLLECTION"
-      ? `오늘 Official Signal 생성에 실패했습니다.${data.officialSignal.signalDate ? ` 최근 시도일: ${data.officialSignal.signalDate}` : ""}`
+      ? `최근 Official Signal 생성에 실패했습니다.${data.officialSignal.signalDate ? ` 실제 시도일: ${data.officialSignal.signalDate}` : " 시도일 확인 불가"}`
       : "오늘 14:30 Official Signal 생성 대기 또는 상태 확인 불가"
     : null;
 
