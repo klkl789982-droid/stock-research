@@ -6,6 +6,8 @@ import { writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { hashAdminPassword } from "../lib/admin-auth.mjs";
 import { redisFixtureServer } from "./auth-test-support.mjs";
+import { createLiveTransitionStore } from "../lib/live-transition-store.mjs";
+import { parseLiveTransitionFilters, screenLiveTransitions } from "../lib/live-transition-screener.mjs";
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const portServer = http.createServer(); await new Promise(resolve => portServer.listen(0, "127.0.0.1", resolve));
@@ -34,6 +36,7 @@ try {
   const apis = ["backtests/rank", "company-analysis", "daily-production-status", "financial", "home-dashboard", "intraday-market-analysis", "intraday-model-top", "investor", "kis-eod-top-stocks", "market-analysis", "model-performance", "model-performance/research", "price", "realtime", "screener", "stock", "top-stocks"];
   for (const api of apis) { const r = await request(`/api/${api}`); assert.equal(r.status, 401, api); assert.ok(r.headers.get("cache-control").includes("no-store")); }
   assert.equal((await request("/api/screener?tab=transition&rules=directional-v2&sort=evidence&trendEvidence=improving")).status, 401, "Research evidence never bypasses admin authentication");
+  assert.equal((await request("/api/screener?tab=transition&mode=LIVE")).status, 401, "LIVE remains behind administrator authentication");
   const csrf = await request("/api/auth/login", { method: "POST", headers: { Origin: "https://attacker.test", "Content-Type": "application/json" }, body: JSON.stringify({ username, password }) }); assert.equal(csrf.status, 403);
   assert.equal((await login({ username, password: "incorrect" })).status, 401);
   assert.equal((await login({ username: "nonexistent", password })).status, 401);
@@ -46,6 +49,25 @@ try {
   assert.equal((await request("/api/model-performance", { headers })).status, 200);
   const research = await request("/api/screener?tab=transition&rules=directional-v2&sort=evidence", { headers });
   assert.equal(research.status, 200); assert.equal((await research.json()).evidencePolicy.version, "transition-evidence-research-v1");
+  const liveQuery = "tab=transition&mode=LIVE&pair=5-20&state=candidates&nearPercent=1";
+  const liveResponse = await request(`/api/screener?${liveQuery}`, { headers });
+  const liveBody = await liveResponse.json();
+  let expectedLive, expectedFailure;
+  try { expectedLive = await createLiveTransitionStore()(); } catch (error) { expectedFailure = error.message; }
+  if (expectedLive) {
+    assert.equal(liveResponse.status, 200);
+    const screened = screenLiveTransitions(expectedLive.rows, parseLiveTransitionFilters(new URLSearchParams(liveQuery)));
+    assert.deepEqual(liveBody.results, screened.results, "actual Next handler returns the validated saved LIVE dataset");
+    assert.equal(liveBody.source.signalContentHash, expectedLive.source.signalContentHash);
+    assert.equal(liveBody.modelReferenceDate, expectedLive.modelReferenceDate);
+  } else {
+    assert.equal(liveResponse.status, 503);
+    assert.equal(liveBody.error.diagnostic, expectedFailure, "expired fixtures must remain unavailable in the real handler");
+  }
+  assert.ok(liveResponse.headers.get("cache-control").includes("private"));
+  assert.ok(liveResponse.headers.get("cache-control").includes("no-store"));
+  assert.equal((await request("/api/screener?tab=transition&mode=LIVE&nearPercent=6", { headers })).status, 400);
+  console.log(`LIVE HTTP integration passed: authenticated ${liveResponse.status}, saved-source identity, errors, no-store`);
   assert.equal((await request("/api/auth/session", { headers: { Cookie: `${cookie}tampered` } })).status, 401);
   const badLogout = await request("/api/auth/logout", { method: "POST", headers: { ...headers, Origin: "https://attacker.test" } }); assert.equal(badLogout.status, 403);
   const logout = await request("/api/auth/logout", { method: "POST", headers: { ...headers, Origin: origin } }); assert.equal(logout.status, 200); assert.match(logout.headers.get("set-cookie"), /Max-Age=0/);

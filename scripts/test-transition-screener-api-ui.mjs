@@ -10,13 +10,19 @@ import * as screener from "../lib/stock-screener.mjs";
 import * as directional from "../lib/directional-transition.mjs";
 import * as evidence from "../lib/transition-evidence.mjs";
 import * as evidencePolicy from "../lib/transition-evidence-policy.mjs";
+import * as liveTransition from "../lib/live-transition-screener.mjs";
 
 const row = { code: "000660", name: "검증종목", market: "KOSPI", referenceDate: "2026-10-07", qualityStatus: "PARTIAL_VALIDATED", missingReasons: [], models: Object.fromEntries(["A", "B", "C", "D"].map((m) => [`${m}-v1`, { score: 80, rank: 1 }])), indicators: { rsi: 55, volumeMultiple: 2, macdState: "rising", dailyChangePercent: 1.5 }, transitions: { "5-20": { status: "CROSS_OCCURRED", gapPercent: 0.5, crossDate: "2026-10-07", aboveTradingDays: 1, aboveDaysLowerBound: false }, "20-60": { status: "NONE", gapPercent: -1, crossDate: null, aboveTradingDays: 0, aboveDaysLowerBound: false } } };
 const store = { rows: [row], referenceDate: row.referenceDate, sourceQualityGrade: "REJECTED", isPartialRanking: true, quarantinedCount: 30 };
 row.upwardEvidence = { "5-20": evidence.evaluateTransitionEvidence({ pair: "5-20", points: [90, 92, 95, 99].map(ma5 => ({ ma5, ma20: 100, ma60: 110 })), current: { rsi: 45, rsiChange: 2, macd: -2, signal: -1, histogram: -1, previousHistogram: -2, volumeRatio: 150 }, bars: [{ clpr: 105, trqu: 200 }, { clpr: 100, trqu: 100 }] }) };
 const source = await readFile(new URL("../app/api/screener/route.ts", import.meta.url), "utf8");
 const compile = (source, isJsx = false) => ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true, ...(isJsx ? { jsx: ts.JsxEmit.ReactJSX } : {}) } }).outputText;
-let storeCalls = 0;
+let storeCalls = 0, liveStoreCalls = 0;
+let liveFailure = null;
+const liveStore = { mode: "LIVE", referenceDate: "2026-10-08", modelReferenceDate: row.referenceDate, previousOfficialDate: row.referenceDate,
+  ruleVersion: liveTransition.LIVE_TRANSITION_RULE_VERSION, rows: [{ ...row, referenceDate: "2026-10-08", modelReferenceDate: row.referenceDate,
+    qualityStatus: "PROVISIONAL", observedPrice: 102, quoteAsOfDate: "2026-10-08", quoteAsOfTime: "14:30:01", receivedAt: "2026-10-08T05:30:02Z",
+    closedRows: Array.from({ length: 60 }, () => ["20261007", 100, 100, 100, 100, 1]) }] };
 const exports = {};
 const loadError = { message: "credential-or-private-url-must-not-leak" };
 let fail = false;
@@ -26,6 +32,8 @@ const require = (name) => {
   if (name === "node:fs/promises") return { readdir: async () => ["2026-10-07.json"], readFile: async () => JSON.stringify({ asOfDate: row.referenceDate, records: [] }) };
   if (name === "node:path") return path;
   if (name === "@/lib/transition-screener.mjs") return transition;
+  if (name === "@/lib/live-transition-screener.mjs") return liveTransition;
+  if (name === "@/lib/live-transition-store.mjs") return { getLiveTransitionData: async () => { liveStoreCalls++; if (liveFailure) throw new Error(liveFailure); return liveStore; } };
   if (name === "@/lib/stock-screener.mjs") return screener;
   if (name === "@/lib/directional-transition.mjs") return directional;
   if (name === "@/lib/transition-evidence.mjs") return evidence;
@@ -77,6 +85,38 @@ assert.doesNotMatch(JSON.stringify(failure), /credential-or-private-url/);
 fail = false;
 assert.equal((await exports.GET(request("model=A-v1"))).status, 200, "기존 모델/기업 검색 경로를 유지합니다.");
 
+const beforeLiveEodCalls = storeCalls;
+const liveResponse = await exports.GET(request("tab=transition&mode=LIVE&state=candidates&nearPercent=1&pair=5-20"));
+assert.equal(liveResponse.status, 200);
+assert.equal(liveResponse.body.mode, "LIVE");
+assert.equal(liveResponse.body.resultCount, 1);
+assert.equal(liveResponse.body.results[0].status, "CROSS_OCCURRED");
+assert.equal(liveResponse.body.results[0].closedRows, undefined);
+assert.equal(liveResponse.body.modelReferenceDate, "2026-10-07");
+assert.equal(liveResponse.body.referenceDate, "2026-10-08");
+assert.equal(liveResponse.body.rows, undefined);
+assert.equal(liveResponse.headers["Cache-Control"], "no-store");
+assert.equal(storeCalls, beforeLiveEodCalls, "LIVE never loads latest EOD");
+for (const query of ["mode=INVALID", "mode=LIVE&nearPercent=NaN", "mode=LIVE&nearPercent=5.1", "mode=LIVE&pair=toString", "mode=LIVE&state=CONFIRMED"]) {
+  const before = liveStoreCalls;
+  assert.equal((await exports.GET(request(`tab=transition&${query}`))).status, 400);
+  assert.equal(liveStoreCalls, before);
+}
+for (const reason of Object.keys(liveTransition.LIVE_TRANSITION_ERRORS)) {
+  liveFailure = reason;
+  const unavailable = await exports.GET(request("tab=transition&mode=LIVE"));
+  assert.equal(unavailable.status, 503);
+  assert.equal(unavailable.body.error.diagnostic, reason);
+  assert.equal(unavailable.body.error.message, liveTransition.LIVE_TRANSITION_ERRORS[reason]);
+  assert.equal(unavailable.headers["Cache-Control"], "no-store");
+}
+liveFailure = "credential-or-private-url-must-not-leak";
+assert.doesNotMatch(JSON.stringify(await exports.GET(request("tab=transition&mode=LIVE"))), /credential-or-private-url/);
+liveFailure = null;
+const explicitEod = await exports.GET(request("tab=transition&mode=EOD"));
+const defaultEod = await exports.GET(request("tab=transition"));
+assert.deepEqual(explicitEod, defaultEod, "explicit EOD preserves the existing API response");
+
 const panel = await readFile(new URL("../components/TransitionScreenerPanel.tsx", import.meta.url), "utf8");
 const parent = await readFile(new URL("../components/StockScreenerPanel.tsx", import.meta.url), "utf8");
 assert.match(parent, /<TransitionScreenerPanel onSelectStock=\{onSelectStock\}/);
@@ -105,10 +145,12 @@ const uiRequire = (name) => {
   if (name === "../lib/transition-evidence-policy.mjs") return evidencePolicy;
   if (name === "./TransitionEvidenceDetails") return { __esModule: true, ...detailExports };
   if (name === "./ApproachStrengthDetails") return { __esModule: true, default: () => null };
+  if (name === "./LiveTransitionScreenerPanel") return { __esModule: true, default: () => null };
+  if (name === "./LiveTransitionDetails") return { TransitionModeSelector: () => null };
   throw new Error(`Unexpected UI dependency: ${name}`);
 };
 new Function("require", "exports", compile(panel, true))(uiRequire, uiExports);
-const html = renderToStaticMarkup(React.createElement(uiExports.default, { onSelectStock: () => {} }));
+const html = renderToStaticMarkup(React.createElement(uiExports.EodTransitionScreenerPanel, { onSelectStock: () => {} }));
 for (const text of ["교차 발생", "접근 중 · 연구용", "교차 후 확인 · 연구용", "데드크로스 접근", "75.00", "검증종목", "000660", "2026-10-07", "2.00x", "55.00", "80.00", "필터 입력 결측 제외", "매수 추천·상승 확률이 아닙니다", "REJECTED"]) assert.ok(html.includes(text), `UI 렌더 누락: ${text}`);
 assert.ok(html.includes("지표 상세 펼치기"));
 for (const text of ["상승 전환 초기 후보", "상승 전환 확인 후보", "강한 상승 초기 후보", "4/4 충족", "4/4 평가 가능", "RSI 변화", "히스토그램 변화", "이평선 간격 개선", "단기 추세 개선", "상승 거래량 동반", evidence.evidenceConfigHash]) assert.ok(html.includes(text), text);

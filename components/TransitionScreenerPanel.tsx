@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import LiveTransitionScreenerPanel from "./LiveTransitionScreenerPanel";
+import { TransitionModeSelector, type TransitionMode } from "./LiveTransitionDetails";
 import { transitionLabel, approachPolicy } from "../lib/directional-transition.mjs";
 import ApproachStrengthDetails, { type StrengthObservation } from "./ApproachStrengthDetails";
 import TransitionEvidenceDetails, { evidenceCountText, type UpwardEvidence } from "./TransitionEvidenceDetails";
@@ -12,7 +14,7 @@ type Row = StrengthObservation & { evidence?: UpwardEvidence | null; code: strin
 type Response = { referenceDate: string; ruleVersion: string; totalUniverse: number; indicatorCoverage: number; quarantinedCount: number | null; sourceQualityGrade: string; isPartialRanking: boolean; resultCount: number; uniqueStockCount?: number; results: Row[]; exclusions: { dataMissing: number; filterMissing: number; conditionNotMet: number }; supportedFilters: { rsi: boolean; macd: boolean; volume: boolean; change: boolean; models: Record<string, boolean> } };
 const INITIAL: Filters = { rules: "directional-v2", crossDirection: "all", strengthMin: "", evidenceMin: "", trendEvidence: "all", momentumEvidence: "all", volumeEvidence: "all", pair: "5-20", state: "all", market: "all", macd: "all", rsiMin: "", rsiMax: "", volumeMin: "", volumeMax: "", changeMin: "", changeMax: "", scoreA: "", scoreB: "", scoreC: "", scoreD: "", model: "A-v1", sort: "state", direction: "asc" };
 const queryFor = (filters: Filters) => {
-  const params = new URLSearchParams({ tab: "transition" });
+  const params = new URLSearchParams({ tab: "transition", mode: "EOD" });
   for (const [key, value] of Object.entries(filters)) if (value) params.set(key, value);
   return params.toString();
 };
@@ -22,7 +24,7 @@ const macdLabel = (value: string | null) => ({ rising: "상승 (MACD > Signal)",
 const fieldClass = "tb-focus mt-1 min-h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 disabled:bg-slate-100 disabled:text-slate-400";
 const PAGE_SIZE = 30;
 
-export default function TransitionScreenerPanel({ onSelectStock, initialPair = "5-20", initialState = "all", initialDirection = "all" }: { onSelectStock: (stock: Selection) => void | Promise<void>; initialPair?: string; initialState?: string; initialDirection?: string }) {
+export function EodTransitionScreenerPanel({ onSelectStock, initialPair = "5-20", initialState = "all", initialDirection = "all" }: { onSelectStock: (stock: Selection) => void | Promise<void>; initialPair?: string; initialState?: string; initialDirection?: string }) {
   const [filters, setFilters] = useState({ ...INITIAL, pair: initialPair, state: initialState, crossDirection: initialDirection });
   const [data, setData] = useState<Response | null>(null);
   const [loading, setLoading] = useState(true);
@@ -104,4 +106,13 @@ export default function TransitionScreenerPanel({ onSelectStock, initialPair = "
       {data.resultCount > PAGE_SIZE && <div className="mt-3 flex items-center justify-center gap-3 text-xs"><button type="button" disabled={!page} className="tb-focus rounded border border-slate-200 px-3 py-2 disabled:opacity-40" onClick={() => setPage(page - 1)}>이전</button><span>{page + 1} / {Math.ceil(data.resultCount / PAGE_SIZE)}</span><button type="button" disabled={(page + 1) * PAGE_SIZE >= data.resultCount} className="tb-focus rounded border border-slate-200 px-3 py-2 disabled:opacity-40" onClick={() => setPage(page + 1)}>다음</button></div>}
     </div>}
   </section>;
+}
+
+export default function TransitionScreenerPanel({ onSelectStock, initialPair = "5-20", initialState = "all", initialDirection = "all" }: { onSelectStock: (stock: Selection) => void | Promise<void>; initialPair?: string; initialState?: string; initialDirection?: string }) {
+  // Homepage counts are explicit EOD links; ordinary screener entry starts LIVE.
+  const [mode, setMode] = useState<TransitionMode>(initialDirection !== "all" || initialState !== "all" ? "EOD" : "LIVE");
+  return <div className="space-y-3">
+    <div className="tb-card p-3"><TransitionModeSelector mode={mode} onChange={setMode} /></div>
+    {mode === "LIVE" ? <LiveTransitionScreenerPanel key={`LIVE:${initialPair}:${initialState}`} onSelectStock={onSelectStock} initialPair={initialPair} initialState={initialState} /> : <EodTransitionScreenerPanel key={`EOD:${initialPair}:${initialState}:${initialDirection}`} onSelectStock={onSelectStock} initialPair={initialPair} initialState={initialState} initialDirection={initialDirection} />}
+  </div>;
 }

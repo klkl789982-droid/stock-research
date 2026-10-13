@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createScreeningRows, screenStocks, SCREENING_MODELS } from "@/lib/stock-screener.mjs";
 import { parseTransitionFilters, screenTransitions, TRANSITION_RULE_VERSION, TRANSITION_RESEARCH_PROPOSAL } from "@/lib/transition-screener.mjs";
 import { getTransitionData } from "@/lib/transition-screener-store.mjs";
+import { getLiveTransitionData } from "@/lib/live-transition-store.mjs";
+import { parseLiveTransitionFilters, screenLiveTransitions, LIVE_TRANSITION_ERRORS } from "@/lib/live-transition-screener.mjs";
 import { DIRECTIONAL_RULE_VERSION, approachPolicy } from "@/lib/directional-transition.mjs";
 import { evidencePolicy } from "@/lib/transition-evidence-policy.mjs";
 import { evidenceConfigHash } from "@/lib/transition-evidence.mjs";
@@ -33,6 +35,25 @@ async function handleGet(request: NextRequest) {
   const tab = request.nextUrl.searchParams.get("tab") ?? "models";
   if (!["models", "transition"].includes(tab)) return NextResponse.json({ error: { message: "지원하지 않는 검색 영역입니다." } }, { status: 400 });
   if (tab === "transition") {
+    const mode = request.nextUrl.searchParams.get("mode") ?? "EOD";
+    if (!["LIVE", "EOD"].includes(mode)) return NextResponse.json({ error: { message: "LIVE 또는 EOD 조회 방식을 선택해 주세요." } }, { status: 400 });
+    if (mode === "LIVE") {
+      let filters;
+      try { filters = parseLiveTransitionFilters(request.nextUrl.searchParams); }
+      catch { return NextResponse.json({ error: { message: "LIVE 이평선 조합·상태·근접 기준(0~5%)을 확인해 주세요." } }, { status: 400 }); }
+      try {
+        const data = await getLiveTransitionData();
+        const screened = screenLiveTransitions(data.rows, filters);
+        return NextResponse.json({ ...data, rows: undefined, pair: filters.pair, nearPercent: filters.nearPercent,
+          totalUniverse: data.rows.length, indicatorCoverage: data.rows.filter((row: { missingReasons: string[] }) => !row.missingReasons.length).length,
+          resultCount: screened.results.length, ...screened,
+        }, { headers: { "Cache-Control": "no-store" } });
+      } catch (error) {
+        const diagnostic = error instanceof Error && Object.hasOwn(LIVE_TRANSITION_ERRORS, error.message) ? error.message : "LIVE_SNAPSHOT_INVALID";
+        const message = LIVE_TRANSITION_ERRORS[diagnostic as keyof typeof LIVE_TRANSITION_ERRORS];
+        return NextResponse.json({ error: { message, diagnostic } }, { status: 503, headers: { "Cache-Control": "no-store" } });
+      }
+    }
     let filters;
     try { filters = parseTransitionFilters(request.nextUrl.searchParams); }
     catch { return NextResponse.json({ error: { message: "전환 신호 조건과 수치 범위를 확인해 주세요." } }, { status: 400 }); }
