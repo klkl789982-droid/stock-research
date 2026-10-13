@@ -111,6 +111,28 @@
       "marketAnalysisSnapshot": "created",
       "intradayMarketSeed": "created",
       "checkedAt": "2026-10-12T02:36:06.847Z"
+    },
+    "2026-10-09": {
+      "status": "marketClosed",
+      "observedBasDt": null,
+      "modelSnapshot": "notRequired",
+      "marketPriceLedger": "notRequired",
+      "reason": "absentBetweenCompleteOfficialEodTradingDates",
+      "evidence": "completeOfficialEodHistoryGap",
+      "evidenceReferenceDate": "2026-10-12",
+      "evidenceRecordCount": 508,
+      "checkedAt": "2026-10-13T03:44:54.106Z"
+    },
+    "2026-10-12": {
+      "status": "tradingDay",
+      "observedBasDt": "2026-10-12",
+      "modelSnapshot": "created",
+      "marketPriceLedger": "created",
+      "reason": null,
+      "universeArchive": "created",
+      "marketAnalysisSnapshot": "created",
+      "intradayMarketSeed": "created",
+      "checkedAt": "2026-10-13T03:44:54.109Z"
     }
   }
 }
