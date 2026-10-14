@@ -1,6 +1,6 @@
 import { withAdminAccess } from "@/lib/admin-access";
 import { NextRequest, NextResponse } from "next/server";
-import { latestOfficialKisFallbackDate, readKisEodTopStocks } from "@/lib/kis-eod-publication.mjs";
+import { latestOfficialKisFallbackDate, readKisEodTopStocks } from "@/lib/kis-eod-read-store.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

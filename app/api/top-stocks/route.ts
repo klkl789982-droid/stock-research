@@ -116,8 +116,10 @@ async function loadOfficialModelBStatus(): Promise<{ status: IntradayModelBStatu
   try {
     const latest = JSON.parse(await readFile(path.join(process.cwd(), "data", "intraday-signals", "model-b", "latest.json"), "utf8")) as { status?: string; signalPath?: string };
     const status: IntradayModelBStatus = { signalDate: typeof (latest as { signalDate?: unknown }).signalDate === "string" ? (latest as { signalDate: string }).signalDate : null, status: latest.status === "READY" ? "READY" : latest.status === "FAILED" ? "FAILED" : latest.status === "FAILED_COLLECTION" ? "FAILED_COLLECTION" : "UNAVAILABLE", reason: typeof (latest as { reason?: unknown }).reason === "string" ? (latest as { reason: string }).reason : null, officialSignalTime: typeof (latest as { officialSignalTime?: unknown }).officialSignalTime === "string" ? (latest as { officialSignalTime: string }).officialSignalTime : null };
-    if (status.status !== "READY" || typeof latest.signalPath !== "string" || !/^data\/intraday-signals\/model-b\/\d{4}-\d{2}-\d{2}\/1430\.json$/u.test(latest.signalPath)) return { status, signal: null };
-    const value: unknown = JSON.parse(await readFile(path.join(process.cwd(), latest.signalPath), "utf8"));
+    const signalPath = typeof latest.signalPath === "string" ? /^data\/intraday-signals\/model-b\/(\d{4}-\d{2}-\d{2})\/1430\.json$/u.exec(latest.signalPath) : null;
+    if (status.status !== "READY" || !signalPath) return { status, signal: null };
+    // Keep the runtime read and deployment trace inside the validated signal namespace.
+    const value: unknown = JSON.parse(await readFile(path.join(process.cwd(), "data", "intraday-signals", "model-b", signalPath[1], "1430.json"), "utf8"));
     if (typeof value !== "object" || value === null) return { status: { ...status, status: "UNAVAILABLE", reason: "invalidOfficialSignal" }, signal: null };
     const signal = value as IntradayModelBSignal;
     return signal.status === "READY" && signal.modelVersion === "B-v1" && Array.isArray(signal.records) ? { status, signal } : { status: { ...status, status: "UNAVAILABLE", reason: "invalidOfficialSignal" }, signal: null };

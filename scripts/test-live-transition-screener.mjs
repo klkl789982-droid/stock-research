@@ -135,9 +135,12 @@ await test("LIVE moving-average math uses closed bars plus exactly one observed 
 
 await test("LIVE source validation is strict about provenance, freshness, and actual sessions", async (t) => {
   await t.test("the real READY observation establishes October 13 despite absent EOD calendar entry", () => {
-    assert.equal(fixture.calendar.dates["2026-10-12"].status, "tradingDay");
-    assert.equal(fixture.calendar.dates["2026-10-13"], undefined);
-    assert.doesNotThrow(() => validateLiveTransitionSources(fixture));
+    const beforeEod = structuredClone(fixture);
+    // Daily promotion can later populate this date; keep the pre-EOD scenario explicit.
+    delete beforeEod.calendar.dates["2026-10-13"];
+    assert.equal(beforeEod.calendar.dates["2026-10-12"].status, "tradingDay");
+    assert.equal(beforeEod.calendar.dates["2026-10-13"], undefined);
+    assert.doesNotThrow(() => validateLiveTransitionSources(beforeEod));
   });
   const cases = [
     ["missing latest", () => ({ ...fixture, latest: null }), "LIVE_SNAPSHOT_MISSING"],
