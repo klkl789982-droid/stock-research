@@ -45,7 +45,11 @@ try {
   assert.match(success.headers.get("set-cookie"), /HttpOnly/); assert.match(success.headers.get("set-cookie"), /SameSite=Lax/);
   const headers = { Cookie: cookie };
   assert.equal((await request("/api/auth/session", { headers })).status, 200);
-  assert.equal((await request("/", { headers })).status, 200);
+  const homeResponse = await request("/", { headers });
+  assert.equal(homeResponse.status, 200);
+  const homeHtml = await homeResponse.text();
+  assert.match(homeHtml, /전환 신호 · <!-- -->LIVE 장중 잠정|전환 신호 · LIVE 장중 잠정/u);
+  assert.match(homeHtml, /aria-pressed="true"[^>]*>LIVE · 14:30 저장 관측/u);
   assert.equal((await request("/api/model-performance", { headers })).status, 200);
   const research = await request("/api/screener?tab=transition&rules=directional-v2&sort=evidence", { headers });
   assert.equal(research.status, 200); assert.equal((await research.json()).evidencePolicy.version, "transition-evidence-research-v1");
@@ -64,6 +68,24 @@ try {
     assert.equal(liveResponse.status, 503);
     assert.equal(liveBody.error.diagnostic, expectedFailure, "expired fixtures must remain unavailable in the real handler");
   }
+  const homeLive = await Promise.all(["5-20", "20-60"].map(async (pair) => {
+    const query = new URLSearchParams({ tab: "transition", mode: "LIVE", pair, state: "all", nearPercent: "1" });
+    const response = await request(`/api/screener?${query}`, { headers });
+    const body = await response.json();
+    if (expectedLive) {
+      assert.equal(response.status, 200);
+      assert.deepEqual(body.results, screenLiveTransitions(expectedLive.rows, parseLiveTransitionFilters(query)).results);
+      assert.equal(body.source.signalContentHash, expectedLive.source.signalContentHash);
+      assert.equal(body.source.seedContentHash, expectedLive.source.seedContentHash);
+      assert.equal(body.pair, pair);
+    } else {
+      assert.equal(response.status, 503);
+      assert.equal(body.error.diagnostic, expectedFailure);
+    }
+    return body;
+  }));
+  if (expectedLive) assert.equal(homeLive[0].source.signalContentHash, homeLive[1].source.signalContentHash);
+  console.log("HOME HTTP integration passed: actual default LIVE markup and both all-status pair requests");
   assert.ok(liveResponse.headers.get("cache-control").includes("private"));
   assert.ok(liveResponse.headers.get("cache-control").includes("no-store"));
   assert.equal((await request("/api/screener?tab=transition&mode=LIVE&nearPercent=6", { headers })).status, 400);

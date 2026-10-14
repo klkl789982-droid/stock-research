@@ -1,6 +1,8 @@
 # LIVE transition research view
 
-The detail-card and transition screener default to LIVE, with an explicit EOD comparison switch. EOD calculations and filters are unchanged. The API retains EOD as its default for existing clients; the updated UI sends `mode=LIVE` or `mode=EOD` explicitly.
+The homepage transition card, stock detail-card and transition screener default to LIVE, with an explicit EOD comparison switch. EOD calculations and filters are unchanged. The homepage validates that both MA-pair responses share the same signal/seed hashes and dates, and passes an explicit LIVE or EOD mode when opening the matching screener count. EOD homepage counts remain available in the comparison view.
+
+The API retains EOD as its default for existing clients; the updated UI sends `mode=LIVE` or `mode=EOD` explicitly.
 
 ## Inputs and isolation
 

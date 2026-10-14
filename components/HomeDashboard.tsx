@@ -2,13 +2,12 @@
 import { useEffect, useRef, useState } from "react";
 import { dailyOperationState, latestOneDayPerformance } from "../lib/home-dashboard.mjs";
 import { liveStatusLabel } from "../lib/intraday-model-top-time-policy.mjs";
-import { transitionLabel } from "../lib/directional-transition.mjs";
+import HomeTransitionCard, { type HomeEodTransitions, type HomeTransitionNavigation } from "./HomeTransitionCard";
 type Stock = { code: string; name: string; market?: string };
 type Ranked = Stock & { rank: number; score: number; previousRank?: number | null; rankChange?: number | null };
 type Model = { modelVersion: string; rankingUniverseCount: number; top: Ranked[]; comparisonStatus?: string; previousDate?: string | null };
-type TransitionState = { direction?: string; state: string; count: number | null; examples: Stock[] };
 type LiveStatus = { status: string; signalDate: string | null; runStartedAt?: string | null; runnerFirstStepAt?: string | null; scheduledAt?: string | null; nextScheduledAt?: string | null; lastSuccessAt?: string | null; lastGoodDate?: string | null; storedAt?: string | null };
-type Dashboard = { referenceDate: string | null; models: { referenceDate: string; models: Model[] } | null; transitions: { referenceDate: string; indicatorCoverage: number; totalUniverse: number; sourceQualityGrade: string; pairs: { pair: string; states: TransitionState[]; directionalStates?: TransitionState[] }[] } | null; calendar: { today: string; time: string; dayStatus: string; expectedTradingDate: string | null } | null; liveStatus: LiveStatus | null };
+type Dashboard = { referenceDate: string | null; models: { referenceDate: string; models: Model[] } | null; transitions: HomeEodTransitions | null; calendar: { today: string; time: string; dayStatus: string; expectedTradingDate: string | null } | null; liveStatus: LiveStatus | null };
 type PerformanceRow = { modelVersion: string; horizon: string; topN: number; signalDate: string; targetTradingDate: string | null; observationCount: number; meanReturn: number | null; positiveRate: number | null };
 type Performance = { daily: PerformanceRow[]; live?: { daily: PerformanceRow[] } };
 type Operations = { lastAutomaticRunAt?: string | null; lastAutomaticRunConclusion?: string | null; lastSuccessAt?: string | null; siteApiReferenceDate?: string | null; latestConfirmedTradingDate?: string | null; recentFailureReason?: string | null; freshnessStatus?: string; publicationStatus?: string; siteApiMatchesPublished?: boolean; runStatus?: string; lagTradingDays?: number | null };
@@ -36,7 +35,7 @@ const pct = (v: number | null) => Number.isFinite(v) ? (Number(v) > 0 ? "+" : ""
 const time = (v?: string | null) => v && Number.isFinite(Date.parse(v)) ? new Date(v).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", hour12: false }) + " KST" : "확인 불가";
 export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerformance, onOpenTransition, onOpenSearch }: {
   onSelectStock: (stock: Stock) => void | Promise<void>; onOpenModel: (model: string) => void; onOpenPerformance: () => void;
-  onOpenTransition: (pair: string, state: string, direction?: string) => void; onOpenSearch?: () => void;
+  onOpenTransition: HomeTransitionNavigation; onOpenSearch?: () => void;
 }) {
   const dashboard = useResource<Dashboard>("/api/home-dashboard?topN=5");
   const performance = useResource<Performance>("/api/model-performance");
@@ -73,10 +72,7 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
       </section>
       </div>
       <div className="min-w-0 space-y-3">
-      <section className="tb-card min-w-0 p-4" aria-labelledby="home-transition-heading"><h2 id="home-transition-heading" className="text-base font-semibold">전환 신호 · 연구용</h2><p className="mt-1 text-xs text-slate-600">{transitions ? transitions.referenceDate + " · 지표 " + transitions.indicatorCoverage + "/" + transitions.totalUniverse : "전환 지표 데이터 없음"}</p>
-        {transitions?.pairs.map((pair) => <div key={pair.pair} className="mt-3"><h3 className="mb-1 text-xs font-medium">{pair.pair.replace("-", "/")}일 이동평균선</h3><div className="grid grid-cols-2 gap-1">{(pair.directionalStates ?? pair.states.map((s) => ({ ...s, direction: "golden" }))).map((state) => <div key={state.direction + ":" + state.state} className="min-w-0 rounded-lg bg-[#f7f3eb] px-2 py-2 text-xs"><button type="button" onClick={() => onOpenTransition(pair.pair, state.state, state.direction)} className="tb-focus w-full rounded text-left hover:text-[var(--tb-orange)]"><span className="block font-medium">{transitionLabel(state.direction, state.state)}</span><span className="mt-1 block text-[var(--tb-orange)]">{state.count === null ? "확인 불가" : state.count + "종목"} →</span></button>{state.examples[0] ? <div className="mt-1 truncate text-[10px] text-slate-600">{stockButton(state.examples[0])}</div> : <p className="mt-1 text-[10px] text-slate-600">{state.count === 0 ? "해당 조건 종목 없음" : "대표 종목 없음"}</p>}</div>)}</div></div>)}
-        <p className="mt-2 text-[10px] text-slate-600">연구 규칙 · 매수 추천 아님{transitions ? " · 원천 품질 " + transitions.sourceQualityGrade : ""}</p>
-      </section>
+      <HomeTransitionCard transitions={transitions ?? null} eodError={dashboard.error} onSelectStock={onSelectStock} onOpenTransition={onOpenTransition} />
       <section className="tb-card min-w-0 p-4" aria-labelledby="home-operations-heading"><h2 id="home-operations-heading" className="text-base font-semibold">데이터 운영 상세</h2><details className="mt-3 text-xs text-slate-700"><summary className="tb-focus cursor-pointer rounded">상세 운영 정보</summary><dl className="mt-2 space-y-2"><div><dt>사이트 공식 EOD / 최신 확정 거래일</dt><dd>{operations.data?.siteApiReferenceDate ?? "확인 불가"} / {operations.data?.latestConfirmedTradingDate ?? "확인 불가"}</dd></div><div><dt>마지막 자동 실행 (게시 성공과 다름)</dt><dd>{time(operations.data?.lastAutomaticRunAt)} · {operations.data?.lastAutomaticRunConclusion ?? "미확인"}</dd></div><div><dt>게시 확인 / 지연 거래일</dt><dd>{operations.data?.siteApiMatchesPublished ? "저장 게시일 일치" : "확인 불가"} / {operations.data?.lagTradingDays ?? "미확인"}</dd></div><div><dt>최근 실패 사유</dt><dd className="break-words">{operations.data?.recentFailureReason ?? "기록 없음"}</dd></div></dl><p className="mt-2">API 성공은 최신성 증거가 아닙니다. 자동 게시 성공 계보는 별도 확인이 필요합니다.</p><p className="mt-2">KIS 잠정 EOD: 비공개 · 공개 연결 비활성. KOSPI/KOSDAQ/USD-KRW/거래대금: 미연결 · 숫자 미표시.</p></details></section>
       <details className="tb-card p-3 text-xs text-slate-700"><summary className="tb-focus cursor-pointer rounded">LIVE 실행 시각 · 상태 상세</summary>
         <dl className="mt-2 space-y-2">

@@ -10,6 +10,7 @@ import TechnicalStrengthPanel from "../components/TechnicalStrengthPanel";
 import BrandMark from "../components/BrandMark";
 import StockScreenerPanel from "../components/StockScreenerPanel";
 import HomeDashboard from "../components/HomeDashboard";
+import type { TransitionMode } from "../components/LiveTransitionDetails";
 import StockPriceChart from "../components/StockPriceChart";
 import StockResearchPanel from "../components/StockResearchPanel";
 import AdminLogout from "../components/AdminLogout";
@@ -25,7 +26,7 @@ const [activeTab, setActiveTab] = useState<"technical" | "company">("technical")
 const [pageView, setPageView] = useState<"home" | "models" | "screener">("home");
 const [modelPageTab, setModelPageTab] = useState<"top" | "performance" | "guide">("top");
 const [modelInitialTab, setModelInitialTab] = useState("B");
-const [screenerEntry, setScreenerEntry] = useState<{ tab: "models" | "transition"; pair: string; state: string; direction?: string }>({ tab: "models", pair: "5-20", state: "all" });
+const [screenerEntry, setScreenerEntry] = useState<{ tab: "models" | "transition"; pair: string; state: string; direction?: string; mode?: TransitionMode }>({ tab: "models", pair: "5-20", state: "all" });
 const [mobileNavOpen, setMobileNavOpen] = useState(false);
 const [realtimePrice, setRealtimePrice] = useState<{
   price: number;
@@ -444,7 +445,7 @@ return (
           onOpenModel={(model) => { openModelsFromNavigation(); setModelInitialTab(model); }}
           onOpenPerformance={() => { openModelsFromNavigation(); setModelPageTab("performance"); }}
           onOpenSearch={openSearchFromNavigation}
-          onOpenTransition={(pair, state, direction) => { openScreenerFromNavigation(); setScreenerEntry({ tab: "transition", pair, state, direction }); }}
+          onOpenTransition={(pair, state, direction, mode) => { openScreenerFromNavigation(); setScreenerEntry({ tab: "transition", pair, state, direction, mode }); }}
         /></div>}
 
         {!searchedStock && pageView === "models" && (
@@ -463,7 +464,7 @@ return (
           </section>
         )}
 
-        {pageView === "screener" && <div hidden={Boolean(searchedStock)}><StockScreenerPanel onSelectStock={handleSearch} key={`${screenerEntry.tab}:${screenerEntry.pair}:${screenerEntry.state}:${screenerEntry.direction}`} initialTab={screenerEntry.tab} initialPair={screenerEntry.pair} initialState={screenerEntry.state} initialDirection={screenerEntry.direction} /></div>}
+        {pageView === "screener" && <div hidden={Boolean(searchedStock)}><StockScreenerPanel onSelectStock={handleSearch} key={`${screenerEntry.tab}:${screenerEntry.pair}:${screenerEntry.state}:${screenerEntry.direction}:${screenerEntry.mode}`} initialTab={screenerEntry.tab} initialPair={screenerEntry.pair} initialState={screenerEntry.state} initialDirection={screenerEntry.direction} initialMode={screenerEntry.mode} /></div>}
 
         {searchedStock && (
           <div className="tb-card mt-3 overflow-hidden p-4 sm:p-5">

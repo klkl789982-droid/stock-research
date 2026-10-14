@@ -108,9 +108,9 @@ export function EodTransitionScreenerPanel({ onSelectStock, initialPair = "5-20"
   </section>;
 }
 
-export default function TransitionScreenerPanel({ onSelectStock, initialPair = "5-20", initialState = "all", initialDirection = "all" }: { onSelectStock: (stock: Selection) => void | Promise<void>; initialPair?: string; initialState?: string; initialDirection?: string }) {
-  // Homepage counts are explicit EOD links; ordinary screener entry starts LIVE.
-  const [mode, setMode] = useState<TransitionMode>(initialDirection !== "all" || initialState !== "all" ? "EOD" : "LIVE");
+export default function TransitionScreenerPanel({ onSelectStock, initialPair = "5-20", initialState = "all", initialDirection = "all", initialMode }: { onSelectStock: (stock: Selection) => void | Promise<void>; initialPair?: string; initialState?: string; initialDirection?: string; initialMode?: TransitionMode }) {
+  // Explicit mode wins; legacy directional links retain EOD, normal entry starts LIVE.
+  const [mode, setMode] = useState<TransitionMode>(initialMode ?? (initialDirection !== "all" || initialState !== "all" ? "EOD" : "LIVE"));
   return <div className="space-y-3">
     <div className="tb-card p-3"><TransitionModeSelector mode={mode} onChange={setMode} /></div>
     {mode === "LIVE" ? <LiveTransitionScreenerPanel key={`LIVE:${initialPair}:${initialState}`} onSelectStock={onSelectStock} initialPair={initialPair} initialState={initialState} /> : <EodTransitionScreenerPanel key={`EOD:${initialPair}:${initialState}:${initialDirection}`} onSelectStock={onSelectStock} initialPair={initialPair} initialState={initialState} initialDirection={initialDirection} />}

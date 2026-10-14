@@ -71,6 +71,13 @@ for (const [initialState, initialDirection] of [["APPROACHING", "dead"], ["CONFI
   assert.equal(linkedWrapper.props.children[1].props.initialState, initialState);
   assert.equal(linkedWrapper.props.children[1].props.initialDirection, initialDirection);
 }
+for (const initialMode of ["LIVE", "EOD"]) {
+  const explicitWrapper = loadWrapper(harness().hooks).default({ onSelectStock: () => {}, initialState: "CROSS_OCCURRED", initialDirection: "golden", initialMode });
+  assert.equal(explicitWrapper.props.children[0].props.children.props.mode, initialMode, "explicit home mode overrides legacy EOD inference");
+  assert.ok(explicitWrapper.props.children[1].key.startsWith(`${initialMode}:`));
+}
+const explicitAllEod = loadWrapper(harness().hooks).default({ onSelectStock: () => {}, initialMode: "EOD" });
+assert.equal(explicitAllEod.props.children[0].props.children.props.mode, "EOD");
 const stockWrapper = loadResearch(harness().hooks).default({ code: row.code });
 assert.equal(stockWrapper.props.children[2].props.mode, "LIVE");
 assert.equal(stockWrapper.props.children[2].key, "000660:LIVE:1:0");

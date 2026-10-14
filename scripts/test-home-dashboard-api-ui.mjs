@@ -46,18 +46,32 @@ assert.ok(page.indexOf('{searchError && <p role="alert"') < page.indexOf('<HomeD
 assert.match(panel, /col-span-2 sm:col-span-4/);
 assert.doesNotMatch(page, /BrandMark hero|tb-matte-hero/);
 assert.match(page, /ref=\{searchInputRef\} id="header-stock-search"/);
-assert.match(page, /setScreenerEntry\(\{ tab: "transition", pair, state, direction \}\)/);
+assert.match(page, /setScreenerEntry\(\{ tab: "transition", pair, state, direction, mode \}\)/);
 assert.match(page, /initialTab=\{modelInitialTab\}/);
 assert.match(top, /initialTab = "B"/);
 const model = { modelVersion: "B-v1", rankingUniverseCount: 523, previousDate: "2026-10-06", comparisonStatus: "AVAILABLE", top: [{ code: "000660", name: "긴종목명검증", rank: 1, score: 88, previousRank: 3, rankChange: 2 }], entered: [{ code: "000660", name: "긴종목명검증", rank: 1, score: 88 }], exited: [], risers: [], universeAddedTop: [], universeRemovedTop: [] };
 const dashboard = { referenceDate: "2026-10-07", models: { referenceDate: "2026-10-07", previousOfficialDate: "2026-10-06", models: [model], overlap: [] }, transitions: { referenceDate: "2026-10-07", ruleVersion: "transition-research-v1", indicatorCoverage: 508, totalUniverse: 553, excludedCount: 45, sourceQualityGrade: "REJECTED", isPartialRanking: true, pairs: [{ pair: "5-20", states: [{ state: "APPROACHING", count: 1, examples: [{ code: "000660", name: "긴종목명검증", gapPercent: -1, topModels: ["B-v1"] }] }, { state: "CONFIRMED", count: 0, examples: [] }] }] }, calendar: { expectedTradingDate: null, dayStatus: "unchecked" }, liveStatus: { status: "FAILED", signalDate: "2026-10-08" } };
 const performance = { daily: [{ modelVersion: "B-v1", topN: 5, horizon: "1DAY", signalDate: "2026-10-06", targetTradingDate: "2026-10-07", observationCount: 4, meanReturn: -1.25, positiveRate: 25 }], live: { daily: [] } };
 const operations = { freshnessStatus: "fresh", publicationStatus: "published", siteApiMatchesPublished: true, siteApiReferenceDate: "2026-10-07", lastAutomaticRunConclusion: "success" };
+// Preserve the old home EOD card contract explicitly; the default LIVE home
+// surface and the real navigation chain are covered in test-home-transition-live-ui.
+const liveDetails = {};
+new Function("require", "exports", compile(await readFile(new URL("../components/LiveTransitionDetails.tsx", import.meta.url), "utf8"), true))((name) => { if (name === "react/jsx-runtime") return jsx; throw new Error(name); }, liveDetails);
+const homeCard = {};
+new Function("require", "exports", compile(await readFile(new URL("../components/HomeTransitionCard.tsx", import.meta.url), "utf8"), true))((name) => {
+  if (name === "react/jsx-runtime") return jsx;
+  if (name === "react") return { ...React, useState: (initial) => [initial === "LIVE" ? "EOD" : typeof initial === "function" ? initial() : initial, () => {}], useEffect: () => {} };
+  if (name === "../lib/directional-transition.mjs") return directional;
+  if (name === "./LiveTransitionDetails") return liveDetails;
+  if (name === "./useLiveTransitionRevalidation") return { useLiveTransitionRevalidation: () => ({ rootRef: { current: null }, refreshVersion: 0 }) };
+  throw new Error(name);
+}, homeCard);
 const render = (data = dashboard, failedPerformance = false) => {
   const resources = [{ url: "/api/home-dashboard?topN=5", data, error: false }, { url: "/api/model-performance", data: failedPerformance ? null : performance, error: failedPerformance }, { url: "/api/daily-production-status", data: operations, error: false }, { url: "/api/intraday-model-top?model=B&limit=1", data: null, error: true }];
   let index = 0;
   const uiExports = {};
   const requireUi = (name) => {
+    if (name === "./HomeTransitionCard") return { __esModule: true, ...homeCard };
     if (name === "../lib/intraday-model-top-time-policy.mjs") return liveTiming;
     if (name === "react/jsx-runtime") return jsx;
     if (name === "react") return { ...React, useState: () => [resources[index++], () => {}], useRef: () => ({ current: 0 }), useEffect: () => {} };
