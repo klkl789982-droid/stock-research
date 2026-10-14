@@ -2,17 +2,21 @@
   "schemaVersion": 2,
   "dataset": "daily-top-freshness-status",
   "snapshotReferenceDate": "2026-10-13",
+  "snapshotIdentity": {
+    "referenceDate": "2026-10-13",
+    "snapshotHash": "9d805f6df2f8ed95c1bc6c3213d6695bff41a40d7f26e6a603948b9fb57c7662"
+  },
   "observedOfficialDate": "2026-10-13",
   "freshnessStatus": "fresh",
   "freshnessReason": "sameReferenceDate",
   "runStatus": "NO_NEW_OFFICIAL_EOD",
-  "updatedAt": "2026-10-14T05:04:07.565Z",
-  "lastAttemptAt": "2026-10-14T05:04:07.565Z",
+  "updatedAt": "2026-10-14T05:11:36.346Z",
+  "lastAttemptAt": "2026-10-14T05:11:36.346Z",
   "lastAutomaticRunAt": "2026-10-14T05:04:07.565Z",
   "lastSuccessAt": "2026-10-14T02:05:45.236Z",
   "lastOfficialEodDate": "2026-10-13",
   "lastKnownOfficialEodDate": "2026-10-13",
-  "lastSourceCheckAt": "2026-10-14T05:04:07.565Z",
+  "lastSourceCheckAt": "2026-10-14T05:11:36.346Z",
   "latestCollectedReferenceDate": "2026-10-13",
   "latestValidatedReferenceDate": "2026-10-13",
   "sourceStatus": "NO_NEW_DATA",
@@ -25,14 +29,14 @@
   },
   "publishedReferenceDate": "2026-10-13",
   "publicationStatus": "unchanged",
-  "trigger": "schedule",
+  "trigger": "workflow_dispatch",
   "sourceEvidence": [
     {
       "source": "공공데이터포털",
       "operation": "getStockPriceInfoLatestProbe",
       "referenceDate": "2026-10-13",
-      "requestedAt": "2026-10-14T05:04:03.375Z",
-      "observedAt": "2026-10-14T05:04:07.556Z",
+      "requestedAt": "2026-10-14T05:11:32.532Z",
+      "observedAt": "2026-10-14T05:11:36.235Z",
       "sourceTimestamp": "20261013",
       "sourceTimestampSemantics": "marketDateBasDt",
       "minObservedBasDt": "20261013",
@@ -46,9 +50,5 @@
       "outcome": "success"
     }
   ],
-  "snapshotIdentity": {
-    "referenceDate": "2026-10-13",
-    "snapshotHash": "9d805f6df2f8ed95c1bc6c3213d6695bff41a40d7f26e6a603948b9fb57c7662"
-  },
-  "contentHash": "b4766e9308cf30782531d639621fdd833eb580132cc018372332968e4f9e494a"
+  "contentHash": "81959792a0c60deff556256a490f8f5f39289f80fff6b28cd48d90d99513d695"
 }
