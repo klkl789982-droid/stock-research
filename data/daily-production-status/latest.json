@@ -46,5 +46,9 @@
       "outcome": "success"
     }
   ],
-  "contentHash": "3ca8d245861fe5dce132d7a6c41f1c96874046b8daa3100deecddbb967573555"
+  "snapshotIdentity": {
+    "referenceDate": "2026-10-13",
+    "snapshotHash": "9d805f6df2f8ed95c1bc6c3213d6695bff41a40d7f26e6a603948b9fb57c7662"
+  },
+  "contentHash": "b4766e9308cf30782531d639621fdd833eb580132cc018372332968e4f9e494a"
 }

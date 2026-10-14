@@ -1,3 +1,4 @@
+import { dataIdentity } from "@/lib/publication-identity.mjs";
 import { withAdminAccess } from "@/lib/admin-access";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
@@ -188,7 +189,9 @@ async function handleGet(request: NextRequest) {
         rankPercentile: record.rankPercentileByVersion?.["A-v2"] ?? Number(record.ranksByVersion?.["A-v2"]) / coverage.rankingUniverseCount,
       }));
     return NextResponse.json({
-      dataMode: "historySnapshot", model: "A", modelName: "bounded technical-strength challenger",
+      dataIdentity: dataIdentity(snapshot),
+    publicationReady: stocks.length > 0,
+    dataMode: "historySnapshot", model: "A", modelName: "bounded technical-strength challenger",
       modelVersion: "A-v2", modelRole: definition?.role ?? "challenger",
       promotionStatus: snapshot.championChallenger?.promotionStatus ?? "notApproved",
       rankingAsOfDate: snapshot.asOfDate, priceAsOfDate: snapshot.asOfDate, priceBasis: "officialDailyClose",
@@ -226,6 +229,8 @@ async function handleGet(request: NextRequest) {
     }));
 
   return NextResponse.json({
+    dataIdentity: dataIdentity(snapshot),
+    publicationReady: stocks.length > 0,
     dataMode: "historySnapshot",
     model,
     modelName: definition?.name ?? modelKey,

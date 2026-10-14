@@ -18,7 +18,7 @@
     "history:daily": "node --env-file=.env.local scripts/run-daily-history.mjs",
     "production:daily": "node scripts/run-daily-production.mjs",
     "production:daily-test": "node scripts/test-daily-production.mjs",
-    "production:deployment-test": "node scripts/test-daily-production-deployment-verifier.mjs",
+    "production:deployment-test": "node scripts/test-daily-production-deployment-verifier.mjs && node scripts/test-daily-publication-status.mjs",
     "kis:eod": "node scripts/run-kis-eod.mjs --dry-run",
     "kis:eod-diagnose": "node --env-file=.env.local scripts/diagnose-kis-eod.mjs",
     "kis:eod-audit": "node --env-file=.env.local scripts/audit-kis-eod-private.mjs",

@@ -105,6 +105,7 @@ jobs:
           echo "Unable to publish after 3 non-forced attempts." >&2
           exit 1
       - name: Verify Vercel deployment and production APIs
+        id: verify
         # Recheck an existing publication too: a previous deployment can fail
         # after Git succeeds and must not be forgotten by subsequent no-op runs.
         if: (steps.daily.outputs.status == 'CANDIDATE_VALIDATED' || steps.daily.outputs.status == 'NO_NEW_OFFICIAL_EOD') && steps.daily.outputs.reference_date != ''
@@ -113,6 +114,11 @@ jobs:
           --site=${{ env.PRODUCTION_SITE_URL }}
           --date=${{ steps.daily.outputs.reference_date }}
           --output=${{ runner.temp }}/daily-deployment-verification.json
+      # The bounded marker is readable through existing public Actions metadata.
+      # It is not committed, so reporting verification cannot trigger a redeploy.
+      - name: Publication evidence v1 | ${{ steps.verify.outputs.status }} | ${{ steps.verify.outputs.reference_date }} | ${{ steps.verify.outputs.snapshot_hash }} | ${{ steps.verify.outputs.commit_sha }} | ${{ steps.verify.outputs.reason }}
+        if: always() && steps.verify.outputs.status != ''
+        run: echo "Publication verification evidence recorded."
       - name: Upload deployment verification
         if: always() && (steps.daily.outputs.status == 'CANDIDATE_VALIDATED' || steps.daily.outputs.status == 'NO_NEW_OFFICIAL_EOD') && steps.daily.outputs.reference_date != ''
         uses: actions/upload-artifact@v4

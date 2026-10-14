@@ -62,14 +62,13 @@ assert.equal(latestOneDayPerformance({ daily: [row] }, 10).daily[1].meanReturn, 
 const calendar = { dates: { "2026-10-07": { status: "tradingDay" }, "2026-10-08": { status: "marketClosed" }, "2026-10-09": { status: "marketClosed" } } };
 const weekend = calendarContext(calendar, new Date("2026-10-10T10:00:00Z"));
 assert.equal(weekend.expectedTradingDate, "2026-10-07");
-const good = { freshnessStatus: "fresh", publicationStatus: "published", siteApiMatchesPublished: true, siteApiReferenceDate: "2026-10-07", lagTradingDays: 0 };
-assert.equal(dailyOperationState(good, weekend), "NORMAL", "확인된 휴장은 날짜 나이로 실패 처리하지 않습니다.");
-assert.equal(dailyOperationState(good, calendarContext({}, new Date("2026-10-10T10:00:00Z"))), "UNKNOWN", "알려지지 않은 평일을 휴장일로 추정하지 않습니다.");
+const good = { freshnessStatus: "fresh", publicationStatus: "published", siteApiMatchesPublished: true, siteApiReferenceDate: "2026-10-07", lagTradingDays: 0, deployment: { state: "VERIFIED" } };
+assert.equal(dailyOperationState(good, weekend), "VERIFIED", "확인된 휴장은 날짜 나이로 실패 처리하지 않습니다.");
+assert.equal(dailyOperationState(good, calendarContext({}, new Date("2026-10-10T10:00:00Z"))), "VERIFIED", "미확정 캘린더는 실제 확인 기록을 지연으로 바꾸지 않습니다.");
 assert.equal(dailyOperationState(null, weekend), "UNKNOWN");
-assert.equal(dailyOperationState({ ...good, lastAutomaticRunConclusion: "success", siteApiMatchesPublished: false }, weekend), "DELAYED", "Actions success와 게시 성공은 별도입니다.");
+assert.equal(dailyOperationState({ ...good, deployment: null, lastAutomaticRunConclusion: "success", siteApiMatchesPublished: true }, weekend), "UNVERIFIED", "Actions success와 게시 성공은 별도입니다.");
 assert.equal(dailyOperationState({ ...good, runStatus: "FAILED" }, weekend), "FAILED");
-assert.equal(dailyOperationState(good, { expectedTradingDate: "2026-10-08", dayStatus: "tradingDay", time: "18:00:00" }), "WAITING");
-assert.equal(dailyOperationState(good, { expectedTradingDate: "2026-10-08", dayStatus: "tradingDay", time: "20:30:00" }), "DELAYED");
+for (const time of ["18:00:00", "20:30:00", "23:59:00"]) assert.equal(dailyOperationState({ ...good, sourceStatus: "NO_NEW_DATA" }, { expectedTradingDate: "2026-10-08", dayStatus: "tradingDay", time }), "SOURCE_WAITING");
 const root = await mkdtemp(path.join(os.tmpdir(), "tb-home-test-"));
 try {
   await mkdir(path.join(root, "data/history"), { recursive: true });

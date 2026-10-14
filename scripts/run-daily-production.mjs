@@ -1,3 +1,4 @@
+import { snapshotIdentity } from "../lib/publication-identity.mjs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
@@ -20,6 +21,7 @@ if (promotionManifest) {
   const statusTarget = path.join(root, "data", "daily-production-status", "latest.json");
   const previousStatus = JSON.parse(await fs.readFile(statusTarget, "utf8"));
   const promotedStatus = createDailyTopFreshnessStatus({
+    snapshotIdentity: previousStatus.snapshotIdentity,
     snapshotReferenceDate: manifest.referenceDate,
     observedOfficialDate: previousStatus.observedOfficialDate ?? manifest.referenceDate,
     sourceAvailable: true,
@@ -105,7 +107,11 @@ async function writeFreshnessStatus({ snapshotReferenceDate, observedOfficialDat
   const target = path.join(directory, "latest.json");
   let previousStatus = null;
   try { previousStatus = JSON.parse(await fs.readFile(target, "utf8")); } catch (error) { if (error?.code !== "ENOENT") throw error; }
-  const status = createDailyTopFreshnessStatus({ snapshotReferenceDate, observedOfficialDate, sourceAvailable, runStatus, updatedAt: new Date().toISOString(), sourceEvidence, reason, lagTradingDays, trigger, previousStatus });
+  // Only validated or unchanged production bytes may acquire a new identity.
+  // A failed same-date candidate must retain the previously published identity.
+  const identity = [DAILY_RUN_STATUS.CANDIDATE_VALIDATED, DAILY_RUN_STATUS.NO_NEW_OFFICIAL_EOD].includes(runStatus) && snapshotReferenceDate
+    ? snapshotIdentity(JSON.parse(await fs.readFile(path.join(root, "data", "history", `${snapshotReferenceDate}.json`), "utf8"))) : null;
+  const status = createDailyTopFreshnessStatus({ snapshotIdentity: identity, snapshotReferenceDate, observedOfficialDate, sourceAvailable, runStatus, updatedAt: new Date().toISOString(), sourceEvidence, reason, lagTradingDays, trigger, previousStatus });
   const temporary = `${target}.${runId}.tmp`;
   await fs.mkdir(directory, { recursive: true });
   await fs.writeFile(temporary, `${JSON.stringify(status, null, 2)}\n`, "utf8");

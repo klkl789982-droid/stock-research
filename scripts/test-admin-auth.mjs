@@ -102,17 +102,21 @@ test("all existing data APIs use a server-only boundary; no broad static/RSC/ima
 });
 test("machine token scope and redacted publication response, never private KIS or ranking access", async () => {
   const headers = { Authorization: `Bearer ${env.TB_AUTOMATION_READ_TOKEN}` };
-  for (const path of ["/api/top-stocks", "/api/model-performance", "/api/daily-production-status", "/api/intraday-model-top"]) assert.equal(auth.isAutomationRequest(req(path, { headers }), env), true);
+  for (const path of ["/api/top-stocks", "/api/model-performance", "/api/daily-production-status", "/api/intraday-model-top", "/api/home-dashboard"]) assert.equal(auth.isAutomationRequest(req(path, { headers }), env), true);
   for (const path of ["/", "/api/model-performance/research", "/api/stock", "/api/kis-eod-top-stocks"]) assert.equal(auth.isAutomationRequest(req(path, { headers }), env), false);
   assert.deepEqual(auth.automationPublicationDto("/api/intraday-model-top", { signalDate: "2026-10-08", observationType: "LIVE_OBSERVATION", collectionCompletedAt: "2026-10-08T05:34:00Z", stocks: [{ observedPrice: 123 }], source: "private" }), { signalDate: "2026-10-08", observationType: "LIVE_OBSERVATION", collectionCompletedAt: "2026-10-08T05:34:00Z" });
   assert.equal(auth.isAutomationRequest(req("/api/top-stocks", { method: "POST", headers }), env), false);
   assert.equal(auth.isAutomationRequest(req("/api/top-stocks", { headers: { Authorization: "Bearer wrong" } }), env), false);
-  assert.deepEqual(auth.automationPublicationDto("/api/top-stocks", { rankingAsOfDate: "2026-10-07", stocks: [{ price: 123 }], freshness: { freshnessStatus: "fresh", secret: "hidden" } }), { rankingAsOfDate: "2026-10-07", freshness: { freshnessStatus: "fresh" } });
+  assert.deepEqual(auth.automationPublicationDto("/api/top-stocks", { rankingAsOfDate: "2026-10-07", stocks: [{ price: 123 }], freshness: { freshnessStatus: "fresh", secret: "hidden" } }), { dataIdentity: null, publicationReady: false, rankingAsOfDate: "2026-10-07", freshness: { freshnessStatus: "fresh" } });
   let calls = 0;
-  const response = await inspectDailyProductionDeployment({ siteUrl: "https://site.test", expectedReferenceDate: "2026-10-07", automationToken: env.TB_AUTOMATION_READ_TOKEN, fetchImpl: async (url, options) => {
+  const dataIdentity = { referenceDate: "2026-10-07", snapshotHash: "a".repeat(64), commitSha: "b".repeat(40) };
+  const response = await inspectDailyProductionDeployment({ expectedSnapshotHash: dataIdentity.snapshotHash, expectedCommitSha: dataIdentity.commitSha, siteUrl: "https://site.test", expectedReferenceDate: "2026-10-07", automationToken: env.TB_AUTOMATION_READ_TOKEN, fetchImpl: async (url, options) => {
     assert.equal(options.headers.Authorization, headers.Authorization); assert.equal(options.redirect, "error"); calls++;
-    return Response.json(url.includes("top-stocks") ? { rankingAsOfDate: "2026-10-07", freshness: { freshnessStatus: "fresh" } } : url.includes("model-performance") ? { latestEodReferenceDate: "2026-10-07" } : { siteApiReferenceDate: "2026-10-07", publicationStatus: "published" });
-  } }); assert.equal(calls, 3); assert.equal(response.matches, true);
+    return Response.json({ dataIdentity, publicationReady: true, ...(url.includes("top-stocks") ? { rankingAsOfDate: "2026-10-07", freshness: { freshnessStatus: "fresh" } } : url.includes("model-performance") ? { latestEodReferenceDate: "2026-10-07" } : url.includes("home-dashboard") ? { referenceDate: "2026-10-07" } : { siteApiReferenceDate: "2026-10-07", publicationStatus: "published" }) });
+  } }); assert.equal(calls, 4); assert.equal(response.matches, true);
+  const dto = auth.automationPublicationDto("/api/home-dashboard", { dataIdentity, publicationReady: true, referenceDate: "2026-10-07", models: ["private"], records: ["private"], token: "private" });
+  assert.deepEqual(Object.keys(dto).sort(), ["dataIdentity", "publicationReady", "referenceDate"]);
+  assert.doesNotMatch(JSON.stringify(dto), /private/u);
 });
 test("actual data boundary wrapper denies before handler, even if Proxy was skipped", async () => {
   const source = await readFile("lib/admin-access.ts", "utf8"), compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { dailyOperationState, latestOneDayPerformance } from "../lib/home-dashboard.mjs";
+import { dailyOperationState, latestOneDayPerformance, publicationReasonLabel, homeOperationStatus } from "../lib/home-dashboard.mjs";
 import { liveStatusLabel } from "../lib/intraday-model-top-time-policy.mjs";
 import HomeTransitionCard, { type HomeEodTransitions, type HomeTransitionNavigation } from "./HomeTransitionCard";
 type Stock = { code: string; name: string; market?: string };
@@ -10,7 +10,8 @@ type LiveStatus = { status: string; signalDate: string | null; runStartedAt?: st
 type Dashboard = { referenceDate: string | null; models: { referenceDate: string; models: Model[] } | null; transitions: HomeEodTransitions | null; calendar: { today: string; time: string; dayStatus: string; expectedTradingDate: string | null } | null; liveStatus: LiveStatus | null };
 type PerformanceRow = { modelVersion: string; horizon: string; topN: number; signalDate: string; targetTradingDate: string | null; observationCount: number; meanReturn: number | null; positiveRate: number | null };
 type Performance = { daily: PerformanceRow[]; live?: { daily: PerformanceRow[] } };
-type Operations = { lastAutomaticRunAt?: string | null; lastAutomaticRunConclusion?: string | null; lastSuccessAt?: string | null; siteApiReferenceDate?: string | null; latestConfirmedTradingDate?: string | null; recentFailureReason?: string | null; freshnessStatus?: string; publicationStatus?: string; siteApiMatchesPublished?: boolean; runStatus?: string; lagTradingDays?: number | null };
+type Verification = { referenceDate: string; verifiedAt: string | null; runUrl: string; commitSha: string; snapshotHash: string };
+type Operations = { latestAttempt?: { status: string; conclusion: string | null; stage: string | null; startedAt: string; completedAt: string | null; runUrl: string } | null; lastAutomaticRunAt?: string | null; lastAutomaticRunConclusion?: string | null; lastSuccessAt?: string | null; lastGoodStoredReferenceDate?: string | null; siteApiReferenceDate?: string | null; publishedReferenceDate?: string | null; latestConfirmedTradingDate?: string | null; latestCollectedReferenceDate?: string | null; latestValidatedReferenceDate?: string | null; lastSourceCheckAt?: string | null; sourceStatus?: string; recentFailureReason?: string | null; freshnessStatus?: string; repositoryPublicationStatus?: string; repositoryStatusAvailable?: boolean; siteApiMatchesPublished?: boolean; runStatus?: string; lagTradingDays?: number | null; deployment?: { state: string; reason: string | null; lastVerified: Verification | null; verification?: Verification | null; checkedAt?: string | null; intendedIdentity?: { referenceDate: string; snapshotHash: string; commitSha: string } | null } };
 function useResource<T>(url: string) {
   const [state, setState] = useState<{ url: string; data: T | null; error: boolean } | null>(null);
   const sequence = useRef(0);
@@ -30,7 +31,7 @@ function useResource<T>(url: string) {
   }, [url]);
   return state?.url === url ? state : { url, data: null, error: false };
 }
-const labels: Record<string, string> = { NORMAL: "정상", SOURCE_WAITING: "추가 공식 EOD 제공 대기", WAITING: "지연 · 갱신 대기", DELAYED: "지연", FAILED: "실패", UNKNOWN: "확인 불가" };
+const labels: Record<string, string> = { VERIFIED: "실제 사이트 확인 완료", SOURCE_WAITING: "원본 대기", COLLECTED_VALIDATED: "수집·검증 완료", DEPLOYING: "배포 중", PUBLICATION_FAILED: "저장소 게시 실패", DEPLOYMENT_FAILED: "배포 실패", VERIFICATION_FAILED: "사이트 확인 실패", UNVERIFIED: "사이트 미확인", DELAYED: "새 원본 반영 지연", FAILED: "수집·검증 실패", UNKNOWN: "확인 불가" };
 const pct = (v: number | null) => Number.isFinite(v) ? (Number(v) > 0 ? "+" : "") + Number(v).toFixed(2) + "%" : "미확인";
 const time = (v?: string | null) => v && Number.isFinite(Date.parse(v)) ? new Date(v).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", hour12: false }) + " KST" : "확인 불가";
 export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerformance, onOpenTransition, onOpenSearch }: {
@@ -43,7 +44,8 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
   const live = useResource<{ signalDate: string; collectionCompletedAt: string }>("/api/intraday-model-top?model=B&limit=1");
   const data = dashboard.data, transitions = data?.transitions;
   const outcome = performance.data ? latestOneDayPerformance(performance.data, 5) : null;
-  const operation = dailyOperationState(operations.data, data?.calendar);
+  const currentOperations = homeOperationStatus(operations.data, data, performance.data, { homeError: dashboard.error, performanceError: performance.error });
+  const operation = dailyOperationState(currentOperations, data?.calendar);
   const liveStatus = liveStatusLabel(data?.liveStatus) ?? (live.data ? "최근 관측 " + live.data.signalDate : "관측 대기 / 확인 불가");
   const stockButton = (stock: Stock) => <button type="button" onClick={() => void onSelectStock(stock)} className="tb-focus pointer-events-auto min-w-0 rounded text-left hover:text-[var(--tb-orange)]"><span className="block truncate font-medium">{stock.name}</span><span className="text-[10px] text-slate-600">{stock.code}</span></button>;
   return <section className="space-y-3" aria-labelledby="home-dashboard-heading">
@@ -52,7 +54,7 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
       <div><span className="text-slate-400">공식 EOD</span><p className="mt-1 font-medium">{data?.referenceDate ?? "확인 불가"}</p></div>
       <div><span className="text-slate-400">모델 TOP 갱신</span><p className="mt-1">{data?.models ? "저장 순위 · " + data.models.referenceDate : "검증 불가"}</p></div>
       <div><span className="text-slate-400">14:30 LIVE</span><p className="mt-1">{liveStatus}</p><p className="mt-1 text-[10px] text-slate-400">상태 기준일 {data?.liveStatus?.signalDate ?? "확인 불가"} · 마지막 정상 관측 {live.data?.signalDate ?? data?.liveStatus?.lastGoodDate ?? "없음 / 미확인"}</p></div>
-      <div><span className="text-slate-400">마지막 정상 갱신 (API 기록)</span><p className="mt-1">{time(operations.data?.lastSuccessAt)}</p></div>
+      <div><span className="text-slate-400">마지막 정상 저장 데이터</span><p className="mt-1">{operations.data?.lastGoodStoredReferenceDate ?? "확인 불가"}</p></div>
       <div><span className="text-slate-400">운영 상태</span><p className="mt-1">{labels[operation]}</p></div>
     </div>
     <div className="grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
@@ -73,7 +75,30 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
       </div>
       <div className="min-w-0 space-y-3">
       <HomeTransitionCard transitions={transitions ?? null} eodError={dashboard.error} onSelectStock={onSelectStock} onOpenTransition={onOpenTransition} />
-      <section className="tb-card min-w-0 p-4" aria-labelledby="home-operations-heading"><h2 id="home-operations-heading" className="text-base font-semibold">데이터 운영 상세</h2><details className="mt-3 text-xs text-slate-700"><summary className="tb-focus cursor-pointer rounded">상세 운영 정보</summary><dl className="mt-2 space-y-2"><div><dt>사이트 공식 EOD / 최신 확정 거래일</dt><dd>{operations.data?.siteApiReferenceDate ?? "확인 불가"} / {operations.data?.latestConfirmedTradingDate ?? "확인 불가"}</dd></div><div><dt>마지막 자동 실행 (게시 성공과 다름)</dt><dd>{time(operations.data?.lastAutomaticRunAt)} · {operations.data?.lastAutomaticRunConclusion ?? "미확인"}</dd></div><div><dt>게시 확인 / 지연 거래일</dt><dd>{operations.data?.siteApiMatchesPublished ? "저장 게시일 일치" : "확인 불가"} / {operations.data?.lagTradingDays ?? "미확인"}</dd></div><div><dt>최근 실패 사유</dt><dd className="break-words">{operations.data?.recentFailureReason ?? "기록 없음"}</dd></div></dl><p className="mt-2">API 성공은 최신성 증거가 아닙니다. 자동 게시 성공 계보는 별도 확인이 필요합니다.</p><p className="mt-2">KIS 잠정 EOD: 비공개 · 공개 연결 비활성. KOSPI/KOSDAQ/USD-KRW/거래대금: 미연결 · 숫자 미표시.</p></details></section>
+      <section className="tb-card min-w-0 p-4" aria-labelledby="home-operations-heading">
+        <h2 id="home-operations-heading" className="text-base font-semibold">데이터 갱신 상태</h2>
+        <p role="status" className="mt-2 text-sm font-semibold">{operations.error ? "운영 상태 조회 실패" : labels[operation]}</p>
+        <ol className="mt-3 space-y-2 text-xs text-slate-700" aria-label="데이터 게시 단계">
+          <li>1. 원본 확인 · {operations.data?.sourceStatus === "NO_NEW_DATA" ? "추가 원본 대기" : operations.data?.sourceStatus === "AVAILABLE" ? "원본 확인" : "확인 불가"}<br /><span className="text-slate-500">마지막 원본 조회 {time(operations.data?.lastSourceCheckAt)}</span></li>
+          <li>2. 수집·검증 완료 · {operations.data?.latestValidatedReferenceDate ?? "미확인"}</li>
+          <li>3. 저장소 게시 · {operations.data?.repositoryStatusAvailable ? operations.data.publishedReferenceDate ?? "미확인" : "확인 불가"}</li>
+          <li>4. 실제 사이트 · {labels[currentOperations?.deployment?.state ?? "UNVERIFIED"] ?? "미확인"}</li>
+        </ol>
+        <dl className="mt-3 space-y-2 text-xs text-slate-700">
+          <div><dt>마지막 정상 저장 데이터 / 현재 사이트 기준일</dt><dd>{operations.data?.lastGoodStoredReferenceDate ?? "확인 불가"} / {operations.data?.siteApiReferenceDate ?? "확인 불가"}</dd></div>
+          <div><dt>마지막 실제 사이트 확인</dt><dd>{operations.data?.deployment?.lastVerified ? <><a className="tb-focus rounded underline" href={operations.data.deployment.lastVerified.runUrl} target="_blank" rel="noreferrer">{operations.data.deployment.lastVerified.referenceDate} 확인 기록</a><br />{time(operations.data.deployment.lastVerified.verifiedAt)}</> : "확인 기록 없음"}</dd></div>
+          <div><dt>현재 배포·검증 사유</dt><dd className="break-words">{publicationReasonLabel(currentOperations?.deployment?.reason)}</dd></div>
+          {operations.data?.latestAttempt && <div><dt>최근 실행 시도 (수동 포함)</dt><dd><a className="tb-focus rounded underline" href={operations.data.latestAttempt.runUrl} target="_blank" rel="noreferrer">{operations.data.latestAttempt.conclusion ?? operations.data.latestAttempt.status}</a> · {({ COLLECTION: "수집", VALIDATION: "검증", REPOSITORY: "저장소 게시", VERIFICATION: "사이트 확인", WORKFLOW: "실행 환경" } as Record<string, string>)[operations.data.latestAttempt.stage ?? ""] ?? "단계 확인 불가"}<br />{time(operations.data.latestAttempt.completedAt ?? operations.data.latestAttempt.startedAt)}</dd></div>}
+          <div><dt>최근 수집 실패 사유</dt><dd className="break-words">{operations.data?.recentFailureReason ?? "기록 없음"}</dd></div>
+        </dl>
+        <p className="mt-3 text-[11px] text-slate-500">공공 원본은 다음 영업일 13시 이후 제공 안내가 있으며 도착 시각은 보장되지 않습니다. 휴장·미확정 거래일을 날짜 경과만으로 실패 처리하지 않습니다.</p>
+        <details className="mt-3 text-xs text-slate-700"><summary className="tb-focus cursor-pointer rounded">상세 운영 정보</summary><dl className="mt-2 space-y-2">
+          <div><dt>최신 원본 기준일 / 미반영 거래일</dt><dd>{operations.data?.latestConfirmedTradingDate ?? "확인 불가"} / {operations.data?.lagTradingDays ?? "미확인"}</dd></div>
+          <div><dt>마지막 자동 실행</dt><dd>{time(operations.data?.lastAutomaticRunAt)} · {operations.data?.lastAutomaticRunConclusion ?? "미확인"}</dd></div>
+          <div><dt>마지막 수집·저장 기록</dt><dd>{time(operations.data?.lastSuccessAt)}</dd></div>
+          <div><dt>게시 증거 조회</dt><dd>{time(operations.data?.deployment?.checkedAt)} · GitHub 기록은 최대 10분 지연될 수 있음</dd></div>
+        </dl><p className="mt-2">실제 사이트 확인은 홈·TOP·성과·운영 API의 최신 EOD 기준일·내용 해시와 배포 커밋을 함께 대조합니다. 저장 성공이나 날짜 일치만으로 확인 완료가 되지 않습니다.</p><p className="mt-2">KIS 잠정 EOD: 비공개 · 공개 연결 비활성. KOSPI/KOSDAQ/USD-KRW/거래대금: 미연결 · 숫자 미표시.</p></details>
+      </section>
       <details className="tb-card p-3 text-xs text-slate-700"><summary className="tb-focus cursor-pointer rounded">LIVE 실행 시각 · 상태 상세</summary>
         <dl className="mt-2 space-y-2">
           <div><dt>예약 / runner 첫 단계 시작</dt><dd>{time(data?.liveStatus?.scheduledAt)} / {time(data?.liveStatus?.runnerFirstStepAt)}</dd></div>

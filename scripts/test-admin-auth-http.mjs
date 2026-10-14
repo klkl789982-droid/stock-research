@@ -6,6 +6,7 @@ import { writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { hashAdminPassword } from "../lib/admin-auth.mjs";
 import { redisFixtureServer } from "./auth-test-support.mjs";
+import { inspectDailyProductionDeployment } from "../lib/daily-production-deployment-verifier.mjs";
 import { createLiveTransitionStore } from "../lib/live-transition-store.mjs";
 import { parseLiveTransitionFilters, screenLiveTransitions } from "../lib/live-transition-screener.mjs";
 
@@ -16,7 +17,8 @@ const origin = `http://127.0.0.1:${port}`;
 const password = "Abcdef12", username = "local-test-admin"; // Synthetic eight-character fixture, not real administrator credentials.
 const token = randomBytes(32).toString("base64url"), fixture = await redisFixtureServer(token);
 const machine = randomBytes(32).toString("base64url");
-const env = { ...process.env, NODE_ENV: "development", TB_AUTH_TEST_BUILD: "1", TB_ADMIN_USERNAME: username, TB_ADMIN_PASSWORD_HASH: await hashAdminPassword(password), TB_SESSION_SECRET: randomBytes(32).toString("base64url"), TB_AUTH_ORIGIN: origin, TB_AUTH_REDIS_URL: fixture.url, TB_AUTH_REDIS_TOKEN: token, TB_AUTOMATION_READ_TOKEN: machine };
+const deploySha = "a".repeat(40);
+const env = { ...process.env, VERCEL_GIT_COMMIT_SHA: deploySha, NODE_ENV: "development", TB_AUTH_TEST_BUILD: "1", TB_ADMIN_USERNAME: username, TB_ADMIN_PASSWORD_HASH: await hashAdminPassword(password), TB_SESSION_SECRET: randomBytes(32).toString("base64url"), TB_AUTH_ORIGIN: origin, TB_AUTH_REDIS_URL: fixture.url, TB_AUTH_REDIS_TOKEN: token, TB_AUTOMATION_READ_TOKEN: machine };
 // Next.js may update its tsconfig. Keep that generated state out of the repository's config.
 await writeFile("tsconfig.auth-test.json", JSON.stringify({ extends: "./tsconfig.json", include: ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.mts"], exclude: ["node_modules"] }));
 const child = spawn(process.execPath, ["node_modules/next/dist/bin/next", "dev", "-p", String(port), "-H", "127.0.0.1"], { env, stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
@@ -95,7 +97,19 @@ try {
   const logout = await request("/api/auth/logout", { method: "POST", headers: { ...headers, Origin: origin } }); assert.equal(logout.status, 200); assert.match(logout.headers.get("set-cookie"), /Max-Age=0/);
   assert.equal((await request("/api/auth/session", { headers })).status, 401);
   assert.equal((await request("/", { headers })).status, 307);
-  const machineResponse = await request("/api/model-performance", { headers: { Authorization: `Bearer ${machine}` } }); assert.equal(machineResponse.status, 200); assert.deepEqual(Object.keys(await machineResponse.json()), ["latestEodReferenceDate"]);
+  const machineResponse = await request("/api/model-performance", { headers: { Authorization: `Bearer ${machine}` } }); assert.equal(machineResponse.status, 200);
+  const machinePerformance = await machineResponse.json();
+  assert.deepEqual(Object.keys(machinePerformance), ["dataIdentity", "publicationReady", "latestEodReferenceDate"]);
+  assert.equal(machinePerformance.dataIdentity.commitSha, deploySha);
+  const expected = machinePerformance.dataIdentity;
+  const verified = await inspectDailyProductionDeployment({ siteUrl: origin, expectedReferenceDate: expected.referenceDate, expectedSnapshotHash: expected.snapshotHash, expectedCommitSha: deploySha, automationToken: machine });
+  assert.equal(verified.matches, true, JSON.stringify(verified));
+  for (const route of ["top-stocks?model=A&limit=1", "home-dashboard?topN=5", "model-performance", "daily-production-status"]) {
+    const response = await request(`/api/${route}`, { headers: { Authorization: `Bearer ${machine}` } });
+    const body = await response.json(); assert.equal(response.status, 200); assert.deepEqual(body.dataIdentity, expected); assert.equal(body.publicationReady, true);
+    assert.doesNotMatch(JSON.stringify(body), /stocks|models|records|scores|closePrice|sourceEvidence|recentFailureReason/u, "Automation must not receive private data through Home or other APIs");
+  }
+  console.log("PUBLICATION HTTP integration passed: actual authenticated Home/TOP/performance/status routes, exact snapshot hash and deploy SHA, minimal automation DTOs");
   assert.equal((await request("/api/screener", { headers: { Authorization: `Bearer ${machine}` } })).status, 401);
   for (let i = 0; i < 2; i++) assert.equal((await login({ username, password: "wrong" })).status, 401);
   assert.equal((await login({ username, password })).status, 429);

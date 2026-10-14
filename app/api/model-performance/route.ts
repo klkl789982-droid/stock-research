@@ -1,3 +1,4 @@
+import { dataIdentity } from "@/lib/publication-identity.mjs";
 import { withAdminAccess } from "@/lib/admin-access";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
@@ -89,7 +90,7 @@ async function handleGet() {
     let intradayOutcomes: Record<string, unknown>[] = [];
     try { intradayOutcomes = await readJsonFiles<Record<string, unknown>>(path.join(root, "data", "intraday-outcomes", "model-top")); }
     catch { intradayOutcomes = []; }
-    return NextResponse.json({ ...daily, latestEodReferenceDate: snapshots.at(-1)?.asOfDate ?? null, performanceLayer: "DAILY_EOD", live: buildIntradayModelTopPerformance({ outcomes: intradayOutcomes }) }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ ...daily, dataIdentity: dataIdentity(snapshots.at(-1)), publicationReady: snapshots.length > 0, latestEodReferenceDate: snapshots.at(-1)?.asOfDate ?? null, performanceLayer: "DAILY_EOD", live: buildIntradayModelTopPerformance({ outcomes: intradayOutcomes }) }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({
       schemaVersion: 2,
