@@ -74,14 +74,14 @@ const fetchImpl = async (url, options) => {
   if (url.endsWith("/commits/main")) return currentResponse({ sha });
   if (url.includes("/runs?")) return currentResponse({ workflow_runs: [run] });
   if (url.includes("/contents/")) return currentResponse({ encoding: "base64", size: 200, content: Buffer.from(JSON.stringify(intended)).toString("base64") });
-  if (url.endsWith("/status")) return currentResponse({ sha, statuses: [{ context: "Vercel – stock-research", state: "success" }] });
+  if (url.endsWith("/status")) return currentResponse({ sha, statuses: [{ context: "Vercel – stock-research", state: "success" }, { context: "Vercel – stock-research-agr3", state: "failure" }] });
   if (url.includes("/attempts/2/jobs?")) return currentResponse({ jobs: [job] });
   throw new Error("unexpected");
 };
 const loaded = await loadPublicationEvidence({ fetchImpl, now });
 assert.equal(loaded.checkedAt, new Date(now - 1000).toISOString());
 assert.equal(loaded.availability, "AVAILABLE"); assert.equal(loaded.evidence.length, 1); assert.equal(calls.length, 5);
-assert.equal(reconcilePublication(identity, loaded).state, "VERIFIED");
+assert.equal(reconcilePublication(identity, loaded).state, "VERIFIED", "Unrelated Vercel project failure must not override canonical-site evidence");
 for (const code of [401, 403, 429]) {
   const result = await loadPublicationEvidence({ fetchImpl: async () => Response.json({}, { status: code }), now });
   assert.equal(result.reason, `GITHUB_${code}`); assert.equal(result.availability, "UNAVAILABLE"); assert.deepEqual(result.evidence, []);
