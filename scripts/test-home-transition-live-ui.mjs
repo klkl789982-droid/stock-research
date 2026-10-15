@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
@@ -47,19 +48,24 @@ const find = (node, predicate) => [ ...(node && typeof node === "object" && node
 const html = (element) => renderToStaticMarkup(element);
 const noOp = () => {};
 const callbacks = { onSelectStock: noOp, onOpenTransition: noOp };
-// Pin the immutable signal and its own pointer, not the moving production latest.
+// Share the fixed signal, pointer, calendar and clock with the LIVE source tests.
+// Production daily promotion must not alter this homepage scenario.
+const snapshot = JSON.parse(await read("scripts/fixtures/live-transition/2026-10-13.json"));
 const fixtureRoot = await mkdtemp(path.join(os.tmpdir(), "tb-home-live-test-"));
 let data;
 try {
-  const signalPath = "data/intraday-signals/model-top/2026-10-13/1430.json";
-  const signal = JSON.parse(await read(signalPath));
-  for (const relative of [signalPath, "data/analysis/market-seeds/2026-10-12.json", "data/history/2026-10-12.json", "data/trading-calendar/status.json"]) {
+  for (const { path: relative, sha256 } of Object.values(snapshot.archives)) {
+    assert.equal(createHash("sha256").update(await readFile(new URL(`../${relative}`, import.meta.url))).digest("hex"), sha256, `${relative} changed; review the pinned scenario before updating it`);
     const target = path.join(fixtureRoot, relative);
     await mkdir(path.dirname(target), { recursive: true });
     await symlink(fileURLToPath(new URL(`../${relative}`, import.meta.url)), target);
   }
-  await writeFile(path.join(fixtureRoot, "data/intraday-signals/model-top/latest.json"), JSON.stringify({ status: "READY", signalDate: signal.signalDate, signalPath, contentHash: signal.contentHash }));
-  data = await createLiveTransitionStore({ root: fixtureRoot, now: () => new Date("2026-10-13T06:00:00Z") })();
+  for (const [relative, value] of [["data/intraday-signals/model-top/latest.json", snapshot.latest], ["data/trading-calendar/status.json", snapshot.calendar]]) {
+    const target = path.join(fixtureRoot, relative);
+    await mkdir(path.dirname(target), { recursive: true });
+    await writeFile(target, JSON.stringify(value));
+  }
+  data = await createLiveTransitionStore({ root: fixtureRoot, now: () => new Date(snapshot.now) })();
 } finally { await rm(fixtureRoot, { recursive: true, force: true }); }
 const responses = ["5-20", "20-60"].map((pair) => {
   const filtered = screenLiveTransitions(data.rows, parseLiveTransitionFilters(new URLSearchParams({ pair, state: "all", nearPercent: "1" })));

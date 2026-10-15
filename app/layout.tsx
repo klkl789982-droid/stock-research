@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tight Budget | 데이터로 시작하는 종목 분석",
-  description: "공식 데이터와 검증 중인 모델을 구분해 보여주는 한국 주식 분석 서비스",
+  title: "Tight Budget | 종목 분석",
+  description: "한국 주식 종목 분석·모델 순위·성과",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

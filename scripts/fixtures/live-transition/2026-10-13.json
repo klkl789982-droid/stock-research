@@ -1,0 +1,180 @@
+{
+  "now": "2026-10-13T06:00:00.000Z",
+  "archives": {
+    "signal": {
+      "path": "data/intraday-signals/model-top/2026-10-13/1430.json",
+      "sha256": "6f34c10eaa9cc61253f2545043bdbedd0c7bd2cb9def33233c1e0b29ad357901"
+    },
+    "seed": {
+      "path": "data/analysis/market-seeds/2026-10-12.json",
+      "sha256": "c5317b10403a5480501bf057de691a2b59636f911d5810afb05dd161f3377b4d"
+    },
+    "history": {
+      "path": "data/history/2026-10-12.json",
+      "sha256": "80221e20a9fddaea7812add70222f8db76998825e7b8879bfbc2dde74ae9ea2f"
+    }
+  },
+  "latest": {
+    "schemaVersion": 1,
+    "artifactType": "intradayModelTopLatestStatus",
+    "signalDate": "2026-10-13",
+    "officialSignalTime": "14:30:00",
+    "status": "READY",
+    "signalPath": "data/intraday-signals/model-top/2026-10-13/1430.json",
+    "contentHash": "ade42796ffbda0b2a5abaa9fac616e3af0feabb621f444d174050b4e8dd5a50b",
+    "collection": {
+      "successful": 508,
+      "failed": 0,
+      "ineligible": 45
+    },
+    "collectionStartedAt": "2026-10-13T05:30:00.021Z",
+    "collectionCompletedAt": "2026-10-13T05:32:40.339Z",
+    "updatedAt": "2026-10-13T05:32:40.339Z",
+    "lastGood": {
+      "signalDate": "2026-10-13",
+      "signalPath": "data/intraday-signals/model-top/2026-10-13/1430.json",
+      "contentHash": "ade42796ffbda0b2a5abaa9fac616e3af0feabb621f444d174050b4e8dd5a50b",
+      "collectionStartedAt": "2026-10-13T05:30:00.021Z",
+      "collectionCompletedAt": "2026-10-13T05:32:40.339Z"
+    },
+    "lastSuccessAt": "2026-10-13T05:32:40.339Z"
+  },
+  "calendar": {
+    "schemaVersion": 1,
+    "dates": {
+      "2026-08-13": {
+        "status": "tradingDay",
+        "observedBasDt": "2026-08-13",
+        "modelSnapshot": "created",
+        "marketPriceLedger": "missing",
+        "checkedAt": "2026-08-16T00:00:00.000Z"
+      },
+      "2026-08-14": {
+        "status": "unchecked",
+        "observedBasDt": "2026-08-13",
+        "modelSnapshot": "notRequired",
+        "marketPriceLedger": "notRequired",
+        "reason": "weekdayBasDtMismatch",
+        "checkedAt": "2026-08-16T14:17:17.386Z"
+      },
+      "2026-08-15": {
+        "status": "marketClosed",
+        "observedBasDt": null,
+        "modelSnapshot": "notRequired",
+        "marketPriceLedger": "notRequired",
+        "reason": "weekend",
+        "checkedAt": "2026-08-16T14:17:26.789Z"
+      },
+      "2026-09-28": {
+        "status": "tradingDay",
+        "observedBasDt": "2026-09-28",
+        "modelSnapshot": "created",
+        "marketPriceLedger": "created",
+        "reason": null,
+        "universeArchive": "created",
+        "marketAnalysisSnapshot": "created",
+        "intradayMarketSeed": "created",
+        "checkedAt": "2026-09-29T12:20:03.494Z"
+      },
+      "2026-09-30": {
+        "status": "tradingDay",
+        "observedBasDt": "2026-09-30",
+        "modelSnapshot": "created",
+        "marketPriceLedger": "created",
+        "reason": null,
+        "universeArchive": "created",
+        "marketAnalysisSnapshot": "created",
+        "intradayMarketSeed": "created",
+        "checkedAt": "2026-10-01T17:35:59.050Z"
+      },
+      "2026-10-01": {
+        "status": "tradingDay",
+        "observedBasDt": "2026-10-01",
+        "modelSnapshot": "created",
+        "marketPriceLedger": "created",
+        "reason": null,
+        "universeArchive": "created",
+        "marketAnalysisSnapshot": "created",
+        "intradayMarketSeed": "created",
+        "checkedAt": "2026-10-02T16:56:07.915Z"
+      },
+      "2026-10-02": {
+        "status": "tradingDay",
+        "observedBasDt": "2026-10-02",
+        "modelSnapshot": "created",
+        "marketPriceLedger": "created",
+        "reason": null,
+        "universeArchive": "created",
+        "marketAnalysisSnapshot": "created",
+        "intradayMarketSeed": "created",
+        "checkedAt": "2026-10-06T09:56:26.483Z"
+      },
+      "2026-10-06": {
+        "status": "tradingDay",
+        "observedBasDt": "2026-10-06",
+        "modelSnapshot": "created",
+        "marketPriceLedger": "created",
+        "reason": null,
+        "universeArchive": "created",
+        "marketAnalysisSnapshot": "created",
+        "intradayMarketSeed": "created",
+        "checkedAt": "2026-10-07T18:04:25.382Z"
+      },
+      "2026-10-05": {
+        "status": "marketClosed",
+        "observedBasDt": null,
+        "modelSnapshot": "notRequired",
+        "marketPriceLedger": "notRequired",
+        "reason": "absentBetweenCompleteOfficialEodTradingDates",
+        "evidence": "completeOfficialEodHistoryGap",
+        "evidenceReferenceDate": "2026-10-06",
+        "evidenceRecordCount": 508,
+        "checkedAt": "2026-10-08T06:18:47.773Z"
+      },
+      "2026-10-07": {
+        "status": "tradingDay",
+        "observedBasDt": "2026-10-07",
+        "modelSnapshot": "created",
+        "marketPriceLedger": "created",
+        "reason": null,
+        "universeArchive": "created",
+        "marketAnalysisSnapshot": "created",
+        "intradayMarketSeed": "created",
+        "checkedAt": "2026-10-08T06:37:44.900Z"
+      },
+      "2026-10-08": {
+        "status": "tradingDay",
+        "observedBasDt": "2026-10-08",
+        "modelSnapshot": "created",
+        "marketPriceLedger": "created",
+        "reason": null,
+        "universeArchive": "created",
+        "marketAnalysisSnapshot": "created",
+        "intradayMarketSeed": "created",
+        "checkedAt": "2026-10-12T02:36:06.847Z"
+      },
+      "2026-10-09": {
+        "status": "marketClosed",
+        "observedBasDt": null,
+        "modelSnapshot": "notRequired",
+        "marketPriceLedger": "notRequired",
+        "reason": "absentBetweenCompleteOfficialEodTradingDates",
+        "evidence": "completeOfficialEodHistoryGap",
+        "evidenceReferenceDate": "2026-10-12",
+        "evidenceRecordCount": 508,
+        "checkedAt": "2026-10-13T03:44:54.106Z"
+      },
+      "2026-10-12": {
+        "status": "tradingDay",
+        "observedBasDt": "2026-10-12",
+        "modelSnapshot": "created",
+        "marketPriceLedger": "created",
+        "reason": null,
+        "universeArchive": "created",
+        "marketAnalysisSnapshot": "created",
+        "intradayMarketSeed": "created",
+        "checkedAt": "2026-10-13T03:44:54.109Z"
+      }
+    }
+  }
+}

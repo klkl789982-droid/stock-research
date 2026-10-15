@@ -84,7 +84,9 @@ const render = (data = dashboard, failedPerformance = false, operationsInput = o
   return renderToStaticMarkup(React.createElement(uiExports.default, { onSelectStock: () => {}, onOpenModel: () => {}, onOpenPerformance: () => {}, onOpenTransition: () => {} }));
 };
 const html = render();
-for (const text of ["오늘의 분석 대시보드", "모델 TOP3", "긴종목명검증", "000660", "골든크로스 접근", "골든크로스 확인", "해당 조건 종목 없음", "508/553", "미연결", "데이터 축적 중", "-1.25%", "관측 4건", "수집·검증 실패", "확인 불가", "Daily EOD", "14:30 LIVE", "REJECTED", "↑2"]) assert.ok(html.includes(text), text);
+assert.match(html, /<h1 id="home-dashboard-heading"[^>]*>홈<\/h1>/u);
+assert.doesNotMatch(html, /오늘의 분석 대시보드|TIGHT BUDGET · DAILY RESEARCH/u);
+for (const text of ["홈", "모델 TOP3", "긴종목명검증", "000660", "골든크로스 접근", "골든크로스 확인", "해당 조건 종목 없음", "508/553", "미연결", "데이터 축적 중", "-1.25%", "관측 4건", "수집·검증 실패", "확인 불가", "Daily EOD", "14:30 LIVE", "REJECTED", "↑2"]) assert.ok(html.includes(text), text);
 assert.ok(render(dashboard, true).includes("성과 조회 실패"));
 assert.ok(render({ ...dashboard, transitions: null }).includes("전환 지표 데이터 없음"));
 const noComparison = render({ ...dashboard, models: { ...dashboard.models, models: [{ ...model, comparisonStatus: "UNAVAILABLE", comparisonReason: "FORMULA_PROVENANCE_CHANGED_OR_MISSING" }] } });

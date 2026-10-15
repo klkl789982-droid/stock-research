@@ -16,7 +16,7 @@ assert.match(page, /selection\?\.code \?\? query.trim\(\)/u);
 assert.match(page, /window.history.pushState/u);
 assert.match(page, /window.addEventListener\("popstate"/u);
 assert.match(page, /hidden=\{Boolean\(searchedStock\)\}><StockScreenerPanel/u);
-assert.match(page, /탐색 결과로 돌아가기/u);
+assert.match(page, /← 돌아가기/u);
 assert.match(page, /requestId !== searchRequestIdRef\.current \|\| \(error instanceof DOMException/u);
 assert.doesNotMatch(page, /alert\(/u);
 assert.match(page, /searchError/u);

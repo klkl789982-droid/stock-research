@@ -14,19 +14,27 @@ import { createLiveTransitionStore } from "../lib/live-transition-store.mjs";
 import { hashIntradayModelTop } from "../lib/intraday-model-top-official-signal.mjs";
 import { intradaySeedHash } from "../lib/intraday-market-seed.mjs";
 
-// Never use wall-clock freshness or edit the committed production observations.
+// Pin publication/calendar metadata alongside immutable archived inputs. Daily
+// promotion must not change this scenario or its injected freshness clock.
+// Never edit the committed production observations.
 const REPO = fileURLToPath(new URL("../", import.meta.url));
-const NOW = "2026-10-13T06:00:00.000Z";
+const FIXTURE_PATH = "scripts/fixtures/live-transition/2026-10-13.json";
+const snapshot = deepFreeze(JSON.parse(await readFile(path.join(REPO, FIXTURE_PATH), "utf8")));
+const NOW = snapshot.now;
 const FILES = {
   latest: "data/intraday-signals/model-top/latest.json",
-  signal: "data/intraday-signals/model-top/2026-10-13/1430.json",
-  seed: "data/analysis/market-seeds/2026-10-12.json",
-  history: "data/history/2026-10-12.json",
+  ...Object.fromEntries(Object.entries(snapshot.archives).map(([key, archive]) => [key, archive.path])),
   calendar: "data/trading-calendar/status.json",
 };
-const raw = Object.fromEntries(await Promise.all(Object.entries(FILES).map(async ([key, relative]) => [key, await readFile(path.join(REPO, relative))])));
+const raw = {
+  ...Object.fromEntries(await Promise.all(Object.entries(snapshot.archives).map(async ([key, archive]) => [key, await readFile(path.join(REPO, archive.path))]))),
+  latest: Buffer.from(JSON.stringify(snapshot.latest)),
+  calendar: Buffer.from(JSON.stringify(snapshot.calendar)),
+};
 const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
-const originalHashes = Object.fromEntries(Object.entries(raw).map(([key, bytes]) => [key, digest(bytes)]));
+// Production latest/calendar are read only for the no-write guard, never used
+// as fixture inputs. Keep that guard for both the production and test files.
+const originalHashes = Object.fromEntries(await Promise.all([FIXTURE_PATH, ...Object.values(FILES)].map(async (relative) => [relative, digest(await readFile(path.join(REPO, relative)))])));
 function deepFreeze(value) {
   if (value && typeof value === "object" && !Object.isFrozen(value)) {
     Object.freeze(value);
@@ -64,6 +72,21 @@ function boundaryRows(pair) {
   closes[long - 1] = 100;
   return rowsOf(closes); // Both pairs have the exact equality boundary X_cross = 101.
 }
+
+await test("LIVE fixture pins archived bytes and matching pre-EOD publication metadata", () => {
+  for (const [key, archive] of Object.entries(snapshot.archives)) assert.equal(digest(raw[key]), archive.sha256, `${archive.path} changed; review the pinned scenario before updating it`);
+  assert.equal(fixture.now, "2026-10-13T06:00:00.000Z");
+  assert.equal(fixture.latest.status, "READY");
+  assert.equal(fixture.latest.signalDate, fixture.signal.signalDate);
+  assert.equal(fixture.latest.signalPath, FILES.signal);
+  assert.equal(fixture.latest.contentHash, fixture.signal.contentHash);
+  assert.deepEqual(fixture.latest.collection, fixture.signal.collection);
+  assert.equal(fixture.latest.lastGood.contentHash, fixture.signal.contentHash);
+  assert.equal(fixture.calendar.dates["2026-10-12"].status, "tradingDay");
+  assert.equal(fixture.calendar.dates["2026-10-13"], undefined);
+  assert.equal(fixture.calendar.dates["2026-10-14"], undefined);
+  assert.doesNotThrow(() => validateLiveTransitionSources(fixture));
+});
 
 await test("LIVE moving-average math uses closed bars plus exactly one observed price", async (t) => {
   for (const pair of ["5-20", "20-60"]) {
@@ -228,6 +251,10 @@ await test("LIVE rows preserve EOD models and exclude bad quote/history quality"
   await t.test("real saved data produces provisional prices with unchanged EOD scores", () => {
     assert.equal(built.length, fixture.history.records.length);
     assert.ok(usable.length > 0 && usable.length < built.length);
+    assert.equal(built.length, 553, "Keep the complete archived universe, not a reduced happy-path fixture.");
+    assert.equal(usable.length, 504);
+    assert.equal(fixture.signal.records.filter((r) => r.dataStatus === "INELIGIBLE").length, 45);
+    assert.equal(built.filter((r) => r.missingReasons.includes("liveQuoteStaleOrInvalid")).length, 4);
     const row = usable[0], historical = fixture.history.records.find((r) => r.code === row.code);
     const signal = fixture.signal.records.find((r) => r.ticker === row.code);
     assert.equal(row.qualityStatus, "PROVISIONAL");
@@ -446,5 +473,5 @@ await test("disk store reads the exact immutable signal and prior seed, with no 
 });
 
 await test("committed LIVE/EOD/calendar fixtures remain byte-for-byte unchanged", async () => {
-  for (const [key, relative] of Object.entries(FILES)) assert.equal(digest(await readFile(path.join(REPO, relative))), originalHashes[key], relative);
+  for (const [relative, hash] of Object.entries(originalHashes)) assert.equal(digest(await readFile(path.join(REPO, relative))), hash, relative);
 });

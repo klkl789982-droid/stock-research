@@ -21,9 +21,12 @@ function backend(options = {}) {
     const suffix = new URL(url).pathname.split("/contents/")[1];
     if (!suffix) return Response.json({ private: options.isPrivate !== false, full_name: repo, fork: false, archived: false });
     const key = decodeURIComponent(suffix);
+    // Real redirect:error fetch rejects slash-ending directory URLs.
+    if (key.endsWith("/") || options.redirectContents) throw new TypeError("PRIVATE_REDIRECT_REJECTED");
     if (init.method === "GET") {
-      if (key.endsWith("/")) {
-        const entries = [...files.keys()].filter((file) => file.startsWith(key)).map((file) => ({ type: "file", name: file.slice(key.length) }));
+      if (!key.endsWith(".json")) {
+        const prefix = `${key}/`;
+        const entries = [...files.keys()].filter((file) => file.startsWith(prefix)).map((file) => ({ type: "file", name: file.slice(prefix.length) }));
         return entries.length ? Response.json(entries) : new Response("", { status: 404 });
       }
       if (!files.has(key)) return new Response("", { status: 404 });
@@ -158,4 +161,14 @@ test("reconciliation distinguishes missing scheduled job, crashed claim, holiday
   const closed = { ...calendar, isTradingDay: false, sourceFields: { bass_dt: "20261008", opnd_yn: "N", tr_day_yn: "N" } };
   assert.equal((await b.store.auditDay(date, closed, checkedAt)).missingCount, 0);
   await assert.rejects(b.store.auditDay(date, calendar, stamp), { code: "PRIVATE_STORE_AUDIT_TOO_EARLY" });
+});
+
+
+test("journal directory is canonical while redirects remain rejected", async () => {
+  const b = backend();
+  assert.deepEqual(await b.store.listJournal(date, "15:40"), []);
+  assert.ok(b.requests.some((request) => request.url.includes("/journal/2026-10-08/1540?ref=main")));
+  assert.ok(b.requests.every((request) => !new URL(request.url).pathname.endsWith("/")));
+  const redirected = backend({ redirectContents: true });
+  await assert.rejects(redirected.store.listJournal(date, "15:40"), { code: "PRIVATE_STORE_NETWORK_FAILED" });
 });

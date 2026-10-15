@@ -24,14 +24,14 @@ export default function TechnicalStrengthPanel({ view, showScore = true }: { vie
     <div className="tb-card mt-5 p-5 sm:p-6">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--tb-blue)]">Technical strength</p>
+          <h2 className="text-lg font-semibold text-slate-950">기술 강도</h2>
           {view.status === "available" && showScore ? (
             <p className="mt-1"><span className="text-3xl font-bold text-gray-900">{view.score}</span><span className="text-sm text-gray-500"> / 100</span></p>
           ) : view.status !== "available" ? (
             <p className="mt-1 text-sm font-semibold text-gray-700">
               {view.status === "loading" ? "계산 준비 중" : analysisAvailabilityMessage(view.reason)}
             </p>
-          ) : <p className="mt-1 text-sm font-semibold text-gray-700">가격 흐름과 변동성 지표를 함께 반영한 결과입니다.</p>}
+          ) : null}
         </div>
         <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">분석 모델 검증 진행 중</span>
       </div>

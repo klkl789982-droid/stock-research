@@ -128,9 +128,7 @@ export default function ModelTopPerformancePanel() {
     <section className="tb-card mt-6 p-4 sm:p-6" aria-labelledby="model-performance-heading">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--tb-orange)]">Model performance</p>
-          <h2 id="model-performance-heading" className="mt-1 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">모델 성과</h2>
-          <p className="mt-1 text-sm text-slate-600">Daily EOD와 14:30 LIVE 성과를 서로 섞지 않고 별도로 집계합니다.</p>
+          <h2 id="model-performance-heading" className="text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">모델 성과</h2>
         </div>
         {performanceLayer !== "RESEARCH" && <div className="grid grid-cols-2 gap-x-5 gap-y-1 text-xs text-slate-600 sm:grid-cols-4 lg:text-right">
           <span>분석 기간</span><strong className="font-semibold text-slate-800">{metadata?.signalDateRange ? `${metadata.signalDateRange.from} ~ ${metadata.signalDateRange.to}` : "축적 중"}</strong>

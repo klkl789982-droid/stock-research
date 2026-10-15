@@ -220,8 +220,7 @@ export default function TopStocksPanel({ onSelectStock, compact = false, onOpenF
   return (
     <>
     <div className={`tb-card ${compact ? "mt-3 p-4" : "mt-6 p-4 sm:p-6"}`}>
-      <p className={`${compact ? "text-[10px] font-medium tracking-[0.18em]" : "text-xs font-bold tracking-[0.15em]"} uppercase text-[var(--tb-orange)]`}>{data?.dataMode === "kisProvisionalEod" ? "KIS provisional EOD ranking" : data?.dataMode === "intradayOfficialSignal" ? "14:30 official signal" : "Daily model ranking"}</p>
-      <div className="flex items-center justify-between gap-4"><h2 className={`${compact ? "mt-1 text-lg font-medium" : "mt-1 text-xl font-extrabold sm:text-2xl"} tracking-tight text-slate-950`}>{compact ? "모델 TOP 종목" : "시장 TOP 종목"}</h2>{compact && onOpenFull && <button type="button" onClick={onOpenFull} className="tb-focus rounded-lg px-2 py-1 text-xs font-medium text-[var(--tb-blue)] hover:bg-orange-50/50">전체 순위 보기 →</button>}</div>
+      <div className="flex items-center justify-between gap-4"><h2 className={`${compact ? "text-lg font-medium" : "text-xl font-extrabold sm:text-2xl"} tracking-tight text-slate-950`}>모델 TOP</h2>{compact && onOpenFull && <button type="button" onClick={onOpenFull} className="tb-focus rounded-lg px-2 py-1 text-xs font-medium text-[var(--tb-blue)] hover:bg-orange-50/50">전체 순위 보기 →</button>}</div>
       <p className={`${compact ? "mt-1 text-xs" : "mt-2 text-sm"} text-gray-600`}>{modelDescriptions[activeTab]}</p>
 
       {compact && <div className="mt-3 flex gap-5 border-b border-slate-200/70" role="tablist" aria-label="모델 선택">
@@ -266,7 +265,7 @@ export default function TopStocksPanel({ onSelectStock, compact = false, onOpenF
       {officialSignalMessage && <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">{officialSignalMessage}</p>}
       {data && compact && <p className="mt-2 text-[10px] text-gray-500">{data.dataMode === "kisProvisionalEod" ? `데이터 기준일 ${data.rankingAsOfDate} · KIS 당일 잠정 EOD` : data.dataMode === "intradayOfficialSignal" ? `Official Signal · ${data.rankingAsOfDate} ${data.officialSignalTime?.slice(0, 5) ?? "14:30"} KST` : `데이터 기준일 ${data.rankingAsOfDate} · 공식 일봉`}</p>}
 
-      {loading && <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-12 text-center text-sm text-gray-500">실제 TOP50 데이터를 불러오는 중입니다...</div>}
+      {loading && <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-12 text-center text-sm text-gray-500">TOP50 조회 중</div>}
       {!loading && error && (
         <div className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-10 text-center">
           <p className="text-sm font-medium text-red-700">{error}</p>
@@ -274,7 +273,7 @@ export default function TopStocksPanel({ onSelectStock, compact = false, onOpenF
           <button type="button" onClick={() => setRequestVersion((version) => version + 1)} className="mt-4 rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-700">다시 시도</button>
         </div>
       )}
-      {!loading && !error && data && data.stocks.length === 0 && <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-12 text-center text-sm text-gray-500">실제 TOP50 데이터가 없습니다. 최신 유효 모델 스냅샷을 생성해야 합니다.</div>}
+      {!loading && !error && data && data.stocks.length === 0 && <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-12 text-center text-sm text-gray-500">TOP50 데이터 없음 · 유효한 모델 스냅샷이 필요합니다.</div>}
       {!loading && !error && data && data.stocks.length > 0 && (
         <div className={`${compact ? "mt-3 rounded-xl" : "mt-5 rounded-2xl"} overflow-hidden border border-[var(--tb-border)] sm:overflow-x-auto`}>
           <div className="tb-mobile-ranking-surface divide-y divide-slate-200/80 sm:hidden" aria-label="모바일 모델 TOP 종목">

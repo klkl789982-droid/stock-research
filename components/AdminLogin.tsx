@@ -18,7 +18,7 @@ export default function AdminLogin() {
   }
   return <main className="tb-page-ambient flex min-h-dvh items-center justify-center px-4 py-8">
     <section className="tb-card w-full max-w-md rounded-2xl p-6 sm:p-8" aria-labelledby="login-heading">
-      <div className="mb-7"><BrandMark /><h1 id="login-heading" className="mt-4 text-lg font-medium text-slate-900">관리자 로그인</h1><p className="mt-1 text-xs text-slate-600">Private Research Workspace · 관리자 전용</p></div>
+      <div className="mb-7"><BrandMark /><h1 id="login-heading" className="mt-4 text-lg font-medium text-slate-900">관리자 로그인</h1></div>
       <form onSubmit={submit} className="space-y-4">
         <div><label htmlFor="admin-username" className="mb-1.5 block text-sm text-slate-700">아이디</label><input id="admin-username" name="username" autoComplete="username" required maxLength={100} disabled={pending} className="tb-focus w-full rounded-xl border border-slate-400/30 bg-white/60 px-4 py-3 text-sm text-slate-900" /></div>
         <div><label htmlFor="admin-password" className="mb-1.5 block text-sm text-slate-700">비밀번호</label><input id="admin-password" name="password" type="password" autoComplete="current-password" required maxLength={1024} disabled={pending} className="tb-focus w-full rounded-xl border border-slate-400/30 bg-white/60 px-4 py-3 text-sm text-slate-900" /></div>

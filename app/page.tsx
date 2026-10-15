@@ -451,9 +451,7 @@ return (
         {!searchedStock && pageView === "models" && (
           <section aria-labelledby="models-heading">
             <div className="tb-card p-4 sm:p-6">
-              <p className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--tb-orange)]">Research models</p>
-              <h1 id="models-heading" className="mt-1 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">모델</h1>
-              <p className="mt-2 text-sm text-slate-600">동결된 공식 일봉 순위와 확정된 과거 성과를 분리해 확인합니다.</p>
+              <h1 id="models-heading" className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">모델</h1>
               <div className="mt-5 flex gap-1 border-b border-slate-200/80" role="tablist" aria-label="모델 화면 탭">
                 <button type="button" role="tab" aria-selected={modelPageTab === "top"} onClick={() => setModelPageTab("top")} className={`tb-focus -mb-px border-b-2 px-4 py-2.5 text-sm font-semibold ${modelPageTab === "top" ? "border-[var(--tb-orange)] text-[var(--tb-orange)]" : "border-transparent text-slate-500 hover:text-slate-900"}`}>모델 TOP</button>
                 <button type="button" role="tab" aria-selected={modelPageTab === "performance"} onClick={() => setModelPageTab("performance")} className={`tb-focus -mb-px border-b-2 px-4 py-2.5 text-sm font-semibold ${modelPageTab === "performance" ? "border-[var(--tb-orange)] text-[var(--tb-orange)]" : "border-transparent text-slate-500 hover:text-slate-900"}`}>모델 성과</button>
@@ -468,7 +466,7 @@ return (
 
         {searchedStock && (
           <div className="tb-card mt-3 overflow-hidden p-4 sm:p-5">
-            <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--tb-blue)]">Stock Detail</p><button type="button" onClick={() => { if (window.history.state?.tbStock?.returnToExplorer) window.history.back(); else { restoreExplorer(); const url = new URL(window.location.href); url.searchParams.delete("stock"); window.history.replaceState(window.history.state, "", url); } }} className="tb-focus rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium">← 탐색 결과로 돌아가기</button></div>
+            <div className="flex justify-end"><button type="button" onClick={() => { if (window.history.state?.tbStock?.returnToExplorer) window.history.back(); else { restoreExplorer(); const url = new URL(window.location.href); url.searchParams.delete("stock"); window.history.replaceState(window.history.state, "", url); } }} className="tb-focus rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium">← 돌아가기</button></div>
 
             <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">
               {searchedStock}
@@ -605,7 +603,7 @@ return (
 </details>
 
             <section id="stock-technical" className="mt-3 scroll-mt-32 border-t border-gray-100 pt-3">
-              <div className="flex items-end justify-between gap-4"><div><p className="text-sm font-semibold text-gray-500">분석 요약</p><h3 className="mt-1 text-xl font-bold text-gray-950">핵심 결과를 한눈에</h3></div><span className="text-xs text-gray-400">검증된 데이터만 표시</span></div>
+              <h3 className="text-xl font-bold text-gray-950">분석 요약</h3>
               <div className="mt-4 divide-y divide-slate-100 rounded-2xl border border-[var(--tb-border)] bg-slate-50/70 px-4 sm:grid sm:grid-cols-3 sm:divide-x sm:divide-y-0 sm:px-0">
                 <div className="flex items-center justify-between py-4 sm:block sm:px-5"><span className="text-sm text-gray-500">기술 흐름</span><div className="text-right sm:mt-2 sm:text-left">{technicalStrength.status === "available" ? <><strong className="text-xl text-gray-950">{technicalStrength.score}</strong><span className="ml-1 text-xs text-gray-400">/ 100</span><p className="text-sm font-semibold text-gray-700">분석 모델 검증 중</p></> : <strong className="text-sm text-gray-700">{technicalStrength.status === "loading" ? "분석 준비 중" : analysisAvailabilityMessage(technicalStrength.reason)}</strong>}</div></div>
                 <div className="flex items-center justify-between py-4 sm:block sm:px-5"><span className="text-sm text-gray-500">기업 재무</span><div className="max-w-52 text-right sm:mt-2 sm:text-left">{companyAnalysisLoading ? <strong className="text-sm text-gray-700">분석 준비 중</strong> : companyAnalysis?.record?.eligible ? <><strong className="text-xl text-gray-950">{companyAnalysis.record.totalScore}</strong><span className="ml-1 text-xs text-gray-400">/ 100</span><p className="text-sm font-semibold text-gray-700">{companyAnalysis.record.grade}</p></> : <strong className="text-sm text-gray-700">{companyAnalysis?.record?.ineligibleReasons?.[0] ? companyAnalysisRecordReasonLabel(companyAnalysis.record, companyAnalysis.record.ineligibleReasons[0]) : companyAnalysisError ? "기업분석을 이용할 수 없습니다." : "분석 준비 중"}</strong>}</div></div>

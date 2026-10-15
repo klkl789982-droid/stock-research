@@ -49,9 +49,8 @@ export default function StockScreenerPanel({ onSelectStock, initialTab = "models
     <div role="tablist" aria-label="스크리닝 영역" className="tb-card flex gap-2 p-2">{([["models", "모델·기업 조건"], ["transition", "전환 신호"]] as const).map(([value, label]) => <button key={value} type="button" role="tab" aria-selected={tab === value} onClick={() => setTab(value)} className={`tb-focus rounded-lg px-4 py-2 text-sm font-semibold ${tab === value ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}`}>{label}</button>)}</div>
     {tab === "transition" ? <TransitionScreenerPanel onSelectStock={onSelectStock} initialPair={initialPair} initialState={initialState} initialDirection={initialDirection} initialMode={initialMode} /> : <>
     <div className="tb-card p-4 sm:p-6">
-      <p className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--tb-orange)]">Daily EOD screening</p>
-      <h1 id="screener-heading" className="mt-1 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">스크리닝</h1>
-      <p className="mt-2 text-sm text-slate-600">확정된 공식 일봉 모델 순위와 기업분석 결과를 조건별로 비교합니다.</p>
+      <h1 id="screener-heading" className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">스크리닝</h1>
+      <p className="mt-2 text-sm text-slate-600">공식 일봉 모델 순위 · 기업분석 등급</p>
       <form className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" onSubmit={(event) => { event.preventDefault(); search(filters); }}>
         <label className="text-xs font-semibold text-slate-600">모델<select value={filters.model} onChange={(event) => setFilters({ ...filters, model: event.target.value })} className={`${field} mt-1 w-full`}>{Object.entries(MODEL_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
         <label className="text-xs font-semibold text-slate-600">최소 점수<input inputMode="decimal" value={filters.minScore} onChange={(event) => setFilters({ ...filters, minScore: event.target.value })} placeholder="예: 70" className={`${field} mt-1 w-full`} /></label>

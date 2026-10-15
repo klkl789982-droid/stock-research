@@ -136,9 +136,7 @@ export default function ModelExplanationPanel() {
 
   return (
     <section className="tb-card mt-6 p-4 sm:p-6" aria-labelledby="model-explanation-heading">
-      <p className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--tb-orange)]">Model guide</p>
-      <h2 id="model-explanation-heading" className="mt-1 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">모델 설명</h2>
-      <p className="mt-1 text-sm text-slate-600">현재 저장·순위 계산에 사용하는 코드 기준의 설명입니다. 점수 자체나 계산 규칙은 이 화면에서 바꾸지 않습니다.</p>
+      <h2 id="model-explanation-heading" className="text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">모델 설명</h2>
 
       <div className="mt-5 flex flex-wrap gap-1 border-b border-slate-200/80" role="tablist" aria-label="설명할 모델 선택">
         {MODELS.map((item) => <button key={item.id} type="button" role="tab" aria-selected={activeId === item.id} onClick={() => setActiveId(item.id)} className={`tb-focus -mb-px border-b-2 px-3 py-2 text-sm font-semibold ${activeId === item.id ? "border-[var(--tb-orange)] text-[var(--tb-orange)]" : "border-transparent text-slate-500 hover:text-slate-900"}`}>{item.label}</button>)}
