@@ -13,6 +13,8 @@ import {
 import { createLiveTransitionStore } from "../lib/live-transition-store.mjs";
 import { hashIntradayModelTop } from "../lib/intraday-model-top-official-signal.mjs";
 import { intradaySeedHash } from "../lib/intraday-market-seed.mjs";
+import { immutableSnapshotView } from "../lib/future-return-resolver.mjs";
+import { assertLiveFixtureArchive, historyFixtureHash } from "./fixtures/live-transition/integrity.mjs";
 
 // Pin publication/calendar metadata alongside immutable archived inputs. Daily
 // promotion must not change this scenario or its injected freshness clock.
@@ -73,8 +75,8 @@ function boundaryRows(pair) {
   return rowsOf(closes); // Both pairs have the exact equality boundary X_cross = 101.
 }
 
-await test("LIVE fixture pins archived bytes and matching pre-EOD publication metadata", () => {
-  for (const [key, archive] of Object.entries(snapshot.archives)) assert.equal(digest(raw[key]), archive.sha256, `${archive.path} changed; review the pinned scenario before updating it`);
+await test("LIVE fixture pins immutable archived inputs and matching pre-EOD publication metadata", () => {
+  for (const [key, archive] of Object.entries(snapshot.archives)) assertLiveFixtureArchive(key, raw[key], archive);
   assert.equal(fixture.now, "2026-10-13T06:00:00.000Z");
   assert.equal(fixture.latest.status, "READY");
   assert.equal(fixture.latest.signalDate, fixture.signal.signalDate);
@@ -247,6 +249,68 @@ await test("LIVE source validation is strict about provenance, freshness, and ac
 
 const built = buildLiveTransitionRows(fixture);
 const usable = built.filter((row) => !row.missingReasons.length);
+await test("LIVE fixture permits future outcomes without unpinning historical inputs", async (t) => {
+  await t.test("the immutable projection omits only the three record-level outcome fields", () => {
+    const sample = deepFreeze({
+      sourceManifest: { futureReturns: "keep provenance even with this name" },
+      records: [{ code: "000001", closePrice: 100, nested: { executionReturnsByPolicy: "keep nested inputs" },
+        futureReturns: { future1dReturn: 1 }, backtestReturns: { status: "pending" }, executionReturnsByPolicy: {} }],
+    });
+    assert.deepEqual(immutableSnapshotView(sample), {
+      sourceManifest: sample.sourceManifest,
+      records: [{ code: "000001", closePrice: 100, nested: sample.records[0].nested }],
+    });
+  });
+  for (const field of ["futureReturns", "backtestReturns", "executionReturnsByPolicy"]) {
+    await t.test(`${field} resolution does not change fixture integrity or either LIVE response`, () => {
+      const history = structuredClone(fixture.history);
+      for (const record of history.records) record[field] = { status: "resolved", laterOutcome: 123.456, resolvedAt: "2026-12-31" };
+      assert.notDeepEqual(history, fixture.history, "The outcome data really changed.");
+      assertLiveFixtureArchive("history", Buffer.from(JSON.stringify(history)), snapshot.archives.history);
+      assert.equal(historyFixtureHash(history), historyFixtureHash(fixture.history));
+      const rows = buildLiveTransitionRows({ ...fixture, history });
+      assert.deepEqual(rows, built);
+      for (const pair of ["5-20", "20-60"]) assert.deepEqual(screenLiveTransitions(rows, filters(`pair=${pair}&state=all`)), screenLiveTransitions(built, filters(`pair=${pair}&state=all`)));
+    });
+  }
+  await t.test("date, price, scores, quality, formula, and source manifest changes still fail the pin", () => {
+    const cases = [
+      ["date", (history) => { history.asOfDate = "2026-10-13"; }],
+      ["price", (history) => { history.records[0].closePrice++; }],
+      ["score", (history) => { history.records[0].scoresByVersion["A-v1"]++; }],
+      ["eligibility", (history) => { history.records[0].qualityEligibility.eligible = false; }],
+      ["quality", (history) => { history.dataQuality.structuralStatus = "failed"; }],
+      ["formula", (history) => { history.modelDefinitions = { tampered: true }; }],
+      ["source manifest", (history) => { history.sourceManifest.sources.officialDailyPrice.normalizedInputHash = "tampered"; }],
+    ];
+    for (const [name, mutate] of cases) {
+      const history = structuredClone(fixture.history); mutate(history);
+      assert.throws(() => assertLiveFixtureArchive("history", Buffer.from(JSON.stringify(history)), snapshot.archives.history), { code: "ERR_ASSERTION" }, name);
+    }
+    const history = structuredClone(fixture.history);
+    history.sourceManifest.sources.officialDailyPrice.normalizedInputHash = "tampered";
+    throwsReason(() => validateLiveTransitionSources({ ...fixture, history }), "LIVE_SOURCE_MISMATCH");
+  });
+  await t.test("unknown or broadened hash scopes fail closed", () => {
+    for (const key of ["history", "seed", "signal"]) {
+      for (const hashScope of ["unknown", key === "history" ? "fileBytes-v1" : "canonicalImmutableSnapshotView-v1"]) {
+        assert.throws(() => assertLiveFixtureArchive(key, raw[key], { ...snapshot.archives[key], hashScope }), { code: "ERR_ASSERTION" });
+      }
+    }
+    const archive = { ...snapshot.archives.history }; delete archive.hashScope;
+    assert.throws(() => assertLiveFixtureArchive("history", raw.history, archive), { code: "ERR_ASSERTION" });
+  });
+  await t.test("signal and seed still require their complete archived bytes", () => {
+    for (const key of ["signal", "seed"]) {
+      const value = structuredClone(fixture[key]); value.contentHash = "tampered";
+      assert.throws(() => assertLiveFixtureArchive(key, Buffer.from(JSON.stringify(value)), snapshot.archives[key]), { code: "ERR_ASSERTION" }, key);
+    }
+    const seed = structuredClone(fixture.seed); seed.records.find((record) => record.eligible).rows[0][4]++;
+    assert.throws(() => assertLiveFixtureArchive("seed", Buffer.from(JSON.stringify(seed)), snapshot.archives.seed), { code: "ERR_ASSERTION" });
+    throwsReason(() => buildLiveTransitionRows({ ...fixture, seed }), "LIVE_HISTORY_INVALID");
+  });
+});
+
 await test("LIVE rows preserve EOD models and exclude bad quote/history quality", async (t) => {
   await t.test("real saved data produces provisional prices with unchanged EOD scores", () => {
     assert.equal(built.length, fixture.history.records.length);

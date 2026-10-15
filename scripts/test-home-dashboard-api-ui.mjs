@@ -67,8 +67,8 @@ new Function("require", "exports", compile(await readFile(new URL("../components
   if (name === "./useLiveTransitionRevalidation") return { useLiveTransitionRevalidation: () => ({ rootRef: { current: null }, refreshVersion: 0 }) };
   throw new Error(name);
 }, homeCard);
-const render = (data = dashboard, failedPerformance = false, operationsInput = operations) => {
-  const resources = [{ url: "/api/home-dashboard?topN=5", data, error: false }, { url: "/api/model-performance", data: failedPerformance ? null : performance, error: failedPerformance }, { url: "/api/daily-production-status", data: operationsInput, error: false }, { url: "/api/intraday-model-top?model=B&limit=1", data: null, error: true }];
+const render = (data = dashboard, failedPerformance = false, operationsInput = operations, failedHome = false) => {
+  const resources = [{ url: "/api/home-dashboard?topN=5", data, error: failedHome }, { url: "/api/model-performance", data: failedPerformance ? null : performance, error: failedPerformance }, { url: "/api/daily-production-status", data: operationsInput, error: false }, { url: "/api/intraday-model-top?model=B&limit=1", data: null, error: true }];
   let index = 0;
   const uiExports = {};
   const requireUi = (name) => {
@@ -86,6 +86,32 @@ const render = (data = dashboard, failedPerformance = false, operationsInput = o
 const html = render();
 assert.match(html, /<h1 id="home-dashboard-heading"[^>]*>홈<\/h1>/u);
 assert.doesNotMatch(html, /오늘의 분석 대시보드|TIGHT BUDGET · DAILY RESEARCH/u);
+const modelUsage = {
+  "A-v1": "상승장 · 주도주 탐색",
+  "A-v2": "상승장 · 주도주 탐색",
+  "B-v1": "상승장 · 중기 추세 확인",
+  "C-v1": "횡보장 · 단기 반등 신호가 나올 때",
+  "D-v1": "상승장 · 추세와 진입 조건 함께 확인",
+};
+const allModelsHtml = render({ ...dashboard, models: { ...dashboard.models, models: Object.keys(modelUsage).map((modelVersion) => ({ ...model, modelVersion })) } });
+const modelCards = [...allModelsHtml.matchAll(/<article\b[^>]*>[\s\S]*?<\/article>/g)].map(([card]) => card);
+assert.equal(modelCards.length, Object.keys(modelUsage).length);
+for (const [index, [version, usage]] of Object.entries(modelUsage).entries()) {
+  const card = modelCards[index];
+  assert.ok(card.includes(`모델 ${version[0]} · ${version}`));
+  assert.ok(card.includes(usage), `${version}: the usage must be in its existing ranking card`);
+  assert.ok(card.includes("긴종목명검증") && card.includes("88.00") && card.includes("↑2"), "guidance must not replace rankings or scores");
+}
+assert.match(allModelsHtml, /mt-3 grid gap-2 sm:grid-cols-2/);
+assert.match(allModelsHtml, /relative mt-1 text-xs leading-5 text-slate-700/);
+assert.doesNotMatch(allModelsHtml, /저점 매수|수익률 보장|장세 자동 전환|하락장 자동 차단/u);
+const caveats = ["장세별 설명은 산식의 특성에 따른 구분이며, 수익률 우위가 검증된 것은 아닙니다.", "하락장에서는 네 모델 모두 신규 매수 판단에 주의가 필요합니다."];
+for (const output of [allModelsHtml, render(null), render(null, false, operations, true)]) {
+  for (const caveat of caveats) assert.equal(output.split(caveat).length - 1, 1, "show each qualification once, including unavailable ranking states");
+}
+assert.ok(render(null, false, operations, true).includes("순위 조회 실패"));
+const emptyModel = render({ ...dashboard, models: { ...dashboard.models, models: [{ ...model, modelVersion: "C-v1", top: [] }] } });
+assert.ok(emptyModel.includes(modelUsage["C-v1"]) && emptyModel.includes("분석 가능한 종목 없음"));
 for (const text of ["홈", "모델 TOP3", "긴종목명검증", "000660", "골든크로스 접근", "골든크로스 확인", "해당 조건 종목 없음", "508/553", "미연결", "데이터 축적 중", "-1.25%", "관측 4건", "수집·검증 실패", "확인 불가", "Daily EOD", "14:30 LIVE", "REJECTED", "↑2"]) assert.ok(html.includes(text), text);
 assert.ok(render(dashboard, true).includes("성과 조회 실패"));
 assert.ok(render({ ...dashboard, transitions: null }).includes("전환 지표 데이터 없음"));

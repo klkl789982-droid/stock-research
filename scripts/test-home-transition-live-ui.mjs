@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
 import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
@@ -14,6 +13,7 @@ import * as homeHelpers from "../lib/home-dashboard.mjs";
 import * as liveTiming from "../lib/intraday-model-top-time-policy.mjs";
 import { createLiveTransitionStore } from "../lib/live-transition-store.mjs";
 import { parseLiveTransitionFilters, screenLiveTransitions } from "../lib/live-transition-screener.mjs";
+import { assertLiveFixtureArchive } from "./fixtures/live-transition/integrity.mjs";
 
 const read = (file) => readFile(new URL(`../${file}`, import.meta.url), "utf8");
 const [cardSource, detailsSource, dashboardSource, pageSource, stockSource, transitionSource] = await Promise.all([
@@ -54,8 +54,9 @@ const snapshot = JSON.parse(await read("scripts/fixtures/live-transition/2026-10
 const fixtureRoot = await mkdtemp(path.join(os.tmpdir(), "tb-home-live-test-"));
 let data;
 try {
-  for (const { path: relative, sha256 } of Object.values(snapshot.archives)) {
-    assert.equal(createHash("sha256").update(await readFile(new URL(`../${relative}`, import.meta.url))).digest("hex"), sha256, `${relative} changed; review the pinned scenario before updating it`);
+  for (const [key, archive] of Object.entries(snapshot.archives)) {
+    const relative = archive.path;
+    assertLiveFixtureArchive(key, await readFile(new URL(`../${relative}`, import.meta.url)), archive);
     const target = path.join(fixtureRoot, relative);
     await mkdir(path.dirname(target), { recursive: true });
     await symlink(fileURLToPath(new URL(`../${relative}`, import.meta.url)), target);

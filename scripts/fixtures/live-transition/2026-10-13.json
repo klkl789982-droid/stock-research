@@ -11,7 +11,8 @@
     },
     "history": {
       "path": "data/history/2026-10-12.json",
-      "sha256": "80221e20a9fddaea7812add70222f8db76998825e7b8879bfbc2dde74ae9ea2f"
+      "sha256": "e4f07770b019d8cef114c73f8833aac72d80238748198ef8c8a3be15b8c635de",
+      "hashScope": "canonicalImmutableSnapshotView-v1"
     }
   },
   "latest": {

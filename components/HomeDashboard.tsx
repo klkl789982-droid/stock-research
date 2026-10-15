@@ -32,6 +32,12 @@ function useResource<T>(url: string) {
   return state?.url === url ? state : { url, data: null, error: false };
 }
 const labels: Record<string, string> = { VERIFIED: "실제 사이트 확인 완료", SOURCE_WAITING: "원본 대기", COLLECTED_VALIDATED: "수집·검증 완료", DEPLOYING: "배포 중", PUBLICATION_FAILED: "저장소 게시 실패", DEPLOYMENT_FAILED: "배포 실패", VERIFICATION_FAILED: "사이트 확인 실패", UNVERIFIED: "사이트 미확인", DELAYED: "새 원본 반영 지연", FAILED: "수집·검증 실패", UNKNOWN: "확인 불가" };
+const modelMarketUsage: Record<string, string> = {
+  A: "상승장 · 주도주 탐색",
+  B: "상승장 · 중기 추세 확인",
+  C: "횡보장 · 단기 반등 신호가 나올 때",
+  D: "상승장 · 추세와 진입 조건 함께 확인",
+};
 const pct = (v: number | null) => Number.isFinite(v) ? (Number(v) > 0 ? "+" : "") + Number(v).toFixed(2) + "%" : "미확인";
 const time = (v?: string | null) => v && Number.isFinite(Date.parse(v)) ? new Date(v).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", hour12: false }) + " KST" : "확인 불가";
 export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerformance, onOpenTransition, onOpenSearch }: {
@@ -63,10 +69,13 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
         {data?.models ? <div className="mt-3 grid gap-2 sm:grid-cols-2">{data.models.models.map((model) => <article key={model.modelVersion} className="relative min-w-0 rounded-lg bg-[#f7f3eb] p-3">
           <button type="button" aria-label={`모델 ${model.modelVersion} 상세 순위`} onClick={() => onOpenModel(model.modelVersion === "A-v1" ? "A-v1" : model.modelVersion[0])} className="tb-focus absolute inset-0 rounded-lg hover:bg-orange-100/15" />
           <h3 className="pointer-events-none relative text-xs font-semibold text-[var(--tb-orange)]">모델 {model.modelVersion[0]} · {model.modelVersion} →</h3>
+          {modelMarketUsage[model.modelVersion[0]] && <p className="pointer-events-none relative mt-1 text-xs leading-5 text-slate-700">{modelMarketUsage[model.modelVersion[0]]}</p>}
           <ol className="pointer-events-none relative mt-2 space-y-2">{model.top.slice(0, 3).map((row) => <li key={row.code} className="grid grid-cols-[1rem_minmax(0,1fr)_auto] items-center gap-2 text-xs"><span className="text-slate-500">{row.rank}</span><span className="min-w-0">{stockButton(row)}</span><span className="text-right"><span className="font-semibold tabular-nums">{row.score.toFixed(2)}</span>{model.comparisonStatus === "AVAILABLE" && Number.isInteger(row.rankChange) && <span className={`mt-0.5 block text-[10px] ${Number(row.rankChange) > 0 ? "text-red-600" : Number(row.rankChange) < 0 ? "text-blue-600" : "text-slate-600"}`} title={`${model.previousDate} 순위 ${row.previousRank} → ${row.rank}`}>{Number(row.rankChange) > 0 ? `↑${row.rankChange}` : Number(row.rankChange) < 0 ? `↓${Math.abs(Number(row.rankChange))}` : "— 유지"}</span>}</span></li>)}</ol>
           <p className="pointer-events-none relative mt-2 text-[10px] text-slate-600">{model.comparisonStatus === "AVAILABLE" ? `${model.previousDate} 대비 · 동일 버전/공식/universe` : "전일 순위 비교 불가"}</p>
           {!model.top.length && <p className="pointer-events-none relative mt-2 text-xs text-slate-600">분석 가능한 종목 없음</p>}
         </article>)}</div> : <p className="py-4 text-xs text-slate-600">{dashboard.error ? "순위 조회 실패" : "검증 가능한 저장 순위 확인 중"}</p>}
+        <p className="mt-3 text-[11px] leading-5 text-slate-600">장세별 설명은 산식의 특성에 따른 구분이며, 수익률 우위가 검증된 것은 아닙니다.</p>
+        <p className="mt-1 text-[11px] leading-5 text-slate-600">하락장에서는 네 모델 모두 신규 매수 판단에 주의가 필요합니다.</p>
       </section>
       <section className="tb-card min-w-0 p-4" aria-labelledby="home-performance-heading"><div className="flex justify-between gap-2"><h2 id="home-performance-heading" className="text-base font-semibold">최근 확정 1D 성과 · TOP5</h2><button type="button" onClick={onOpenPerformance} className="tb-focus rounded text-xs text-[var(--tb-orange)]">상세 →</button></div>
         {(["daily", "live"] as const).map((layer) => <div key={layer} className="mt-3"><p className="text-xs text-slate-600">{layer === "daily" ? "Daily EOD · 신호일 종가 → 다음 거래일 종가" : "14:30 LIVE · 별도 실행 계약"}</p><div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">{outcome?.[layer].map((row) => <div key={row.modelVersion} className="min-w-0 rounded-lg bg-[#f7f3eb] p-2 text-xs"><span className="font-medium">{row.modelVersion[0]}</span>{row.observationCount ? <><p className={"mt-1 font-semibold " + (Number(row.meanReturn) > 0 ? "text-red-600" : Number(row.meanReturn) < 0 ? "text-blue-600" : "text-slate-700")}>{pct(row.meanReturn)}</p><p className="mt-1 text-[10px] text-slate-600">관측 {row.observationCount}건 · 신호일 1개<br />신호 {row.signalDate}<br />종료 {row.resultDate ?? "미확인"}</p></> : <p className="mt-1 text-slate-600">데이터 축적 중</p>}</div>) ?? <p className="col-span-2 sm:col-span-4 text-xs text-slate-600">{performance.error ? "성과 조회 실패" : "확정 성과 확인 중"}</p>}</div></div>)}
