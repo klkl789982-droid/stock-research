@@ -68,7 +68,9 @@ async function main() {
           if (clockAttemptDate !== clock.date) { clockAttemptDate = clock.date; clockAttempts = 0; nextClockCheck = 0; }
           if (clock.time >= "13:59:00" && clock.time <= "14:05:00" && checkedClockDate !== clock.date) {
             if (clockAttempts >= 3 || Date.now() < nextClockCheck) { await wait(1000); continue; }
-            clockAttempts += 1; nextClockCheck = Date.now() + 60000;
+            // Keep all three bounded clock checks within the last-minute
+            // input refresh opportunity; a 60s backoff would miss 14:00.
+            clockAttempts += 1; nextClockCheck = Date.now() + 10000;
             try {
               const evidence = await inputs.verifyClock();
               await store.writeMutable("live/clock-status.json", { ...evidence, status: "VERIFIED", date: clock.date });

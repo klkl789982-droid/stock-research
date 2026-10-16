@@ -31,4 +31,6 @@ test("outbox queuing is independent of writer availability and survives startup"
   assert.match(code, /try \{ await enqueueStoredSiteDelivery\(store\); \}/);
   assert.match(code, /if \(siteWriter\) await retrySiteDeliveries/);
   assert.doesNotMatch(code, /if \(siteWriter &&/);
+  assert.match(code, /clockAttempts >= 3/);
+  assert.match(code, /clockAttempts \+= 1; nextClockCheck = Date.now\(\) \+ 10000/);
 });
