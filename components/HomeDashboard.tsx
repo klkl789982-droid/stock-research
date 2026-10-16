@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { dailyOperationState, latestOneDayPerformance, publicationReasonLabel, homeOperationStatus } from "../lib/home-dashboard.mjs";
 import { liveStatusLabel } from "../lib/intraday-model-top-time-policy.mjs";
 import HomeTransitionCard, { type HomeEodTransitions, type HomeTransitionNavigation } from "./HomeTransitionCard";
+import PrivateLiveDeliveryPanel from "./PrivateLiveDeliveryPanel";
 type Stock = { code: string; name: string; market?: string };
 type Ranked = Stock & { rank: number; score: number; previousRank?: number | null; rankChange?: number | null };
 type Model = { modelVersion: string; rankingUniverseCount: number; top: Ranked[]; comparisonStatus?: string; previousDate?: string | null };
@@ -63,6 +64,7 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
       <div><span className="text-slate-400">마지막 정상 저장 데이터</span><p className="mt-1">{operations.data?.lastGoodStoredReferenceDate ?? "확인 불가"}</p></div>
       <div><span className="text-slate-400">운영 상태</span><p className="mt-1">{labels[operation]}</p></div>
     </div>
+    <PrivateLiveDeliveryPanel />
     <div className="grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
       <div className="min-w-0 space-y-3">
       <section className="tb-card min-w-0 p-4" aria-labelledby="home-model-heading"><h2 id="home-model-heading" className="text-base font-semibold">모델 TOP3 · Daily EOD</h2><p className="mt-1 text-xs text-slate-600">동결된 모델 점수·순위 · {data?.models?.referenceDate ?? "조회 중"}</p>
