@@ -123,7 +123,7 @@ test("remote reader default disabled, sanitized failure, no cache and no automat
   const env = { PRIVATE_LIVE_DELIVERY_READ_ENABLED: "true", PRIVATE_LIVE_DELIVERY_REPOSITORY: "fixture/private", PRIVATE_LIVE_DELIVERY_READ_TOKEN: "FIXTURE_ONLY" };
   const response = await privateLiveDeliveryResponse(request, { env, fetchImpl: b.fetchImpl, now });
   assert.equal(response.status, 200); assert.match(response.headers.get("cache-control"), /no-store/);
-  assert.equal((await response.json()).freshnessStatus, "NOT_EVALUATED");
+  assert.equal((await response.json()).freshnessStatus, "HISTORICAL");
   assert.ok(b.methods.every(method => method === "GET"));
   b.options.deny = true;
   const failure = await privateLiveDeliveryResponse(request, { env, fetchImpl: b.fetchImpl, now });

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { dailyOperationState, latestOneDayPerformance, publicationReasonLabel, homeOperationStatus } from "../lib/home-dashboard.mjs";
 import { liveStatusLabel } from "../lib/intraday-model-top-time-policy.mjs";
 import HomeTransitionCard, { type HomeEodTransitions, type HomeTransitionNavigation } from "./HomeTransitionCard";
+import PrivateLiveDeliveryPanel from "./PrivateLiveDeliveryPanel";
 type Stock = { code: string; name: string; market?: string };
 type Ranked = Stock & { rank: number; score: number; previousRank?: number | null; rankChange?: number | null };
 type Model = { modelVersion: string; rankingUniverseCount: number; top: Ranked[]; comparisonStatus?: string; previousDate?: string | null };
@@ -13,7 +14,6 @@ type Performance = { daily: PerformanceRow[]; live?: { layer: string; executionP
 type Verification = { referenceDate: string; verifiedAt: string | null; runUrl: string; commitSha: string; snapshotHash: string };
 type Operations = { latestAttempt?: { status: string; conclusion: string | null; stage: string | null; startedAt: string; completedAt: string | null; runUrl: string } | null; lastAutomaticRunAt?: string | null; lastAutomaticRunConclusion?: string | null; lastSuccessAt?: string | null; lastGoodStoredReferenceDate?: string | null; siteApiReferenceDate?: string | null; publishedReferenceDate?: string | null; latestConfirmedTradingDate?: string | null; latestCollectedReferenceDate?: string | null; latestValidatedReferenceDate?: string | null; lastSourceCheckAt?: string | null; sourceStatus?: string; recentFailureReason?: string | null; freshnessStatus?: string; repositoryPublicationStatus?: string; repositoryStatusAvailable?: boolean; siteApiMatchesPublished?: boolean; runStatus?: string; lagTradingDays?: number | null; deployment?: { state: string; reason: string | null; lastVerified: Verification | null; verification?: Verification | null; checkedAt?: string | null; intendedIdentity?: { referenceDate: string; snapshotHash: string; commitSha: string } | null } };
 type LocalLive = { mode: "live" | "shadow"; status: string; signalDate?: string | null; collectionStartedAt?: string | null; collectionCompletedAt?: string | null; storedAt?: string | null; lastSuccessAt?: string | null; heartbeatAt?: string | null; queryVerifiedAt?: string | null; reason?: string | null; models: { model: string; modelVersion: string; signalDate: string; collectionStartedAt: string; collectionCompletedAt: string; records: { ticker: string; companyName: string; rank: number; score: number }[] }[] };
-type PrivateRelay = { status: string; source: string; servedAt: string; deliveryHash?: string; delivery: { signalDate?: string; deliveryHash?: string; models: LocalLive["models"] } | null };
 function useResource<T>(url: string) {
   const [state, setState] = useState<{ url: string; data: T | null; error: boolean } | null>(null);
   const sequence = useRef(0);
@@ -51,17 +51,6 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
   const operations = useResource<Operations>("/api/daily-production-status");
   const live = useResource<{ signalDate: string; collectionCompletedAt: string }>("/api/intraday-model-top?model=B&limit=1");
   const localLive = useResource<LocalLive>("/api/private-live");
-  const privateRelay = useResource<PrivateRelay>("/api/private-live-delivery");
-  const [readerProbe, setReaderProbe] = useState<"idle" | "checking" | "verified" | "failed">("idle");
-  const verifyReader = async () => {
-    if (readerProbe === "checking") return;
-    setReaderProbe("checking");
-    try {
-      const response = await fetch("/api/private-live-delivery", { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json" }, body: '{"action":"verify-read-only"}' });
-      const proof = await response.json();
-      setReaderProbe(response.ok && proof.permissionStatus === "READ_OK_WRITE_DENIED" && proof.writeDenied === true ? "verified" : "failed");
-    } catch { setReaderProbe("failed"); }
-  };
   const data = dashboard.data, transitions = data?.transitions;
   const outcome = performance.data ? latestOneDayPerformance(performance.data, 5) : null;
   const currentOperations = homeOperationStatus(operations.data, data, performance.data, { homeError: dashboard.error, performanceError: performance.error });
@@ -77,16 +66,7 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
       <div><span className="text-slate-400">마지막 정상 저장 데이터</span><p className="mt-1">{operations.data?.lastGoodStoredReferenceDate ?? "확인 불가"}</p></div>
       <div><span className="text-slate-400">운영 상태</span><p className="mt-1">{labels[operation]}</p></div>
     </div>
-    {privateRelay.data?.delivery && <section className="tb-card min-w-0 p-4" aria-label="비공개 저장소 전달 결과">
-      <h2 className="text-base font-semibold">{privateRelay.data.source === "privateRelayFixture" ? "합성 자료 · 비공개 연결 검증" : "비공개 LIVE 저장 순위"}</h2>
-      <p className="mt-1 text-xs text-slate-600">{privateRelay.data.source === "privateRelayFixture" ? "실제 시세·모델 순위·14:00 관측이 아닙니다. 공식 EOD와 성과 계산에 사용하지 않습니다." : `관측 기준일 ${privateRelay.data.delivery.signalDate} · 저장 결과이며 실시간 시세가 아닙니다. 최신성은 별도 확인이 필요합니다.`}</p>
-      <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">{privateRelay.data.delivery.models.map(model => <article key={model.model} className="min-w-0 rounded-lg bg-[#f7f3eb] p-3">
-        <h3 className="text-sm font-semibold">{model.model} · TOP5</h3>
-        <ol className="mt-2 space-y-2 text-xs">{model.records.map(row => <li key={row.ticker} className="flex justify-between gap-2"><span className="min-w-0 break-words">{row.rank}. {row.companyName}<span className="block text-slate-500">{row.ticker}</span></span><span className="tabular-nums">{row.score.toFixed(2)}</span></li>)}</ol>
-      </article>)}</div>
-      <details className="mt-3 text-xs text-slate-600"><summary className="tb-focus cursor-pointer rounded">전달 무결성 확인</summary><p className="mt-2 break-all">SHA256 {privateRelay.data.deliveryHash ?? privateRelay.data.delivery.deliveryHash}</p><p>인증 API 조회 시각 {time(privateRelay.data.servedAt)} · 관측 시각과 다름</p></details>
-      {privateRelay.data.source === "privateRelayFixture" && <div className="mt-3 text-xs"><button type="button" disabled={readerProbe === "checking" || readerProbe === "verified"} onClick={() => void verifyReader()} className="tb-focus rounded border px-3 py-2 disabled:opacity-60">읽기 전용 권한 검증</button><p role="status" className="mt-1 text-slate-600">{readerProbe === "verified" ? "원격 읽기·해시 일치 / 테스트 쓰기 403 차단 확인" : readerProbe === "checking" ? "테스트 경로에서만 권한 확인 중" : readerProbe === "failed" ? "읽기 전용 권한 미검증 · 설정 확인 필요" : "합성 테스트 경로에 1회 생성 요청을 보내 쓰기 거부를 확인합니다. 운영 경로는 변경하지 않습니다."}</p></div>}
-    </section>}
+    <PrivateLiveDeliveryPanel />
     <div className="grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
       <div className="min-w-0 space-y-3">
       <section className="tb-card min-w-0 p-4" aria-labelledby="home-model-heading"><h2 id="home-model-heading" className="text-base font-semibold">모델 TOP3 · Daily EOD</h2><p className="mt-1 text-xs text-slate-600">동결된 모델 점수·순위 · {data?.models?.referenceDate ?? "조회 중"}</p>

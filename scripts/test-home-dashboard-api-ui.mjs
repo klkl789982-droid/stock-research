@@ -83,12 +83,19 @@ new Function("require", "exports", compile(await readFile(new URL("../components
   if (name === "./useLiveTransitionRevalidation") return { useLiveTransitionRevalidation: () => ({ rootRef: { current: null }, refreshVersion: 0 }) };
   throw new Error(name);
 }, homeCard);
+const relayPanel = {};
+new Function("require", "exports", compile(await readFile(new URL("../components/PrivateLiveDeliveryPanel.tsx", import.meta.url), "utf8"), true))((name) => {
+  if (name === "react/jsx-runtime") return jsx;
+  if (name === "react") return React;
+  throw new Error(name);
+}, relayPanel);
 const render = (data = dashboard, failedPerformance = false, operationsInput = operations, failedHome = false, relay = null) => {
   const resources = [{ url: "/api/home-dashboard?topN=5", data, error: failedHome }, { url: "/api/model-performance", data: failedPerformance ? null : performance, error: failedPerformance }, { url: "/api/daily-production-status", data: operationsInput, error: false }, { url: "/api/intraday-model-top?model=B&limit=1", data: null, error: true }];
   let index = 0;
   resources.push({ url: "/api/private-live", data: null, error: false }, { url: "/api/private-live-delivery", data: relay, error: false });
   const uiExports = {};
   const requireUi = (name) => {
+    if (name === "./PrivateLiveDeliveryPanel") return { __esModule: true, default: () => React.createElement(relayPanel.PrivateLiveDeliveryView, { data: relay, disabled: !relay }) };
     if (name === "./HomeTransitionCard") return { __esModule: true, ...homeCard };
     if (name === "../lib/intraday-model-top-time-policy.mjs") return liveTiming;
     if (name === "react/jsx-runtime") return jsx;

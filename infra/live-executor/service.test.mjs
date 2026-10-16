@@ -21,10 +21,10 @@ test("private API credential is create-only, outside checkout and never regenera
 
 test("clock reference checks TLS date uncertainty, timeout/failure and clock jumps", async () => {
   const start = Date.parse("2026-10-12T05:29:00.000Z");
-  const response = (date, status = 200) => new Response(null, { status, headers: { date } });
+  const response = (date, status = 200) => new Response(null, { status, headers: { date, "cache-control": "no-cache" } });
   let clock = [start, start + 400];
   const good = await verifyHostClock({ now: () => clock.shift(), fetchImpl: async (url, init) => {
-    assert.equal(url, "https://api.github.com"); assert.equal(init.method, "HEAD"); assert.equal(init.headers, undefined);
+    assert.equal(url, "https://api.github.com/rate_limit"); assert.equal(init.method, "GET"); assert.equal(init.cache, "no-store"); assert.equal(init.headers["Cache-Control"], "no-cache");
     return response("Mon, 12 Oct 2026 05:29:00 GMT");
   } });
   assert.equal(good.offsetMs, -200); assert.equal(good.uncertaintyMs, 1200);
@@ -33,6 +33,10 @@ test("clock reference checks TLS date uncertainty, timeout/failure and clock jum
     await assert.rejects(verifyHostClock({ now: () => clock.shift(), fetchImpl: async () => response(date) }), new RegExp(reason));
   }
   await assert.rejects(verifyHostClock({ fetchImpl: async () => { throw new Error("must not leak upstream"); } }), /CLOCK_REFERENCE_UNAVAILABLE/u);
+  for (const headers of [{ "cache-control": "public, max-age=60" }, { "cache-control": "no-cache", age: "10" }]) {
+    clock = [start, start + 100];
+    await assert.rejects(verifyHostClock({ now: () => clock.shift(), fetchImpl: async () => new Response(null, { headers: { date: "Mon, 12 Oct 2026 05:29:00 GMT", ...headers } }) }), /CLOCK_REFERENCE_UNAVAILABLE/);
+  }
 });
 
 test("persistent service status is authenticated and contains only operational metadata", async (t) => {

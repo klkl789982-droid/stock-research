@@ -11,6 +11,7 @@ import { privateApiToken } from "./private-token.mjs";
 import { verifyPrivateQuery } from "./verify-query.mjs";
 import { enforceParentLease } from "./parent-lease.mjs";
 import { recordTop5SwingBatch } from "./swing-records.mjs";
+import { enqueueStoredSiteDelivery, retrySiteDeliveries, privateSiteWriter } from "./site-delivery-agent.mjs";
 
 enforceParentLease();
 
@@ -43,6 +44,7 @@ async function main() {
     return;
   }
   if (command === "daemon") {
+    const siteWriter = privateSiteWriter();
     await inputs.verifyFormula();
     console.log(JSON.stringify({ event: "executorStarted", scheduler: "localPersistentProcess", mode: "LIVE_PRIVATE_STORAGE", collectionWindow: "14:00:00-14:05:00 KST", publicationEnabled: process.env.LIVE_EXECUTOR_PUBLISH_ENABLED === "true" }));
     let stopping = false;
@@ -52,6 +54,7 @@ async function main() {
       const token = await privateApiToken(stateDir);
       const api = await startPrivateApi({ store, mode: "live", token, port });
       let lastHeartbeat = 0, lastVerifiedHash = (await store.read("live/query-verification.json"))?.contentHash;
+      let lastQueuedSource = null, nextSiteRetryAt = 0;
       await store.writeMutable("live/daemon-status.json", { heartbeatAt: new Date().toISOString(), scheduler: "localPersistentProcess", result: null, apiAvailable: true, publicationEnabled: process.env.LIVE_EXECUTOR_PUBLISH_ENABLED === "true" });
       lastHeartbeat = Date.now();
       let checkedClockDate = null, clockAttempts = 0, clockAttemptDate = null, nextClockCheck = 0;
@@ -76,6 +79,17 @@ async function main() {
           if (result?.status === "STORED" && result.contentHash !== lastVerifiedHash) {
             const verification = await verifyPrivateQuery({ api, token, mode: "live", store });
             lastVerifiedHash = verification.contentHash;
+          }
+          // Private score-only relay has its own opt-in, queue and retry budget.
+          // It cannot delay 13:59 refresh or the 14:00–14:05 collection window.
+          if (siteWriter && (result?.status === "STORED" || clock.time > "14:05:00" || clock.time < "13:30:00") && Date.now() >= nextSiteRetryAt) {
+            nextSiteRetryAt = Date.now() + 60000;
+            try {
+              if (result?.status === "STORED" && result.contentHash !== lastQueuedSource) {
+                await enqueueStoredSiteDelivery(store); lastQueuedSource = result.contentHash;
+              }
+              await retrySiteDeliveries(store, siteWriter);
+            } catch (error) { console.log(JSON.stringify({ event: "privateSiteRelayFailed", reason: safeReason(error), at: new Date().toISOString() })); }
           }
           // Older publication retries cannot delay the time-critical preparation/collection.
           if (clock.time < "13:30:00" || clock.time > "14:10:00") {

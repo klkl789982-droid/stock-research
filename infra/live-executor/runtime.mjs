@@ -12,13 +12,17 @@ const hash = (value) => createHash("sha256").update(value.replaceAll("\r\n", "\n
 export async function verifyHostClock({ fetchImpl = fetch, now = Date.now } = {}) {
   const startedAt = now();
   let response;
-  try { response = await fetchImpl("https://api.github.com", { method: "HEAD", redirect: "error", signal: AbortSignal.timeout(10000) }); }
+  // GitHub's root response is publicly cached for 60 seconds. Its Date header
+  // can therefore reject an accurately synchronized host. rate_limit explicitly
+  // responds no-cache; keep the original five-second error bound unchanged.
+  try { response = await fetchImpl("https://api.github.com/rate_limit", { method: "GET", cache: "no-store", headers: { "Cache-Control": "no-cache" }, redirect: "error", signal: AbortSignal.timeout(10000) }); await response.body?.cancel(); }
   catch { throw new Error("CLOCK_REFERENCE_UNAVAILABLE"); }
   const completedAt = now(), serverAt = Date.parse(response.headers.get("date")), elapsed = completedAt - startedAt;
-  if (!response.ok || !Number.isFinite(serverAt) || elapsed < 0 || elapsed > 5000) throw new Error("CLOCK_REFERENCE_UNAVAILABLE");
+  if (!response.ok || !/(?:^|,)\s*(?:no-cache|no-store)(?:\s|,|$)/iu.test(response.headers.get("cache-control") ?? "")
+    || Number(response.headers.get("age") ?? 0) > 0 || !Number.isFinite(serverAt) || elapsed < 0 || elapsed > 5000) throw new Error("CLOCK_REFERENCE_UNAVAILABLE");
   const offsetMs = Math.round(serverAt - (startedAt + completedAt) / 2), uncertaintyMs = Math.ceil(elapsed / 2) + 1000;
   if (Math.abs(offsetMs) + uncertaintyMs > 5000) throw new Error("HOST_CLOCK_OFFSET_EXCEEDED");
-  return { checkedAt: new Date(completedAt).toISOString(), reference: "githubTlsDateHeader", offsetMs, uncertaintyMs, roundTripMs: elapsed, maximumErrorMs: 5000 };
+  return { checkedAt: new Date(completedAt).toISOString(), reference: "githubUncachedTlsDateHeader", offsetMs, uncertaintyMs, roundTripMs: elapsed, maximumErrorMs: 5000 };
 }
 export function repositoryInputs(root, { remote = false, git: injectedGit, readFile = fs.readFile, now = Date.now } = {}) {
   const git = async (...args) => injectedGit ? injectedGit(args) : (await execute("git", ["-c", `safe.directory=${path.resolve(root).replaceAll("\\", "/")}`, ...args], { cwd: root, encoding: "utf8", maxBuffer: 64 * 1024 * 1024, timeout: 60000, windowsHide: true, env: { ...process.env, GIT_TERMINAL_PROMPT: "0" } })).stdout;
