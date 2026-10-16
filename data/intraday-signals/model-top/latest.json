@@ -1,35 +1,35 @@
 {
   "schemaVersion": 1,
   "artifactType": "intradayModelTopLatestStatus",
-  "signalDate": "2026-10-15",
+  "signalDate": "2026-10-16",
   "officialSignalTime": "14:30:00",
   "status": "READY",
-  "signalPath": "data/intraday-signals/model-top/2026-10-15/1430.json",
-  "contentHash": "3ec2c4dd5643faf9360a42e858cd4e5bb363e95b166567ff791dc8f9b1da859a",
+  "signalPath": "data/intraday-signals/model-top/2026-10-16/1430.json",
+  "contentHash": "61ef2b00a208f2a36655578fc4b8fbacdccb5a06d2cf1f2912c6d55daac91e2e",
   "collection": {
     "successful": 508,
     "failed": 0,
     "ineligible": 45
   },
-  "collectionStartedAt": "2026-10-15T05:30:00.086Z",
-  "collectionCompletedAt": "2026-10-15T05:34:07.734Z",
-  "updatedAt": "2026-10-15T09:54:07.530Z",
+  "collectionStartedAt": "2026-10-16T05:30:00.101Z",
+  "collectionCompletedAt": "2026-10-16T05:32:28.709Z",
+  "updatedAt": "2026-10-16T05:32:28.886Z",
   "operations": {
-    "scheduler": "github-schedule",
-    "scheduledAt": null,
-    "scriptStartedAt": "2026-10-15T09:54:07.456Z",
-    "runnerFirstStepAt": "2026-10-15T09:53:41.000Z",
-    "schedulerToScriptDelayMs": null,
-    "phase": "validation",
-    "firstDataRequestAt": null,
-    "lastDataRequestAt": null,
-    "lastDataResponseAt": null,
-    "calculationCompletedAt": null,
-    "storedAt": null
+    "scheduler": "cloudflare-live-prewarm",
+    "scheduledAt": "2026-10-16T05:12:53.000Z",
+    "scriptStartedAt": "2026-10-16T05:13:22.254Z",
+    "runnerFirstStepAt": "2026-10-16T05:13:03.000Z",
+    "schedulerToScriptDelayMs": 29254,
+    "phase": "storage",
+    "firstDataRequestAt": "2026-10-16T05:30:00.101Z",
+    "lastDataRequestAt": "2026-10-16T05:32:28.521Z",
+    "lastDataResponseAt": "2026-10-16T05:32:28.709Z",
+    "calculationCompletedAt": "2026-10-16T05:32:28.838Z",
+    "storedAt": "2026-10-16T05:32:28.886Z"
   },
-  "runStartedAt": "2026-10-15T09:54:07.456Z",
-  "trigger": "schedule",
-  "runId": "38716289756",
+  "runStartedAt": "2026-10-16T05:13:22.254Z",
+  "trigger": "workflow_dispatch",
+  "runId": "38854608501",
   "lastGood": {
     "signalDate": "2026-10-15",
     "signalPath": "data/intraday-signals/model-top/2026-10-15/1430.json",
@@ -37,5 +37,5 @@
     "collectionStartedAt": "2026-10-15T05:30:00.086Z",
     "collectionCompletedAt": "2026-10-15T05:34:07.734Z"
   },
-  "lastSuccessAt": "2026-10-15T05:34:07.734Z"
+  "lastSuccessAt": "2026-10-16T05:32:28.709Z"
 }
