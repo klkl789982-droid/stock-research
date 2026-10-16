@@ -3,6 +3,14 @@ import { useEffect, useState } from "react";
 
 type Model = { model: string; modelVersion: string; collectionStartedAt?: string; collectionCompletedAt?: string; records: { ticker: string; companyName: string; rank: number; score: number }[] };
 type Relay = { status: string; source: string; servedAt: string; freshnessStatus?: string; deliveryHash?: string; delivery: { signalDate?: string; exportedAt?: string; deliveryHash?: string; models: Model[] } | null };
+export type PrivateRelayState = { data: Relay | null; failed: boolean; disabled: boolean };
+export function privateRelaySummary(state: PrivateRelayState) {
+  if (state.failed) return "조회 실패 · 최신 상태 미확인";
+  if (state.disabled) return "전달 연결 비활성";
+  if (state.data?.source === "privateRelayFixture") return "합성 연결 검증 · 실제 관측 아님";
+  if (state.data?.delivery) return `저장 관측 · ${state.data.delivery.signalDate}${state.data.freshnessStatus === "HISTORICAL" ? " · 이전 날짜" : " · 최신성 별도 확인"}`;
+  return state.data ? "관측 대기 · 전달된 결과 없음" : "인증된 전달 결과 확인 중";
+}
 const time = (value?: string) => value && Number.isFinite(Date.parse(value)) ? new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", dateStyle: "short", timeStyle: "medium" }).format(new Date(value)) + " KST" : "확인 불가";
 
 export function PrivateLiveDeliveryView({ data, failed = false, disabled = false }: { data: Relay | null; failed?: boolean; disabled?: boolean }) {
@@ -29,9 +37,10 @@ export function PrivateLiveDeliveryView({ data, failed = false, disabled = false
   </section>;
 }
 
-export default function PrivateLiveDeliveryPanel() {
-  const [state, setState] = useState<{ data: Relay | null; failed: boolean; disabled: boolean }>({ data: null, failed: false, disabled: false });
+export function usePrivateLiveDelivery(enabled = true) {
+  const [state, setState] = useState<PrivateRelayState>({ data: null, failed: false, disabled: false });
   useEffect(() => {
+    if (!enabled) return;
     const controller = new AbortController(); let busy = false;
     async function load() {
       if (busy) return; busy = true;
@@ -45,6 +54,10 @@ export default function PrivateLiveDeliveryPanel() {
     }
     void load(); const timer = setInterval(() => void load(), 60000);
     return () => { controller.abort(); clearInterval(timer); };
-  }, []);
-  return <PrivateLiveDeliveryView {...state} />;
+  }, [enabled]);
+  return state;
+}
+export default function PrivateLiveDeliveryPanel({ state }: { state?: PrivateRelayState }) {
+  const local = usePrivateLiveDelivery(!state);
+  return <PrivateLiveDeliveryView {...state ?? local} />;
 }

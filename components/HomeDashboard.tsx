@@ -1,9 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { dailyOperationState, latestOneDayPerformance, publicationReasonLabel, homeOperationStatus } from "../lib/home-dashboard.mjs";
-import { liveStatusLabel } from "../lib/intraday-model-top-time-policy.mjs";
 import HomeTransitionCard, { type HomeEodTransitions, type HomeTransitionNavigation } from "./HomeTransitionCard";
-import PrivateLiveDeliveryPanel from "./PrivateLiveDeliveryPanel";
+import PrivateLiveDeliveryPanel, { usePrivateLiveDelivery, privateRelaySummary } from "./PrivateLiveDeliveryPanel";
 type Stock = { code: string; name: string; market?: string };
 type Ranked = Stock & { rank: number; score: number; previousRank?: number | null; rankChange?: number | null };
 type Model = { modelVersion: string; rankingUniverseCount: number; top: Ranked[]; comparisonStatus?: string; previousDate?: string | null };
@@ -48,23 +47,24 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
   const dashboard = useResource<Dashboard>("/api/home-dashboard?topN=5");
   const performance = useResource<Performance>("/api/model-performance");
   const operations = useResource<Operations>("/api/daily-production-status");
+  const privateRelay = usePrivateLiveDelivery();
   const live = useResource<{ signalDate: string; collectionCompletedAt: string }>("/api/intraday-model-top?model=B&limit=1");
   const data = dashboard.data, transitions = data?.transitions;
   const outcome = performance.data ? latestOneDayPerformance(performance.data, 5) : null;
   const currentOperations = homeOperationStatus(operations.data, data, performance.data, { homeError: dashboard.error, performanceError: performance.error });
   const operation = dailyOperationState(currentOperations, data?.calendar);
-  const liveStatus = liveStatusLabel(data?.liveStatus) ?? (live.data ? "최근 관측 " + live.data.signalDate : "관측 대기 / 확인 불가");
+  const liveStatus = privateRelaySummary(privateRelay);
   const stockButton = (stock: Stock) => <button type="button" onClick={() => void onSelectStock(stock)} className="tb-focus pointer-events-auto min-w-0 rounded text-left hover:text-[var(--tb-orange)]"><span className="block truncate font-medium">{stock.name}</span><span className="text-[10px] text-slate-600">{stock.code}</span></button>;
   return <section className="space-y-3" aria-labelledby="home-dashboard-heading">
     <div className="flex flex-wrap items-center justify-between gap-2 text-slate-100"><h1 id="home-dashboard-heading" className="text-xl font-medium">홈</h1><button type="button" onClick={onOpenSearch} className="tb-focus rounded-lg bg-[var(--tb-orange)] px-4 py-2 text-sm text-white">종목 검색 →</button></div>
     <div className="tb-market-status-panel grid gap-2 rounded-xl px-3 py-3 text-xs text-slate-200 sm:grid-cols-2 xl:grid-cols-5" aria-label="데이터 최신성 요약">
       <div><span className="text-slate-400">공식 EOD</span><p className="mt-1 font-medium">{data?.referenceDate ?? "확인 불가"}</p></div>
       <div><span className="text-slate-400">모델 TOP 갱신</span><p className="mt-1">{data?.models ? "저장 순위 · " + data.models.referenceDate : "검증 불가"}</p></div>
-      <div><span className="text-slate-400">14:30 LIVE</span><p className="mt-1">{liveStatus}</p><p className="mt-1 text-[10px] text-slate-400">상태 기준일 {data?.liveStatus?.signalDate ?? "확인 불가"} · 마지막 정상 관측 {live.data?.signalDate ?? data?.liveStatus?.lastGoodDate ?? "없음 / 미확인"}</p></div>
-      <div><span className="text-slate-400">마지막 정상 저장 데이터</span><p className="mt-1">{operations.data?.lastGoodStoredReferenceDate ?? "확인 불가"}</p></div>
-      <div><span className="text-slate-400">운영 상태</span><p className="mt-1">{labels[operation]}</p></div>
+      <div><span className="text-slate-400">14:00 LIVE · 비공개 전달</span><p className="mt-1">{liveStatus}</p><p className="mt-1 text-[10px] text-slate-400">마지막 유효 관측 완료 {time(privateRelay.data?.delivery?.models[0]?.collectionCompletedAt)} · PC 실행 상태와 별도</p></div>
+      <div><span className="text-slate-400">공식 EOD 마지막 저장</span><p className="mt-1">{operations.data?.lastGoodStoredReferenceDate ?? "확인 불가"}</p></div>
+      <div><span className="text-slate-400">EOD 운영 상태</span><p className="mt-1">{labels[operation]}</p></div>
     </div>
-    <PrivateLiveDeliveryPanel />
+    <PrivateLiveDeliveryPanel state={privateRelay} />
     <div className="grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
       <div className="min-w-0 space-y-3">
       <section className="tb-card min-w-0 p-4" aria-labelledby="home-model-heading"><h2 id="home-model-heading" className="text-base font-semibold">모델 TOP3 · Daily EOD</h2><p className="mt-1 text-xs text-slate-600">동결된 모델 점수·순위 · {data?.models?.referenceDate ?? "조회 중"}</p>
@@ -80,14 +80,14 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
         <p className="mt-1 text-[11px] leading-5 text-slate-600">하락장에서는 네 모델 모두 신규 매수 판단에 주의가 필요합니다.</p>
       </section>
       <section className="tb-card min-w-0 p-4" aria-labelledby="home-performance-heading"><div className="flex justify-between gap-2"><h2 id="home-performance-heading" className="text-base font-semibold">최근 확정 1D 성과 · TOP5</h2><button type="button" onClick={onOpenPerformance} className="tb-focus rounded text-xs text-[var(--tb-orange)]">상세 →</button></div>
-        {(["daily", "live"] as const).map((layer) => <div key={layer} className="mt-3"><p className="text-xs text-slate-600">{layer === "daily" ? "Daily EOD · 신호일 종가 → 다음 거래일 종가" : "14:30 LIVE · 별도 실행 계약"}</p><div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">{outcome?.[layer].map((row) => <div key={row.modelVersion} className="min-w-0 rounded-lg bg-[#f7f3eb] p-2 text-xs"><span className="font-medium">{row.modelVersion[0]}</span>{row.observationCount ? <><p className={"mt-1 font-semibold " + (Number(row.meanReturn) > 0 ? "text-red-600" : Number(row.meanReturn) < 0 ? "text-blue-600" : "text-slate-700")}>{pct(row.meanReturn)}</p><p className="mt-1 text-[10px] text-slate-600">관측 {row.observationCount}건 · 신호일 1개<br />신호 {row.signalDate}<br />종료 {row.resultDate ?? "미확인"}</p></> : <p className="mt-1 text-slate-600">데이터 축적 중</p>}</div>) ?? <p className="col-span-2 sm:col-span-4 text-xs text-slate-600">{performance.error ? "성과 조회 실패" : "확정 성과 확인 중"}</p>}</div></div>)}
+        {(["daily", "live"] as const).map((layer) => <div key={layer} className="mt-3"><p className="text-xs text-slate-600">{layer === "daily" ? "Daily EOD · 신호일 종가 → 다음 거래일 종가" : "과거 14:30 LIVE 성과 · 기존 별도 계약"}</p><div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">{outcome?.[layer].map((row) => <div key={row.modelVersion} className="min-w-0 rounded-lg bg-[#f7f3eb] p-2 text-xs"><span className="font-medium">{row.modelVersion[0]}</span>{row.observationCount ? <><p className={"mt-1 font-semibold " + (Number(row.meanReturn) > 0 ? "text-red-600" : Number(row.meanReturn) < 0 ? "text-blue-600" : "text-slate-700")}>{pct(row.meanReturn)}</p><p className="mt-1 text-[10px] text-slate-600">관측 {row.observationCount}건 · 신호일 1개<br />신호 {row.signalDate}<br />종료 {row.resultDate ?? "미확인"}</p></> : <p className="mt-1 text-slate-600">데이터 축적 중</p>}</div>) ?? <p className="col-span-2 sm:col-span-4 text-xs text-slate-600">{performance.error ? "성과 조회 실패" : "확정 성과 확인 중"}</p>}</div></div>)}
         <p className="mt-2 text-[10px] text-slate-600">신호일별 최신 확정 단면 · 독립 표본 아님 · 모델 우열 판정 없음</p><button type="button" onClick={onOpenPerformance} className="tb-focus mt-2 rounded text-xs text-slate-600">5D / 20D 성과 →</button>
       </section>
       </div>
       <div className="min-w-0 space-y-3">
-      <HomeTransitionCard transitions={transitions ?? null} eodError={dashboard.error} onSelectStock={onSelectStock} onOpenTransition={onOpenTransition} />
+      <details className="tb-card p-3 text-xs text-slate-700"><summary className="tb-focus cursor-pointer rounded">과거 14:30 전환 분석 · archive</summary><p className="my-2">기존 저장 관측의 과거 분석입니다. 새 14:00 결과가 아니며, 부분 수집·REJECTED 집계는 정상 최신 결과가 아닙니다.</p><HomeTransitionCard transitions={transitions ?? null} eodError={dashboard.error} onSelectStock={onSelectStock} onOpenTransition={onOpenTransition} /></details>
       <section className="tb-card min-w-0 p-4" aria-labelledby="home-operations-heading">
-        <h2 id="home-operations-heading" className="text-base font-semibold">데이터 갱신 상태</h2>
+        <h2 id="home-operations-heading" className="text-base font-semibold">공식 EOD 운영 상태</h2>
         <p role="status" className="mt-2 text-sm font-semibold">{operations.error ? "운영 상태 조회 실패" : labels[operation]}</p>
         <ol className="mt-3 space-y-2 text-xs text-slate-700" aria-label="데이터 게시 단계">
           <li>1. 원본 확인 · {operations.data?.sourceStatus === "NO_NEW_DATA" ? "추가 원본 대기" : operations.data?.sourceStatus === "AVAILABLE" ? "원본 확인" : "확인 불가"}<br /><span className="text-slate-500">마지막 원본 조회 {time(operations.data?.lastSourceCheckAt)}</span></li>
@@ -110,11 +110,11 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
           <div><dt>게시 증거 조회</dt><dd>{time(operations.data?.deployment?.checkedAt)} · GitHub 기록은 최대 10분 지연될 수 있음</dd></div>
         </dl><p className="mt-2">실제 사이트 확인은 홈·TOP·성과·운영 API의 최신 EOD 기준일·내용 해시와 배포 커밋을 함께 대조합니다. 저장 성공이나 날짜 일치만으로 확인 완료가 되지 않습니다.</p><p className="mt-2">KIS 잠정 EOD: 비공개 · 공개 연결 비활성. KOSPI/KOSDAQ/USD-KRW/거래대금: 미연결 · 숫자 미표시.</p></details>
       </section>
-      <details className="tb-card p-3 text-xs text-slate-700"><summary className="tb-focus cursor-pointer rounded">LIVE 실행 시각 · 상태 상세</summary>
+      <details className="tb-card p-3 text-xs text-slate-700"><summary className="tb-focus cursor-pointer rounded">과거 14:30 실행 기록 · 운영 종료</summary>
         <dl className="mt-2 space-y-2">
           <div><dt>예약 / runner 첫 단계 시작</dt><dd>{time(data?.liveStatus?.scheduledAt)} / {time(data?.liveStatus?.runnerFirstStepAt)}</dd></div>
           <div><dt>수집 스크립트 시작</dt><dd>{time(data?.liveStatus?.runStartedAt)}</dd></div>
-          <div><dt>다음 GitHub 예약 (휴장 판정·지연 가능)</dt><dd>{time(data?.liveStatus?.nextScheduledAt)}</dd></div>
+          <div><dt>이전 GitHub 예약 정보 (현재 비활성)</dt><dd>{time(data?.liveStatus?.nextScheduledAt)}</dd></div>
           <div><dt>마지막 정상 관측 완료</dt><dd>{time(live.data?.collectionCompletedAt ?? data?.liveStatus?.lastSuccessAt)}</dd></div>
           <div><dt>최근 artifact 저장 (게시 성공과 다름)</dt><dd>{time(data?.liveStatus?.storedAt)}</dd></div>
         </dl><p className="mt-2">GitHub 게시 및 Vercel API 확인 결과는 해당 Actions 실행 로그에서 별도로 검증합니다.</p>

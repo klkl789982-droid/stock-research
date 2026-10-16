@@ -5,7 +5,7 @@ import { createKisSource } from "./kis-source.mjs";
 const DATE = "2026-10-12";
 const response = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 const quotePayload = (code) => ({ rt_cd: "0", output: { stck_shrn_iscd: code, stck_prpr: "101", stck_oprc: "100", stck_hgpr: "102", stck_lwpr: "99", acml_vol: "1000", prdy_vrss: "1", prdy_ctrt: "1" } });
-function harness({ at = `${DATE}T05:30:00.000Z`, override, minuteTime = "143000", options = {} } = {}) {
+function harness({ at = `${DATE}T05:00:00.000Z`, override, minuteTime = "140000", options = {} } = {}) {
   let clock = Date.parse(at);
   const calls = [], events = [];
   const source = createKisSource({ credentials: { appKey: "fixture-key", appSecret: "fixture-secret" }, now: () => clock,
@@ -29,7 +29,7 @@ test("reuses KIS authentication/calendar/quote parsers and preserves actual requ
   assert.equal((await source.calendar(DATE)).isTradingDay, true);
   const quote = await source.collectQuote("005930", { date: DATE, live: true });
   assert.equal(quote.asOfDate, DATE);
-  assert.equal(quote.asOfTime, "14:30:00");
+  assert.equal(quote.asOfTime, "14:00:00");
   assert.equal(quote.code, "005930");
   assert.equal(quote.receivedAt, quote.responseAt);
   assert.ok(Date.parse(quote.minuteRequestedAt) >= Date.parse(quote.responseAt));
@@ -51,14 +51,14 @@ test("parallel collectors share a 5-request/second start budget and one token", 
 });
 
 test("LIVE rejects before-window, late and weekend collection without authentication", async () => {
-  for (const [at, date] of [[`${DATE}T05:29:59Z`, DATE], [`${DATE}T05:35:01Z`, DATE], ["2026-10-11T05:30:00Z", "2026-10-11"]]) {
+  for (const [at, date] of [[`${DATE}T04:59:59Z`, DATE], [`${DATE}T05:05:01Z`, DATE], ["2026-10-11T05:00:00Z", "2026-10-11"]]) {
     const { source, calls } = harness({ at });
     await assert.rejects(source.collectQuote("005930", { date }), /KIS_QUOTE_COLLECTION_WINDOW_EXPIRED/u);
     assert.equal(calls.length, 0);
   }
 });
 
-test("shadow retains an actual off-window minute timestamp without inventing 14:30", async () => {
+test("shadow retains an actual off-window minute timestamp without inventing 14:00", async () => {
   const { source } = harness({ at: `${DATE}T09:00:00Z`, minuteTime: "153000" });
   const quote = await source.collectQuote("005930", { date: DATE, live: false });
   assert.equal(quote.asOfTime, "15:30:00");
@@ -66,7 +66,7 @@ test("shadow retains an actual off-window minute timestamp without inventing 14:
 });
 
 test("LIVE rejects stale minute timestamps and contradictory quote dates", async () => {
-  const stale = harness({ minuteTime: "142900" });
+  const stale = harness({ minuteTime: "135900" });
   await assert.rejects(stale.source.collectQuote("005930", { date: DATE }), /KIS_QUOTE_TIMESTAMP_OUTSIDE_WINDOW/u);
   const mismatch = harness({ override: ({ kind }) => kind === "inquire-price" ? response({ ...quotePayload("005930"), output: { ...quotePayload("005930").output, stck_bsop_date: "20261008" } }) : null });
   await assert.rejects(mismatch.source.collectQuote("005930", { date: DATE }), /KIS_QUOTE_DATE_MISMATCH/u);
@@ -86,13 +86,13 @@ test("retries rate limits and HTTP server failures only once", async () => {
 });
 
 test("window is checked after token acquisition and again before retry and minute request", async () => {
-  const tokenDelay = harness({ at: `${DATE}T05:34:59Z`, override: ({ kind, advance }) => { if (kind === "tokenP") advance(2000); } });
+  const tokenDelay = harness({ at: `${DATE}T05:04:59Z`, override: ({ kind, advance }) => { if (kind === "tokenP") advance(2000); } });
   await assert.rejects(tokenDelay.source.collectQuote("005930", { date: DATE }), /KIS_QUOTE_COLLECTION_WINDOW_EXPIRED/u);
   assert.equal(tokenDelay.calls.some((call) => call.kind === "inquire-price"), false);
-  const retryLate = harness({ at: `${DATE}T05:34:59.800Z`, override: ({ kind }) => kind === "inquire-price" ? response({}, 503) : null });
+  const retryLate = harness({ at: `${DATE}T05:04:59.800Z`, override: ({ kind }) => kind === "inquire-price" ? response({}, 503) : null });
   await assert.rejects(retryLate.source.collectQuote("005930", { date: DATE }), /KIS_QUOTE_COLLECTION_WINDOW_EXPIRED/u);
   assert.equal(retryLate.calls.filter((call) => call.kind === "inquire-price").length, 1);
-  const minuteLate = harness({ at: `${DATE}T05:34:59Z`, override: ({ kind, advance }) => { if (kind === "inquire-price") advance(2000); } });
+  const minuteLate = harness({ at: `${DATE}T05:04:59Z`, override: ({ kind, advance }) => { if (kind === "inquire-price") advance(2000); } });
   await assert.rejects(minuteLate.source.collectQuote("005930", { date: DATE }), /KIS_QUOTE_COLLECTION_WINDOW_EXPIRED/u);
   assert.equal(minuteLate.calls.some((call) => call.kind === "inquire-time-itemchartprice"), false);
 });
@@ -110,4 +110,49 @@ test("invalid credentials, ticker, date and unsafe rate settings fail closed", a
   await assert.rejects(source.collectQuote("../secret", { date: DATE }), /KIS_SOURCE_REQUEST_INVALID/u);
   await assert.rejects(source.collectQuote("005930", { date: "2026-10-11", live: false }), /KIS_QUOTE_DATE_MISMATCH/u);
   assert.equal(calls.length, 0);
+});
+
+test("a delayed source retains 14:00:30 while a five-minute delay plus expiry makes no requests", async () => {
+  const delayed = harness({ at: `${DATE}T05:00:30Z`, minuteTime: "140030" });
+  assert.equal((await delayed.source.collectQuote("005930", { date: DATE })).asOfTime, "14:00:30");
+  const expired = harness({ at: `${DATE}T05:05:01Z` });
+  await assert.rejects(expired.source.collectQuote("005930", { date: DATE }), /KIS_QUOTE_COLLECTION_WINDOW_EXPIRED/u);
+  assert.equal(expired.calls.length, 0);
+});
+
+test("header and body timeouts are bounded and preserve the timeout code without upstream details", async () => {
+  for (const phase of ["headers", "body"]) {
+    const { source, calls, events } = harness({ options: { timeoutMs: 15 }, override: async ({ kind, init }) => {
+      if (kind !== "inquire-price") return null;
+      const error = new Error("PRIVATE_TRANSPORT_DETAIL");
+      if (phase === "headers") return new Promise((resolve, reject) => {
+        void resolve;
+        init.signal.addEventListener("abort", () => reject(error), { once: true });
+      });
+      return new Response(new ReadableStream({ start(controller) {
+        init.signal.addEventListener("abort", () => controller.error(error), { once: true });
+      } }), { status: 200 });
+    } });
+    await assert.rejects(source.collectQuote("005930", { date: DATE }), (error) => error.message === "KIS_SOURCE_TIMEOUT");
+    assert.equal(calls.filter((call) => call.kind === "inquire-price").length, 2);
+    assert.equal(source.getMetrics().retries, 1);
+    assert.equal(source.getMetrics().failures, 2);
+    assert.equal(JSON.stringify(events).includes("PRIVATE_TRANSPORT_DETAIL"), false);
+  }
+});
+
+test("a transient timeout can recover and a window-expired paced request is never retried", async () => {
+  const recovered = harness({ options: { timeoutMs: 15 }, override: async ({ kind, count, init }) => {
+    if (kind === "inquire-price" && count === 1) return new Promise((resolve, reject) => {
+      void resolve;
+      init.signal.addEventListener("abort", () => reject(new Error("timeout fixture")), { once: true });
+    });
+    return null;
+  } });
+  assert.equal((await recovered.source.collectQuote("005930", { date: DATE })).code, "005930");
+  assert.equal(recovered.source.getMetrics().retries, 1);
+  const expired = harness({ at: `${DATE}T05:04:59Z`, override: ({ kind, advance }) => { if (kind === "tokenP") advance(2000); } });
+  await assert.rejects(expired.source.collectQuote("005930", { date: DATE }), /KIS_QUOTE_COLLECTION_WINDOW_EXPIRED/u);
+  assert.equal(expired.source.getMetrics().retries, 0);
+  assert.equal(expired.calls.some((call) => call.kind === "inquire-price"), false);
 });

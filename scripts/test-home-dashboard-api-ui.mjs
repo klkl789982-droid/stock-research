@@ -72,6 +72,7 @@ const render = (data = dashboard, failedPerformance = false, operationsInput = o
   let index = 0;
   const uiExports = {};
   const requireUi = (name) => {
+    if (name === "./PrivateLiveDeliveryPanel") return { __esModule: true, default: () => null, usePrivateLiveDelivery: () => ({ data: null, failed: false, disabled: false }), privateRelaySummary: () => "관측 대기 · 전달된 결과 없음" };
     if (name === "./HomeTransitionCard") return { __esModule: true, ...homeCard };
     if (name === "../lib/intraday-model-top-time-policy.mjs") return liveTiming;
     if (name === "react/jsx-runtime") return jsx;
@@ -112,7 +113,7 @@ for (const output of [allModelsHtml, render(null), render(null, false, operation
 assert.ok(render(null, false, operations, true).includes("순위 조회 실패"));
 const emptyModel = render({ ...dashboard, models: { ...dashboard.models, models: [{ ...model, modelVersion: "C-v1", top: [] }] } });
 assert.ok(emptyModel.includes(modelUsage["C-v1"]) && emptyModel.includes("분석 가능한 종목 없음"));
-for (const text of ["홈", "모델 TOP3", "긴종목명검증", "000660", "골든크로스 접근", "골든크로스 확인", "해당 조건 종목 없음", "508/553", "미연결", "데이터 축적 중", "-1.25%", "관측 4건", "수집·검증 실패", "확인 불가", "Daily EOD", "14:30 LIVE", "REJECTED", "↑2"]) assert.ok(html.includes(text), text);
+for (const text of ["홈", "모델 TOP3", "긴종목명검증", "000660", "골든크로스 접근", "골든크로스 확인", "해당 조건 종목 없음", "508/553", "미연결", "데이터 축적 중", "-1.25%", "관측 4건", "관측 대기 · 전달된 결과 없음", "확인 불가", "Daily EOD", "14:30 LIVE", "REJECTED", "↑2"]) assert.ok(html.includes(text), text);
 assert.ok(render(dashboard, true).includes("성과 조회 실패"));
 assert.ok(render({ ...dashboard, transitions: null }).includes("전환 지표 데이터 없음"));
 const noComparison = render({ ...dashboard, models: { ...dashboard.models, models: [{ ...model, comparisonStatus: "UNAVAILABLE", comparisonReason: "FORMULA_PROVENANCE_CHANGED_OR_MISSING" }] } });
@@ -128,7 +129,7 @@ for (const altered of [{ ...dashboard, models: null }, { ...dashboard, dataIdent
   const output = render(altered, false, verified); assert.doesNotMatch(output, /실제 사이트 확인 완료/u); assert.ok(output.includes("확인 기록"));
 }
 const verifiedHtml = render(dashboard, false, verified);
-for (const text of ["데이터 갱신 상태", "원본 대기", "수집·검증 완료", "저장소 게시", "실제 사이트 확인 완료", "마지막 정상 저장 데이터", "마지막 실제 사이트 확인", "다음 영업일 13시 이후", "도착 시각은 보장되지 않습니다"]) assert.ok(verifiedHtml.includes(text), text);
+for (const text of ["공식 EOD 운영 상태", "원본 대기", "수집·검증 완료", "저장소 게시", "실제 사이트 확인 완료", "마지막 정상 저장 데이터", "마지막 실제 사이트 확인", "다음 영업일 13시 이후", "도착 시각은 보장되지 않습니다"]) assert.ok(verifiedHtml.includes(text), text);
 assert.doesNotMatch(render(dashboard, false, operations), /실제 사이트 확인 완료/u, "Legacy published date and success never render green");
 for (const [state, reason, label] of [["DEPLOYMENT_FAILED", "VERCEL_DEPLOYMENT_FAILED", "Git 저장 후 Vercel 배포 실패"], ["VERIFICATION_FAILED", "HTTP_401", "사이트 검증 인증 실패 (401)"], ["VERIFICATION_FAILED", "HTTP_403", "사이트 검증 접근 거부 (403)"], ["VERIFICATION_FAILED", "REQUEST_TIMEOUT", "사이트 검증 응답 시간 초과"], ["UNVERIFIED", "GITHUB_403", "배포 증거 조회 제한 (403)"]]) {
   const output = render(dashboard, false, { ...verified, deployment: { ...verified.deployment, state, reason } });

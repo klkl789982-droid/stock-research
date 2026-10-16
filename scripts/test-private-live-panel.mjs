@@ -22,3 +22,8 @@ assert.match(historical, /이전 날짜 저장 기록/); assert.match(historical
 assert.match(historical, /실제 관측 구간/); assert.match(historical, /전달 파일 생성/); assert.match(historical, /사이트 조회/);
 assert.doesNotMatch(historical, /읽기 전용 권한 검증|오늘.*정상|기대수익|상승 확률/);
 console.log("private relay panel: unavailable, failure, synthetic separation, historical timestamps and score-only TOP5 passed");
+const waiting = { data: { status: "UNAVAILABLE", delivery: null }, failed: false, disabled: false };
+assert.match(panelExports.privateRelaySummary(waiting), /관측 대기/);
+assert.match(panelExports.privateRelaySummary({ ...waiting, failed: true }), /조회 실패/);
+assert.match(panelExports.privateRelaySummary({ ...waiting, data: { source: "privateRelayFixture", delivery: fixture } }), /합성.*실제 관측 아님/);
+assert.match(panelExports.privateRelaySummary({ ...waiting, data: { source: "privateLiveRelay", freshnessStatus: "HISTORICAL", delivery: { signalDate: "2026-10-16" } } }), /2026-10-16.*이전 날짜/);

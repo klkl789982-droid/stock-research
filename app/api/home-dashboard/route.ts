@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { getHomeDashboard } from "@/lib/home-dashboard-store.mjs";
-import { nextProductionSchedule } from "@/lib/production-schedule.mjs";
 const timestamp = (value: unknown) => typeof value === "string" && Number.isFinite(Date.parse(value)) ? value : null;
 
 async function handleGet(request: NextRequest) {
@@ -17,7 +16,7 @@ async function handleGet(request: NextRequest) {
         status: ["READY", "FAILED", "FAILED_COLLECTION", "WAITING", "MARKET_CLOSED"].includes(value.status) ? value.status : "UNKNOWN",
         reason: ["OFFICIAL_SIGNAL_OUTSIDE_COLLECTION_WINDOW", "LIVE_TRADING_CALENDAR_UNAVAILABLE", "QUOTE_COLLECTION_WINDOW_EXPIRED"].includes(value.reason) ? value.reason : null,
         failureStage: ["calendar", "collection", "calculation", "validation", "storage", "publication"].includes(value.failureStage) ? value.failureStage : null,
-        runStartedAt: timestamp(value.runStartedAt), nextScheduledAt: nextProductionSchedule("LIVE"),
+        runStartedAt: timestamp(value.runStartedAt), nextScheduledAt: null, archive: true, producerActive: false,
         signalDate: /^\d{4}-\d{2}-\d{2}$/u.test(value.signalDate) ? value.signalDate : null, updatedAt: timestamp(value.updatedAt),
         lastSuccessAt: timestamp(value.lastSuccessAt), lastGoodDate: /^\d{4}-\d{2}-\d{2}$/u.test(value.lastGood?.signalDate) ? value.lastGood.signalDate : null,
         scheduledAt: timestamp(value.operations?.scheduledAt), storedAt: timestamp(value.operations?.storedAt),
