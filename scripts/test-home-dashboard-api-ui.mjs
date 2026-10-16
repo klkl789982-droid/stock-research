@@ -9,6 +9,7 @@ import * as helpers from "../lib/home-dashboard.mjs";
 import * as directional from "../lib/directional-transition.mjs";
 import * as schedule from "../lib/production-schedule.mjs";
 import * as liveTiming from "../lib/intraday-model-top-time-policy.mjs";
+import { createDeliveryFixture, deliveryFixtureHash } from "../lib/private-live-delivery-fixture.mjs";
 
 const compile = (source, jsxFile = false) => ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true, ...(jsxFile ? { jsx: ts.JsxEmit.ReactJSX } : {}) } }).outputText;
 const source = await readFile(new URL("../app/api/home-dashboard/route.ts", import.meta.url), "utf8");
@@ -82,9 +83,10 @@ new Function("require", "exports", compile(await readFile(new URL("../components
   if (name === "./useLiveTransitionRevalidation") return { useLiveTransitionRevalidation: () => ({ rootRef: { current: null }, refreshVersion: 0 }) };
   throw new Error(name);
 }, homeCard);
-const render = (data = dashboard, failedPerformance = false, operationsInput = operations, failedHome = false) => {
+const render = (data = dashboard, failedPerformance = false, operationsInput = operations, failedHome = false, relay = null) => {
   const resources = [{ url: "/api/home-dashboard?topN=5", data, error: failedHome }, { url: "/api/model-performance", data: failedPerformance ? null : performance, error: failedPerformance }, { url: "/api/daily-production-status", data: operationsInput, error: false }, { url: "/api/intraday-model-top?model=B&limit=1", data: null, error: true }];
   let index = 0;
+  resources.push({ url: "/api/private-live", data: null, error: false }, { url: "/api/private-live-delivery", data: relay, error: false });
   const uiExports = {};
   const requireUi = (name) => {
     if (name === "./HomeTransitionCard") return { __esModule: true, ...homeCard };
@@ -150,4 +152,10 @@ for (const [state, reason, label] of [["DEPLOYMENT_FAILED", "VERCEL_DEPLOYMENT_F
   assert.ok(output.includes(label)); assert.ok(output.includes("2026-10-07")); assert.ok(output.includes("확인 기록"));
   assert.doesNotMatch(output, /실제 사이트 확인 완료/u);
 }
-console.log("home API allowlist/isolated failure/SSR/navigation/mobile hierarchy/stale guard tests passed");
+const fixtureId = "aeb04979-d2a5-449e-a588-715b86a6d19b";
+const fixtureHtml = render(dashboard, false, operations, false, { status: "SYNTHETIC_FIXTURE_VERIFIED", source: "privateRelayFixture", servedAt: "2026-10-17T03:00:00.000Z", deliveryHash: deliveryFixtureHash(fixtureId), delivery: createDeliveryFixture(fixtureId) });
+for (const value of ["합성 자료 · 비공개 연결 검증", "실제 시세·모델 순위·14:00 관측이 아닙니다", "TEST-A-1", "TEST-D-5", deliveryFixtureHash(fixtureId), "관측 시각과 다름", "모델 TOP3 · Daily EOD"]) assert.ok(fixtureHtml.includes(value), value);
+assert.equal((fixtureHtml.match(/합성 연결검증/g) ?? []).length, 20);
+assert.doesNotMatch(html, /합성 자료 · 비공개 연결 검증/);
+assert.match(fixtureHtml, /sm:grid-cols-2 xl:grid-cols-4/);
+console.log("home API allowlist/isolated failure/SSR/navigation/mobile hierarchy/stale guard/private relay fixture tests passed");

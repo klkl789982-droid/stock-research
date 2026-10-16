@@ -137,7 +137,8 @@ test("new reader remains behind admin guard and is not public or automation-elig
   const machineToken = "x".repeat(43);
   assert.equal(isAutomationRequest(new Request(url, { headers: { authorization: `Bearer ${machineToken}` } }), { TB_AUTOMATION_READ_TOKEN: machineToken }), false);
   const source = await readFile(new URL("../app/api/private-live-delivery/route.ts", import.meta.url), "utf8");
-  assert.match(source, /GET = withAdminAccess\(/); assert.doesNotMatch(source, /export.*POST/);
+  assert.match(source, /GET = withAdminAccess\(/); assert.match(source, /POST = withAdminAccess\(/);
+  assert.match(source, /sameOriginMutation/); assert.match(source, /VERCEL_ENV !== "preview"/);
 });
 
 test("outbox freezes export time, resumes after failure and keeps relay/site receipts distinct", async () => {
