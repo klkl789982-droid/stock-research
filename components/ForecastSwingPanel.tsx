@@ -69,6 +69,7 @@ function SavedResult({ outcome }: { outcome: import("../lib/forecast-swing-view-
   const labels = { OBSERVED: "공식 가격 비교 완료", PENDING: "5거래일 경과 대기", BLOCKED: "자료 부족 · 판단 보류", NOT_EVALUATED: "후속 결과 자료 대기" };
   return <div className="mt-2 text-slate-600"><p>{labels[outcome.status]}{outcome.status === "OBSERVED" && outcome.benchmarkReturnPercent !== null ? ` · 비용 전 관측 수익률 ${outcome.benchmarkReturnPercent.toFixed(2)}%` : ""}</p>
     <p className="mt-1">진입 기준일 {outcome.entryDate ?? "미확정"} → 평가 종료일 {outcome.exitDate ?? "미확정"}</p>
+    <p className="mt-1">다음 거래일 시가 기준 관찰용 비교 · 당일 진입 전략의 성과 아님</p>
     <p className="mt-1">실제 체결·실현 성과 아님 · 비용 차감 수익률 미확정</p>
     {outcome.reasons.length > 0 && <details className="mt-1"><summary className="cursor-pointer">보류 사유</summary><ul>{outcome.reasons.map(reason => <li key={reason}>{reason}</li>)}</ul></details>}
   </div>;
@@ -123,7 +124,8 @@ export function ForecastSwingPreparingView({ data }: { data: ForecastSwingPrepar
       </div>
 
       <section aria-label="5거래일 평가 기준" className="rounded-2xl border border-slate-300/80 bg-[#faf9f5] p-5 sm:p-6">
-        <SectionTitle number="03">5거래일 평가 기준</SectionTitle>
+        <SectionTitle number="03">5거래일 평가 기준 · 다음 거래일 진입 관찰용</SectionTitle>
+        <p className="mt-3 text-xs leading-6 text-slate-600">14:00 분석 확인 후 당일 진입하는 전략과는 별도 기준입니다. 당일 진입 비교는 게시 이후 가격·체결 가정 검증 전까지 보류합니다. 기존 기록의 기준과 최초 만기는 변경하지 않습니다.</p>
         <div className="mt-5 grid gap-5 md:grid-cols-3">
           <div><p className="text-xs font-medium text-[#9a6246]">진입 기준</p><p className="mt-2 text-sm font-semibold">발행 후 첫 거래 세션 시가</p><p className="mt-2 text-xs leading-6 text-slate-500">진입 시각은 발행 시각보다 엄격히 늦어야 합니다. 실제 진입가는 아직 없습니다.</p></div>
           <div className="border-t border-slate-200 pt-4 md:border-l md:border-t-0 md:pl-5 md:pt-0"><p className="text-xs font-medium text-[#9a6246]">청산 기준</p><p className="mt-2 text-sm font-semibold">진입일을 1일로 센 5번째 거래일 종가</p><p className="mt-2 text-xs leading-6 text-slate-500">예정일이 지났다는 이유만으로 평가 완료로 처리하지 않습니다. 확정 가격과 사용 가능 시각이 필요합니다.</p></div>
