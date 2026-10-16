@@ -21,7 +21,7 @@ let storeCalls = 0, liveStoreCalls = 0;
 let liveFailure = null;
 const liveStore = { mode: "LIVE", referenceDate: "2026-10-08", modelReferenceDate: row.referenceDate, previousOfficialDate: row.referenceDate,
   ruleVersion: liveTransition.LIVE_TRANSITION_RULE_VERSION, rows: [{ ...row, referenceDate: "2026-10-08", modelReferenceDate: row.referenceDate,
-    qualityStatus: "PROVISIONAL", observedPrice: 102, quoteAsOfDate: "2026-10-08", quoteAsOfTime: "14:30:01", receivedAt: "2026-10-08T05:30:02Z",
+    qualityStatus: "PROVISIONAL", observedPrice: 102, quoteAsOfDate: "2026-10-08", quoteAsOfTime: "14:00:01", receivedAt: "2026-10-08T05:00:02Z",
     closedRows: Array.from({ length: 60 }, () => ["20261007", 100, 100, 100, 100, 1]) }] };
 const exports = {};
 const loadError = { message: "credential-or-private-url-must-not-leak" };

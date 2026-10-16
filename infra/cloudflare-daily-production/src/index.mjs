@@ -1,5 +1,6 @@
 // Cron-only dispatcher. Never collects prices, chooses an EOD date, or writes snapshots.
 import { inspectDailyProductionDeployment } from "../../../lib/daily-production-deployment-verifier.mjs";
+import { parsePublicationEvidence, trustedProductionRun } from "../../../lib/publication-evidence-contract.mjs";
 
 export const TARGET = Object.freeze({
   repository: "klkl789982-droid/stock-research",
@@ -70,7 +71,9 @@ export function createWorker({
       const abort = new AbortController();
       const timer = setTimeout(() => abort.abort(), timeoutMs);
       try {
-        const response = await fetchImpl(url, { method, headers, redirect: "error", signal: abort.signal, ...(body ? { body: JSON.stringify(body) } : {}) });
+        // Workers supports manual redirect handling. Never forward credentials
+        // to Location: every 3xx is rejected by the exact status check below.
+        const response = await fetchImpl(url, { method, headers, redirect: "manual", signal: abort.signal, ...(body ? { body: JSON.stringify(body) } : {}) });
         const status = response.status;
         const rateLimited = status === 429 || (status === 403 && (response.headers.get("x-ratelimit-remaining") === "0" || response.headers.has("retry-after")));
         const transient = rateLimited || status >= 500;
@@ -98,29 +101,42 @@ export function createWorker({
       }
     }
 
-    async function alreadyPublished() {
-      // UTC date identifies these Cron slots' KST session, including overnight slots.
-      // This is only a conservative duplicate guard, NEVER an EOD candidate date.
-      // Delayed delivery must let the existing probe discover any newly supplied dates.
+    async function alreadyPublished(runs) {
+      // A historical Actions marker supplies an independent expected identity;
+      // only a fresh authenticated four-API match can suppress a new probe.
+      // No new access is configured here. Without site read access, recover by
+      // dispatching normally rather than claiming a date-only publication proof.
       if (Math.abs(now() - controller.scheduledTime) >= 30 * 60 * 1_000) return false;
+      const unavailable = (reason) => {
+        logger({ ...base, status: "CHECK_UNAVAILABLE", stage: "PUBLICATION_PREFLIGHT", reason });
+        return false;
+      };
+      const siteToken = typeof env.TB_AUTOMATION_READ_TOKEN === "string" ? env.TB_AUTOMATION_READ_TOKEN.trim() : "";
+      if (!/^[A-Za-z0-9_-]{43,128}$/u.test(siteToken)) return unavailable("SITE_AUTH_UNAVAILABLE");
       const sessionDate = base.scheduledAt.slice(0, 10);
+      const run = runs.find((candidate) => trustedProductionRun(candidate) && candidate.status === "completed" && candidate.conclusion === "success");
+      if (!run) return unavailable("PUBLICATION_EVIDENCE_UNAVAILABLE");
+      const jobs = await read(`https://api.github.com/repos/${TARGET.repository}/actions/runs/${run.id}/attempts/${run.run_attempt}/jobs?per_page=100`, "PUBLICATION_EVIDENCE");
+      if (jobs.reason || !Array.isArray(jobs.data?.jobs)) return unavailable("PUBLICATION_EVIDENCE_UNAVAILABLE");
+      let proof;
+      try {
+        proof = parsePublicationEvidence(run, jobs.data.jobs, now()).find((item) => item.status === "VERIFIED" && item.referenceDate === sessionDate);
+      } catch { return unavailable("PUBLICATION_EVIDENCE_UNAVAILABLE"); }
+      if (!proof) return unavailable("PUBLICATION_EVIDENCE_UNAVAILABLE");
       const abort = new AbortController();
       const timer = setTimeout(() => abort.abort(), timeoutMs);
       try {
-        const { matches, actual } = await inspectDailyProductionDeployment({
-          siteUrl: PUBLICATION_SITE,
-          expectedReferenceDate: sessionDate,
-          // GitHub authorization headers must NEVER be sent to Vercel.
-          fetchImpl: (url, init) => fetchImpl(url, { ...init, redirect: "error", signal: abort.signal }),
+        const { matches } = await inspectDailyProductionDeployment({
+          siteUrl: PUBLICATION_SITE, expectedReferenceDate: proof.referenceDate,
+          expectedSnapshotHash: proof.snapshotHash, expectedCommitSha: proof.commitSha,
+          // Neither credential may cross its own service boundary. Explicitly
+          // pass the site token; the Worker never reads Node's process.env.
+          automationToken: siteToken,
+          fetchImpl: (url, init) => fetchImpl(url, { ...init, redirect: "manual", signal: abort.signal }),
         });
-        return matches || (actual.publicationStatus === "unchanged"
-          && actual.topReferenceDate === sessionDate
-          && actual.performanceReferenceDate === sessionDate
-          && actual.operationsReferenceDate === sessionDate);
+        return matches || unavailable("SITE_PUBLICATION_NOT_VERIFIED");
       } catch {
-        // Site unavailability/inconsistent deployment cannot block supply recovery.
-        logger({ ...base, status: "CHECK_UNAVAILABLE", stage: "PUBLICATION_PREFLIGHT", reason: "SITE_PUBLICATION_NOT_VERIFIED" });
-        return false;
+        return unavailable("SITE_PUBLICATION_NOT_VERIFIED");
       } finally {
         // Promise.all may reject while other API reads are still in flight.
         abort.abort();
@@ -139,7 +155,7 @@ export function createWorker({
       if (!Array.isArray(runs.data?.workflow_runs) || !runs.data.workflow_runs.every((entry) => entry && Number.isSafeInteger(entry.id) && entry.id > 0 && typeof entry.head_branch === "string" && (entry.status === "completed" || ACTIVE.has(entry.status)))) return finish("FAILED", "GITHUB_INVALID_RESPONSE", { stage: "RUN_PREFLIGHT" });
       const active = runs.data.workflow_runs.find((entry) => entry.head_branch === TARGET.ref && ACTIVE.has(entry.status));
       if (active) return finish("SKIPPED", "WORKFLOW_ALREADY_ACTIVE", { runId: Number.isSafeInteger(active.id) ? active.id : null });
-      if (attempt === 1 && await alreadyPublished()) return finish("SKIPPED", "SESSION_ALREADY_PUBLISHED", { publicationStatus: "VERIFIED_EXISTING" });
+      if (attempt === 1 && await alreadyPublished(runs.data.workflow_runs)) return finish("SKIPPED", "SESSION_ALREADY_PUBLISHED", { publicationStatus: "VERIFIED_EXISTING" });
 
       // return_run_details is an API option, not a workflow input. Never send a date.
       const dispatched = await request("POST", `${API}/dispatches`, { ref: TARGET.ref, return_run_details: true }, attempt);

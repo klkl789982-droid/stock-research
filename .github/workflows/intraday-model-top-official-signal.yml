@@ -2,9 +2,9 @@ name: Intraday Model TOP Official Signal
 
 on:
   schedule:
-    # Prewarm at 14:15 KST (05:15 UTC); the runner itself waits for the exact 14:30 collection window.
+    # Prewarm at 13:45 KST (04:45 UTC); the runner itself waits for the 14:00 collection window.
     # Best effort only: delays beyond the collection window must fail closed.
-    - cron: "15 5 * * 1-5"
+    - cron: "45 4 * * 1-5"
   workflow_dispatch:
     inputs:
       mode:
@@ -60,7 +60,7 @@ jobs:
         run: |
           mode="${{ github.event_name == 'schedule' && 'live' || inputs.mode }}"
           echo "INTRADAY_MODEL_TOP_WORKFLOW event=${{ github.event_name }} mode=$mode run_id=${{ github.run_id }} started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          if [ "$mode" = "dry-run" ]; then args="--dry-run"; elif [ "$mode" = "connectivity" ]; then args="--connectivity-preflight"; elif [ "$mode" = "preflight" ]; then args="--preflight"; else args="--wait-for-window"; fi
+          if [ "$mode" = "dry-run" ]; then args="--dry-run"; elif [ "$mode" = "connectivity" ]; then args="--connectivity-preflight"; elif [ "$mode" = "preflight" ]; then args="--preflight"; else args="--wait-for-window --refresh-inputs"; fi
           set +e
           node scripts/run-intraday-model-top-official-signal.mjs $args 2>&1 | tee intraday-model-top.log
           exit_code=${PIPESTATUS[0]}
@@ -83,7 +83,7 @@ jobs:
         run: |
           if [ "${{ steps.signal.outputs.latest_path }}" != "data/intraday-signals/model-top/latest.json" ]; then echo "LIVE_STAGE_PATH_REJECTED" >&2; exit 1; fi
           if [ "${{ steps.signal.outputs.status }}" = "READY" ]; then
-            if [[ ! "${{ steps.signal.outputs.signal_date }}" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || [ "${{ steps.signal.outputs.signal_path }}" != "data/intraday-signals/model-top/${{ steps.signal.outputs.signal_date }}/1430.json" ]; then echo "LIVE_STAGE_PATH_REJECTED" >&2; exit 1; fi
+            if [[ ! "${{ steps.signal.outputs.signal_date }}" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || [ "${{ steps.signal.outputs.signal_path }}" != "data/intraday-signals/model-top/${{ steps.signal.outputs.signal_date }}/1400.json" ]; then echo "LIVE_STAGE_PATH_REJECTED" >&2; exit 1; fi
           fi
           git add -- "${{ steps.signal.outputs.latest_path }}"
           if [ "${{ steps.signal.outputs.status }}" = "READY" ]; then git add -- "${{ steps.signal.outputs.signal_path }}"; fi
@@ -107,10 +107,10 @@ jobs:
           echo "LIVE_PUBLICATION_PUSH_FAILED" >&2
           exit 1
       - name: Verify live publication on Vercel
-        if: steps.signal.outputs.mode == 'live' && steps.signal.outputs.status == 'READY'
+        if: steps.signal.outputs.mode == 'live' && (steps.signal.outputs.status == 'READY' || steps.signal.outputs.status == 'ALREADY_STORED')
         run: node scripts/verify-live-production-deployment.mjs --date=${{ steps.signal.outputs.signal_date }}
       - name: Fail unsuccessful live observation
-        if: steps.signal.outputs.mode == 'live' && steps.signal.outputs.status != 'READY' && steps.signal.outputs.status != 'MARKET_CLOSED'
+        if: steps.signal.outputs.mode == 'live' && steps.signal.outputs.status != 'READY' && steps.signal.outputs.status != 'ALREADY_STORED' && steps.signal.outputs.status != 'MARKET_CLOSED'
         run: exit 1
       - name: Fail unsuccessful preflight
         if: steps.signal.outputs.mode == 'preflight' && steps.signal.outputs.status != 'PREFLIGHT_READY'

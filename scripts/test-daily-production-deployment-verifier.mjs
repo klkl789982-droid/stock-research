@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { CURRENT_LIVE_PROFILE } from "../lib/intraday-model-top-time-policy.mjs";
 import { waitForDailyProductionDeployment, inspectLiveProductionDeployment } from "../lib/daily-production-deployment-verifier.mjs";
 
 const expectedSnapshotHash = "a".repeat(64), expectedCommitSha = "b".repeat(40);
@@ -54,7 +55,7 @@ assert.equal(recoveredNetwork.status, "VERIFIED", "일시적 배포/API 네트�
 const unauthorized = await waitForDailyProductionDeployment({ siteUrl: "https://example.test", expectedReferenceDate: "2026-10-07", expectedSnapshotHash, expectedCommitSha, fetchImpl: async () => jsonResponse({}, 401), sleep: async () => { throw new Error("auth must not retry"); } });
 assert.equal(unauthorized.attemptCount, 1); assert.equal(unauthorized.reason, "HTTP_401");
 for (const [date, type, expected] of [["2026-10-08", "LIVE_OBSERVATION", true], ["2026-10-07", "LIVE_OBSERVATION", false], ["2026-10-08", "TEST_FIXTURE", false]]) {
-  assert.equal(await inspectLiveProductionDeployment({ siteUrl: "https://example.test", expectedSignalDate: "2026-10-08", fetchImpl: async () => jsonResponse({ signalDate: date, observationType: type, collectionCompletedAt: "2026-10-08T05:34:00Z" }) }), expected);
+  assert.equal(await inspectLiveProductionDeployment({ siteUrl: "https://example.test", expectedSignalDate: "2026-10-08", expectedContentHash: expectedSnapshotHash, fetchImpl: async () => jsonResponse({ signalDate: date, observationType: type, archived: false, officialSignalTime: CURRENT_LIVE_PROFILE.signalTime, signalVersion: CURRENT_LIVE_PROFILE.signalVersion, observationPolicyId: CURRENT_LIVE_PROFILE.policyId, contentHash: expectedSnapshotHash, signalPath: `data/intraday-signals/model-top/${date}/1400.json`, collectionStartedAt: "2026-10-08T05:00:00Z", collectionCompletedAt: "2026-10-08T05:04:00Z" }) }), expected);
 }
 for (const [state, reason] of [[{ date: "2026-10-07", hash: "c".repeat(64) }, "SNAPSHOT_HASH_MISMATCH"], [{ date: "2026-10-07", commit: "d".repeat(40) }, "SITE_COMMIT_MISMATCH"], [{ date: "2026-10-07", homeReady: false }, "SITE_SUMMARY_UNAVAILABLE"]]) {
   const result = await waitForDailyProductionDeployment({ siteUrl: "https://example.test", expectedReferenceDate: "2026-10-07", expectedSnapshotHash, expectedCommitSha, fetchImpl: deploymentFetch([state]), maxAttempts: 1 });

@@ -96,7 +96,7 @@ async function runWorker(root, route, requests, context, { isolated = true, enab
 }
 
 const definitions = [
-  { route: "api/top-stocks", allowed: /^(?:data\/history\/\d{4}-\d{2}-\d{2}\.json|data\/daily-production-status\/latest\.json|data\/intraday-signals\/model-b\/(?:latest\.json|\d{4}-\d{2}-\d{2}\/1430\.json))$/u },
+  { route: "api/top-stocks", allowed: /^(?:data\/history\/\d{4}-\d{2}-\d{2}\.json|data\/daily-production-status\/latest\.json)$/u },
   { route: "api/kis-eod-top-stocks", allowed: /^data\/(?:history|kis-eod-published)\/\d{4}-\d{2}-\d{2}\.json$/u },
   // Tracing the price-ledger directory also retains its harmless schema README.
   { route: "api/model-performance/research", allowed: /^data\/(?:(?:history|model-history|market-prices)\/\d{4}-\d{2}-\d{2}\.json|daily-runs\/\d{4}-\d{2}-\d{2}\/[a-zA-Z0-9_-]+\.json|trading-calendar\/status\.json|market-prices\/README\.md)$/u },
@@ -124,10 +124,7 @@ async function inspectTrace(definition) {
   for (const name of await list(path.join(repository, "data/history"))) if (dateFile.test(name)) required(`data/history/${name}`);
   if (definition.route === "api/top-stocks") {
     required("data/daily-production-status/latest.json");
-    required("data/intraday-signals/model-b/latest.json");
-    for (const date of await list(path.join(repository, "data/intraday-signals/model-b"))) {
-      if (/^\d{4}-\d{2}-\d{2}$/u.test(date) && (await list(path.join(repository, "data/intraday-signals/model-b", date))).includes("1430.json")) required(`data/intraday-signals/model-b/${date}/1430.json`);
-    }
+    assert.ok(!files.some(name => name.startsWith("data/intraday-signals/model-b/")), "Retired B archive must not be bundled in current EOD fallback");
   } else if (definition.route === "api/kis-eod-top-stocks") {
     for (const name of await list(path.join(repository, "data/kis-eod-published"))) if (dateFile.test(name)) required(`data/kis-eod-published/${name}`);
   } else {
@@ -215,8 +212,8 @@ async function main() {
       if (route === "api/top-stocks") {
         assert.equal(packaged[1].body.dataMode, "historySnapshot");
         for (const response of packaged.slice(1)) {
-          if (response.body.dataMode === "historySnapshot") assert.equal(response.body.rankingAsOfDate, latestDate);
-          else assert.equal(response.body.dataMode, "intradayOfficialSignal");
+          assert.equal(response.body.dataMode, "historySnapshot");
+          assert.equal(response.body.rankingAsOfDate, latestDate);
           assert.equal(response.body.freshness.snapshotReferenceDate, latestDate);
           assert.ok(response.body.stocks.length);
         }
@@ -238,9 +235,9 @@ async function main() {
     await writeJson(path.join(topRoot, signalPath), readySignal(latestDate));
     await writeJson(pointer, readyPointer);
     const ready = await request(top, "?model=B&limit=5");
-    assert.equal(ready.status, 200); assert.equal(ready.body.dataMode, "intradayOfficialSignal");
-    assert.equal(ready.body.stocks[0].name, "Synthetic trace fixture"); assert.equal(ready.body.stocks[0].closePrice, 12345);
-    assert.equal(ready.body.rankingAsOfDate, latestDate); assert.equal(ready.body.officialSignal.status, "READY");
+    assert.equal(ready.status, 200); assert.equal(ready.body.dataMode, "historySnapshot");
+    assert.ok(ready.body.stocks.every(stock => stock.name !== "Synthetic trace fixture"));
+    assert.equal(ready.body.rankingAsOfDate, latestDate); assert.equal(ready.body.officialSignal, undefined);
     const fallback = async (label) => {
       const response = await request(top, "?model=B&limit=5");
       assert.equal(response.status, 200, label); assert.equal(response.body.dataMode, "historySnapshot", label);
@@ -254,8 +251,9 @@ async function main() {
     // not demonstrate that a malicious pointer is refused before reading it.
     const malicious = ["outside.json", "data/intraday-signals/model-b/../outside.json", "data/intraday-signals/model-b/../../../../outside.json", `data/intraday-signals/model-b/${latestDate}/../outside.json`, `data/intraday-signals/model-b/${latestDate}/other.json`, "data/intraday-signals/model-b/not-a-date/1430.json", `data/intraday-signals/model-b/${latestDate}/1430.json/../outside.json`, `data/intraday-signals/model-b/${latestDate}/1430.json?x=1`];
     for (const badPath of malicious) {
-      // The file/../ case is invalid on disk; the remaining cases all exist.
-      if (!badPath.includes("1430.json/")) await writeJson(path.resolve(topRoot, badPath), readySignal(latestDate, "Outside-path fixture"));
+      // Plant every representable destination. Windows cannot create '?' names;
+      // retain the malicious pointer assertion and a real underlying file there.
+      if (!badPath.includes("1430.json/")) await writeJson(path.resolve(topRoot, process.platform === "win32" ? badPath.split("?")[0] : badPath), readySignal(latestDate, "Outside-path fixture"));
       await writeJson(pointer, { ...readyPointer, signalPath: badPath }); await fallback(`Rejected pointer ${badPath}`);
     }
     const outside = path.join(temporary, "outside.json");
@@ -268,7 +266,7 @@ async function main() {
     await writeJson(pointer, readyPointer); await fs.writeFile(path.join(topRoot, signalPath), "{broken"); await fallback("Corrupt dated signal");
     await fs.rm(path.join(topRoot, signalPath)); await fallback("Missing dated signal");
     await writeJson(path.join(topRoot, signalPath), { ...readySignal(latestDate), modelVersion: "A-v1" }); await fallback("Wrong signal version");
-    console.log("api/top-stocks: synthetic B READY; invalid/outside pointers, absent/corrupt pointers and signals preserve daily fallback");
+    console.log("api/top-stocks: retired B READY/FAILED and malicious/missing archives never override the correctly dated EOD fallback");
 
     const kis = "api/kis-eod-top-stocks", kisRoot = roots.get(kis), projection = await syntheticKisProjection();
     const publicationDirectory = path.join(kisRoot, "data/kis-eod-published");

@@ -35,7 +35,7 @@ assert.match(panel, /N=\{metrics\.observationCount\}/);
 assert.match(panel, /coverageRate/, "LIVE 성과는 실제 MATURE observation coverage를 표시해야 합니다.");
 assert.match(route, /historical-outcomes/);
 assert.match(route, /intraday-outcomes/);
-assert.match(panel, /14:30 LIVE/);
+assert.match(panel, /14:00 LIVE/);
 assert.match(panel, /Daily EOD/);
 assert.match(panel, /최신 EOD/);
 assert.match(panel, /성과 결과 기준일/);
@@ -53,10 +53,10 @@ assert.doesNotMatch(page, /compact onSelectStock=\{handleSearch\}/, "HOME에는 
 const compiled = ts.transpileModule(panel, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;
 const extreme = { ticker: "000660", companyName: "검증종목", signalDate: "2026-10-01", signalTime: null, entryDate: "2026-10-01", entryPriceBasis: "signalDayOfficialClose", evaluationEndDate: "2026-10-02", returnPercent: -12.5 };
 const summary = [{ modelVersion: "B-v1", groups: [{ topN: 10, horizons: [{ horizon: "1DAY", status: "DATA_AVAILABLE", evaluatedSignalDates: 2, observationCount: 6, uniqueSignalDateCount: 2, uniqueStockCount: 3, meanReturn: 0, medianReturn: 0, positiveRate: 50, minReturn: -12.5, maxReturn: 5.25, minObservation: extreme, maxObservation: { ...extreme, ticker: "005930", companyName: "최대종목", returnPercent: 5.25 } }] }] }];
-const response = { summary, matureSignalDates: ["2026-10-01"], signalDateRange: null, lastOutcomeDate: "2026-10-02", latestEodReferenceDate: "2026-10-07", live: { summary: [], matureSignalDates: [], signalDateRange: null, lastOutcomeDate: null } };
-const renderLayer = (layer) => {
+const response = { summary, matureSignalDates: ["2026-10-01"], signalDateRange: null, lastOutcomeDate: "2026-10-02", latestEodReferenceDate: "2026-10-07", live: { layer: "INTRADAY_1400_LIVE", executionPolicyId: "intraday-1400-t1-open-v1", summary: [], matureSignalDates: [], signalDateRange: null, lastOutcomeDate: null } };
+const renderLayer = (layer, input = response) => {
   const exports = {};
-  const states = [response, false, "B-v1", 10, layer];
+  const states = [input, false, "B-v1", 10, layer];
   let stateIndex = 0;
   const require = (name) => {
     if (name === "react/jsx-runtime") return jsxRuntime;
@@ -70,7 +70,9 @@ const renderLayer = (layer) => {
 const dailyHtml = renderLayer("DAILY_EOD");
 for (const text of ["-12.50%", "+5.25%", "검증종목", "000660", "최대종목", "005930", "2026-10-01", "2026-10-02", "관측 6건", "신호일 2일", "종목 3개", "0.00%", "60DAY"]) assert.ok(dailyHtml.includes(text), `실제 렌더링 누락: ${text}`);
 assert.equal((dailyHtml.match(/데이터 축적 중/gu) ?? []).length, 3, "Daily 미확정 5/20/60D는 축적 중이어야 합니다.");
-const liveHtml = renderLayer("INTRADAY_1430_LIVE");
+const liveHtml = renderLayer("INTRADAY_1400_LIVE");
 assert.equal((liveHtml.match(/데이터 축적 중/gu) ?? []).length, 4);
 assert.doesNotMatch(liveHtml, /검증종목|최대종목|0\.00%|-12\.50%/, "LIVE 빈 결과에 Daily 통계나 가짜 0%를 표시하면 안 됩니다.");
+const legacyHtml = renderLayer("INTRADAY_1400_LIVE", { ...response, live: { ...response.live, layer: "INTRADAY_1430_LIVE", executionPolicyId: "intraday-1430-t1-open-v1", summary } });
+assert.doesNotMatch(legacyHtml, /검증종목|최대종목|0\.00%|-12\.50%/, "old 14:30 results never become current 14:00 performance");
 console.log("model performance UI/API model-page connection test passed");

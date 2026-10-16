@@ -5,10 +5,13 @@ import { createKisTokenManager } from "../lib/kis-token-manager-core.mjs";
 import { attachKisMinuteObservation, inspectKisMinuteObservation, parseKisQuote } from "../lib/kis-quote-provider-core.mjs";
 import { collectKisQuotes, requestKisWithTransientRetry } from "../lib/kis-intraday-collector.mjs";
 import { validateIntradayMarketSeed } from "../lib/intraday-market-seed.mjs";
-import { buildIntradayModelTopSignal, calculateIntradayModelTopScores, OFFICIAL_SIGNAL_TIME, OFFICIAL_SIGNAL_WINDOW_END, validateIntradayModelTopSignal } from "../lib/intraday-model-top-official-signal.mjs";
+import { buildIntradayModelTopSignal, calculateIntradayModelTopScores, OFFICIAL_SIGNAL_TIME, OFFICIAL_SIGNAL_WINDOW_END, validateIntradayModelTopSignal, isCurrentIntradayModelTopSignal } from "../lib/intraday-model-top-official-signal.mjs";
 import { mergeProvisionalCandle } from "../lib/intraday-model-b-official-signal.mjs";
-import { classifyOfficialSignalWindow, millisecondsUntilKstTime, signalWeekday, liveAttemptStatus, liveSchedulerMetadata } from "../lib/intraday-model-top-time-policy.mjs";
+import { classifyOfficialSignalWindow, millisecondsUntilKstTime, signalWeekday, liveAttemptStatus, liveSchedulerMetadata, CURRENT_LIVE_PROFILE } from "../lib/intraday-model-top-time-policy.mjs";
 import { createKisEodProvider } from "../lib/kis-eod-provider.mjs";
+import { createLiveObservationFetch } from "../lib/live-observation-request.mjs";
+import { assertLiveSeedSession } from "../lib/live-seed-policy.mjs";
+import { loadPinnedLiveInputs } from "../lib/live-pinned-inputs.mjs";
 
 const root = process.cwd();
 const runStartedAt = new Date().toISOString();
@@ -22,7 +25,7 @@ const writeLatest = async (value) => {
   let previous = null;
   try { previous = JSON.parse(await fs.readFile(target, "utf8")); } catch (error) { if (error?.code !== "ENOENT") throw error; }
   if (previous?.signalDate > value.signalDate) throw new Error("LIVE_STATUS_DATE_REGRESSION");
-  value = liveAttemptStatus(previous, { ...value, operations: { ...operations }, runStartedAt, trigger: safeTrigger(), runId: process.env.GITHUB_RUN_ID ?? null });
+  value = liveAttemptStatus(previous, { ...value, schemaVersion: CURRENT_LIVE_PROFILE.schemaVersion, observationPolicyId: CURRENT_LIVE_PROFILE.policyId, operations: { ...operations }, runStartedAt, trigger: safeTrigger(), runId: process.env.GITHUB_RUN_ID ?? null });
   const temporary = `${target}.${process.pid}.tmp`;
   await fs.writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
   await fs.rename(temporary, target);
@@ -44,32 +47,55 @@ async function main() {
   const preflight = process.argv.includes("--preflight");
   const connectivityPreflight = process.argv.includes("--connectivity-preflight");
   const waitForWindow = process.argv.includes("--wait-for-window");
+  const refreshInputs = process.argv.includes("--refresh-inputs");
+  if (process.argv.slice(2).some((value) => !["--dry-run", "--preflight", "--connectivity-preflight", "--wait-for-window", "--refresh-inputs"].includes(value) && !value.startsWith("--signal-date="))) throw new Error("INTRADAY_MODEL_TOP_ARGUMENT_REJECTED");
+  if (refreshInputs && (!waitForWindow || dryRun || preflight || connectivityPreflight)) throw new Error("INTRADAY_MODEL_TOP_REFRESH_REQUIRES_LIVE_WAIT");
   if ([dryRun, preflight, connectivityPreflight].filter(Boolean).length > 1) throw new Error("INTRADAY_MODEL_TOP_MODE_CONFLICT");
   const mode = dryRun ? "DRY_RUN" : connectivityPreflight ? "CONNECTIVITY_PREFLIGHT" : preflight ? "MARKET_DATA_PREFLIGHT" : "LIVE";
   console.log(`INTRADAY_MODEL_TOP_RUN trigger=${safeTrigger()} mode=${mode} startedAt=${runStartedAt} kstDate=${today} kstTime=${parts.hour}:${parts.minute}:${parts.second}`);
   if (signalDate !== today) throw new Error("OFFICIAL_SIGNAL_DATE_MUST_BE_TODAY");
   const signalDir = path.join(statusDir, signalDate);
-  const signalPath = path.join(signalDir, "1430.json");
+  const signalPath = path.join(signalDir, `${CURRENT_LIVE_PROFILE.slot}.json`);
   if (!dryRun && !preflight && !connectivityPreflight) {
     try {
       const existing = JSON.parse(await fs.readFile(signalPath, "utf8"));
       const errors = validateIntradayModelTopSignal(existing);
-      if (errors.length || existing.status !== "READY") throw new Error(`EXISTING_OFFICIAL_SIGNAL_INVALID:${errors.join(",")}`);
-      await writeLatest({ schemaVersion: 1, artifactType: "intradayModelTopLatestStatus", signalDate, officialSignalTime: OFFICIAL_SIGNAL_TIME, status: "READY", signalPath: path.relative(root, signalPath).replaceAll("\\", "/"), contentHash: existing.contentHash, collection: existing.collection, collectionStartedAt: existing.collectionStartedAt, collectionCompletedAt: existing.collectionCompletedAt, updatedAt: new Date().toISOString() });
-      console.log(`INTRADAY_MODEL_TOP_RESULT_JSON=${JSON.stringify({ status: "READY", signalDate, disposition: "existing", signalPath: path.relative(root, signalPath).replaceAll("\\", "/"), latestPath: "data/intraday-signals/model-top/latest.json", collection: existing.collection })}`);
+      if (errors.length || !isCurrentIntradayModelTopSignal(existing) || existing.status !== "READY") throw new Error(`EXISTING_OFFICIAL_SIGNAL_INVALID:${errors.join(",")}`);
+      console.log(`INTRADAY_MODEL_TOP_RESULT_JSON=${JSON.stringify({ status: "ALREADY_STORED", signalDate, disposition: "existing", liveObservationCreated: false, signalPath: path.relative(root, signalPath).replaceAll("\\", "/"), latestPath: null, contentHash: existing.contentHash, collection: existing.collection })}`);
       return;
     } catch (error) {
       if (error?.code !== "ENOENT") throw error;
     }
   }
 
-  const seedDir = path.join(root, "data", "analysis", "market-seeds");
-  const seedName = (await fs.readdir(seedDir)).filter((name) => /^\d{4}-\d{2}-\d{2}\.json$/u.test(name) && name.slice(0, 10) < signalDate).sort().at(-1);
-  if (!seedName) throw new Error("PRIOR_INTRADAY_SEED_MISSING");
-  const seed = JSON.parse(await fs.readFile(path.join(seedDir, seedName), "utf8"));
+  // A missed collection cannot be recovered by authenticating, loading a newer
+  // seed, or asking for current prices. Existing immutable success was handled
+  // above as ALREADY_STORED, never as a newly observed scheduled success.
+  if (!dryRun && !preflight && !connectivityPreflight) {
+    if ([0, 6].includes(signalWeekday(signalDate))) {
+      await writeLatest({ artifactType: "intradayModelTopLatestStatus", signalDate, officialSignalTime: OFFICIAL_SIGNAL_TIME, status: "MARKET_CLOSED", reason: "WEEKEND", updatedAt: new Date().toISOString() });
+      console.log(`INTRADAY_MODEL_TOP_RESULT_JSON=${JSON.stringify({ status: "MARKET_CLOSED", signalDate, latestPath: "data/intraday-signals/model-top/latest.json" })}`);
+      return;
+    }
+    if (Date.now() > Date.parse(`${signalDate}T${OFFICIAL_SIGNAL_WINDOW_END}+09:00`)) throw new Error("OFFICIAL_SIGNAL_OUTSIDE_COLLECTION_WINDOW");
+  }
+
+  let seed, savedCalendar;
+  if (refreshInputs) {
+    const inputs = await loadPinnedLiveInputs({ root, signalDate });
+    seed = inputs.seed; savedCalendar = inputs.calendar;
+    operations.inputProvenance = inputs.inputProvenance;
+  } else {
+    const seedDir = path.join(root, "data", "analysis", "market-seeds");
+    const seedName = (await fs.readdir(seedDir).catch((error) => { if (error?.code === "ENOENT") return []; throw error; })).filter((name) => /^\d{4}-\d{2}-\d{2}\.json$/u.test(name) && name.slice(0, 10) < signalDate).sort().at(-1);
+    if (!seedName) throw new Error("LIVE_INPUT_NOT_READY_PREVIOUS_SESSION_MISSING");
+    seed = JSON.parse(await fs.readFile(path.join(seedDir, seedName), "utf8"));
+    savedCalendar = JSON.parse(await fs.readFile(path.join(root, "data", "trading-calendar", "status.json"), "utf8").catch(() => "{}"));
+  }
   const seedErrors = validateIntradayMarketSeed(seed, seed.records?.length ?? 0);
   if (seedErrors.length) throw new Error(`INTRADAY_SEED_INVALID:${seedErrors.slice(0, 5).join(",")}`);
   if (seed.requestedDate >= signalDate) throw new Error("SEED_NOT_STRICTLY_PRIOR_TO_SIGNAL");
+  assertLiveSeedSession(seed, signalDate, savedCalendar);
   if (dryRun) {
     console.log(`INTRADAY_MODEL_TOP_RESULT_JSON=${JSON.stringify({ status: "DRY_RUN_READY", observationType: "DRY_RUN", signalDate, seedReferenceDate: seed.requestedDate, eligibleCount: seed.records.filter((record) => record.eligible).length, liveObservationCreated: false, signalPath: null, latestPath: null })}`);
     return;
@@ -87,8 +113,9 @@ async function main() {
 
   const credentials = { appKey: process.env.KIS_APP_KEY ?? "", appSecret: process.env.KIS_APP_SECRET ?? "" };
   if (!credentials.appKey || !credentials.appSecret) throw new Error("KIS_CREDENTIALS_MISSING");
-  const tokenManager = createKisTokenManager({ fetchImpl: fetch, getCredentials: () => credentials });
-  const client = createKisApiClient({ fetchImpl: fetch, tokenManager, getCredentials: () => credentials });
+  const guardedFetch = createLiveObservationFetch({ signalDate, nonObservational: connectivityPreflight });
+  const tokenManager = createKisTokenManager({ fetchImpl: guardedFetch, getCredentials: () => credentials });
+  const client = createKisApiClient({ fetchImpl: guardedFetch, tokenManager, getCredentials: () => credentials });
   if (!preflight && !connectivityPreflight) {
     operations.phase = "calendar";
     if ([0, 6].includes(signalWeekday(signalDate))) {
@@ -191,7 +218,7 @@ async function main() {
     return;
   }
   operations.phase = "calculation";
-  const artifact = buildIntradayModelTopSignal({ seed, quotesByCode: collection.quotesByCode, signalDate, collectionStartedAt: collection.startedAt, collectionCompletedAt: collection.completedAt, observationType: "LIVE_OBSERVATION" });
+  const artifact = buildIntradayModelTopSignal({ seed, quotesByCode: collection.quotesByCode, signalDate, collectionStartedAt: collection.startedAt, collectionCompletedAt: collection.completedAt, observationType: "LIVE_OBSERVATION", inputProvenance: operations.inputProvenance ?? null });
   operations.calculationCompletedAt = new Date().toISOString();
   operations.phase = "validation";
   const validationErrors = validateIntradayModelTopSignal(artifact);
@@ -224,14 +251,15 @@ await main().catch(async (error) => {
   const now = new Date();
   const date = formatDate(kst(now));
   const reason = error instanceof Error ? error.message.slice(0, 120) : "unknownFailure";
+  const status = reason.startsWith("LIVE_INPUT_NOT_READY_") ? "WAITING" : "FAILED";
   let latestPath = null;
   try {
-    await writeLatest({ schemaVersion: 1, artifactType: "intradayModelTopLatestStatus", signalDate: date, officialSignalTime: OFFICIAL_SIGNAL_TIME, status: "FAILED", reason, failureStage: operations.phase, updatedAt: now.toISOString() });
+    await writeLatest({ schemaVersion: 1, artifactType: "intradayModelTopLatestStatus", signalDate: date, officialSignalTime: OFFICIAL_SIGNAL_TIME, status, reason, failureStage: operations.phase, updatedAt: now.toISOString() });
     latestPath = "data/intraday-signals/model-top/latest.json";
   } catch {
     console.error("INTRADAY_MODEL_TOP_STATUS_WRITE_FAILED");
   }
   console.error(`INTRADAY_MODEL_TOP_FAILED reason=${reason}`);
-  console.log(`INTRADAY_MODEL_TOP_RESULT_JSON=${JSON.stringify({ status: "FAILED", signalDate: date, latestPath, reason, failureStage: operations.phase })}`);
+  console.log(`INTRADAY_MODEL_TOP_RESULT_JSON=${JSON.stringify({ status, signalDate: date, latestPath, reason, failureStage: operations.phase })}`);
   process.exitCode = 1;
 }).finally(() => console.log(`LIVE_OPERATION_TIMING_JSON=${JSON.stringify(operations)}`));

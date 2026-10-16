@@ -6,5 +6,5 @@
   "preview_urls": false,
   "observability": { "enabled": true },
   "vars": { "DISPATCH_ENABLED": "true" },
-  "triggers": { "crons": ["12,22 5 * * MON-FRI"] }
+  "triggers": { "crons": ["42,52 4 * * MON-FRI"] }
 }

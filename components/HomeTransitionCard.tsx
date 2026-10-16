@@ -1,5 +1,6 @@
 "use client";
 
+import { CURRENT_LIVE_PROFILE } from "../lib/intraday-model-top-time-policy.mjs";
 import { useEffect, useState } from "react";
 import { transitionLabel } from "../lib/directional-transition.mjs";
 import { LiveTransitionMetadata, LiveTransitionRules, TransitionModeSelector, liveNumber, livePrice, liveQuoteStamp, liveStatusLabel, type LiveTransitionResponse, type LiveTransitionStatus, type TransitionMode } from "./LiveTransitionDetails";
@@ -29,7 +30,7 @@ export function validateHomeLiveTransitionResponses(value: unknown): [HomeLiveTr
     const response = record(input), source = record(response?.source), exclusions = record(response?.exclusions);
     if (!response || response.mode !== "LIVE" || response.pair !== PAIRS[index] || response.nearPercent !== 1
       || !date(response.referenceDate) || !date(response.previousOfficialDate) || response.modelReferenceDate !== response.previousOfficialDate
-      || response.previousOfficialDate >= response.referenceDate || response.snapshotTime !== "14:30:00" || !text(response.ruleVersion)
+      || response.previousOfficialDate >= response.referenceDate || response.snapshotTime !== CURRENT_LIVE_PROFILE.signalTime || response.signalVersion !== CURRENT_LIVE_PROFILE.signalVersion || response.observationPolicyId !== CURRENT_LIVE_PROFILE.policyId || !text(response.ruleVersion)
       || !text(response.collectionStartedAt) || !Number.isFinite(Date.parse(response.collectionStartedAt))
       || !text(response.collectionCompletedAt) || !Number.isFinite(Date.parse(response.collectionCompletedAt))
       || !source || !text(source.signalContentHash) || !text(source.seedContentHash) || !text(source.normalizedInputHash) || source.isRealtime !== false
@@ -51,7 +52,7 @@ export function validateHomeLiveTransitionResponses(value: unknown): [HomeLiveTr
   }
   const responses = value as [HomeLiveTransitionPair, HomeLiveTransitionPair];
   const [first, second] = responses;
-  if (["referenceDate", "previousOfficialDate", "modelReferenceDate", "snapshotTime", "collectionStartedAt", "collectionCompletedAt", "ruleVersion"]
+  if (["signalVersion", "observationPolicyId", "referenceDate", "previousOfficialDate", "modelReferenceDate", "snapshotTime", "collectionStartedAt", "collectionCompletedAt", "ruleVersion"]
     .some((key) => first[key as keyof HomeLiveTransitionPair] !== second[key as keyof HomeLiveTransitionPair])
     || first.source.signalContentHash !== second.source.signalContentHash || first.source.seedContentHash !== second.source.seedContentHash
     || first.source.normalizedInputHash !== second.source.normalizedInputHash) throw new Error(MIXED_RESPONSE);
@@ -69,7 +70,7 @@ export default function HomeTransitionCard({ transitions, onSelectStock, onOpenT
     <h2 id="home-transition-heading" className="text-base font-semibold">전환 신호 · {mode === "LIVE" ? "LIVE 장중 잠정" : "EOD 확정 일봉"}</h2>
     <div className="mt-3"><TransitionModeSelector mode={mode} onChange={setMode} label="홈 전환 신호 데이터 기준" /></div>
     {mode === "LIVE" ? <>
-      <p className="mt-3 text-xs leading-relaxed text-amber-800">TOP LIVE의 저장된 14:30 관측 스냅샷입니다. 실시간 스트리밍이 아니며, 장중 또는 종가에서 신호가 되돌아갈 수 있습니다.</p>
+      <p className="mt-3 text-xs leading-relaxed text-amber-800">TOP LIVE의 저장된 14:00 관측 스냅샷입니다. 실시간 스트리밍이 아니며, 장중 또는 종가에서 신호가 되돌아갈 수 있습니다.</p>
       <p className="mt-2 text-xs text-slate-600">근접 기준: 교차 경계까지 필요 추가 상승률 1% 이하 · 연구용 탐색 조건이며 검증된 확률이 아닙니다.</p>
       <HomeLiveTransitionResults key={refreshVersion} onSelectStock={onSelectStock} onOpenTransition={onOpenTransition} />
       <LiveTransitionRules nearPercent={1} />

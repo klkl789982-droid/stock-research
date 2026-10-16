@@ -1,12 +1,12 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { prepareMarketPriceLedgers } from "../lib/future-return-resolver.mjs";
-import { validateIntradayModelTopSignal } from "../lib/intraday-model-top-official-signal.mjs";
-import { resolveIntradayModelTopOutcomes, validateIntradayModelTopOutcomes } from "../lib/intraday-model-top-outcome-resolver.mjs";
+import { validateIntradayModelTopSignal, isCurrentIntradayModelTopSignal } from "../lib/intraday-model-top-official-signal.mjs";
+import { INTRADAY_MODEL_TOP_OUTCOME_DIRECTORY, resolveIntradayModelTopOutcomes, validateIntradayModelTopOutcomes } from "../lib/intraday-model-top-outcome-resolver.mjs";
 
 const root = process.cwd();
 const signalRoot = path.join(root, "data", "intraday-signals", "model-top");
-const outcomeRoot = path.join(root, "data", "intraday-outcomes", "model-top");
+const outcomeRoot = path.join(root, INTRADAY_MODEL_TOP_OUTCOME_DIRECTORY);
 const ledgerRoot = path.join(root, "data", "market-prices");
 const readJson = async (file) => JSON.parse(await fs.readFile(file, "utf8"));
 const listDates = async (directory) => { try { return (await fs.readdir(directory, { withFileTypes: true })).filter((entry) => entry.isDirectory() && /^\d{4}-\d{2}-\d{2}$/u.test(entry.name)).map((entry) => entry.name).sort(); } catch (error) { if (error?.code === "ENOENT") return []; throw error; } };
@@ -21,10 +21,11 @@ const priceLedgers = prepareMarketPriceLedgers(rawLedgers);
 const changedPaths = [];
 let scanned = 0;
 for (const signalDate of signalDates) {
-  const signalPath = path.join(signalRoot, signalDate, "1430.json");
+  const signalPath = path.join(signalRoot, signalDate, "1400.json");
   let signal;
   try { signal = await readJson(signalPath); } catch (error) { if (error?.code === "ENOENT") continue; throw error; }
   if (signal.observationType !== "LIVE_OBSERVATION" || signal.status !== "READY") continue;
+  if (!isCurrentIntradayModelTopSignal(signal)) throw new Error(`${signalDate}:CURRENT_1400_SIGNAL_REQUIRED`);
   const signalErrors = validateIntradayModelTopSignal(signal);
   if (signalErrors.length) throw new Error(`${signalDate}:INTRADAY_SIGNAL_INVALID:${signalErrors.join(",")}`);
   scanned += 1;
@@ -33,6 +34,8 @@ for (const signalDate of signalDates) {
   try { existing = await readJson(output); } catch (error) { if (error?.code !== "ENOENT") throw error; }
   if (existing && existing.signalContentHash !== signal.contentHash) throw new Error(`${signalDate}:INTRADAY_SIGNAL_HASH_CONFLICT`);
   const resolvedAt = new Date().toISOString();
+  // No receipt/execution adapter exists yet. Do not infer availability from
+  // collectionCompletedAt, nominal market close, operations status, or old MATURE rows.
   const candidate = resolveIntradayModelTopOutcomes({ signal, existing, priceLedgers, tradingCalendar, resolvedAt });
   const errors = validateIntradayModelTopOutcomes(candidate);
   if (errors.length) throw new Error(`${signalDate}:INTRADAY_OUTCOME_INVALID:${errors.join(",")}`);
@@ -44,4 +47,4 @@ for (const signalDate of signalDates) {
   await fs.rename(temporary, output);
   changedPaths.push(path.relative(root, output).replaceAll("\\", "/"));
 }
-console.log(`INTRADAY_MODEL_TOP_OUTCOMES_RESULT_JSON=${JSON.stringify({ status: "READY", scanned, changedPaths })}`);
+console.log(`INTRADAY_MODEL_TOP_OUTCOMES_RESULT_JSON=${JSON.stringify({ status: "READY", layer: "INTRADAY_1400_LIVE", executionEvidenceStatus: "VERIFIED_RECEIPT_ADAPTER_REQUIRED", scanned, changedPaths })}`);

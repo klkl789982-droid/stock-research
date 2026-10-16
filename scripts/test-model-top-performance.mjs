@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { buildIntradayModelTopPerformance, buildModelTopPerformance, MODEL_PERFORMANCE_HORIZONS, MODEL_PERFORMANCE_MODELS, MODEL_PERFORMANCE_TOP_SIZES } from "../lib/model-top-performance.mjs";
+import { buildIntradayModelTopPerformance, buildLegacyIntradayModelTopPerformance, buildModelTopPerformance, MODEL_PERFORMANCE_HORIZONS, MODEL_PERFORMANCE_MODELS, MODEL_PERFORMANCE_TOP_SIZES } from "../lib/model-top-performance.mjs";
+import { currentOutcome, rehash } from "./fixtures/intraday-1400-outcomes.mjs";
 
 const record = (index) => ({
   code: String(index).padStart(6, "0"),
@@ -87,7 +88,8 @@ for (const model of MODEL_PERFORMANCE_MODELS) for (const topN of MODEL_PERFORMAN
   assert.equal(metrics.maxObservation.returnPercent, values.at(-1));
 }
 
-const liveOutcomes = [mixed, repeatedOutcome].map((o) => ({
+const liveOutcomes = [mixed, repeatedOutcome].map((o) => rehash({
+  schemaVersion: 1, layer: "INTRADAY_1430_LIVE", executionPolicy: { policyId: "intraday-1430-t1-open-v1" },
   signalDate: o.signalDate, signalTime: "14:30:00", dataset: "intraday-model-top-execution-outcomes", contentHash: `fixture-${o.signalDate}`,
   records: MODEL_PERFORMANCE_MODELS.flatMap((modelVersion) => snapshot.records.map((r, index) => ({
     modelVersion, ticker: r.code, companyName: r.name, rank: r.ranks[{ "A-v1": "modelA", "B-v1": "modelB", "C-v1": "modelC", "D-v1": "modelD" }[modelVersion]],
@@ -96,7 +98,7 @@ const liveOutcomes = [mixed, repeatedOutcome].map((o) => ({
   }))),
 }));
 const liveBefore = structuredClone(liveOutcomes);
-const live = buildIntradayModelTopPerformance({ outcomes: liveOutcomes });
+const live = buildLegacyIntradayModelTopPerformance({ outcomes: liveOutcomes });
 for (const model of MODEL_PERFORMANCE_MODELS) for (const topN of MODEL_PERFORMANCE_TOP_SIZES) for (const horizon of MODEL_PERFORMANCE_HORIZONS) {
   const actual = getMetrics(live, model, topN, horizon);
   const expected = getMetrics(repeated, model, topN, horizon);
@@ -105,10 +107,10 @@ for (const model of MODEL_PERFORMANCE_MODELS) for (const topN of MODEL_PERFORMAN
   assert.equal(actual.minObservation.entryDate, "2026-10-01");
   assert.equal(actual.minObservation.entryPriceBasis, "nextTradingDayOfficialOpen");
   assert.equal(actual.maxObservation.evaluationEndDate, "2027-01-15");
-  assert.equal(actual.minObservation.source.contentHash, "fixture-2026-09-30");
+  assert.equal(actual.minObservation.source.contentHash, liveOutcomes[0].contentHash);
 }
 assert.deepEqual(liveOutcomes, liveBefore);
-assert.deepEqual(live, buildIntradayModelTopPerformance({ outcomes: liveOutcomes }));
+assert.deepEqual(live, buildLegacyIntradayModelTopPerformance({ outcomes: liveOutcomes }));
 for (const model of buildIntradayModelTopPerformance({ outcomes: [] }).summary) for (const g of model.groups) for (const h of g.horizons) {
   assert.equal(h.status, "ACCUMULATING"); assert.equal(h.meanReturn, null); assert.equal(h.minObservation, null); assert.equal(h.observationCount, 0);
 }
@@ -116,6 +118,22 @@ const expectedLiveCount = liveOutcomes.flatMap((o) => o.records).reduce((count, 
 assert.equal(live.totalOutcomeObservationCount, expectedLiveCount, "non-finite MATURE outcomes must not inflate the top-level count");
 const invalidRank = structuredClone(liveOutcomes[0]);
 invalidRank.records = invalidRank.records.map((r) => ({ ...r, rank: 0 }));
-assert.equal(getMetrics(buildIntradayModelTopPerformance({ outcomes: [invalidRank] }), "A-v1", 5, "1DAY").observationCount, 0);
+assert.equal(getMetrics(buildLegacyIntradayModelTopPerformance({ outcomes: [rehash(invalidRank)] }), "A-v1", 5, "1DAY").observationCount, 0);
+
+assert.equal(live.archiveOnly, true);
+assert.equal(live.evidenceStatus, "UNVERIFIED_LEGACY_ARCHIVE");
+const noCurrentData = buildIntradayModelTopPerformance({ outcomes: liveOutcomes });
+assert.equal(noCurrentData.layer, "INTRADAY_1400_LIVE");
+assert.equal(noCurrentData.executionPolicyId, "intraday-1400-t1-open-v1");
+assert.equal(noCurrentData.totalOutcomeObservationCount, 0);
+assert.equal(getMetrics(noCurrentData, "B-v1", 5, "1DAY").meanReturn, null);
+const current = currentOutcome();
+const currentPerformance = buildIntradayModelTopPerformance({ outcomes: [...liveOutcomes, current] });
+assert.equal(currentPerformance.archiveOnly, false);
+assert.equal(getMetrics(currentPerformance, "B-v1", 5, "1DAY").meanReturn, 7);
+assert.equal(getMetrics(currentPerformance, "B-v1", 5, "1DAY").minObservation.signalTime, "14:00:00");
+assert.equal(getMetrics(currentPerformance, "B-v1", 5, "1DAY").observationCount, 1);
+const malformed = [null, {}, { ...current, records: [null] }, { ...current, executionPolicy: null }];
+assert.equal(buildIntradayModelTopPerformance({ outcomes: malformed }).totalOutcomeObservationCount, 0);
 
 console.log("model performance A~D/TOP5~20/1~60D/extrema/ties/unique counts/mature-only/isolation/unchanged metrics tests passed");

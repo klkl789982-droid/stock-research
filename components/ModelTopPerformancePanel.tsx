@@ -43,6 +43,7 @@ type Response = {
   totalOutcomeObservationCount: number;
   summary: ModelSummary[];
   live: {
+    layer: string;
     executionPolicyId: string;
     matureSignalDates: string[];
     signalDateRange: { from: string; to: string } | null;
@@ -84,7 +85,7 @@ export default function ModelTopPerformancePanel() {
   const [error, setError] = useState(false);
   const [modelVersion, setModelVersion] = useState("B-v1");
   const [topN, setTopN] = useState(10);
-  const [performanceLayer, setPerformanceLayer] = useState<"DAILY_EOD" | "INTRADAY_1430_LIVE" | "RESEARCH">("DAILY_EOD");
+  const [performanceLayer, setPerformanceLayer] = useState<"DAILY_EOD" | "INTRADAY_1400_LIVE" | "RESEARCH">("DAILY_EOD");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -102,7 +103,8 @@ export default function ModelTopPerformancePanel() {
   }, []);
 
   const selectedHorizons = useMemo(() => {
-    const summary = performanceLayer === "DAILY_EOD" ? data?.summary : data?.live?.summary;
+    const currentLive = data?.live?.layer === "INTRADAY_1400_LIVE" && data.live.executionPolicyId === "intraday-1400-t1-open-v1" ? data.live : null;
+    const summary = performanceLayer === "DAILY_EOD" ? data?.summary : currentLive?.summary;
     const group = summary?.find((model) => model.modelVersion === modelVersion)?.groups.find((item) => item.topN === topN);
     const horizons = performanceLayer === "DAILY_EOD" ? DAILY_HORIZONS : LIVE_HORIZONS;
     return horizons.map((horizon) => group?.horizons.find((item) => item.horizon === horizon) ?? {
@@ -122,7 +124,7 @@ export default function ModelTopPerformancePanel() {
     });
   }, [data, modelVersion, performanceLayer, topN]);
 
-  const metadata = performanceLayer === "DAILY_EOD" ? data : data?.live;
+  const metadata = performanceLayer === "DAILY_EOD" ? data : data?.live?.layer === "INTRADAY_1400_LIVE" && data.live.executionPolicyId === "intraday-1400-t1-open-v1" ? data.live : null;
 
   return (
     <section className="tb-card mt-6 p-4 sm:p-6" aria-labelledby="model-performance-heading">
@@ -141,11 +143,11 @@ export default function ModelTopPerformancePanel() {
 
       <div className="mt-4 inline-flex max-w-full flex-wrap rounded-lg bg-slate-100/90 p-1" role="tablist" aria-label="성과 계층 선택">
         <button type="button" role="tab" aria-selected={performanceLayer === "DAILY_EOD"} onClick={() => setPerformanceLayer("DAILY_EOD")} className={`rounded-md px-3 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tb-orange)] ${performanceLayer === "DAILY_EOD" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}>Daily EOD</button>
-        <button type="button" role="tab" aria-selected={performanceLayer === "INTRADAY_1430_LIVE"} onClick={() => setPerformanceLayer("INTRADAY_1430_LIVE")} className={`rounded-md px-3 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tb-orange)] ${performanceLayer === "INTRADAY_1430_LIVE" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}>14:30 LIVE</button>
+        <button type="button" role="tab" aria-selected={performanceLayer === "INTRADAY_1400_LIVE"} onClick={() => setPerformanceLayer("INTRADAY_1400_LIVE")} className={`rounded-md px-3 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tb-orange)] ${performanceLayer === "INTRADAY_1400_LIVE" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}>14:00 LIVE</button>
         <button type="button" role="tab" aria-selected={performanceLayer === "RESEARCH"} onClick={() => setPerformanceLayer("RESEARCH")} className={`rounded-md px-3 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tb-orange)] ${performanceLayer === "RESEARCH" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}>실행 연구</button>
       </div>
       {performanceLayer === "RESEARCH" ? <ModelPerformanceResearchPanel /> : <>
-      <p className="mt-2 text-xs text-slate-500">{performanceLayer === "DAILY_EOD" ? "동결된 EOD 순위와 공식 종가 결과" : "14:30 동결 신호 · 다음 거래일 공식 시가 진입 · 거래일 종가 성과"}</p>
+      <p className="mt-2 text-xs text-slate-500">{performanceLayer === "DAILY_EOD" ? "동결된 EOD 순위와 공식 종가 결과" : "14:00 동결 신호 · 다음 거래일 공식 시가 진입 · 거래일 종가 성과"}</p>
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-3">
         <div className="flex gap-1" role="tablist" aria-label="성과 모델 선택">

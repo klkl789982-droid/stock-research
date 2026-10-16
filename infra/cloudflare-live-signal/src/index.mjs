@@ -1,5 +1,5 @@
 // Independent, approval-gated prewarm trigger. No prices or signal writes.
-export const CRONS = ["12,22 5 * * MON-FRI"]; // 14:12 / 14:22 KST
+export const CRONS = ["42,52 4 * * MON-FRI"]; // 13:42 / 13:52 KST; deployment is a separate operation.
 const API = "https://api.github.com/repos/klkl789982-droid/stock-research/actions/workflows/intraday-model-top-official-signal.yml";
 const validSlot = (event, nowMs) => {
   const scheduled = new Date(event.scheduledTime);
@@ -7,8 +7,8 @@ const validSlot = (event, nowMs) => {
   // Keep the original two-minute prewarm deadline anchored to that nominal minute.
   const slotMs = Math.floor(scheduled.getTime() / 60000) * 60000;
   return CRONS.includes(event.cron) && Number.isFinite(scheduled.getTime()) && Number.isFinite(nowMs)
-    && ![0, 6].includes(scheduled.getUTCDay()) && scheduled.getUTCHours() === 5
-    && [12, 22].includes(scheduled.getUTCMinutes())
+    && ![0, 6].includes(scheduled.getUTCDay()) && scheduled.getUTCHours() === 4
+    && [42, 52].includes(scheduled.getUTCMinutes())
     && nowMs >= scheduled.getTime() && nowMs - slotMs <= 120000;
 };
 export async function dispatchLivePrewarm(event, env, { fetchImpl = fetch, now = Date.now, wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms)) } = {}) {

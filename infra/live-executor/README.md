@@ -3,8 +3,9 @@
 This Node.js 22+ service collects KIS prices directly. GitHub Actions, dispatch,
 and hosted runner startup are absent from its observation path. Existing
 `calculateIntradayModelTopScores` and `buildIntradayModelTopSignal` are imported
-unchanged (A-v1/B-v1/C-v1/D-v1). The existing prewarm Worker remains operational
-during parallel validation.
+with the existing A-v1/B-v1/C-v1/D-v1 score formulas. The observation policy is
+versioned separately. The existing prewarm Worker is documented configuration;
+its actual deployed state was not verified by this local task.
 
 ## Runtime choice and limits
 
@@ -40,14 +41,14 @@ verified. Existing KIS cloud storage/display approval remains outstanding.
 
 ## Preparation, observation, recovery
 
-The daemon prepares from 14:10 KST: checks the KIS trading calendar, fetches the
-newest official seed strictly before the observation date, validates its hash,
+The daemon prepares from 13:40 KST: checks the KIS trading calendar, fetches the
+official seed for the verified immediately preceding trading session, validates its hash and actual availability by 14:00,
 and verifies formula files against Git HEAD and the seed manifest. Preparation
 does not fetch observation prices. `git fetch` reads data; it does not change the
 working tree or auto-update running code.
 
-At 14:30 the local timer starts collection. Every actual KIS request and retry
-checks the current KST date and the existing 14:30:00–14:35:00 policy. Source
+At 14:00 the local timer starts collection. Every actual KIS request and retry
+checks the current KST date and the existing 14:00:00–14:05:00 policy. Source
 timestamps are preserved. Delayed start cannot generate a backdated observation.
 Quotes already collected are immutable; partial retries request only missing
 symbols. A complete set can finish calculation/storage after a process restart
@@ -88,7 +89,7 @@ is a deployment template for an approved always-on Linux host. No Windows task,
 system service, new credential or new host is silently installed by this code.
 The daemon records heartbeat and failure status. A supervisor restarts process
 failures; persisted quotes avoid full recollection. An offline host cannot
-reconstruct a missed 14:30 observation.
+reconstruct a missed 14:00 observation.
 
 Publication is off by default while the new observer runs in parallel. Enabling
 it requires a dedicated clean clone, existing Git write credentials, verified
@@ -139,3 +140,49 @@ scheduled execution success.
 These are current-time prices, not 14:30 observations. The measured ~90s margin
 under five minutes is one observed run, not a guarantee of peak-hour latency.
 No raw price, credential or private state from the run is committed here.
+
+
+## 14:00 cutover configuration (local implementation)
+
+The active observation policy is 14:00:00–14:05:00 KST, schema v2, with
+`1400.json` canonical files. Existing v1 `1430.json` observations remain read-only
+archives; they are not shifted, relabeled, republished or recollected. The
+legacy B collector is retired because A/B/C/D share one canonical observation.
+Future active layers are 14:00 LIVE and the existing EOD layer.
+
+GitHub prewarm source is 13:45 KST. Cloudflare source/config now specifies
+13:42 and 13:52 KST; this local change does not prove the deployed Worker was
+updated. The local daemon starts preparation at 13:40. No service installation,
+remote scheduler update, collection or deployment is performed by this change.
+Old outbox results from the 14:30 policy return ARCHIVED without mutation.
+
+The preceding-session seed must have explicit hash-bound observed/generated
+receipts by 14:00. Missing receipts, a late seed, an unknown intervening weekday,
+or a missing previous trading session block collection with INPUT_NOT_READY.
+An earlier dataset is not silently used to bridge a missing trading session.
+
+14:00 is the beginning of collection, not a guaranteed calculation, storage or
+site publication completion time. Every actual observation HTTP call, including
+an internal authentication retry, and its full response must stay within the
+collection deadline. Partial or missed observations cannot become READY. A
+stored complete result may be verified/published later without claiming a new
+on-time observation; original event/receipt/collection times remain unchanged.
+
+Deployment verification requires the exact active policy, canonical path,
+content hash and real collection bounds in the authenticated site API. A dispatch
+acceptance, workflow green check or matching date alone is insufficient.
+
+The GitHub LIVE command explicitly adds `--refresh-inputs`. It waits until
+13:59 KST and fetches existing origin/main once, then reads the seed and calendar
+from one pinned commit through `git show`. It never checks out, resets or stages
+those inputs. Dirty/different runtime code or dependencies, mismatched formula
+hashes, an unknown previous session, or refresh/readiness at or after 14:00 fail
+closed before price collection. Seed/calendar hashes, the input commit and actual
+refresh/readiness timestamps are bound into the immutable observation when this
+path is used. Ordinary CLI and dry-run do not implicitly refresh remote inputs.
+A 13:56 receipt in one saved session is not a daily availability guarantee.
+
+Private `/top` is explicitly a stored-observation readback. For LIVE it accepts
+only the active 14:00 policy and reports its time/version/policy; it does not
+certify current-session freshness. A preserved 14:30 pointer returns unavailable,
+without rewriting the pointer or archived artifact.

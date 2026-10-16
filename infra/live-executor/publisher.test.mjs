@@ -11,7 +11,7 @@ import { buildIntradayModelTopSignal, hashIntradayModelTop } from "../../lib/int
 const execute = promisify(execFile);
 const git = async (args, cwd) => (await execute("git", args, { cwd, windowsHide: true })).stdout.trim();
 const environment = { LIVE_EXECUTOR_PUBLISH_ENABLED: "true", LIVE_EXECUTOR_PUBLICATION_AUTHORIZED: "true", TB_AUTOMATION_READ_TOKEN: "non-secret-test-token" };
-const signalPath = "data/intraday-signals/model-top/2026-10-06/1430.json";
+const signalPath = "data/intraday-signals/model-top/2026-10-06/1400.json";
 const latestPath = "data/intraday-signals/model-top/latest.json";
 function fixture(observationType = "LIVE_OBSERVATION") {
   // Synthetic fixture is used solely in an isolated local bare Git repository, never a production endpoint.
@@ -19,9 +19,9 @@ function fixture(observationType = "LIVE_OBSERVATION") {
     const date = new Date("2026-10-02T00:00:00Z"); date.setUTCDate(date.getUTCDate() - index);
     return [date.toISOString().slice(0, 10).replaceAll("-", ""), 100 + index / 10, 102 + index / 10, 98 + index / 10, 100 + index / 10, 1000 + index];
   });
-  const seed = { requestedDate: "2026-10-02", contentHash: "synthetic-seed", sourceManifest: { modelFormulaHashes: { "A-v1": "a", "B-v1": "b", "C-v1": "c", "D-v1": "d" } }, records: [{ code: "000001", name: "Synthetic", market: "KOSPI", eligible: true, rows }] };
-  const quote = { asOfDate: "2026-10-06", asOfTime: "14:30:10", receivedAt: "2026-10-06T05:30:11.000Z", open: 199, high: 202, low: 198, price: 200, volume: 2000, change: 5, rate: 2.5 };
-  return buildIntradayModelTopSignal({ seed, quotesByCode: new Map([["000001", quote]]), signalDate: "2026-10-06", collectionStartedAt: "2026-10-06T05:30:00.000Z", collectionCompletedAt: "2026-10-06T05:31:00.000Z", observationType });
+  const seed = { requestedDate: "2026-10-02", generatedAt: "2026-10-06T03:00:00Z", contentHash: "e".repeat(64), sourceManifest: { sources: { officialDailyPrice: { normalizedInputHash: "a".repeat(64), availability: { requestedAt: "2026-10-06T02:58:00Z", observedAt: "2026-10-06T02:59:00Z", referenceDate: "2026-10-02", normalizedInputHash: "a".repeat(64), availabilityStatus: "OBSERVED", availabilityEvidence: "SYSTEM_OBSERVED_BATCH_COLLECTION", outcome: "success" } } }, modelFormulaHashes: { "A-v1": "a".repeat(64), "B-v1": "b".repeat(64), "C-v1": "c".repeat(64), "D-v1": "d".repeat(64) } }, records: [{ code: "000001", name: "Synthetic", market: "KOSPI", eligible: true, rows }] };
+  const quote = { asOfDate: "2026-10-06", asOfTime: "14:00:10", receivedAt: "2026-10-06T05:00:11.000Z", open: 199, high: 202, low: 198, price: 200, volume: 2000, change: 5, rate: 2.5 };
+  return buildIntradayModelTopSignal({ seed, quotesByCode: new Map([["000001", quote]]), signalDate: "2026-10-06", collectionStartedAt: "2026-10-06T05:00:00.000Z", collectionCompletedAt: "2026-10-06T05:01:00.000Z", observationType });
 }
 function changeSignal(signal, changes) {
   const body = { ...signal, ...changes };
@@ -76,8 +76,8 @@ test("isolated local Git publication preserves immutable content, latest pointer
 test("TEST_FIXTURE, partial signals and after-window timestamps cannot be published", async (t) => {
   const s = await sandbox(t);
   await assert.rejects(publish(s, { signal: fixture("TEST_FIXTURE") }), /REQUIRES_REAL_READY_LIVE/u);
-  await assert.rejects(publish(s, { signal: changeSignal(fixture(), { collection: { successful: 1, failed: 1, ineligible: 0 } }) }), /COLLECTION_INCOMPLETE/u);
-  await assert.rejects(publish(s, { signal: changeSignal(fixture(), { collectionCompletedAt: "2026-10-06T05:36:00.000Z" }) }), /COLLECTION_WINDOW_INVALID/u);
+  await assert.rejects(publish(s, { signal: changeSignal(fixture(), { collection: { successful: 1, failed: 1, ineligible: 0 } }) }), /(?:COLLECTION_INCOMPLETE|PUBLISH_SIGNAL_INVALID)/u);
+  await assert.rejects(publish(s, { signal: changeSignal(fixture(), { collectionCompletedAt: "2026-10-06T05:06:00.000Z" }) }), /(?:COLLECTION_WINDOW_INVALID|PUBLISH_SIGNAL_INVALID)/u);
   assert.equal(await git(["rev-list", "--count", "main"], s.remote), "1");
 });
 

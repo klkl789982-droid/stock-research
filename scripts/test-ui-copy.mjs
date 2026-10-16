@@ -10,13 +10,13 @@ assert.match(sources["components/HomeDashboard.tsx"], /<h1 id="home-dashboard-he
 assert.match(sources["app/page.tsx"], /<h3[^>]*>분석 요약<\/h3>/u);
 assert.match(sources["components/TechnicalStrengthPanel.tsx"], /<h2[^>]*>기술 강도<\/h2>/u);
 // Shorter headings must not erase the information that qualifies each result.
-for (const text of ["공식 EOD", "14:30 LIVE", "원본 대기", "저장소 게시 실패", "배포 실패", "사이트 확인 실패", "최근 수집 실패 사유", "독립 표본 아님", "모델 우열 판정 없음"])
+for (const text of ["공식 EOD", "14:00 LIVE", "원본 대기", "저장소 게시 실패", "배포 실패", "사이트 확인 실패", "최근 수집 실패 사유", "독립 표본 아님", "모델 우열 판정 없음"])
   assert.ok(sources["components/HomeDashboard.tsx"].includes(text), text);
 for (const text of ["공식 일봉 모델 순위", "모델 기준일", "기업분석", "격리 종목", "선택 모델 결측", 'role="alert"', "조건 초기화"])
   assert.ok(sources["components/StockScreenerPanel.tsx"].includes(text), text);
-for (const text of ["데이터 기준일", "KIS 당일 잠정 EOD", "14:30 KIS 관측 신호", "최신 공식 일봉 기준일을 확인할 수 없습니다", "시세 확인 불가", "TOP50 데이터 없음", "다시 시도"])
+for (const text of ["데이터 기준일", "KIS 당일 잠정 EOD", "14:00 KIS 관측 신호", "최신 공식 일봉 기준일을 확인할 수 없습니다", "시세 확인 불가", "TOP50 데이터 없음", "다시 시도"])
   assert.ok(sources["components/TopStocksPanel.tsx"].includes(text), text);
-for (const text of ["Daily EOD", "14:30 LIVE", "실행 연구", "미확정 결과는 통계와 N에 포함하지 않습니다", "독립 표본이 아니며", "실제 매수 진입일을 뜻하지 않습니다", "비용·슬리피지를 반영한 실현 수익률이 아닙니다"])
+for (const text of ["Daily EOD", "14:00 LIVE", "실행 연구", "미확정 결과는 통계와 N에 포함하지 않습니다", "독립 표본이 아니며", "실제 매수 진입일을 뜻하지 않습니다", "비용·슬리피지를 반영한 실현 수익률이 아닙니다"])
   assert.ok(sources["components/ModelTopPerformancePanel.tsx"].includes(text), text);
 for (const text of ["관리자 로그인", 'htmlFor="admin-username"', 'htmlFor="admin-password"', 'type="password"', 'role="alert"', "인증되지 않은 요청에는 분석 데이터가 제공되지 않습니다"])
   assert.ok(sources["components/AdminLogin.tsx"].includes(text), text);

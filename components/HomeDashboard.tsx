@@ -6,12 +6,13 @@ import HomeTransitionCard, { type HomeEodTransitions, type HomeTransitionNavigat
 type Stock = { code: string; name: string; market?: string };
 type Ranked = Stock & { rank: number; score: number; previousRank?: number | null; rankChange?: number | null };
 type Model = { modelVersion: string; rankingUniverseCount: number; top: Ranked[]; comparisonStatus?: string; previousDate?: string | null };
-type LiveStatus = { status: string; signalDate: string | null; runStartedAt?: string | null; runnerFirstStepAt?: string | null; scheduledAt?: string | null; nextScheduledAt?: string | null; lastSuccessAt?: string | null; lastGoodDate?: string | null; storedAt?: string | null };
+type LiveStatus = { status: string; officialSignalTime?: string; observationPolicyId?: string; signalDate: string | null; runStartedAt?: string | null; runnerFirstStepAt?: string | null; scheduledAt?: string | null; nextScheduledAt?: string | null; lastSuccessAt?: string | null; lastGoodDate?: string | null; storedAt?: string | null };
 type Dashboard = { referenceDate: string | null; models: { referenceDate: string; models: Model[] } | null; transitions: HomeEodTransitions | null; calendar: { today: string; time: string; dayStatus: string; expectedTradingDate: string | null } | null; liveStatus: LiveStatus | null };
 type PerformanceRow = { modelVersion: string; horizon: string; topN: number; signalDate: string; targetTradingDate: string | null; observationCount: number; meanReturn: number | null; positiveRate: number | null };
-type Performance = { daily: PerformanceRow[]; live?: { daily: PerformanceRow[] } };
+type Performance = { daily: PerformanceRow[]; live?: { layer: string; executionPolicyId: string; daily: PerformanceRow[] } };
 type Verification = { referenceDate: string; verifiedAt: string | null; runUrl: string; commitSha: string; snapshotHash: string };
 type Operations = { latestAttempt?: { status: string; conclusion: string | null; stage: string | null; startedAt: string; completedAt: string | null; runUrl: string } | null; lastAutomaticRunAt?: string | null; lastAutomaticRunConclusion?: string | null; lastSuccessAt?: string | null; lastGoodStoredReferenceDate?: string | null; siteApiReferenceDate?: string | null; publishedReferenceDate?: string | null; latestConfirmedTradingDate?: string | null; latestCollectedReferenceDate?: string | null; latestValidatedReferenceDate?: string | null; lastSourceCheckAt?: string | null; sourceStatus?: string; recentFailureReason?: string | null; freshnessStatus?: string; repositoryPublicationStatus?: string; repositoryStatusAvailable?: boolean; siteApiMatchesPublished?: boolean; runStatus?: string; lagTradingDays?: number | null; deployment?: { state: string; reason: string | null; lastVerified: Verification | null; verification?: Verification | null; checkedAt?: string | null; intendedIdentity?: { referenceDate: string; snapshotHash: string; commitSha: string } | null } };
+type LocalLive = { mode: "live" | "shadow"; status: string; signalDate?: string | null; collectionStartedAt?: string | null; collectionCompletedAt?: string | null; storedAt?: string | null; lastSuccessAt?: string | null; heartbeatAt?: string | null; queryVerifiedAt?: string | null; reason?: string | null; models: { model: string; modelVersion: string; signalDate: string; collectionStartedAt: string; collectionCompletedAt: string; records: { ticker: string; companyName: string; rank: number; score: number }[] }[] };
 function useResource<T>(url: string) {
   const [state, setState] = useState<{ url: string; data: T | null; error: boolean } | null>(null);
   const sequence = useRef(0);
@@ -48,6 +49,7 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
   const performance = useResource<Performance>("/api/model-performance");
   const operations = useResource<Operations>("/api/daily-production-status");
   const live = useResource<{ signalDate: string; collectionCompletedAt: string }>("/api/intraday-model-top?model=B&limit=1");
+  const localLive = useResource<LocalLive>("/api/private-live");
   const data = dashboard.data, transitions = data?.transitions;
   const outcome = performance.data ? latestOneDayPerformance(performance.data, 5) : null;
   const currentOperations = homeOperationStatus(operations.data, data, performance.data, { homeError: dashboard.error, performanceError: performance.error });
@@ -59,7 +61,7 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
     <div className="tb-market-status-panel grid gap-2 rounded-xl px-3 py-3 text-xs text-slate-200 sm:grid-cols-2 xl:grid-cols-5" aria-label="데이터 최신성 요약">
       <div><span className="text-slate-400">공식 EOD</span><p className="mt-1 font-medium">{data?.referenceDate ?? "확인 불가"}</p></div>
       <div><span className="text-slate-400">모델 TOP 갱신</span><p className="mt-1">{data?.models ? "저장 순위 · " + data.models.referenceDate : "검증 불가"}</p></div>
-      <div><span className="text-slate-400">14:30 LIVE</span><p className="mt-1">{liveStatus}</p><p className="mt-1 text-[10px] text-slate-400">상태 기준일 {data?.liveStatus?.signalDate ?? "확인 불가"} · 마지막 정상 관측 {live.data?.signalDate ?? data?.liveStatus?.lastGoodDate ?? "없음 / 미확인"}</p></div>
+      <div><span className="text-slate-400">14:00 LIVE</span><p className="mt-1">{liveStatus}</p><p className="mt-1 text-[10px] text-slate-400">상태 기준일 {data?.liveStatus?.signalDate ?? "확인 불가"} · 마지막 정상 관측 {live.data?.signalDate ?? data?.liveStatus?.lastGoodDate ?? "없음 / 미확인"}</p></div>
       <div><span className="text-slate-400">마지막 정상 저장 데이터</span><p className="mt-1">{operations.data?.lastGoodStoredReferenceDate ?? "확인 불가"}</p></div>
       <div><span className="text-slate-400">운영 상태</span><p className="mt-1">{labels[operation]}</p></div>
     </div>
@@ -78,7 +80,7 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
         <p className="mt-1 text-[11px] leading-5 text-slate-600">하락장에서는 네 모델 모두 신규 매수 판단에 주의가 필요합니다.</p>
       </section>
       <section className="tb-card min-w-0 p-4" aria-labelledby="home-performance-heading"><div className="flex justify-between gap-2"><h2 id="home-performance-heading" className="text-base font-semibold">최근 확정 1D 성과 · TOP5</h2><button type="button" onClick={onOpenPerformance} className="tb-focus rounded text-xs text-[var(--tb-orange)]">상세 →</button></div>
-        {(["daily", "live"] as const).map((layer) => <div key={layer} className="mt-3"><p className="text-xs text-slate-600">{layer === "daily" ? "Daily EOD · 신호일 종가 → 다음 거래일 종가" : "14:30 LIVE · 별도 실행 계약"}</p><div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">{outcome?.[layer].map((row) => <div key={row.modelVersion} className="min-w-0 rounded-lg bg-[#f7f3eb] p-2 text-xs"><span className="font-medium">{row.modelVersion[0]}</span>{row.observationCount ? <><p className={"mt-1 font-semibold " + (Number(row.meanReturn) > 0 ? "text-red-600" : Number(row.meanReturn) < 0 ? "text-blue-600" : "text-slate-700")}>{pct(row.meanReturn)}</p><p className="mt-1 text-[10px] text-slate-600">관측 {row.observationCount}건 · 신호일 1개<br />신호 {row.signalDate}<br />종료 {row.resultDate ?? "미확인"}</p></> : <p className="mt-1 text-slate-600">데이터 축적 중</p>}</div>) ?? <p className="col-span-2 sm:col-span-4 text-xs text-slate-600">{performance.error ? "성과 조회 실패" : "확정 성과 확인 중"}</p>}</div></div>)}
+        {(["daily", "live"] as const).map((layer) => <div key={layer} className="mt-3"><p className="text-xs text-slate-600">{layer === "daily" ? "Daily EOD · 신호일 종가 → 다음 거래일 종가" : "14:00 LIVE · 별도 실행 계약"}</p><div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">{outcome?.[layer].map((row) => <div key={row.modelVersion} className="min-w-0 rounded-lg bg-[#f7f3eb] p-2 text-xs"><span className="font-medium">{row.modelVersion[0]}</span>{row.observationCount ? <><p className={"mt-1 font-semibold " + (Number(row.meanReturn) > 0 ? "text-red-600" : Number(row.meanReturn) < 0 ? "text-blue-600" : "text-slate-700")}>{pct(row.meanReturn)}</p><p className="mt-1 text-[10px] text-slate-600">관측 {row.observationCount}건 · 신호일 1개<br />신호 {row.signalDate}<br />종료 {row.resultDate ?? "미확인"}</p></> : <p className="mt-1 text-slate-600">데이터 축적 중</p>}</div>) ?? <p className="col-span-2 sm:col-span-4 text-xs text-slate-600">{performance.error ? "성과 조회 실패" : "확정 성과 확인 중"}</p>}</div></div>)}
         <p className="mt-2 text-[10px] text-slate-600">신호일별 최신 확정 단면 · 독립 표본 아님 · 모델 우열 판정 없음</p><button type="button" onClick={onOpenPerformance} className="tb-focus mt-2 rounded text-xs text-slate-600">5D / 20D 성과 →</button>
       </section>
       </div>
@@ -116,6 +118,20 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
           <div><dt>마지막 정상 관측 완료</dt><dd>{time(live.data?.collectionCompletedAt ?? data?.liveStatus?.lastSuccessAt)}</dd></div>
           <div><dt>최근 artifact 저장 (게시 성공과 다름)</dt><dd>{time(data?.liveStatus?.storedAt)}</dd></div>
         </dl><p className="mt-2">GitHub 게시 및 Vercel API 확인 결과는 해당 Actions 실행 로그에서 별도로 검증합니다.</p>
+        {localLive.data && <div className="mt-3 border-t border-slate-300/50 pt-3" aria-label="독립 실행기 로컬 비공개 조회">
+          <p className="font-medium">독립 실행기 · 로컬 비공개</p>
+          <p className="mt-1">{localLive.data.mode === "shadow" ? "현재시각 검증 · 14:00 LIVE 아님" : "14:00 LIVE · 독립 실행기 저장 관측"}</p>
+          <p className="mt-1">{({ READY: "저장 결과 조회 가능", STORED: "저장 결과 조회 가능", PREPARED: "관측 준비 완료", COLLECTING: "수집 중", PARTIAL: "부분 수집 · 재시도 대기", FAILED: "실행 실패", MISSED: "관측창 놓침", MARKET_CLOSED: "휴장", NEW: "대기", WAITING: "대기", NO_OBSERVATION: "관측 기록 없음", UNAVAILABLE: "연결 또는 검증 불가" } as Record<string, string>)[localLive.data.status] ?? "상태 확인 불가"}</p>
+          <dl className="mt-2 space-y-1">
+            <div><dt>실제 수집 시작 / 완료</dt><dd>{time(localLive.data.collectionStartedAt)} / {time(localLive.data.collectionCompletedAt)}</dd></div>
+            <div><dt>마지막 정상 저장 / 조회 검증</dt><dd>{time(localLive.data.lastSuccessAt ?? localLive.data.storedAt)} / {time(localLive.data.queryVerifiedAt)}</dd></div>
+            {localLive.data.reason && <div><dt>실행 상태 코드</dt><dd className="break-words">{localLive.data.reason}</dd></div>}
+          </dl>
+          {localLive.data.models.length ? <div className="mt-2 grid min-w-0 gap-2 sm:grid-cols-2">{localLive.data.models.map((model) => <div key={model.model} className="min-w-0 rounded-lg bg-[#f7f3eb] p-2">
+            <p className="font-medium">모델 {model.model} · {model.signalDate}</p>
+            <ol className="mt-1 space-y-1">{model.records.map((row) => <li key={row.ticker} className="grid grid-cols-[1rem_minmax(0,1fr)_auto] items-center gap-1"><span>{row.rank}</span><span className="min-w-0">{stockButton({ code: row.ticker, name: row.companyName })}</span><span className="tabular-nums">{row.score.toFixed(2)}</span></li>)}</ol>
+          </div>)}</div> : <p className="mt-2">조회 가능한 로컬 순위 없음</p>}
+        </div>}
       </details>
       </div>
     </div>

@@ -44,7 +44,7 @@ function deepFreeze(value) {
   }
   return value;
 }
-const fixture = deepFreeze({ ...Object.fromEntries(Object.entries(raw).map(([key, bytes]) => [key, JSON.parse(bytes)])), now: NOW });
+const fixture = deepFreeze({ ...Object.fromEntries(Object.entries(raw).map(([key, bytes]) => [key, JSON.parse(bytes)])), now: NOW, archiveOnly: true });
 function resign(value, hash) {
   const { contentHash: ignored, ...base } = value;
   void ignored;
@@ -75,7 +75,7 @@ function boundaryRows(pair) {
   return rowsOf(closes); // Both pairs have the exact equality boundary X_cross = 101.
 }
 
-await test("LIVE fixture pins immutable archived inputs and matching pre-EOD publication metadata", () => {
+await test("14:30 archive remains immutable and available only through explicit read-only archive validation", () => {
   for (const [key, archive] of Object.entries(snapshot.archives)) assertLiveFixtureArchive(key, raw[key], archive);
   assert.equal(fixture.now, "2026-10-13T06:00:00.000Z");
   assert.equal(fixture.latest.status, "READY");
@@ -88,6 +88,7 @@ await test("LIVE fixture pins immutable archived inputs and matching pre-EOD pub
   assert.equal(fixture.calendar.dates["2026-10-13"], undefined);
   assert.equal(fixture.calendar.dates["2026-10-14"], undefined);
   assert.doesNotThrow(() => validateLiveTransitionSources(fixture));
+  throwsReason(() => validateLiveTransitionSources({ ...fixture, archiveOnly: false }), "LIVE_SNAPSHOT_INVALID");
 });
 
 await test("LIVE moving-average math uses closed bars plus exactly one observed price", async (t) => {
@@ -434,7 +435,7 @@ await test("disk store reads the exact immutable signal and prior seed, with no 
     await mkdir(path.dirname(target), { recursive: true });
     await writeFile(target, typeof value === "string" || Buffer.isBuffer(value) ? value : JSON.stringify(value));
   };
-  const load = createLiveTransitionStore({ root, now: () => new Date(NOW) });
+  const load = createLiveTransitionStore({ root, archiveOnly: true, now: () => new Date(NOW) });
   const mutation = async (key, value, reason) => {
     try {
       if (value === null) await rm(path.join(root, FILES[key])); else await write(FILES[key], value);
@@ -448,14 +449,15 @@ await test("disk store reads the exact immutable signal and prior seed, with no 
       assert.strictEqual(await load(), baseline);
       const [one, two, three] = await Promise.all([load(), load(), load()]);
       assert.strictEqual(one, baseline); assert.strictEqual(two, baseline); assert.strictEqual(three, baseline);
-      const cold = createLiveTransitionStore({ root, now: () => new Date(NOW) });
+      const cold = createLiveTransitionStore({ root, archiveOnly: true, now: () => new Date(NOW) });
       const [first, second, third] = await Promise.all([cold(), cold(), cold()]);
       assert.strictEqual(first, second); assert.strictEqual(second, third);
       assert.strictEqual(await cold(), first);
       assert.deepEqual(first, baseline);
     });
     await t.test("saved response exposes provenance and frozen model reference, without claiming streaming", () => {
-      assert.equal(baseline.mode, "LIVE");
+      assert.equal(baseline.mode, "ARCHIVE");
+      assert.equal(baseline.archiveOnly, true);
       assert.equal(baseline.referenceDate, "2026-10-13");
       assert.equal(baseline.previousOfficialDate, "2026-10-12");
       assert.equal(baseline.modelReferenceDate, "2026-10-12");
@@ -476,7 +478,7 @@ await test("disk store reads the exact immutable signal and prior seed, with no 
         await write(`data/analysis/market-seeds/${date}.json`, "not JSON: this file must not be read");
       }
       assert.deepEqual(await load(), baseline);
-      const cold = createLiveTransitionStore({ root, now: () => new Date(NOW) });
+      const cold = createLiveTransitionStore({ root, archiveOnly: true, now: () => new Date(NOW) });
       assert.deepEqual(await cold(), baseline, "A cold store must also ignore later EOD files.");
     });
     for (const [key, reason] of [["latest", "LIVE_SNAPSHOT_MISSING"], ["signal", "LIVE_SNAPSHOT_MISSING"], ["seed", "LIVE_SEED_MISSING"], ["history", "LIVE_HISTORY_MISSING"], ["calendar", "LIVE_CALENDAR_MISSING"]]) {
@@ -489,12 +491,12 @@ await test("disk store reads the exact immutable signal and prior seed, with no 
     await t.test("signal content corruption is unavailable", () => mutation("signal", { ...fixture.signal, priceBasis: "corrupt" }, "LIVE_SNAPSHOT_INVALID"));
     await t.test("seed hash mismatch is unavailable", () => mutation("seed", { ...fixture.seed, contentHash: "wrong" }, "LIVE_SOURCE_MISMATCH"));
     await t.test("stale snapshots fail even when all source files exist", async () => {
-      const stale = createLiveTransitionStore({ root, now: () => new Date("2026-10-14T05:30:00.000Z") });
+      const stale = createLiveTransitionStore({ root, archiveOnly: true, now: () => new Date("2026-10-14T05:30:00.000Z") });
       await assert.rejects(stale(), { message: "LIVE_SNAPSHOT_STALE" });
     });
     await t.test("cached data expires as the injected current time crosses the next observation time", async () => {
       let currentTime = NOW;
-      const advancing = createLiveTransitionStore({ root, now: () => new Date(currentTime) });
+      const advancing = createLiveTransitionStore({ root, archiveOnly: true, now: () => new Date(currentTime) });
       const cached = await advancing();
       currentTime = "2026-10-14T05:29:59.999Z";
       assert.strictEqual(await advancing(), cached);

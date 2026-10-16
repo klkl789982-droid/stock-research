@@ -37,20 +37,20 @@ const loadWrapper = (hooks) => compile(wrapperSource, { react: hooks, "./LiveTra
 const row = {
   code: "000660", name: "검증종목", market: "KOSPI", referenceDate: "2026-10-13", modelReferenceDate: "2026-10-12", qualityStatus: "PROVISIONAL", missingReasons: [],
   models: Object.fromEntries(["A", "B", "C", "D"].map((model) => [`${model}-v1`, { score: 81.25, rank: 2 }])),
-  observedPrice: 100, quoteAsOfDate: "20261013", quoteAsOfTime: "143017", receivedAt: "2026-10-13T05:30:20.000Z", pair: "5-20", status: "APPROACHING",
+  observedPrice: 100, quoteAsOfDate: "20261013", quoteAsOfTime: "140017", receivedAt: "2026-10-13T05:00:20.000Z", pair: "5-20", status: "APPROACHING",
   gapPercent: -0.01, previousGapPercent: -0.04, shortSlopePercent: 0.2, currentShort: 99.9, currentLong: 100, previousShort: 99.7, previousLong: 100,
   crossRequiredPrice: 100.1234567, requiredAdditionalRisePercent: 0.1234567,
 };
 const data = {
-  mode: "LIVE", referenceDate: row.referenceDate, previousOfficialDate: row.modelReferenceDate, modelReferenceDate: row.modelReferenceDate, snapshotTime: "14:30:00",
-  collectionStartedAt: "2026-10-13T05:30:00.000Z", collectionCompletedAt: "2026-10-13T05:34:00.000Z", ruleVersion: "live-golden-transition-v1", nearPercent: 1,
+  mode: "LIVE", signalVersion: "intraday-model-top-official-signal-v2", observationPolicyId: "intraday-1400-v1", referenceDate: row.referenceDate, previousOfficialDate: row.modelReferenceDate, modelReferenceDate: row.modelReferenceDate, snapshotTime: "14:00:00",
+  collectionStartedAt: "2026-10-13T05:00:00.000Z", collectionCompletedAt: "2026-10-13T05:04:00.000Z", ruleVersion: "live-golden-transition-v1", nearPercent: 1,
   totalUniverse: 3, indicatorCoverage: 2, quarantinedCount: 0, sourceQualityGrade: "PROVISIONAL", isPartialRanking: true, resultCount: 1, results: [row],
   exclusions: { dataMissing: 1, conditionNotMet: 1 }, reasonCounts: { MISSING_HISTORY: 1 }, source: {},
 };
 const filters = { pair: "5-20", nearPercent: "1", state: "candidates", market: "all" };
 const renderLive = (states) => { const { hooks } = harness(states); return renderToStaticMarkup(React.createElement(loadLive(hooks).LiveTransitionResults, { filters, page: 0, onPageChange: () => {}, onSelectStock: () => {} })); };
 const html = renderLive([data, null, 0]);
-for (const text of ["근접 후보 · 잠정", "교차 경계가 초과", "100.1235원", "필요 추가 상승률", "0.12%", "2026-10-13 14:30:17 KST", "EOD 2026-10-12", "81.25", "부분 집계", "저장 모델 A~D는 직전 확정 일봉 점수", "원래 계산된 경계가", "데이터 부족 제외 1", "조건 미충족 1", "MISSING_HISTORY"]) {
+for (const text of ["근접 후보 · 잠정", "교차 경계가 초과", "100.1235원", "필요 추가 상승률", "0.12%", "2026-10-13 14:00:17 KST", "EOD 2026-10-12", "81.25", "부분 집계", "저장 모델 A~D는 직전 확정 일봉 점수", "원래 계산된 경계가", "데이터 부족 제외 1", "조건 미충족 1", "MISSING_HISTORY"]) {
   assert.ok(html.includes(text), `LIVE render missing ${text}`);
 }
 assert.ok(html.includes("hidden overflow-x-auto xl:block"));
@@ -63,7 +63,7 @@ assert.ok(researchSource.includes('key={`${code}:${mode}:${nearPercent}:${mode =
 const wrapper = loadWrapper(harness().hooks).default({ onSelectStock: () => {} });
 const wrapperHtml = renderToStaticMarkup(wrapper);
 assert.ok(wrapperHtml.includes("LIVE branch"));
-assert.match(wrapperHtml, /aria-pressed="true"[^>]*>LIVE · 14:30 저장 관측/u);
+assert.match(wrapperHtml, /aria-pressed="true"[^>]*>LIVE · 14:00 저장 관측/u);
 assert.match(wrapperHtml, /aria-pressed="false"[^>]*>EOD · 확정 일봉 비교/u);
 for (const [initialState, initialDirection] of [["APPROACHING", "dead"], ["CONFIRMED", "golden"], ["CROSS_OCCURRED", "all"], ["all", "dead"]]) {
   const linkedWrapper = loadWrapper(harness().hooks).default({ onSelectStock: () => {}, initialState, initialDirection });
@@ -96,7 +96,7 @@ assert.equal(refreshedStockWrapper.props.children[2].key, "000660:LIVE:1:2");
 const eodStockWrapper = loadResearch(harness(["EOD", 2, "1", "1"]).hooks).default({ code: row.code });
 assert.equal(eodStockWrapper.props.children[2].key, "000660:EOD:1:0", "EOD is not periodically remounted");
 
-const reason = "14:30 관측 스냅샷이 최신 관측일보다 오래되어 LIVE 전환 신호를 표시할 수 없습니다.";
+const reason = "14:00 관측 스냅샷이 최신 관측일보다 오래되어 LIVE 전환 신호를 표시할 수 없습니다.";
 const failureHtml = renderLive([null, reason, 0]);
 assert.ok(failureHtml.includes(reason));
 assert.ok(failureHtml.includes("EOD · 확정 일봉 비교"));

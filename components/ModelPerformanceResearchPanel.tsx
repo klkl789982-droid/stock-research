@@ -36,7 +36,7 @@ export default function ModelPerformanceResearchPanel() {
 
   return <div className="mt-4 min-w-0" aria-labelledby="execution-research-heading">
     <h3 id="execution-research-heading" className="text-lg font-semibold text-slate-950">실행 수익률 연구 · 기존 성과와 별도 계약</h3>
-    <p className="mt-1 text-sm leading-relaxed text-slate-600">동결된 Daily 순위를 사용합니다. 신호 종가 수익률이나 14:30 LIVE·KIS 잠정 성과와 합산하지 않습니다. 연구 조건을 바꿔도 원본 신호는 수정하지 않습니다.</p>
+    <p className="mt-1 text-sm leading-relaxed text-slate-600">동결된 Daily 순위를 사용합니다. 신호 종가 수익률이나 14:00 LIVE·KIS 잠정 성과와 합산하지 않습니다. 연구 조건을 바꿔도 원본 신호는 수정하지 않습니다.</p>
     <form className="mt-4 space-y-3" onSubmit={(event) => {
       event.preventDefault(); const form = new FormData(event.currentTarget), parameters = new URLSearchParams();
       parameters.set("models", form.getAll("models").join(","));

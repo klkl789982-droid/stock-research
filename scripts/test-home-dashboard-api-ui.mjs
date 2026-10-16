@@ -14,12 +14,14 @@ const compile = (source, jsxFile = false) => ts.transpileModule(source, { compil
 const source = await readFile(new URL("../app/api/home-dashboard/route.ts", import.meta.url), "utf8");
 const exports = {};
 let calls = 0, fail = false;
+let latest = { schemaVersion: 2, observationPolicyId: "intraday-1400-v1", officialSignalTime: "14:00:00", status: "FAILED", reason: "private-path-secret", runStartedAt: "must-not-leak", signalDate: "2026-10-08", updatedAt: "2026-10-08T12:00:00Z", credential: "must-not-leak" };
 const require = (name) => {
   if (name === "@/lib/production-schedule.mjs") return schedule;
+  if (name === "@/lib/intraday-model-top-time-policy.mjs") return liveTiming;
   if (name === "@/lib/admin-access") return { withAdminAccess: handler => handler }; // Authorized data-contract fixture; auth independently tested.
   if (name === "next/server") return { NextResponse: { json: (body, init) => ({ body, status: init?.status ?? 200, headers: init?.headers }) } };
   if (name === "node:path") return path;
-  if (name === "node:fs/promises") return { readFile: async () => JSON.stringify({ status: "FAILED", reason: "private-path-secret", runStartedAt: "must-not-leak", signalDate: "2026-10-08", updatedAt: "2026-10-08T12:00:00Z", credential: "must-not-leak" }) };
+  if (name === "node:fs/promises") return { readFile: async () => JSON.stringify(latest) };
   if (name === "@/lib/home-dashboard-store.mjs") return { getHomeDashboard: async (topN) => { calls += 1; if (fail) throw new Error("private-path-secret"); return { models: { topN }, transitions: null }; } };
   throw new Error(name);
 };
@@ -36,6 +38,18 @@ fail = true;
 const isolated = await exports.GET(request(""));
 assert.equal(isolated.body.models, null); assert.equal(isolated.body.liveStatus.status, "FAILED");
 assert.doesNotMatch(JSON.stringify(isolated), /private-path-secret/);
+const currentLatest = latest;
+latest = { ...latest, schemaVersion: 1, observationPolicyId: undefined, officialSignalTime: "14:30:00", status: "READY", signalPath: "data/intraday-signals/model-top/2026-10-08/1430.json", lastGood: { signalDate: "2026-10-08" } };
+const archivedStatus = await exports.GET(request(""));
+assert.equal(archivedStatus.body.liveStatus.status, "WAITING");
+assert.equal(archivedStatus.body.liveStatus.signalDate, null);
+assert.equal(archivedStatus.body.liveStatus.lastGoodDate, null);
+for (const reason of liveTiming.LIVE_INPUT_WAIT_REASONS) {
+  latest = { ...currentLatest, status: "WAITING", reason }; const waiting = await exports.GET(request(""));
+  assert.equal(waiting.body.liveStatus.status, "WAITING"); assert.equal(waiting.body.liveStatus.reason, reason);
+}
+latest = currentLatest;
+
 
 const panel = await readFile(new URL("../components/HomeDashboard.tsx", import.meta.url), "utf8");
 const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
@@ -52,7 +66,7 @@ assert.match(top, /initialTab = "B"/);
 const model = { modelVersion: "B-v1", rankingUniverseCount: 523, previousDate: "2026-10-06", comparisonStatus: "AVAILABLE", top: [{ code: "000660", name: "긴종목명검증", rank: 1, score: 88, previousRank: 3, rankChange: 2 }], entered: [{ code: "000660", name: "긴종목명검증", rank: 1, score: 88 }], exited: [], risers: [], universeAddedTop: [], universeRemovedTop: [] };
 const identity = { referenceDate: "2026-10-07", snapshotHash: "a".repeat(64), commitSha: "b".repeat(40) };
 const dashboard = { publicationReady: true, dataIdentity: identity, referenceDate: "2026-10-07", models: { referenceDate: "2026-10-07", previousOfficialDate: "2026-10-06", models: [model], overlap: [] }, transitions: { referenceDate: "2026-10-07", ruleVersion: "transition-research-v1", indicatorCoverage: 508, totalUniverse: 553, excludedCount: 45, sourceQualityGrade: "REJECTED", isPartialRanking: true, pairs: [{ pair: "5-20", states: [{ state: "APPROACHING", count: 1, examples: [{ code: "000660", name: "긴종목명검증", gapPercent: -1, topModels: ["B-v1"] }] }, { state: "CONFIRMED", count: 0, examples: [] }] }] }, calendar: { expectedTradingDate: null, dayStatus: "unchecked" }, liveStatus: { status: "FAILED", signalDate: "2026-10-08" } };
-const performance = { publicationReady: true, dataIdentity: identity, daily: [{ modelVersion: "B-v1", topN: 5, horizon: "1DAY", signalDate: "2026-10-06", targetTradingDate: "2026-10-07", observationCount: 4, meanReturn: -1.25, positiveRate: 25 }], live: { daily: [] } };
+const performance = { publicationReady: true, dataIdentity: identity, daily: [{ modelVersion: "B-v1", topN: 5, horizon: "1DAY", signalDate: "2026-10-06", targetTradingDate: "2026-10-07", observationCount: 4, meanReturn: -1.25, positiveRate: 25 }], live: { layer: "INTRADAY_1400_LIVE", executionPolicyId: "intraday-1400-t1-open-v1", daily: [] } };
 const operations = { freshnessStatus: "fresh", publicationStatus: "published", siteApiMatchesPublished: true, siteApiReferenceDate: "2026-10-07", lastAutomaticRunConclusion: "success" };
 // Preserve the old home EOD card contract explicitly; the default LIVE home
 // surface and the real navigation chain are covered in test-home-transition-live-ui.
@@ -63,6 +77,7 @@ new Function("require", "exports", compile(await readFile(new URL("../components
   if (name === "react/jsx-runtime") return jsx;
   if (name === "react") return { ...React, useState: (initial) => [initial === "LIVE" ? "EOD" : typeof initial === "function" ? initial() : initial, () => {}], useEffect: () => {} };
   if (name === "../lib/directional-transition.mjs") return directional;
+  if (name === "../lib/intraday-model-top-time-policy.mjs") return liveTiming;
   if (name === "./LiveTransitionDetails") return liveDetails;
   if (name === "./useLiveTransitionRevalidation") return { useLiveTransitionRevalidation: () => ({ rootRef: { current: null }, refreshVersion: 0 }) };
   throw new Error(name);
@@ -112,7 +127,7 @@ for (const output of [allModelsHtml, render(null), render(null, false, operation
 assert.ok(render(null, false, operations, true).includes("순위 조회 실패"));
 const emptyModel = render({ ...dashboard, models: { ...dashboard.models, models: [{ ...model, modelVersion: "C-v1", top: [] }] } });
 assert.ok(emptyModel.includes(modelUsage["C-v1"]) && emptyModel.includes("분석 가능한 종목 없음"));
-for (const text of ["홈", "모델 TOP3", "긴종목명검증", "000660", "골든크로스 접근", "골든크로스 확인", "해당 조건 종목 없음", "508/553", "미연결", "데이터 축적 중", "-1.25%", "관측 4건", "수집·검증 실패", "확인 불가", "Daily EOD", "14:30 LIVE", "REJECTED", "↑2"]) assert.ok(html.includes(text), text);
+for (const text of ["홈", "모델 TOP3", "긴종목명검증", "000660", "골든크로스 접근", "골든크로스 확인", "해당 조건 종목 없음", "508/553", "미연결", "데이터 축적 중", "-1.25%", "관측 4건", "수집·검증 실패", "확인 불가", "Daily EOD", "14:00 LIVE", "REJECTED", "↑2"]) assert.ok(html.includes(text), text);
 assert.ok(render(dashboard, true).includes("성과 조회 실패"));
 assert.ok(render({ ...dashboard, transitions: null }).includes("전환 지표 데이터 없음"));
 const noComparison = render({ ...dashboard, models: { ...dashboard.models, models: [{ ...model, comparisonStatus: "UNAVAILABLE", comparisonReason: "FORMULA_PROVENANCE_CHANGED_OR_MISSING" }] } });

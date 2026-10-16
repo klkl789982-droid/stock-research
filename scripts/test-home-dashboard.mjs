@@ -58,6 +58,8 @@ assert.equal(performance.daily[1].meanReturn, -1.25);
 assert.equal(performance.daily[1].observationCount, 4);
 assert.equal(performance.live[1].meanReturn, null);
 assert.equal(performance.live[1].observationCount, 0);
+assert.equal(latestOneDayPerformance({ live: { layer: "INTRADAY_1430_LIVE", executionPolicyId: "intraday-1430-t1-open-v1", daily: [row] } }).live[1].meanReturn, null);
+assert.equal(latestOneDayPerformance({ live: { layer: "INTRADAY_1400_LIVE", executionPolicyId: "intraday-1400-t1-open-v1", daily: [row] } }).live[1].meanReturn, -1.25);
 assert.equal(latestOneDayPerformance({ daily: [row] }, 10).daily[1].meanReturn, null);
 const calendar = { dates: { "2026-10-07": { status: "tradingDay" }, "2026-10-08": { status: "marketClosed" }, "2026-10-09": { status: "marketClosed" } } };
 const weekend = calendarContext(calendar, new Date("2026-10-10T10:00:00Z"));

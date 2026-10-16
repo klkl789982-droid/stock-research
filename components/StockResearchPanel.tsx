@@ -45,7 +45,7 @@ export function StockResearchResults({ code, mode, nearPercent }: { code: string
   return <div className="grid gap-3 md:grid-cols-2">
     <div className="rounded-xl border border-slate-200 bg-[#f7f3eb] p-3">
       <h3 className="text-sm font-semibold">전환 신호 · {mode === "LIVE" ? "LIVE 장중 잠정" : "EOD 확정 일봉"}</h3>
-      {mode === "LIVE" && <p className="mt-2 text-xs leading-relaxed text-amber-800">저장된 TOP LIVE 14:30 관측이며 실시간 스트리밍이 아닙니다. 이후 장중 또는 종가에서 신호가 되돌아갈 수 있습니다.</p>}
+      {mode === "LIVE" && <p className="mt-2 text-xs leading-relaxed text-amber-800">저장된 TOP LIVE 14:00 관측이며 실시간 스트리밍이 아닙니다. 이후 장중 또는 종가에서 신호가 되돌아갈 수 있습니다.</p>}
       {results ? results.map((result) => <div key={result.pair} className="mt-3 border-t border-slate-200 pt-3 text-xs">
         <p className="font-semibold text-slate-900">{result.pair.replace("-", "/")}일 · {result.referenceDate ? liveDate(result.referenceDate) : "기준일 미확인"}{mode === "LIVE" && result.snapshotTime ? ` · ${liveTime(result.snapshotTime)} KST 저장` : ""}</p>
         {result.rows.map((row) => mode === "LIVE" ? <div key={row.pair}><p className="mt-2 font-semibold text-orange-800">{liveStatusLabel((row as LiveTransitionRow).status)}</p><p className="mt-1 text-[11px] text-slate-600">실제 시세 {liveQuoteStamp(row as LiveTransitionRow)}</p><LiveTransitionMetrics row={row as LiveTransitionRow} /></div> : <p key={(row as Transition).crossDirection} className="mt-1 text-slate-700">{transitionLabel((row as Transition).crossDirection, row.status)} · 간격 {liveNumber(row.gapPercent, "%")}{row.status === "APPROACHING" ? ` · 강도 ${liveNumber((row as Transition).approachStrength)}` : ""}</p>)}

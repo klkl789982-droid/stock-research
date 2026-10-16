@@ -5,23 +5,24 @@ import { nextProductionSchedule } from "../lib/production-schedule.mjs";
 import { createDailyTopFreshnessStatus, DAILY_RUN_STATUS, resolveOfficialCatchUpPlan } from "../lib/daily-production.mjs";
 import { dailyOperationState } from "../lib/home-dashboard.mjs";
 import { parseKisHolidayResponse } from "../lib/kis-eod-provider.mjs";
+import { dataIdentity } from "../lib/publication-identity.mjs";
 import { inspectDailyProductionDeployment } from "../lib/daily-production-deployment-verifier.mjs";
 
 assert.equal(signalWeekday("2026-10-12"), 1);
 assert.equal(signalWeekday("2026-10-10"), 6);
 assert.throws(() => signalWeekday("2026-02-30"));
-assert.equal(classifyOfficialSignalWindow({ weekday: signalWeekday("2026-10-12"), time: "14:30:00" }), "COLLECT");
-assert.equal(classifyOfficialSignalWindow({ weekday: signalWeekday("2026-10-10"), time: "14:30:00" }), "WEEKEND");
+assert.equal(classifyOfficialSignalWindow({ weekday: signalWeekday("2026-10-12"), time: "14:00:00" }), "COLLECT");
+assert.equal(classifyOfficialSignalWindow({ weekday: signalWeekday("2026-10-10"), time: "14:00:00" }), "WEEKEND");
 assert.equal(classifyOfficialSignalWindow({ weekday: 1, time: "21:01:58" }), "AFTER_WINDOW");
 assert.equal(nextProductionSchedule("DAILY", new Date("2026-10-11T17:00:00Z")), "2026-10-11T23:23:00.000Z");
-assert.equal(nextProductionSchedule("LIVE", new Date("2026-10-11T17:00:00Z")), "2026-10-12T05:15:00.000Z");
+assert.equal(nextProductionSchedule("LIVE", new Date("2026-10-11T17:00:00Z")), "2026-10-12T04:45:00.000Z");
 const holiday = (open, trade) => parseKisHolidayResponse({ rt_cd: "0", output: [{ bass_dt: "20261009", opnd_yn: open, tr_day_yn: trade }] }, "2026-10-09");
 assert.equal(holiday("N", "N").isTradingDay, false);
 assert.equal(holiday("Y", "N").isTradingDay, null); // Do not weaken ambiguous calendar evidence.
-const good = { status: "READY", signalDate: "2026-10-08", signalPath: "data/intraday-signals/model-top/2026-10-08/1430.json", collectionCompletedAt: "2026-10-08T05:34:00Z" };
+const good = { status: "READY", signalDate: "2026-10-08", signalPath: "data/intraday-signals/model-top/2026-10-08/1400.json", collectionCompletedAt: "2026-10-08T05:04:00Z" };
 const saved = JSON.stringify(good);
 assert.equal(liveAttemptStatus(null, good).lastSuccessAt, good.collectionCompletedAt);
-assert.equal(liveAttemptStatus(good, { ...good, collectionCompletedAt: "2026-10-12T05:34:00Z" }).lastSuccessAt, "2026-10-12T05:34:00Z");
+assert.equal(liveAttemptStatus(good, { ...good, collectionCompletedAt: "2026-10-12T05:04:00Z" }).lastSuccessAt, "2026-10-12T05:04:00Z");
 const failed = liveAttemptStatus(good, { status: "FAILED", signalDate: "2026-10-12", reason: "OFFICIAL_SIGNAL_OUTSIDE_COLLECTION_WINDOW" });
 assert.equal(failed.lastGood.signalPath, good.signalPath);
 assert.equal(JSON.stringify(good), saved);
@@ -33,7 +34,8 @@ assert.equal(recovered.recentFailureReason, null);
 assert.equal(recovered.lastRecordedFailure.reason, previous.recentFailureReason);
 assert.equal(recovered.lastSuccessAt, previous.lastSuccessAt);
 assert.equal(recovered.publishedReferenceDate, "2026-10-07");
-assert.equal(dailyOperationState(recovered, null), "SOURCE_WAITING");
+assert.equal(dailyOperationState(recovered, null), "UNVERIFIED"); // Source recovery alone is not deployment proof.
+assert.equal(dailyOperationState({ ...recovered, deployment: { state: "VERIFIED" } }, null), "SOURCE_WAITING");
 const unavailable = createDailyTopFreshnessStatus({ previousStatus: recovered, snapshotReferenceDate: "2026-10-07", runStatus: DAILY_RUN_STATUS.FAILED, reason: "LATEST_PROBE_TIMEOUT", updatedAt: "2026-10-12T01:00:00Z" });
 assert.equal(unavailable.observedOfficialDate, null);
 assert.equal(unavailable.lastKnownOfficialEodDate, "2026-10-07");
@@ -41,9 +43,43 @@ const collectorFailure = createDailyTopFreshnessStatus({ ...recovered, previousS
 assert.equal(collectorFailure.recentFailureReason, "CANDIDATE_INVALID");
 const plan = resolveOfficialCatchUpPlan({ observedTradingDates: ["2026-10-07", "2026-10-08", "2026-10-12"], previousProductionReferenceDate: "2026-10-07", collectionDate: "2026-10-12" });
 assert.equal(plan.referenceDate, "2026-10-08"); assert.equal(plan.remainingLagTradingDays, 1);
-const fetchImpl = async (url) => new Response(JSON.stringify(url.includes("top-stocks") ? { rankingAsOfDate: "2026-10-07" } : url.includes("model-performance") ? { latestEodReferenceDate: "2026-10-07" } : { siteApiReferenceDate: "2026-10-07", publicationStatus: "unchanged" }), { headers: { "Content-Type": "application/json" } });
-assert.equal((await inspectDailyProductionDeployment({ siteUrl: "https://fixture.invalid", expectedReferenceDate: "2026-10-07", fetchImpl })).matches, true);
-assert.equal((await inspectDailyProductionDeployment({ siteUrl: "https://fixture.invalid", expectedReferenceDate: "2026-10-08", fetchImpl })).matches, false);
+// Dates alone must not verify a publication. Use the actual canonical identity implementation.
+const snapshot = { asOfDate: "2026-10-07", records: [{ code: "005930", score: 0 }] };
+const identity = dataIdentity(snapshot, "a".repeat(40));
+const expected = { siteUrl: "https://fixture.invalid", expectedReferenceDate: identity.referenceDate,
+  expectedSnapshotHash: identity.snapshotHash, expectedCommitSha: identity.commitSha, automationToken: null };
+const fetchFor = (change = value => value) => async (url) => {
+  const dateFields = url.includes("top-stocks") ? { rankingAsOfDate: identity.referenceDate }
+    : url.includes("model-performance") ? { latestEodReferenceDate: identity.referenceDate }
+      : url.includes("home-dashboard") ? { referenceDate: identity.referenceDate }
+        : { siteApiReferenceDate: identity.referenceDate, publicationStatus: "unchanged" };
+  return new Response(JSON.stringify(change({ ...dateFields, dataIdentity: identity, publicationReady: true }, url)),
+    { headers: { "Content-Type": "application/json" } });
+};
+assert.equal((await inspectDailyProductionDeployment({ ...expected, fetchImpl: fetchFor() })).matches, true);
+for (const key of ["expectedReferenceDate", "expectedSnapshotHash", "expectedCommitSha"]) {
+  const result = await inspectDailyProductionDeployment({ ...expected, [key]: null,
+    fetchImpl: () => { throw new Error("No remote read is warranted without the expected identity"); } });
+  assert.equal(result.matches, false); assert.equal(result.reason, "EXPECTED_IDENTITY_MISSING");
+}
+const cases = [
+  [value => { const { dataIdentity: omitted, ...rest } = value; void omitted; return rest; }, "SNAPSHOT_HASH_MISMATCH"],
+  [value => ({ ...value, dataIdentity: { ...identity, snapshotHash: "b".repeat(64) } }), "SNAPSHOT_HASH_MISMATCH"],
+  [value => ({ ...value, dataIdentity: { ...identity, commitSha: "b".repeat(40) } }), "SITE_COMMIT_MISMATCH"],
+  [value => ({ ...value, publicationReady: false }), "SITE_SUMMARY_UNAVAILABLE"],
+  [value => ({ ...value, publicationReady: "true" }), "SITE_SUMMARY_UNAVAILABLE"],
+];
+for (const [change, reason] of cases) {
+  // One endpoint disagrees while the other three are exact. This must still fail.
+  const result = await inspectDailyProductionDeployment({ ...expected, fetchImpl: fetchFor((value, url) => url.includes("home-dashboard") ? change(value) : value) });
+  assert.equal(result.matches, false); assert.equal(result.reason, reason);
+}
+const otherDate = await inspectDailyProductionDeployment({ ...expected, expectedReferenceDate: "2026-10-08", fetchImpl: fetchFor() });
+assert.equal(otherDate.matches, false); assert.equal(otherDate.reason, "REFERENCE_DATE_NOT_DEPLOYED");
+const changedSnapshot = dataIdentity({ ...snapshot, records: [{ code: "005930", score: null }] }, identity.commitSha);
+assert.notEqual(changedSnapshot.snapshotHash, identity.snapshotHash, "Zero and missing data cannot have the same proof");
+const changedContent = await inspectDailyProductionDeployment({ ...expected, fetchImpl: fetchFor(value => ({ ...value, dataIdentity: changedSnapshot })) });
+assert.equal(changedContent.matches, false); assert.equal(changedContent.reason, "SNAPSHOT_HASH_MISMATCH");
 const runner = await fs.readFile("scripts/run-intraday-model-top-official-signal.mjs", "utf8");
 assert.doesNotMatch(runner, /T00:00:00\+09:00.*getUTCDay/u);
 assert.match(runner, /calendar\.isTradingDay !== true/u);

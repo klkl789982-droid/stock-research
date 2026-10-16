@@ -56,12 +56,6 @@ type DailyTopFreshness = {
   freshnessReason: string | null;
   updatedAt: string;
 };
-type IntradayModelBSignal = {
-  signalDate: string; officialSignalTime: string; status: "READY" | "FAILED_COLLECTION"; collectionStartedAt: string; collectionCompletedAt: string;
-  modelVersion: "B-v1"; collection: { successful: number; failed: number; ineligible: number };
-  records: Array<{ ticker: string; companyName: string; score: number | null; rank: number | null; dataStatus: string; provisionalOhlcv?: { close: number } }>;
-};
-type IntradayModelBStatus = { signalDate: string | null; status: "READY" | "FAILED" | "FAILED_COLLECTION" | "UNAVAILABLE"; reason: string | null; officialSignalTime: string | null };
 
 function isValidSnapshot(value: unknown, filenameDate: string): value is HistorySnapshot {
   if (typeof value !== "object" || value === null) return false;
@@ -113,20 +107,6 @@ async function loadDailyTopFreshness(snapshot: HistorySnapshot): Promise<DailyTo
   }
 }
 
-async function loadOfficialModelBStatus(): Promise<{ status: IntradayModelBStatus; signal: IntradayModelBSignal | null }> {
-  try {
-    const latest = JSON.parse(await readFile(path.join(process.cwd(), "data", "intraday-signals", "model-b", "latest.json"), "utf8")) as { status?: string; signalPath?: string };
-    const status: IntradayModelBStatus = { signalDate: typeof (latest as { signalDate?: unknown }).signalDate === "string" ? (latest as { signalDate: string }).signalDate : null, status: latest.status === "READY" ? "READY" : latest.status === "FAILED" ? "FAILED" : latest.status === "FAILED_COLLECTION" ? "FAILED_COLLECTION" : "UNAVAILABLE", reason: typeof (latest as { reason?: unknown }).reason === "string" ? (latest as { reason: string }).reason : null, officialSignalTime: typeof (latest as { officialSignalTime?: unknown }).officialSignalTime === "string" ? (latest as { officialSignalTime: string }).officialSignalTime : null };
-    const signalPath = typeof latest.signalPath === "string" ? /^data\/intraday-signals\/model-b\/(\d{4}-\d{2}-\d{2})\/1430\.json$/u.exec(latest.signalPath) : null;
-    if (status.status !== "READY" || !signalPath) return { status, signal: null };
-    // Keep the runtime read and deployment trace inside the validated signal namespace.
-    const value: unknown = JSON.parse(await readFile(path.join(process.cwd(), "data", "intraday-signals", "model-b", signalPath[1], "1430.json"), "utf8"));
-    if (typeof value !== "object" || value === null) return { status: { ...status, status: "UNAVAILABLE", reason: "invalidOfficialSignal" }, signal: null };
-    const signal = value as IntradayModelBSignal;
-    return signal.status === "READY" && signal.modelVersion === "B-v1" && Array.isArray(signal.records) ? { status, signal } : { status: { ...status, status: "UNAVAILABLE", reason: "invalidOfficialSignal" }, signal: null };
-  } catch { return { status: { signalDate: null, status: "UNAVAILABLE", reason: "officialSignalNotAvailable", officialSignalTime: null }, signal: null }; }
-}
-
 async function handleGet(request: NextRequest) {
   const modelParameter = request.nextUrl.searchParams.get("model")?.toUpperCase() ?? "A";
   if (!(modelParameter in MODEL_KEYS)) {
@@ -147,14 +127,6 @@ async function handleGet(request: NextRequest) {
     return NextResponse.json({ error: { code: "HISTORY_SNAPSHOT_NOT_FOUND", message: "실제 TOP50 데이터가 없습니다. 최신 유효 모델 스냅샷을 생성해야 합니다." } }, { status: 503 });
   }
   const freshness = await loadDailyTopFreshness(snapshot);
-
-  if (model === "B" && !requestedVersion) {
-    const official = await loadOfficialModelBStatus(); const signal = official.signal;
-    if (signal) {
-      const stocks = signal.records.filter((record) => record.dataStatus === "AVAILABLE" && Number.isInteger(record.rank) && Number.isFinite(record.score)).sort((a, b) => Number(a.rank) - Number(b.rank)).slice(0, limit).map((record) => ({ rank: record.rank, code: normalizeStockCode(record.ticker) ?? record.ticker, name: record.companyName, market: "", score: record.score, closePrice: record.provisionalOhlcv?.close ?? 0, priceBasis: "intradayOfficialSignal", priceAsOfDate: signal.signalDate, rankingUniverseCount: signal.collection.successful, rankPercentile: Number(record.rank) / signal.collection.successful }));
-      return NextResponse.json({ dataMode: "intradayOfficialSignal", model: "B", modelName: "trendStrength", modelVersion: "B-v1", rankingAsOfDate: signal.signalDate, priceAsOfDate: signal.signalDate, priceBasis: "intradayOfficialSignal", officialSignalTime: signal.officialSignalTime, collectionStartedAt: signal.collectionStartedAt, collectionCompletedAt: signal.collectionCompletedAt, count: stocks.length, stocks, freshness, officialSignal: official.status }, { headers: { "Cache-Control": "no-store" } });
-    }
-  }
 
   if (model === "A" && requestedVersion === "A-v2") {
     const hasModelAV2 =
@@ -247,7 +219,6 @@ async function handleGet(request: NextRequest) {
     eligibleForRankBacktest: snapshot.dataQuality?.certification?.eligibleForRankBacktest ?? false,
     sourceManifestVersion: snapshot.sourceManifest?.schemaVersion ?? null,
     freshness,
-    officialSignal: model === "B" ? (await loadOfficialModelBStatus()).status : undefined,
     count: stocks.length,
     stocks,
   }, { headers: { "Cache-Control": "no-store" } });

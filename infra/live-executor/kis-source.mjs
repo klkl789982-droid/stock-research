@@ -2,7 +2,7 @@ import { createKisTokenManager } from "../../lib/kis-token-manager-core.mjs";
 import { createKisApiClient } from "../../lib/kis-api-client-core.mjs";
 import { attachKisMinuteObservation, parseKisQuote } from "../../lib/kis-quote-provider-core.mjs";
 import { createKisEodProvider } from "../../lib/kis-eod-provider.mjs";
-import { classifyOfficialSignalWindow, signalWeekday } from "../../lib/intraday-model-top-time-policy.mjs";
+import { classifyOfficialSignalWindow, signalWeekday, OFFICIAL_SIGNAL_WINDOW_END } from "../../lib/intraday-model-top-time-policy.mjs";
 
 const BASE = "https://openapi.koreainvestment.com:9443";
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -23,7 +23,7 @@ export function createKisSource({ credentials, now = Date.now, wait = sleep, fet
   function assertObservationWindow(date, live) {
     const current = kst(now());
     if (current.date !== date) fail("KIS_QUOTE_DATE_MISMATCH");
-    if (live && classifyOfficialSignalWindow({ time: current.time, weekday: signalWeekday(current.date) }) !== "COLLECT") fail("KIS_QUOTE_COLLECTION_WINDOW_EXPIRED");
+    if (live && (classifyOfficialSignalWindow({ time: current.time, weekday: signalWeekday(current.date) }) !== "COLLECT" || now() > Date.parse(`${date}T${OFFICIAL_SIGNAL_WINDOW_END}+09:00`))) fail("KIS_QUOTE_COLLECTION_WINDOW_EXPIRED");
   }
   async function pacedFetch(input, init, { kind, date, live, timing } = {}) {
     const ready = queue.then(async () => {
@@ -43,11 +43,13 @@ export function createKisSource({ credentials, now = Date.now, wait = sleep, fet
     await ready;
     const controller = new AbortController();
     const signal = init?.signal ? AbortSignal.any([init.signal, controller.signal]) : controller.signal;
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    const budget = date && live ? Math.max(1, Math.min(timeoutMs, Date.parse(`${date}T${OFFICIAL_SIGNAL_WINDOW_END}+09:00`) - now())) : timeoutMs;
+    const timeout = setTimeout(() => controller.abort(), budget);
     try {
       const response = await fetchImpl(input, { ...init, signal, redirect: "error" });
       // Keep the timeout until the body has arrived, not just the headers.
       const body = await response.text();
+      if (date) assertObservationWindow(date, live);
       const receivedAt = new Date(now()).toISOString();
       metrics.lastReceivedAt = receivedAt;
       if (timing) timing.receivedAt = receivedAt;
@@ -55,6 +57,7 @@ export function createKisSource({ credentials, now = Date.now, wait = sleep, fet
       return new Response(body, { status: response.status, headers: response.headers });
     } catch {
       metrics.failures += 1;
+      if (date) assertObservationWindow(date, live);
       fail(controller.signal.aborted ? "KIS_SOURCE_TIMEOUT" : "KIS_BUSINESS_NETWORK_ERROR");
     } finally {
       clearTimeout(timeout);
@@ -66,9 +69,14 @@ export function createKisSource({ credentials, now = Date.now, wait = sleep, fet
 
   async function readMarket(url, trId, context) {
     const timing = {};
-    const client = createKisApiClient({ getCredentials: () => credentials, tokenManager, fetchImpl: (input, init) => pacedFetch(input, init, { ...context, timing }) });
+    let transportFailure = null;
+    const client = createKisApiClient({ getCredentials: () => credentials, tokenManager, fetchImpl: async (input, init) => {
+      try { return await pacedFetch(input, init, { ...context, timing }); }
+      catch (error) { transportFailure = error; throw error; }
+    } });
     for (let attempt = 0; attempt <= 1; attempt += 1) {
       try {
+        transportFailure = null;
         assertObservationWindow(context.date, context.live);
         const response = await client.request(url, { headers: { "Content-Type": "application/json", tr_id: trId } });
         if (!response.ok) throw Object.assign(new Error(`KIS_HTTP_${response.status}`), { code: `KIS_HTTP_${response.status}`, retryable: response.status === 429 || response.status >= 500 });
@@ -77,8 +85,13 @@ export function createKisSource({ credentials, now = Date.now, wait = sleep, fet
         if (payload?.rt_cd !== "0") throw Object.assign(new Error("KIS_BUSINESS_ERROR"), { code: "KIS_BUSINESS_ERROR", retryable: payload?.msg_cd === "EGW00201" });
         return { payload, ...timing };
       } catch (error) {
-        const retryable = error?.retryable || ["KIS_BUSINESS_NETWORK_ERROR", "KIS_TOKEN_NETWORK_ERROR", "KIS_SOURCE_TIMEOUT"].includes(error?.code);
-        if (!retryable || attempt === 1) fail(safeCode(error));
+        assertObservationWindow(context.date, context.live);
+        // The shared client redacts fetch errors as NETWORK_ERROR. Restore only
+        // this adapter's own fixed error codes so expiry is never retried and
+        // an actual timeout is not reported as a generic network failure.
+        const failure = error?.code === "KIS_BUSINESS_NETWORK_ERROR" && transportFailure ? transportFailure : error;
+        const retryable = failure?.retryable || ["KIS_BUSINESS_NETWORK_ERROR", "KIS_TOKEN_NETWORK_ERROR", "KIS_SOURCE_TIMEOUT"].includes(failure?.code);
+        if (!retryable || attempt === 1) fail(safeCode(failure));
         metrics.retries += 1;
         await wait(1000);
       }

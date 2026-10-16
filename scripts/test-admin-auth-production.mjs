@@ -21,8 +21,8 @@ try {
   let ready = false;
   for (let i = 0; i < 60 && !exited; i++) { try { ready = (await request("/login")).ok; if (ready) break; } catch {} await wait(500); }
   assert.ok(ready, "Production server must start without auth env");
-  for (const path of ["/", "/?stock=005930", "/data/history/2026-10-07.json", "/_next/image?url=%2Fapi%2Fprice&w=64&q=75"]) assert.equal((await request(path)).status, 307, path);
-  for (const path of ["/api/top-stocks", "/api/home-dashboard", "/api/model-performance", "/api/screener", "/api/auth/session"]) {
+  for (const path of ["/", "/forecasts", "/?stock=005930", "/data/history/2026-10-07.json", "/_next/image?url=%2Fapi%2Fprice&w=64&q=75"]) assert.equal((await request(path)).status, 307, path);
+  for (const path of ["/api/forecasts/swing", "/api/top-stocks", "/api/home-dashboard", "/api/model-performance", "/api/screener", "/api/auth/session"]) {
     const response = await request(path, { headers: { Cookie: "__Host-tb-session=v1.forged", Authorization: "Bearer invalid" } });
     assert.equal(response.status, 503, path);
     assert.equal((await response.json()).error.code, "AUTH_UNAVAILABLE");

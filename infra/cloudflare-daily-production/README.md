@@ -33,7 +33,10 @@ UTC 평일당 28개 실행 슬롯을 1개 Cron Trigger로 묶는다(이전 거�
 
 - 대상 고정: `klkl789982-droid/stock-research`, workflow `daily-production.yml`, ref `main`.
 - 사전 GET: workflow 활성 상태, 해당 workflow/main의 최근 30개 run 중 실행·대기 상태 확인. 활성 run이 있으면 건너뛴다. 이 검사는 분산 잠금이 아니라 최선의 중복 요청 방지다.
-- 이어서 기존 배포 검증기를 재사용해 공개 사이트의 TOP/성과/운영 API를 확인한다. 세 기준일이 해당 예약의 session 날짜와 같고 게시 상태가 `published`/`unchanged`면 `SESSION_ALREADY_PUBLISHED`로 건너뛴다. 야간 슬롯은 UTC 날짜가 직전 KST session 날짜다. 이 날짜는 중복 확인용이며 GitHub에 전달하거나 EOD 후보로 강제하지 않는다. 30분 이상 지연된 이벤트, API 장애·JSON 오류·기준일 불일치에는 건너뛰지 않고 기존 공식 probe를 요청한다. 사이트 요청에 GitHub Authorization을 보내지 않는다.
+- 게시 중복 생략은 선택 기능이다. 이미 승인된 `TB_AUTOMATION_READ_TOKEN`이 Worker에 제공된 경우에만 동작한다. 이번 로컬 수정은 이 자격을 생성·복사·등록하지 않으며 기존 `GITHUB_TOKEN`을 사이트에 보내지 않는다. 사이트 자격이 없거나 형식이 잘못되면 `SITE_AUTH_UNAVAILABLE`을 기록하고 정상적인 공식 probe 요청을 계속한다.
+- 사이트 자격이 있을 때 현재 run 목록의 가장 최근 신뢰 가능한 완료·성공 Daily run을 선택하고, 같은 run/attempt의 Actions jobs 메타데이터를 기존 GitHub Actions 읽기 권한으로 조회한다. 허용된 저장소/actor/main/workflow, 성공 verifier와 게시 증거 marker, SHA/해시/기준일/시각 순서를 확인한다. 독립된 예상 게시 증거가 없거나 잘못됐으면 `PUBLICATION_EVIDENCE_UNAVAILABLE`로 정상 probe를 계속한다. 성공 run 자체는 사이트 반영 증명이 아니다.
+- 독립된 예상 기준일·스냅샷 해시·배포 SHA가 확보되면 보호된 TOP/성과/홈/운영 **4개 API**를 사이트 전용 자격으로 읽고, 모두 정확한 identity와 `publicationReady:true`를 반환할 때만 `SESSION_ALREADY_PUBLISHED`로 건너뛴다. 날짜만 같거나 `published`/`unchanged` 문자열만 있는 응답은 통과하지 않는다. 사이트 자격은 GitHub로 보내지 않는다.
+- 야간 슬롯은 UTC 날짜가 직전 KST session 날짜다. 이 날짜는 중복 확인용이며 GitHub에 전달하거나 EOD 후보로 강제하지 않는다. 30분 이상 지연된 이벤트는 jobs/사이트 확인을 생략하고 기존 공식 probe를 요청한다. 사이트 장애·잘못된 JSON·identity 불일치에는 `SITE_PUBLICATION_NOT_VERIFIED`를 기록하고 probe를 계속하며 남은 사이트 읽기를 취소한다.
 - POST: `https://api.github.com/repos/klkl789982-droid/stock-research/actions/workflows/daily-production.yml/dispatches`.
 - JSON: `{"ref":"main","return_run_details":true}`. `return_run_details`는 GitHub API 옵션이며 workflow input이 아니다. `inputs`/기준일을 보내지 않는다.
 - 헤더: Bearer Secret, GitHub JSON Accept, API version `2026-03-10`, User-Agent. Redirect를 따라가지 않는다.
@@ -46,14 +49,14 @@ UTC 평일당 28개 실행 슬롯을 1개 Cron Trigger로 묶는다(이전 거�
 | --- | --- | --- |
 | `DISPATCH_ACCEPTED` | HTTP 200 + 유효 run ID 또는 호환 204로 요청 수락 | workflow 계산 성공, 새 EOD 승격, 사이트 게시 성공 |
 | `SKIPPED / WORKFLOW_ALREADY_ACTIVE` | 기존 실행/대기 run 발견 | 그 run의 성공 보장 |
-| `SKIPPED / SESSION_ALREADY_PUBLISHED` | 공개 TOP·성과·운영 API에서 해당 session의 기존 게시 확인 | 새 workflow 실행 성공 또는 공급처 최신일을 직접 조회한 것 |
+| `SKIPPED / SESSION_ALREADY_PUBLISHED` | 신뢰 가능한 Actions 예상 identity와 보호된 4개 API가 정확히 일치 | 새 workflow 실행 성공 또는 공급처 최신일을 직접 조회한 것 |
 | `SKIPPED / DISPATCH_DISABLED` | 안전 스위치 꺼짐 | 실제 운영 활성화 |
 | `FAILED` | secret/권한/응답/요청 오류; Cron 호출 실패로 기록 | 기존 데이터 삭제/대체 |
 | `OUTCOME_UNKNOWN` | POST 응답 불명확; 수락 여부 미확정; Cron 호출 실패로 기록 | 실패 확정 또는 무조건 재전송 |
 
-`workflowStatus`는 항상 `NOT_VERIFIED`다. `publicationStatus`는 기존 게시를 세 API로 확인한 건너뛰기에서만 `VERIFIED_EXISTING`, 그 외에는 `NOT_VERIFIED`다. `runId`가 있으면 Actions에서 실제 conclusion과 승격·push·Vercel verifier 결과를 확인한다. 204는 run ID가 없으므로 실행 목록을 확인해야 한다. 기존 workflow의 `NO_NEW_OFFICIAL_EOD` 성공은 새로운 거래일 게시와 다르다.
+`workflowStatus`는 항상 `NOT_VERIFIED`다. `publicationStatus`는 독립된 예상 identity와 4개 API를 정확히 비교한 건너뛰기에서만 `VERIFIED_EXISTING`, 그 외에는 `NOT_VERIFIED`다. `runId`가 있으면 Actions에서 실제 conclusion과 승격·push·Vercel verifier 결과를 확인한다. 204는 run ID가 없으므로 실행 목록을 확인해야 한다. 기존 workflow의 `NO_NEW_OFFICIAL_EOD` 성공은 새로운 거래일 게시와 다르다.
 
-GET의 network/timeout/5xx/rate limit은 최대 3회, 1초/2초 backoff로 재시도한다. 모든 요청 timeout은 10초다. POST는 **명시적 rate-limit 거절**만 최대 3회, 각 재시도 전에 활성 run을 다시 확인한다. Retry-After/reset은 최대 30초 내에서만 기다리고 초과/잘못된 값은 다음 슬롯으로 넘긴다. 인증 401/권한 403/404/422는 반복하지 않는다. POST network/timeout/5xx/잘못된 2xx는 이미 수락됐을 수 있어 즉시 재시도하지 않는다.
+GET의 network/timeout/5xx/rate limit은 최대 3회, 1초/2초 backoff로 재시도한다. GitHub 요청과 사이트 4개 병렬 읽기 묶음의 timeout은 각각 10초다. 선택 게시 확인은 Actions jobs 조회 1회(일시 오류 때 최대 3회)와 사이트 4회가 추가되며, 자격/증거가 없으면 사이트를 조회하지 않는다. POST는 **명시적 rate-limit 거절**만 최대 3회, 각 재시도 전에 활성 run을 다시 확인한다. Retry-After/reset은 최대 30초 내에서만 기다리고 초과/잘못된 값은 다음 슬롯으로 넘긴다. 인증 401/권한 403/404/422는 반복하지 않는다. POST network/timeout/5xx/잘못된 2xx는 이미 수락됐을 수 있어 즉시 재시도하지 않는다.
 
 로그는 cron, 예정 UTC 시각, 단계, 상태, 안전한 오류 코드, attempt/delay, run ID만 남긴다. token/헤더/전체 요청·응답/예외 원문은 출력하지 않는다. 장애 시 처리한 호출만 로그에 남으므로 **모든 Cloudflare 슬롯이 누락되면 Worker 자신의 로그만으로 감지할 수 없다**. Cron Past Events/Workers Logs와 기존 Actions/사이트 운영 API를 함께 점검한다.
 
@@ -67,9 +70,17 @@ GET의 network/timeout/5xx/rate limit은 최대 3회, 1초/2초 backoff로 재�
 - 한 슬롯이 누락/실패해도 이후 슬롯은 독립적으로 자동 기준일 판정을 요청한다. 기존 260행 거래일 목록에서 가장 오래된 누락일 하나를 처리하며 다음 실행이 나머지를 복구한다. 모든 슬롯 누락·GitHub runner 전체 장애·공식 공급 지연은 보장 해결하지 못한다.
 - 외부 dispatch는 기존 status에 `trigger=workflow_dispatch`와 `lastAttemptAt`으로 남는다. `lastAutomaticRunAt`은 GitHub native schedule만 집계하므로 Cloudflare 자동 실행은 Worker scheduled 로그로 별도 확인한다. 기존 API 계약을 변경하지 않는다.
 
+## 2026-10-16 로컬 오류 수정
+
+이전 Worker가 강화된 배포 검증기에 예상 해시와 SHA 없이 날짜만 넘겼고, 검증기가 반환한 `actual:null`을 읽어 예외가 발생했다. 따라서 게시 중복 확인이 실제로 실행되지 않았으며 다음 공식 probe를 계속 요청했다. 데이터가 거짓으로 최신 처리되거나 삭제된 문제는 아니지만 불필요한 실행 가능성이 있었다. 네 실패 테스트도 이전의 공개 3개 API 계약을 가정했다.
+
+수정은 현재의 독립된 예상 identity + 보호된 4개 API 계약을 유지한다. 원래의 성공/장애/취소/야간·지연 경로를 모두 실제 mock 응답으로 실행하고, 자격 누락·다른 SHA/해시·불충분 증거·잘못된 jobs/steps의 부정 검증을 추가했다. 테스트 삭제·skip·날짜만 비교하는 우회는 없다.
+
+또한 Worker import 경로에서 Node 전용 hash 생성과 `process.env` 의존을 분리했다. 실제 ESM 그래프를 Web API만 있는 로컬 VM에서 실행해 인증 없는 정상 dispatch와 인증·증거가 있는 정확 비교를 검증한다. 이 검사는 실제 Cloudflare 배포/runtime 성공을 뜻하지 않는다.
+
 ## 로컬 검증 (실제 요청 없음)
 
-이 디렉터리에서 `npm test`, `npm run check`를 실행한다. 별도 npm 설치가 필요 없으며 모든 outbound 요청은 mock이다. 실제 Secret을 로컬 테스트에 넣지 않는다. Wrangler local scheduled 테스트도 실제 Secret을 넣으면 실요청할 수 있으므로 승인 전에는 실행하지 않는다.
+이 디렉터리에서 `npm test`, `npm run check`를 실행한다. 별도 npm 설치가 필요 없으며 모든 outbound 요청은 mock이다. 저장소 루트에서 `node scripts/test-cloudflare-daily-runtime.mjs`로 Node globals 없는 Worker 경로도 확인한다. 실제 Secret을 로컬 테스트에 넣지 않는다. Wrangler local scheduled 테스트도 실제 Secret을 넣으면 실요청할 수 있으므로 승인 전에는 실행하지 않는다.
 
 ## 사용자 Cloudflare 설정 절차 — 승인 후 수행
 

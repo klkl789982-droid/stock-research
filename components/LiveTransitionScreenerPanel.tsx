@@ -19,7 +19,7 @@ export default function LiveTransitionScreenerPanel({ onSelectStock, initialPair
   return <section ref={rootRef} className="space-y-3" aria-labelledby="live-transition-heading">
     <div className="tb-card p-4 sm:p-5">
       <div className="flex flex-wrap items-center gap-2"><h2 id="live-transition-heading" className="text-xl font-semibold text-slate-950">전환 신호 · LIVE</h2><span className="rounded-full bg-orange-100 px-2 py-1 text-xs font-semibold text-orange-800">장중 잠정</span></div>
-      <p className="mt-2 text-sm text-slate-700">TOP LIVE의 저장된 14:30 관측가로 골든크로스 진입과 근접 후보를 살펴봅니다.</p>
+      <p className="mt-2 text-sm text-slate-700">TOP LIVE의 저장된 14:00 관측가로 골든크로스 진입과 근접 후보를 살펴봅니다.</p>
       <p className="mt-2 text-xs leading-relaxed text-amber-800">실시간 스트리밍이 아닙니다. 관측일과 종목별 실제 시세 시각을 확인하세요. 장중 신호는 이후 또는 종가에서 되돌아갈 수 있습니다.</p>
       <LiveTransitionRules nearPercent={Number(search.filters.nearPercent)} />
       <form className="mt-4 grid grid-cols-2 gap-3 xl:grid-cols-4" onSubmit={(event) => { event.preventDefault(); submit(filters); }}>

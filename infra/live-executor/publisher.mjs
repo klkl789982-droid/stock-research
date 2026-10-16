@@ -3,7 +3,8 @@ import { promisify } from "node:util";
 import { mkdir, readFile, open, lstat, link, rename, unlink } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
-import { validateIntradayModelTopSignal, hashIntradayModelTop, OFFICIAL_SIGNAL_TIME, OFFICIAL_SIGNAL_WINDOW_END } from "../../lib/intraday-model-top-official-signal.mjs";
+import { validateIntradayModelTopSignal, hashIntradayModelTop, OFFICIAL_SIGNAL_TIME, OFFICIAL_SIGNAL_WINDOW_END, isCurrentIntradayModelTopSignal } from "../../lib/intraday-model-top-official-signal.mjs";
+import { CURRENT_LIVE_PROFILE } from "../../lib/intraday-model-top-time-policy.mjs";
 import { inspectLiveProductionDeployment } from "../../lib/daily-production-deployment-verifier.mjs";
 import { createLocalExecutionStore } from "./store.mjs";
 
@@ -23,7 +24,7 @@ async function executeGit(args, cwd) {
 }
 
 function validatePublicationSignal(signal) {
-  if (validateIntradayModelTopSignal(signal).length) throw new Error("PUBLISH_SIGNAL_INVALID");
+  if (!isCurrentIntradayModelTopSignal(signal)) throw new Error("PUBLISH_SIGNAL_INVALID");
   if (signal.observationType !== "LIVE_OBSERVATION" || signal.status !== "READY" || signal.source?.provider !== "KIS") throw new Error("PUBLISH_REQUIRES_REAL_READY_LIVE_SIGNAL");
   const start = Date.parse(`${signal.signalDate}T${OFFICIAL_SIGNAL_TIME}+09:00`);
   const end = Date.parse(`${signal.signalDate}T${OFFICIAL_SIGNAL_WINDOW_END}+09:00`);
@@ -84,7 +85,7 @@ async function assertRemoteCandidate(git, signal, signalPath) {
 
 function plannedLatest(signal, signalPath, updatedAt = new Date().toISOString()) {
   return {
-    schemaVersion: 1, artifactType: "intradayModelTopLatestStatus", signalDate: signal.signalDate,
+    schemaVersion: CURRENT_LIVE_PROFILE.schemaVersion, observationPolicyId: CURRENT_LIVE_PROFILE.policyId, artifactType: "intradayModelTopLatestStatus", signalDate: signal.signalDate,
     officialSignalTime: OFFICIAL_SIGNAL_TIME, status: "READY", signalPath, contentHash: signal.contentHash,
     collection: signal.collection, collectionStartedAt: signal.collectionStartedAt, collectionCompletedAt: signal.collectionCompletedAt,
     updatedAt,
@@ -106,18 +107,18 @@ async function inspectInterruptedPublication(git, root, signal, signalPath, allo
   if (dirty.has(LATEST_PATH)) {
     if (!latest || !Number.isFinite(Date.parse(latest.updatedAt)) || hashIntradayModelTop(latest) !== hashIntradayModelTop(plannedLatest(signal, signalPath, latest.updatedAt))) throw new Error("PUBLISH_INTERRUPTED_CONTENT_MISMATCH");
   } else if (latest) {
-    if (latest.schemaVersion !== 1 || latest.artifactType !== "intradayModelTopLatestStatus" || typeof latest.status !== "string" || !/^\d{4}-\d{2}-\d{2}$/u.test(latest.signalDate ?? "")) throw new Error("PUBLISH_INTERRUPTED_CONTENT_MISMATCH");
+    if (latest.schemaVersion !== CURRENT_LIVE_PROFILE.schemaVersion || latest.observationPolicyId !== CURRENT_LIVE_PROFILE.policyId || latest.artifactType !== "intradayModelTopLatestStatus" || typeof latest.status !== "string" || !/^\d{4}-\d{2}-\d{2}$/u.test(latest.signalDate ?? "")) throw new Error("PUBLISH_INTERRUPTED_CONTENT_MISMATCH");
     if (latest.signalDate > signal.signalDate) throw new Error("PUBLISH_LATEST_DATE_REGRESSION");
   }
   return true;
 }
 
-async function verifyDeployment(signalDate, env, verify, pause, attempts, delayMs) {
+async function verifyDeployment(signal, env, verify, pause, attempts, delayMs) {
   if (!env.TB_AUTOMATION_READ_TOKEN) return { publicationVerified: false, publicationReason: "AUTOMATION_READ_TOKEN_UNAVAILABLE" };
   let reason = "LIVE_DEPLOYMENT_PENDING";
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {
-      if (await verify({ siteUrl: "https://stock-research-chi.vercel.app", expectedSignalDate: signalDate, automationToken: env.TB_AUTOMATION_READ_TOKEN })) return { publicationVerified: true, publicationReason: null };
+      if (await verify({ siteUrl: "https://stock-research-chi.vercel.app", expectedSignalDate: signal.signalDate, expectedContentHash: signal.contentHash, automationToken: env.TB_AUTOMATION_READ_TOKEN })) return { publicationVerified: true, publicationReason: null };
     } catch (error) {
       reason = /^HTTP_\d+$/u.test(error?.message ?? "") ? error.message : "LIVE_DEPLOYMENT_UNAVAILABLE";
       if (["HTTP_401", "HTTP_403"].includes(reason)) break;
@@ -155,7 +156,7 @@ async function publishUnlocked({ signal, checkoutDir, env = process.env, depende
   if (!acceptedRemotes.has(await git(["remote", "get-url", "origin"]))) throw new Error("PUBLISH_ORIGIN_NOT_ALLOWED");
   if (await git(["config", "--get", "tightbudget.livePublisher"]) !== "true") throw new Error("DEDICATED_PUBLICATION_CHECKOUT_REQUIRED");
   if (path.resolve(await git(["rev-parse", "--show-toplevel"])) !== root || await git(["branch", "--show-current"]) !== "main") throw new Error("PUBLISH_MAIN_CHECKOUT_REQUIRED");
-  const signalPath = `data/intraday-signals/model-top/${signal.signalDate}/1430.json`;
+  const signalPath = `data/intraday-signals/model-top/${signal.signalDate}/${CURRENT_LIVE_PROFILE.slot}.json`;
   const allowedPaths = new Set([signalPath, LATEST_PATH]);
   const recovering = await inspectInterruptedPublication(git, root, signal, signalPath, allowedPaths);
   await ensureNoSymlinks(root, signalPath);
@@ -196,7 +197,7 @@ async function publishUnlocked({ signal, checkoutDir, env = process.env, depende
   const pause = dependencies.sleep ?? sleep;
   const attempts = Math.min(24, Math.max(1, dependencies.verificationAttempts ?? 24));
   const delayMs = dependencies.verificationDelayMs ?? 15_000;
-  if (!ahead) return { ...base, status: remoteSignal ? "ALREADY_PUBLISHED" : "NO_CHANGE", commitSha: await git(["rev-parse", "HEAD"]), ...await verifyDeployment(signal.signalDate, env, verify, pause, attempts, delayMs) };
+  if (!ahead) return { ...base, status: remoteSignal ? "ALREADY_PUBLISHED" : "NO_CHANGE", commitSha: await git(["rev-parse", "HEAD"]), ...await verifyDeployment(signal, env, verify, pause, attempts, delayMs) };
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     // Guard latest date/content immediately before every push. The server still enforces fast-forward.
     await git(["fetch", "origin", "main"]);
@@ -204,7 +205,7 @@ async function publishUnlocked({ signal, checkoutDir, env = process.env, depende
     try { await git(["rebase", "origin/main"]); } catch { try { await git(["rebase", "--abort"]); } catch { /* Preserve pending commit. */ } throw new Error("PUBLISH_REBASE_CONFLICT"); }
     try {
       await git(["push", "origin", "HEAD:main"]);
-      return { ...base, status: "PUBLISHED", pushAttempts: attempt, commitSha: await git(["rev-parse", "HEAD"]), ...await verifyDeployment(signal.signalDate, env, verify, pause, attempts, delayMs) };
+      return { ...base, status: "PUBLISHED", pushAttempts: attempt, commitSha: await git(["rev-parse", "HEAD"]), ...await verifyDeployment(signal, env, verify, pause, attempts, delayMs) };
     } catch {
       if (attempt === 3) return { ...base, status: "PUSH_PENDING", pushAttempts: attempt, commitSha: await git(["rev-parse", "HEAD"]), publicationVerified: false, reason: "GIT_PUSH_FAILED" };
       await pause(1_000);

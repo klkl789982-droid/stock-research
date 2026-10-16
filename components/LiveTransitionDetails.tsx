@@ -29,6 +29,8 @@ export type LiveTransitionRow = {
 };
 export type LiveTransitionResponse = {
   mode: "LIVE";
+  signalVersion: "intraday-model-top-official-signal-v2";
+  observationPolicyId: "intraday-1400-v1";
   referenceDate: string;
   previousOfficialDate: string;
   modelReferenceDate: string;
@@ -68,7 +70,7 @@ const collectionStamp = (value: string | null) => {
 
 export function TransitionModeSelector({ mode, onChange, label = "전환 신호 데이터 기준" }: { mode: TransitionMode; onChange: (mode: TransitionMode) => void; label?: string }) {
   return <div role="group" aria-label={label} className="flex flex-wrap gap-2">
-    {([ ["LIVE", "LIVE · 14:30 저장 관측"], ["EOD", "EOD · 확정 일봉 비교"] ] as const).map(([value, title]) => <button key={value} type="button" aria-pressed={mode === value} onClick={() => onChange(value)} className={`tb-focus min-h-10 rounded-lg border px-3 py-2 text-xs font-semibold sm:text-sm ${mode === value ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"}`}>{title}</button>)}
+    {([ ["LIVE", "LIVE · 14:00 저장 관측"], ["EOD", "EOD · 확정 일봉 비교"] ] as const).map(([value, title]) => <button key={value} type="button" aria-pressed={mode === value} onClick={() => onChange(value)} className={`tb-focus min-h-10 rounded-lg border px-3 py-2 text-xs font-semibold sm:text-sm ${mode === value ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"}`}>{title}</button>)}
   </div>;
 }
 
@@ -78,7 +80,7 @@ export function LiveTransitionRules({ nearPercent }: { nearPercent: number }) {
     <p className="mt-2">직전 확정 일봉까지의 종가에 관측가를 당일 값으로 한 번 추가해 단순이동평균을 계산합니다. 골든크로스 진입은 직전 단기선 ≤ 장기선, 현재 단기선 &gt; 장기선인 경우입니다. 직전부터 위에 있던 종목은 기존 상단 유지로 구분합니다.</p>
     <p className="mt-2">근접 후보는 직전 단기선 ≤ 장기선, 현재 단기선 &lt; 장기선, 간격 축소, 양의 단기선 기울기를 모두 만족하고 교차 경계까지 필요한 추가 상승률이 {nearPercent}% 이하인 경우입니다. 0~5% 범위의 탐색 조건이며 통계 검증된 교차·상승 확률이 아닙니다. 경계와 정확히 같은 값은 교차로 판정하지 않습니다.</p>
     <p className="mt-2">교차 경계가는 두 이동평균이 같아지는 가격입니다. 엄격 교차는 관측가 &gt; 원래 계산된 경계가여야 합니다. 표시 경계가는 참고용 반올림 값이며 주문 가능한 최소 가격이 아닙니다. 필요 추가 상승률은 max(0, (경계가/관측가−1)×100)입니다.</p>
-    <p className="mt-2">LIVE는 TOP LIVE의 저장된 14:30 관측 스냅샷이며 실시간 스트리밍이 아닙니다. 종목별 실제 시세 시각을 확인하세요. 장중 신호는 이후 또는 종가에서 되돌아갈 수 있습니다. 매수 추천·수익 예측이 아닙니다.</p>
+    <p className="mt-2">LIVE는 TOP LIVE의 저장된 14:00 관측 스냅샷이며 실시간 스트리밍이 아닙니다. 종목별 실제 시세 시각을 확인하세요. 장중 신호는 이후 또는 종가에서 되돌아갈 수 있습니다. 매수 추천·수익 예측이 아닙니다.</p>
   </details>;
 }
 

@@ -18,18 +18,18 @@ test("LIVE retries rate limits once, preserves old callers and never retries aut
   assert.equal(calls, 2);
 });
 test("metadata is diagnostic only; no fabricated nominal time or secret reflection", () => {
-  const env = { INTRADAY_TRIGGER_TYPE: "workflow_dispatch", INTRADAY_TRIGGER_SOURCE: "cloudflare-live-prewarm", INTRADAY_SCHEDULED_AT: "2026-10-12T05:12:00Z" };
-  const actual = "2026-10-12T05:13:07Z";
+  const env = { INTRADAY_TRIGGER_TYPE: "workflow_dispatch", INTRADAY_TRIGGER_SOURCE: "cloudflare-live-prewarm", INTRADAY_SCHEDULED_AT: "2026-10-12T04:42:00Z" };
+  const actual = "2026-10-12T04:43:07Z";
   const result = liveSchedulerMetadata(env, actual);
   assert.equal(result.schedulerToScriptDelayMs, 67000);
   assert.equal(result.scriptStartedAt, actual); assert.equal(result.runnerFirstStepAt, null);
-  assert.equal(liveSchedulerMetadata({ ...env, INTRADAY_RUNNER_FIRST_STEP_AT: "2026-10-12T05:13:00Z" }, actual).runnerFirstStepAt, "2026-10-12T05:13:00.000Z");
+  assert.equal(liveSchedulerMetadata({ ...env, INTRADAY_RUNNER_FIRST_STEP_AT: "2026-10-12T04:43:00Z" }, actual).runnerFirstStepAt, "2026-10-12T04:43:00.000Z");
   assert.equal(liveSchedulerMetadata({ ...env, INTRADAY_SCHEDULED_AT: "secret-fixture" }, actual).scheduledAt, null);
-  assert.equal(liveSchedulerMetadata({ ...env, INTRADAY_SCHEDULED_AT: "2026-10-12T05:20:00Z" }, actual).scheduledAt, null);
+  assert.equal(liveSchedulerMetadata({ ...env, INTRADAY_SCHEDULED_AT: "2026-10-12T04:50:00Z" }, actual).scheduledAt, null);
   assert.equal(liveSchedulerMetadata({ INTRADAY_TRIGGER_TYPE: "schedule" }, actual).scheduledAt, null);
 });
 test("separate failure stages retain previous good pointer; no false publication time", () => {
-  const good = { status: "READY", signalDate: "2026-10-08", signalPath: "fixture", collectionCompletedAt: "2026-10-08T05:34:00Z" };
+  const good = { status: "READY", signalDate: "2026-10-08", signalPath: "fixture", collectionCompletedAt: "2026-10-08T05:04:00Z" };
   for (const [stage, label] of [["collection", "수집 실패"], ["validation", "검증 실패"], ["storage", "저장 실패"], ["publication", "게시 실패"]]) {
     const result = liveAttemptStatus(good, { status: "FAILED", failureStage: stage, signalDate: "2026-10-12" });
     assert.equal(result.lastGood.signalPath, "fixture"); assert.equal(result.lastSuccessAt, good.collectionCompletedAt);

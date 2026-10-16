@@ -84,7 +84,7 @@ test("UI keeps Daily/LIVE contracts, guards, overlay and distinct provisional la
   assert.match(source, /api\/top-stocks\?model=/u); assert.match(source, /api\/intraday-model-top\?model=/u);
   assert.match(source, /api\/kis-eod-top-stocks\?model=/u); assert.match(source, /shouldSelectKisEodTop/u);
   assert.match(source, /controller\.signal\.aborted/u); assert.match(source, /TOP_INTRADAY_POLL_MS/u);
-  assert.match(source, /공식 성과·14:30 LIVE 성과에 포함하지 않습니다/u);
+  assert.match(source, /공식 성과·14:00 LIVE 성과에 포함하지 않습니다/u);
   assert.match(source, /data\.dataMode !== "kisProvisionalEod" && <th/u);
   const route = await fs.readFile("app/api/kis-eod-top-stocks/route.ts", "utf8");
   assert.match(route, /KIS_EOD_PUBLISH_ENABLED === "true"/u); assert.match(route, /Cache-Control": "no-store"/u);

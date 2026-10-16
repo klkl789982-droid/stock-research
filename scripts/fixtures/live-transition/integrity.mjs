@@ -12,6 +12,8 @@ export function assertLiveFixtureArchive(key, bytes, archive) {
   assert.equal(archive.hashScope ?? "fileBytes-v1", expectedScope, `${archive.path}: unexpected fixture hash scope`);
   const actual = key === "history"
     ? historyFixtureHash(JSON.parse(bytes))
-    : createHash("sha256").update(bytes).digest("hex");
+    // Pinned hashes are Git's LF blob bytes. Windows core.autocrlf changes only
+    // checkout line endings; never change the historical file to satisfy a test.
+    : createHash("sha256").update(String(bytes).replaceAll("\r\n", "\n")).digest("hex");
   assert.equal(actual, archive.sha256, `${archive.path} immutable inputs changed; review the pinned scenario before updating it`);
 }

@@ -1,7 +1,7 @@
-import { buildIntradayModelTopSignal, calculateIntradayModelTopScores, hashIntradayModelTop, MODEL_SPECS, validateIntradayModelTopSignal } from "../../lib/intraday-model-top-official-signal.mjs";
+import { buildIntradayModelTopSignal, calculateIntradayModelTopScores, hashIntradayModelTop, MODEL_SPECS, validateIntradayModelTopSignal, isCurrentIntradayModelTopSignal } from "../../lib/intraday-model-top-official-signal.mjs";
 import { mergeProvisionalCandle } from "../../lib/intraday-model-b-official-signal.mjs";
 import { validateIntradayMarketSeed } from "../../lib/intraday-market-seed.mjs";
-import { classifyOfficialSignalWindow, signalWeekday } from "../../lib/intraday-model-top-time-policy.mjs";
+import { classifyOfficialSignalWindow, signalWeekday, OFFICIAL_SIGNAL_TIME } from "../../lib/intraday-model-top-time-policy.mjs";
 
 export const clockKst = (ms) => {
   const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" }).formatToParts(new Date(ms)).map(({ type, value }) => [type, value]));
@@ -36,25 +36,37 @@ export function buildShadowResult(seed, quotes, date, startedAt, completedAt) {
   return { ...base, contentHash: hashIntradayModelTop(base) };
 }
 
-export function createExecutor({ store, source, loadSeed, verifyFormula, now = Date.now, publish = null, expectedUniverseCount = 553, onProgress = () => {} }) {
+export function createExecutor({ store, source, loadSeed, verifyFormula, verifySeedSession = async () => { throw new Error("LIVE_INPUT_NOT_READY_PREVIOUS_SESSION_UNVERIFIED"); }, getInputProvenance = () => null, requireFinalInputRefresh = true, verifyClock = async () => null, now = Date.now, publish = null, recordSwing = null, expectedUniverseCount = 553, onProgress = () => {} }) {
   async function prepare(mode, date, runId = date) {
     signalWeekday(date);
     if (!["live", "shadow"].includes(mode) || !/^[A-Za-z0-9-]+$/u.test(runId)) throw new Error("EXECUTOR_ARGUMENT_INVALID");
     const base = `${mode}/${date}/${runId}`;
-    const existing = await store.read(`${base}/prepared.json`);
-    if (existing) { await verifyFormula(existing.formulaEvidence); return existing; }
+    const finalInputs = await store.read(`${base}/collection-prepared.json`);
+    const existing = finalInputs ?? await store.read(`${base}/prepared.json`);
+    const finalRefresh = mode === "live" && requireFinalInputRefresh && !finalInputs && clockKst(now()).time >= "13:59:00";
+    if (finalRefresh && now() >= Date.parse(`${date}T${OFFICIAL_SIGNAL_TIME}+09:00`)) throw new Error("LIVE_INPUT_NOT_READY_REFRESH_LATE");
+    if (existing && !finalRefresh) {
+      await verifyFormula(existing.formulaEvidence);
+      if (mode === "live") await verifySeedSession(await store.read(existing.seedKey), date, existing.inputProvenance ?? null);
+      return existing;
+    }
+    const clockEvidence = await verifyClock();
     const calendar = await source.calendar(date);
     if (calendar.isTradingDay === false) throw new Error("MARKET_CLOSED");
     if (calendar.isTradingDay !== true) throw new Error("TRADING_CALENDAR_UNAVAILABLE");
     const seed = await loadSeed(date);
     if (validateIntradayMarketSeed(seed, expectedUniverseCount).length || seed.requestedDate >= date) throw new Error("PRIOR_SEED_INVALID");
-    // Keep the existing LIVE contract: newest available verified official seed
-    // strictly before today. Its actual date is retained, never relabeled today.
+    if (mode === "live") await verifySeedSession(seed, date);
+    // The exact verified preceding session is required, with its actual date and
+    // availability retained. An older seed cannot bridge a missing session.
     const formulaEvidence = await verifyFormula();
     const seedKey = `${mode}/seeds/${seed.contentHash}.json`;
     await store.writeImmutable(seedKey, seed);
-    const prepared = { mode, date, runId, base, seedKey, seedHash: seed.contentHash, formulaEvidence, calendar, preparedAt: iso(now), eligibleCount: seed.records.filter((r) => r.eligible).length, universeCount: seed.records.length };
-    await store.writeImmutable(`${base}/prepared.json`, prepared);
+    const prepared = { mode, date, runId, base, seedKey, seedHash: seed.contentHash, inputProvenance: getInputProvenance(seed), formulaEvidence, calendar,
+      ...(clockEvidence == null ? {} : { clockEvidence }), preparedAt: iso(now), eligibleCount: seed.records.filter((r) => r.eligible).length, universeCount: seed.records.length };
+    // Preserve prewarm evidence and pin a separate last-minute input receipt.
+    if (finalRefresh && now() >= Date.parse(`${date}T${OFFICIAL_SIGNAL_TIME}+09:00`)) throw new Error("LIVE_INPUT_NOT_READY_REFRESH_LATE");
+    await store.writeImmutable(`${base}/${finalRefresh ? "collection-prepared" : "prepared"}.json`, prepared);
     return prepared;
   }
 
@@ -66,8 +78,16 @@ export function createExecutor({ store, source, loadSeed, verifyFormula, now = D
       const finish = async (artifact) => {
         const previous = await store.read(`${mode}/latest.json`);
         if (!previous || previous.signalDate <= date) await store.writeMutable(`${mode}/latest.json`, { signalDate: date, artifactKey: `${base}/result.json`, contentHash: artifact.contentHash, observationType: artifact.observationType, storedAt: status.storedAt ?? iso(now) });
-        status = { ...status, status: "STORED", storedAt: status.storedAt ?? iso(now), contentHash: artifact.contentHash };
+        status = { ...status, status: "STORED", reason: null, storedAt: status.storedAt ?? iso(now), contentHash: artifact.contentHash };
         await store.writeMutable(`${base}/status.json`, status);
+        if (mode === "live" && recordSwing && status.swing?.status !== "RECORDED"
+          && (status.swingAttempts ?? 0) < 3 && (status.nextSwingAt ?? 0) <= now()) {
+          status.swingAttempts = (status.swingAttempts ?? 0) + 1;
+          try { status.swing = await recordSwing(artifact); }
+          catch (error) { status.swing = { status: "FAILED", reason: safeReason(error) }; }
+          status.nextSwingAt = now() + 60000;
+          await store.writeMutable(`${base}/status.json`, status);
+        }
         if (mode === "live" && publish) {
           const outbox = await store.read("live/outbox.json") ?? { dates: [] };
           if (!outbox.dates.includes(date)) await store.writeMutable("live/outbox.json", { dates: [...outbox.dates, date].sort() });
@@ -86,9 +106,20 @@ export function createExecutor({ store, source, loadSeed, verifyFormula, now = D
         return status;
       };
       if (saved) {
+        if (mode === "live" && !isCurrentIntradayModelTopSignal(saved)) return { status: "ARCHIVED", reason: "LEGACY_OBSERVATION_READ_ONLY", contentHash: saved.contentHash };
         const pointer = await store.read(`${mode}/latest.json`);
-        if (status.status === "STORED" && pointer?.contentHash === saved.contentHash && (!publish || status.publication === "VERIFIED")) return status;
-        return finish(saved);
+        if (status.status === "STORED" && pointer?.contentHash === saved.contentHash && (!publish || status.publication === "VERIFIED")
+          && (!recordSwing || status.swing?.status === "RECORDED" || (status.swingAttempts ?? 0) >= 3 || (status.nextSwingAt ?? 0) > now())) return status;
+        if (status.status === "FAILED" && ((status.nextAttemptAt ?? 0) > now() || (status.storageRecoveryAttempts ?? 0) >= 3)) return status;
+        try { return await finish(saved); }
+        catch (error) {
+          // A durable result must not turn a pointer/status write failure into
+          // a hot retry loop. Recover only storage; never recollect its prices.
+          status = { ...status, status: "FAILED", reason: safeReason(error), storageRecoveryAttempts: (status.storageRecoveryAttempts ?? 0) + 1,
+            nextAttemptAt: now() + 60000, recordedAt: iso(now) };
+          await store.writeMutable(`${base}/status.json`, status);
+          return status;
+        }
       }
       if (status.status === "MISSED" || status.status === "MARKET_CLOSED") return status;
       let prepared, preparationAttempted = false;
@@ -96,7 +127,7 @@ export function createExecutor({ store, source, loadSeed, verifyFormula, now = D
         const clock = clockKst(now());
         if (clock.date !== date) throw new Error("EXECUTOR_DATE_MISMATCH");
         if (mode === "live" && [0, 6].includes(signalWeekday(date))) throw new Error("MARKET_CLOSED");
-        const previousPreparation = await store.read(`${base}/prepared.json`);
+        const previousPreparation = await store.read(`${base}/collection-prepared.json`) ?? await store.read(`${base}/prepared.json`);
         if (mode === "live" && !previousPreparation && classifyOfficialSignalWindow({ time: clock.time, weekday: signalWeekday(date) }) === "AFTER_WINDOW") {
           status = { ...status, status: "MISSED", reason: "OFFICIAL_SIGNAL_OUTSIDE_COLLECTION_WINDOW", successful: 0, recordedAt: iso(now) };
           await store.writeMutable(`${base}/status.json`, status); return status;
@@ -113,7 +144,7 @@ export function createExecutor({ store, source, loadSeed, verifyFormula, now = D
         prepared = await prepare(mode, date, runId);
         const window = classifyOfficialSignalWindow({ time: clockKst(now()).time, weekday: signalWeekday(date) });
         if (mode === "live" && window === "BEFORE_WINDOW") {
-          status = { ...status, status: "PREPARED", scheduledAt: `${date}T14:30:00+09:00`, preparedAt: prepared.preparedAt };
+          status = { ...status, status: "PREPARED", scheduledAt: `${date}T${OFFICIAL_SIGNAL_TIME}+09:00`, preparedAt: prepared.preparedAt };
           await store.writeMutable(`${base}/status.json`, status); return status;
         }
         const seed = await store.read(prepared.seedKey);
@@ -156,14 +187,14 @@ export function createExecutor({ store, source, loadSeed, verifyFormula, now = D
           await store.writeMutable(`${base}/status.json`, status); return status;
         }
         const artifact = mode === "live"
-          ? buildIntradayModelTopSignal({ seed, quotesByCode: quotes, signalDate: date, collectionStartedAt: status.collectionStartedAt, collectionCompletedAt: status.collectionCompletedAt })
+          ? buildIntradayModelTopSignal({ seed, quotesByCode: quotes, signalDate: date, collectionStartedAt: status.collectionStartedAt, collectionCompletedAt: status.collectionCompletedAt, inputProvenance: prepared.inputProvenance ?? null })
           : buildShadowResult(seed, quotes, date, status.collectionStartedAt, status.collectionCompletedAt);
         if (artifact.status !== "READY" || (mode === "live" && (validateIntradayModelTopSignal(artifact).length || versions.some((version) => artifact.rankingUniverse[version].count !== eligible.length)))) throw new Error("MODEL_SIGNAL_VALIDATION_FAILED");
         status.calculationCompletedAt = iso(now);
         await store.writeImmutable(`${base}/result.json`, artifact);
-        return finish(artifact);
+        return await finish(artifact);
       } catch (error) {
-        status = { ...status, status: error.message === "MARKET_CLOSED" ? "MARKET_CLOSED" : "FAILED", reason: safeReason(error), attempts: Math.max(status.attempts, (await store.read(`${base}/status.json`))?.attempts ?? 0),
+        status = { ...status, status: error.message === "MARKET_CLOSED" ? "MARKET_CLOSED" : error.message.startsWith("LIVE_INPUT_NOT_READY_") ? "WAITING" : "FAILED", reason: safeReason(error), attempts: Math.max(status.attempts, (await store.read(`${base}/status.json`))?.attempts ?? 0),
           preparationAttempts: (status.preparationAttempts ?? 0) + (!prepared && !preparationAttempted ? 1 : 0), nextAttemptAt: now() + 60000, recordedAt: iso(now) };
         await store.writeMutable(`${base}/status.json`, status);
         return status;

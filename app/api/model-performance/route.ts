@@ -88,7 +88,7 @@ async function handleGet() {
     })));
     const daily = buildModelTopPerformance({ snapshots, outcomesByHorizon });
     let intradayOutcomes: Record<string, unknown>[] = [];
-    try { intradayOutcomes = await readJsonFiles<Record<string, unknown>>(path.join(root, "data", "intraday-outcomes", "model-top")); }
+    try { intradayOutcomes = await readJsonFiles<Record<string, unknown>>(path.join(root, "data", "intraday-outcomes", "model-top", "1400")); }
     catch { intradayOutcomes = []; }
     return NextResponse.json({ ...daily, dataIdentity: dataIdentity(snapshots.at(-1)), publicationReady: snapshots.length > 0, latestEodReferenceDate: snapshots.at(-1)?.asOfDate ?? null, performanceLayer: "DAILY_EOD", live: buildIntradayModelTopPerformance({ outcomes: intradayOutcomes }) }, { headers: { "Cache-Control": "no-store" } });
   } catch {

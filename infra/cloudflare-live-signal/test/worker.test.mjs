@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
 import { CRONS, dispatchLivePrewarm, scheduledOnce } from "../src/index.mjs";
-const time = Date.parse("2026-10-12T05:12:00Z"), event = { cron: CRONS[0], scheduledTime: time };
+const time = Date.parse("2026-10-12T04:42:00Z"), event = { cron: CRONS[0], scheduledTime: time };
 const env = { DISPATCH_ENABLED: "true", GITHUB_TOKEN: "fixture-token" };
 test("disabled until approval", async () => assert.equal((await dispatchLivePrewarm(event, {})).status, "DISABLED"));
 test("actual Cloudflare nonzero seconds do not reject the cron minute or extend its deadline", async () => {
-  for (const minute of [12, 22]) {
-    const slot = Date.parse(`2026-10-12T05:${minute}:00Z`);
+  for (const minute of [42, 52]) {
+    const slot = Date.parse(`2026-10-12T04:${minute}:00Z`);
     const actualEvent = { cron: CRONS[0], scheduledTime: slot + 25000 };
     let calls = 0;
     const fetchImpl = async (_, init) => { calls++; return init.method === "POST" ? new Response(null, { status: 204 }) : Response.json({ workflow_runs: [] }); };
@@ -34,13 +34,13 @@ test("exact target, KST prewarm, mode and authorization", async () => {
   assert.equal(result.publicationResult, "NOT_VERIFIED"); assert.equal(result.dispatchRespondedAt, new Date(time).toISOString());
 });
 test("UTC/KST, exact slots, weekend, future, missing credentials, wrong cron fail closed", async () => {
-  for (const minute of [12, 22]) {
-    const scheduledTime = Date.parse(`2026-10-12T05:${minute}:00Z`);
-    assert.equal(new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Seoul", hour: "2-digit", minute: "2-digit" }).format(scheduledTime), `14:${minute}`);
+  for (const minute of [42, 52]) {
+    const scheduledTime = Date.parse(`2026-10-12T04:${minute}:00Z`);
+    assert.equal(new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Seoul", hour: "2-digit", minute: "2-digit" }).format(scheduledTime), `13:${minute}`);
     const value = await dispatchLivePrewarm({ ...event, scheduledTime }, env, { now: () => scheduledTime + 30000, fetchImpl: async (_, init) => init.method ? new Response(null, { status: 204 }) : Response.json({ workflow_runs: [] }) });
     assert.equal(value.schedulerDelayMs, 30000); assert.match(value.status, /^DISPATCH_ACCEPTED/u);
   }
-  for (const stamp of ["2026-10-11T05:12:00Z", "2026-10-12T05:15:00Z"]) {
+  for (const stamp of ["2026-10-11T04:42:00Z", "2026-10-12T04:45:00Z"]) {
     assert.equal((await dispatchLivePrewarm({ ...event, scheduledTime: Date.parse(stamp) }, env, { now: () => Date.parse(stamp) })).reason, "PREWARM_WINDOW_MISSED");
   }
   assert.equal((await dispatchLivePrewarm(event, env, { now: () => time - 1 })).reason, "PREWARM_WINDOW_MISSED");
