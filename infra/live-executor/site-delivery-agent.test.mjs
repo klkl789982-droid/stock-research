@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { currentSignal } from "../../scripts/fixtures/intraday-1400-outcomes.mjs";
-import { enqueueStoredSiteDelivery, retrySiteDeliveries, privateSiteWriter, signalDeliveryModels } from "./site-delivery-agent.mjs";
+import { enqueueStoredSiteDelivery, retrySiteDeliveries, privateSiteWriter, signalDeliveryModels, siteDeliveryQueueStatus } from "./site-delivery-agent.mjs";
 import { hashSwingContent } from "../../lib/forecast-swing-contract.mjs";
 import { canonicalContentHash } from "../../lib/canonical-content-hash.mjs";
 import { topDto } from "../../lib/local-live-executor.mjs";
@@ -33,6 +33,7 @@ test("queue survives failed head upload, bounded retry completes without recolle
   state.recover(); ms += 60001;
   assert.equal((await retrySiteDeliveries(state.local, state.remote, { now: () => ms }))[0].status, "PRIVATE_RELAY_VERIFIED");
   assert.equal(state.writes(), 2);
+  assert.deepEqual(await siteDeliveryQueueStatus(state.local), { queuedCount: 1, pendingCount: 0, verifiedCount: 1, exhaustedCount: 0 });
   assert.equal((await retrySiteDeliveries(state.local, state.remote, { now: () => ms + 60001 })).length, 0);
   assert.equal(state.rows.get(`live/site-receipts/${queued.deliveryHash}.json`).websiteVerified, false);
   assert.deepEqual(state.rows.get(state.key), state.signal);
@@ -42,6 +43,7 @@ test("three reserved failed attempts stop retry storms across process restarts",
   await enqueueStoredSiteDelivery(state.local, () => new Date(ms).toISOString());
   for (let i = 0; i < 3; i++) { assert.equal((await retrySiteDeliveries(state.local, state.remote, { now: () => ms })).length, 1); ms += 60001; }
   state.recover(); assert.deepEqual(await retrySiteDeliveries(state.local, state.remote, { now: () => ms }), []);
+  assert.equal((await siteDeliveryQueueStatus(state.local)).exhaustedCount, 1);
 });
 test("writer remains opt-in, repository scoped and separate from reader", () => {
   assert.equal(privateSiteWriter({}), null);

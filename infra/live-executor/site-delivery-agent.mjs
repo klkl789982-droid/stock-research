@@ -22,6 +22,23 @@ async function inventory(store) {
   if (!Array.isArray(value.keys) || value.keys.length > 1000 || new Set(value.keys).size !== value.keys.length || value.keys.some(key => !validKey(key))) throw new Error("SITE_RELAY_QUEUE_INVALID");
   return value.keys;
 }
+async function attemptState(store, key) {
+  const hash = key.split("/").at(-1).slice(0, -5), stateKey = `live/site-delivery-attempts/${hash}.json`;
+  const state = await store.read(stateKey) ?? { attempts: 0, nextAttemptAt: 0 };
+  if (!Number.isInteger(state.attempts) || state.attempts < 0 || state.attempts > 3 || !Number.isFinite(state.nextAttemptAt) || state.nextAttemptAt < 0
+    || (state.status !== undefined && !["IN_PROGRESS", "FAILED", "PRIVATE_RELAY_VERIFIED"].includes(state.status))) throw new Error("SITE_RELAY_ATTEMPT_STATE_INVALID");
+  return { stateKey, state };
+}
+export async function siteDeliveryQueueStatus(store) {
+  const keys = await inventory(store); let pendingCount = 0, verifiedCount = 0, exhaustedCount = 0;
+  for (const key of keys) {
+    const { state } = await attemptState(store, key);
+    if (state.status === "PRIVATE_RELAY_VERIFIED") verifiedCount++;
+    else if (state.attempts >= 3) exhaustedCount++;
+    else pendingCount++;
+  }
+  return { queuedCount: keys.length, pendingCount, verifiedCount, exhaustedCount };
+}
 export async function enqueueStoredSiteDelivery(store, clock = () => new Date().toISOString()) {
   const pointer = await store.read("live/latest.json");
   if (!pointer) return { status: "NO_OBSERVATION" };
@@ -41,8 +58,7 @@ export async function retrySiteDeliveries(store, remoteStore, { now = Date.now, 
     const results = [];
     for (const key of await inventory(store)) {
       if (results.length >= limit) break;
-      const hash = key.split("/").at(-1).slice(0, -5), stateKey = `live/site-delivery-attempts/${hash}.json`;
-      const state = await store.read(stateKey) ?? { attempts: 0, nextAttemptAt: 0 };
+      const { stateKey, state } = await attemptState(store, key);
       if (state.status === "PRIVATE_RELAY_VERIFIED" || state.attempts >= 3 || state.nextAttemptAt > now()) continue;
       const pending = { attempts: state.attempts + 1, nextAttemptAt: now() + 60000, status: "IN_PROGRESS", attemptedAt: new Date(now()).toISOString() };
       // Reserve the attempt before any network work; process death cannot hot-loop.
