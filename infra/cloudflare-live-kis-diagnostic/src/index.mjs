@@ -12,6 +12,9 @@ import { createHash } from "node:crypto";
 import { FORMULA_HASHES } from "../formula-manifest.mjs";
 import { parseKisHolidayResponse } from "../../../lib/kis-eod-provider.mjs";
 import { assertPrivateKisEodPayload } from "../../../lib/kis-eod-private-store.mjs";
+import { assertProduction, bounds } from "../production-core.mjs";
+import { productionScheduled } from "./production.mjs";
+export { LiveDay, LiveBatch, CloudLive } from "./production.mjs";
 export { KisDiagnosticShard } from "./shard.mjs";
 export { KisSlotShard } from "./slot-shard.mjs";
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -42,6 +45,45 @@ export class KisDiagnosticBroker extends DurableObject {
   }
   state(id) { return this.ctx.storage.sql.exec("SELECT value FROM state WHERE id=?", id).toArray()[0]?.value ?? 0; }
   set(id, n) { this.ctx.storage.sql.exec("INSERT OR REPLACE INTO state VALUES (?,?)", id, n); }
+  async livePrepare(date) {
+    assertProduction(this.env);
+    if (kst(Date.now()).date !== date || Date.now() >= bounds(date).start) throw new Error("LIVE_CLOUD_INPUT_LATE");
+    this.currentRun = `live-${date}`; this.deadline = null;
+    const token = await this.sharedAuth(this.currentRun);
+    if (token.expiresAtMs <= bounds(date).end + 60000) throw new Error("LIVE_CLOUD_AUTH_TTL");
+    const response = await this.client.request(`${BASE}/uapi/domestic-stock/v1/quotations/chk-holiday?BASS_DT=${date.replaceAll("-", "")}&CTX_AREA_FK=&CTX_AREA_NK=`, { headers: { "Content-Type": "application/json", tr_id: "CTCA0903R" } });
+    if (!response.ok || parseKisHolidayResponse(await response.json(), date, new Date().toISOString()).isTradingDay !== true) throw new Error("LIVE_CLOUD_NOT_TRADING_DAY");
+    const value = await this.inputs();
+    if (value.readiness !== "READY" || value.targetDate !== date || Date.now() >= bounds(date).start) throw new Error("LIVE_CLOUD_INPUT_NOT_READY");
+    // Retain all immutable records. Reserve2MB/day rather than assuming daily
+    // quota reset releases SQL storage; stop below4GB, with no automatic delete.
+    if (!this.state(`capacity:${date}`)) {
+      const reserved = this.state("liveCapacityReserved") || 100000000;
+      if (reserved + 2000000 >= 4000000000) throw new Error("LIVE_CLOUD_ACCOUNT_STORAGE_BUDGET");
+      this.set("liveCapacityReserved", reserved + 2000000); this.set(`capacity:${date}`, 1);
+    }
+    return { ...value, codes: this.seed.records.map(r => r.code), eligibleCodes: this.seed.records.filter(r => r.eligible).map(r => r.code) };
+  }
+  async liveBundle(date, prepared, code) {
+    assertProduction(this.env);
+    if (kst(Date.now()).date !== date || prepared?.targetDate !== date || prepared.readiness !== "READY"
+      || !Number.isFinite(Date.parse(prepared.readyAt)) || Date.parse(prepared.readyAt) >= bounds(date).start || !/^[a-f0-9]{40}$/u.test(prepared.inputCommit ?? "")
+      || !/^[a-f0-9]{64}$/u.test(prepared.seedHash ?? "")) throw new Error("LIVE_CLOUD_PIN_INVALID");
+    if (this.seed?.contentHash !== prepared.seedHash) {
+      const r = await edgeFetch(`https://raw.githubusercontent.com/klkl789982-droid/stock-research/${prepared.inputCommit}/data/analysis/market-seeds/${prepared.seedReferenceDate}.json`, { signal: AbortSignal.timeout(15000), cache: "no-store" });
+      if (!r.ok) throw new Error("LIVE_CLOUD_PIN_UNAVAILABLE");
+      const seed = await r.json();
+      if (validateIntradayMarketSeed(seed, 553).length || seed.contentHash !== prepared.seedHash) throw new Error("LIVE_CLOUD_PIN_INVALID");
+      this.seed = seed; this.seedByCode = new Map(seed.records.map(row => [row.code, row]));
+    }
+    const sealed = this.ctx.storage.sql.exec("SELECT value FROM control WHERE id='sealedAuth'").toArray()[0]?.value;
+    if (!sealed) throw new Error("LIVE_CLOUD_AUTH_NOT_PREPARED");
+    const authenticationRecord = openAuthentication(sealed, this.credentials);
+    if (authenticationRecord.expiresAtMs <= bounds(date).end + 5000) throw new Error("LIVE_CLOUD_AUTH_TTL");
+    const record = this.seedByCode.get(code); if (!record) throw new Error("LIVE_CLOUD_CODES_INVALID");
+    return { record, authenticationRecord, seedContext: { requestedDate: this.seed.requestedDate, generatedAt: this.seed.generatedAt,
+      contentHash: this.seed.contentHash, sourceManifest: this.seed.sourceManifest } };
+  }
   async sharedAuth(run) {
     this.currentRun = run;
     const deadline = this.state(`run:${run}`) ? this.state(`run:${run}`) + 300000 : Date.now() + 360000;
@@ -649,5 +691,5 @@ export class KisDiagnostic extends WorkflowEntrypoint {
     return step.do("actual response timing audit no publication", config, () => call("/audit"));
   }
 }
-const closedHttp = { fetch() { return new Response(null, { status: 404 }); } };
+const closedHttp = { fetch() { return new Response(null, { status: 404 }); }, scheduled: productionScheduled };
 export default closedHttp;

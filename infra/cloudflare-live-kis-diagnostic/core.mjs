@@ -49,7 +49,7 @@ export function advertisedMain(text) {
   if (matches.length !== 1) throw new Error("DIAG_EOD_COMMIT_INVALID");
   return matches[0];
 }
-export const safeCode = e => /^(?:KIS|PRIVATE_STORE|DIAG)_[A-Z0-9_]+$/u.test(e?.code ?? e?.message ?? "") ? (e.code ?? e.message) : "DIAG_REQUEST_FAILED";
+export const safeCode = e => /^(?:KIS|PRIVATE_STORE|DIAG|LIVE_CLOUD)_[A-Z0-9_]+$/u.test(e?.code ?? e?.message ?? "") ? (e.code ?? e.message) : "DIAG_REQUEST_FAILED";
 export function transportReason(error) {
   const message = String(error?.message ?? "");
   if (/too many subrequests|subrequest.*limit/iu.test(message)) return "DIAG_PLATFORM_SUBREQUEST_LIMIT";
@@ -69,6 +69,7 @@ export function diagnosticMinuteTime(ms) {
   return time < "09:00:00" || time > "15:30:00" ? "15:30:00" : time;
 }
 export function assertDiagnostic(env, now = Date.now()) {
+  if (env.LIVE_PRODUCTION_ENABLED === "true") throw new Error("DIAG_DISABLED_DURING_PRODUCTION");
   if (env.LIVE_ENABLED !== "false" || env.DIAGNOSTIC_ONLY !== "true") throw new Error("DIAG_FAIL_CLOSED");
   const t = kst(now), day = new Date(`${t.date}T00:00:00Z`).getUTCDay();
   // A management test must never compete with the still-authoritative PC.

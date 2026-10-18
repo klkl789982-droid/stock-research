@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "status": "STAGED_DISABLED_NOT_A_SCHEDULED_FOLLOWUP",
+  "costPolicy": "Workers Free only; no paid fallback, new account, trial, or automatic upgrade",
+  "currentOwner": "pc",
+  "scope": "Cloudflare LIVE only. Existing Daily EOD automation remains unchanged and independent of the PC. No full real collection in this change.",
+  "scheduleCandidate": {
+    "utc": ["40,50 4 * * MON-FRI", "6,8,10 5 * * MON-FRI"],
+    "kst": ["13:40 parent preparation", "13:50 same fixed parent recovery, never another collection", "13:59 fresh official EOD/auth/calendar recheck in Workflow", "14:00-14:05 collection, absolute receipt cutoff", "14:06/14:08/14:10 frozen-outbox completion or relay only"],
+    "currentlyRegistered": false,
+    "dedup": "Fixed date parent and batch IDs, durable symbol leases, immutable outbox, no reobservation of an unknown/interrupted lease"
+  },
+  "after0900KstManualCheck": [
+    "Do not change system clock. No automatic follow-up is installed by this file.",
+    "Confirm Dashboard Workers plan still Free. Workers/DO daily quotas reset at00:00UTC=09:00KST; Workflows3,000/day is documented but its precise step-reset timezone is not independently established here. Verify the actual daily step allowance rather than assuming month-to-date=day.",
+    "Read account-wide Workers, Workflows and DO usage, storage, active instances and all Cron triggers. Include delayed/rounded analytics upper bounds; unknown means blocked. Existing Daily scheduler, retired LIVE prewarm, synthetic and diagnostic resources share this account.",
+    "Copy account-snapshot.example.json outside the repository and populate from that observation, not expected values. Storage does not reset daily.",
+    "Run from the release checkout: node infra/cloudflare-live-kis-diagnostic/check-production-readiness.mjs --snapshot=C:/absolute/path/account-snapshot.json . Expected exit2 is a real BLOCKED result, not a failed collection.",
+    "At13:10 and later, inspect existing Daily Worker/Actions supply checks and official Oct16 publication. At13:40/13:59 the selected producer must refetch remote main, seed, verified calendar, availability receipts and source/model hashes, not rely on stale local files.",
+    "Do not enable cloud until every blocker is independently resolved: fresh quota/storage headroom, prior official session verified, full required model set evidence, cloud normal relay/authenticated site evidence, swing-record compatibility and single-producer fence. Never turn this checklist into permission to rerun the full collection without the requested quota review."
+  ],
+  "normalDayAllocation": {
+    "meaning": "Conservative allocation including limited retries and other/EOD reserve, NOT a measured full Production bill",
+    "workflowSteps": 320,
+    "workerRequests": 4000,
+    "doRequests": 15000,
+    "durationGbSeconds": 9500,
+    "sqlRowsRead": 1500000,
+    "sqlRowsWritten": 55000,
+    "workflowStorageGbMonthsAdditionalUpperBound": 0.01,
+    "marketCallsLiveHardCap": 1400,
+    "otherServices": "Existing GitHub Actions EOD/Vercel/private Git infrastructure reused. Their own aggregate usage must remain within existing free limits; Cloudflare allocation does not prove their headroom."
+  },
+  "retention": {
+    "workflowSuccessAndFailureDays": 3,
+    "immutableScoreEvidenceAndDelivery": "Existing private Git repository; create-only/hash checked, no raw prices",
+    "localSqlDailyCapBytes": 2000000,
+    "globalReservedStopBytes": 4000000000,
+    "initialOtherStorageReserveBytes": 100000000,
+    "estimatedTradingDaysBeforeReserveStop": 1949,
+    "caveat": "2MB/day allocation implies about7.7 trading years at252days/year, not infinite retention. Actual account storage including other resources is separately required. Existing immutable evidence is never automatically deleted."
+  },
+  "cutoverAndRollback": [
+    "Not executed: export PC task XML and current process/config/version receipts outside Git; verify backup; require no running/unknown collection lease.",
+    "Not executed: disable old LIVE triggers and PC task, stop PC supervisor+child, verify no LIVE process remains. Do not disable Daily EOD.",
+    "Only after fresh checked evidence: activationConfig produces LIVE_PRODUCTION_ENABLED=true, LIVE_PRODUCER=cloud and proof hash plus candidate Cron. Merely changing one flag fails closed. Validate actual triggers, Secret binding names only, and no paid plan.",
+    "Rollback: redeploy the checked-in disabled wrangler config and remove cloud Cron; terminate/verify no active cloud day or batch Workflow remains before restoring PC task/process. Never allow both producers or recollect an already-observed symbol/date. This is a future operator procedure, not an executed cutover.",
+    "The preceding Worker version is recorded in production-evidence.json. Migration adds SQLite classes without deleting old classes/data; code rollback does not erase metadata."
+  ],
+  "truthBoundaries": [
+    "Synthetic timing is not actual network time. Actual old benchmark stays507/508,283372ms and0publishedTOP; later203650 responses are separate observations.",
+    "A cloud status Workflow proves deployment and real SQL cursor support only. It does not collect KIS, upload a normal delivery, or prove14:00 scheduling.",
+    "No fabricated14:00 or current-date record is sent to Production. Missing/stale/failed results stay waiting/blocked.",
+    "The new score-only cloud evidence is a separate namespace, not a fabricated original raw signal hash or an official outcome. Automatic5-session swing journal compatibility still needs integration before retiring that PC responsibility."
+  ]
+}

@@ -9,8 +9,12 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 // This avoids per-request cross-region permit/ack round trips without exceeding
 // five actual starts/second. Source prices and bearer material stay in memory.
 export class KisSlotShard extends DurableObject {
+  assertInvocation() { assertDiagnostic(this.env); }
+  brokerFor() { return this.env.BROKER.get(this.env.BROKER.idFromName("single-approved-kis-credential-v1")); }
+  minuteQueryTime() { return diagnosticMinuteTime(Date.now()); }
+  projectResult(args) { return projectDiagnosticResult(args); }
   async fetch(request, budget = { calls: 0 }) {
-    assertDiagnostic(this.env);
+    this.assertInvocation();
     const u = new URL(request.url), run = u.searchParams.get("run"), code = u.searchParams.get("codes");
     if (u.pathname === "/collect-batch") {
       const codes = code?.split(",") ?? [], retryCodes = new Set((u.searchParams.get("retryCodes") ?? "").split(","));
@@ -26,7 +30,7 @@ export class KisSlotShard extends DurableObject {
       return Response.json({ records, rawPricesStored: false, eligibleForLive: false });
     }
     if (!/^[A-Za-z0-9_-]{1,48}$/u.test(run ?? "") || !/^[0-9A-Z]{6}$/u.test(code ?? "")) return new Response(null, { status: 400 });
-    const broker = this.env.BROKER.get(this.env.BROKER.idFromName("single-approved-kis-credential-v1"));
+    const broker = this.brokerFor(run);
     const control = async (path, body = null) => {
       const r = await broker.fetch(`https://isolated${path}${path.includes("?") ? "&" : "?"}run=${run}`, body ? { method: "POST", body: JSON.stringify(body) } : undefined), value = await r.json();
       if (!r.ok) { const e = new Error(safeCode({ code: value.reason })); if (value.transportFailure) e.sourceFailure = safeCode({ code: value.transportFailure }); throw e; }
@@ -93,9 +97,9 @@ export class KisSlotShard extends DurableObject {
         throw new Error("DIAG_RETRY_EXHAUSTED");
       };
       const quote = await read(`/uapi/domestic-stock/v1/quotations/inquire-price?FID_COND_MRKT_DIV_CODE=J&FID_INPUT_ISCD=${code}`, "FHKST01010100");
-      timing.minuteRequestedExchangeTime = diagnosticMinuteTime(Date.now());
+      timing.minuteRequestedExchangeTime = this.minuteQueryTime(timing);
       const minute = await read(`/uapi/domestic-stock/v1/quotations/inquire-time-itemchartprice?FID_ETC_CLS_CODE=&FID_COND_MRKT_DIV_CODE=J&FID_INPUT_ISCD=${code}&FID_INPUT_HOUR_1=${timing.minuteRequestedExchangeTime.replaceAll(":", "")}&FID_PW_DATA_INCU_YN=N`, "FHKST03010200");
-      result = projectDiagnosticResult({ quote, minute, code, timing, input: lease.record, seedReferenceDate: lease.seedReferenceDate });
+      result = this.projectResult({ quote, minute, code, timing, input: lease.record, seedReferenceDate: lease.seedReferenceDate, seedContext: lease.seedContext, signalDate: lease.signalDate });
       if (retries.length) result.retryEvidence = retries;
     } catch (e) { result = { code, reason: safeCode(e), ...(e.sourceFailure ? { sourceFailure: e.sourceFailure } : {}),
       ...(calls.length ? { failedEndpoint: calls.at(-1).kind, httpStatus: calls.at(-1).status,

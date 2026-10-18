@@ -7,9 +7,9 @@
   "workers_dev": false,
   "preview_urls": false,
   "observability": { "enabled": false },
-  "vars": { "LIVE_ENABLED": "false", "DIAGNOSTIC_ONLY": "true" },
-  "workflows": [{ "name": "tight-budget-live-kis-diagnostic", "binding": "DIAGNOSTIC", "class_name": "KisDiagnostic" }],
-  "durable_objects": { "bindings": [{ "name": "BROKER", "class_name": "KisDiagnosticBroker" }, { "name": "SHARDS", "class_name": "KisSlotShard" }] },
-  "migrations": [{ "tag": "kis-diagnostic-v1", "new_sqlite_classes": ["KisDiagnosticBroker"] }, { "tag": "kis-shard-v2", "new_sqlite_classes": ["KisDiagnosticShard"] }, { "tag": "kis-slot-v3", "new_sqlite_classes": ["KisSlotShard"] }],
+  "vars": { "LIVE_ENABLED": "false", "DIAGNOSTIC_ONLY": "true", "LIVE_PRODUCTION_ENABLED": "false", "LIVE_PRODUCER": "pc" },
+  "workflows": [{ "name": "tight-budget-live-kis-diagnostic", "binding": "DIAGNOSTIC", "class_name": "KisDiagnostic" }, { "name": "tight-budget-live-production", "binding": "LIVE", "class_name": "CloudLive" }],
+  "durable_objects": { "bindings": [{ "name": "BROKER", "class_name": "KisDiagnosticBroker" }, { "name": "SHARDS", "class_name": "KisSlotShard" }, { "name": "LIVE_DAYS", "class_name": "LiveDay" }, { "name": "LIVE_BATCHES", "class_name": "LiveBatch" }] },
+  "migrations": [{ "tag": "kis-diagnostic-v1", "new_sqlite_classes": ["KisDiagnosticBroker"] }, { "tag": "kis-shard-v2", "new_sqlite_classes": ["KisDiagnosticShard"] }, { "tag": "kis-slot-v3", "new_sqlite_classes": ["KisSlotShard"] }, { "tag": "live-production-v4", "new_sqlite_classes": ["LiveDay", "LiveBatch"] }],
   "triggers": { "crons": [] }
 }

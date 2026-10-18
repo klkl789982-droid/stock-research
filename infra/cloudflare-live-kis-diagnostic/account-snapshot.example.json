@@ -1,0 +1,18 @@
+{
+  "utcDay": null,
+  "observedAt": null,
+  "workersFree": false,
+  "inventoryVerified": false,
+  "storageVerified": false,
+  "persistentSqlBytes": null,
+  "workflowStorageGbMonthsUpperBound": null,
+  "upperBound": {
+    "workflowSteps": null,
+    "workerRequests": null,
+    "doRequests": null,
+    "durationGbSeconds": null,
+    "sqlRowsRead": null,
+    "sqlRowsWritten": null
+  },
+  "instructions": "실측한 계정 전체 상한만 입력. 집계 지연·반올림 여유를 포함하고 모르면 null을 유지한다. 월간 step 표시를 당일 사용량으로 대체하지 않는다. 이 파일은 인증정보를 포함하지 않는다."
+}
