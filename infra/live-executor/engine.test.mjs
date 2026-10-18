@@ -111,6 +111,76 @@ test("missing or late final input refresh never falls back to the old prewarm se
     assert.equal(await f.store.read(`live/${signalDate}/${signalDate}/collection-prepared.json`), null);
   }
 });
+
+test("late EOD publication is retried inside 13:59 without collecting before 14:00", async (t) => {
+  const f = await sandbox(t, { time: "13:58:55" });
+  let ready = false, loads = 0;
+  const executor = createExecutor({ ...f.options, requireFinalInputRefresh: true, loadSeed: async () => {
+    loads++;
+    if (!ready) throw new Error("LIVE_INPUT_NOT_READY_PREVIOUS_SESSION_MISSING");
+    return f.seed;
+  } });
+  const waiting = await executor.advance({ date: signalDate });
+  assert.equal(waiting.status, "WAITING");
+  assert.equal(waiting.nextAttemptAt, Date.parse(`${signalDate}T13:59:00+09:00`));
+  f.setTime("13:59:00");
+  const retry = await executor.advance({ date: signalDate });
+  assert.equal(retry.status, "WAITING");
+  assert.equal(retry.nextAttemptAt, Date.parse(`${signalDate}T13:59:10+09:00`));
+  f.setTime("13:59:09");
+  await executor.advance({ date: signalDate });
+  assert.equal(loads, 2, "bounded backoff must avoid a hot loop");
+  ready = true;
+  f.setTime("13:59:10");
+  assert.equal((await executor.advance({ date: signalDate })).status, "PREPARED");
+  assert.equal(loads, 3);
+  assert.deepEqual(f.collected, []);
+  const final = await f.store.read(`live/${signalDate}/${signalDate}/collection-prepared.json`);
+  assert.equal(final.seedHash, f.seed.contentHash);
+  assert.equal(final.preparedAt, `${signalDate}T04:59:10.000Z`);
+  f.setTime("14:00:00");
+  assert.equal((await executor.advance({ date: signalDate })).status, "STORED");
+  assert.equal(loads, 3);
+});
+
+test("last-minute retries cannot accept EOD first available at or after the cutoff", async (t) => {
+  const f = await sandbox(t, { time: "13:59:55" });
+  let loads = 0;
+  const executor = createExecutor({ ...f.options, requireFinalInputRefresh: true, loadSeed: async () => {
+    if (++loads === 1) throw new Error("LIVE_INPUT_NOT_READY_PREVIOUS_SESSION_MISSING");
+    return f.seed;
+  } });
+  const waiting = await executor.advance({ date: signalDate });
+  assert.equal(waiting.nextAttemptAt, Date.parse(`${signalDate}T14:00:00+09:00`));
+  f.setTime("14:00:00");
+  const blocked = await executor.advance({ date: signalDate });
+  assert.equal(blocked.status, "WAITING");
+  assert.equal(blocked.reason, "LIVE_INPUT_NOT_READY_REFRESH_LATE");
+  assert.equal(loads, 1);
+  assert.deepEqual(f.collected, []);
+  assert.equal(await f.store.read(`live/${signalDate}/${signalDate}/collection-prepared.json`), null);
+  assert.equal(await f.store.read("live/latest.json"), null);
+});
+
+test("failed final refresh retries remote input rather than reusing a valid prewarm receipt", async (t) => {
+  const f = await sandbox(t, { time: "13:40:00" });
+  let loads = 0;
+  const executor = createExecutor({ ...f.options, requireFinalInputRefresh: true, loadSeed: async () => {
+    if (++loads === 2) throw new Error("LIVE_INPUT_NOT_READY_PREVIOUS_SESSION_MISSING");
+    return f.seed;
+  } });
+  await executor.advance({ date: signalDate });
+  const prewarm = await f.store.read(`live/${signalDate}/${signalDate}/prepared.json`);
+  f.setTime("13:59:00");
+  assert.equal((await executor.advance({ date: signalDate })).status, "WAITING");
+  assert.equal(await f.store.read(`live/${signalDate}/${signalDate}/collection-prepared.json`), null);
+  assert.deepEqual(f.collected, []);
+  f.setTime("13:59:10");
+  assert.equal((await executor.advance({ date: signalDate })).status, "PREPARED");
+  assert.equal(loads, 3);
+  assert.deepEqual(await f.store.read(`live/${signalDate}/${signalDate}/prepared.json`), prewarm);
+  assert.equal((await f.store.read(`live/${signalDate}/${signalDate}/collection-prepared.json`)).preparedAt, `${signalDate}T04:59:10.000Z`);
+});
 test("clock verification fails closed before calendar or observation and is stored once per preparation", async (t) => {
   const f = await sandbox(t, { time: "13:42:00" });
   let checks = 0, calendars = 0;

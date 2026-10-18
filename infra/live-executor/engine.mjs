@@ -194,8 +194,15 @@ export function createExecutor({ store, source, loadSeed, verifyFormula, verifyS
         await store.writeImmutable(`${base}/result.json`, artifact);
         return await finish(artifact);
       } catch (error) {
+        const failedAt = now(), cutoff = Date.parse(`${date}T${OFFICIAL_SIGNAL_TIME}+09:00`), finalRefreshAt = cutoff - 60000;
+        // Do not let prewarm backoff skip the final refresh minute. A newly
+        // published exact-session seed can still arrive during 13:59. Keep the
+        // existing preparation budget and never admit inputs at/after 14:00.
+        const nextAttemptAt = mode === "live" && !prepared && failedAt < cutoff
+          ? failedAt < finalRefreshAt ? Math.min(failedAt + 60000, finalRefreshAt) : Math.min(failedAt + 10000, cutoff)
+          : failedAt + 60000;
         status = { ...status, status: error.message === "MARKET_CLOSED" ? "MARKET_CLOSED" : error.message.startsWith("LIVE_INPUT_NOT_READY_") ? "WAITING" : "FAILED", reason: safeReason(error), attempts: Math.max(status.attempts, (await store.read(`${base}/status.json`))?.attempts ?? 0),
-          preparationAttempts: (status.preparationAttempts ?? 0) + (!prepared && !preparationAttempted ? 1 : 0), nextAttemptAt: now() + 60000, recordedAt: iso(now) };
+          preparationAttempts: (status.preparationAttempts ?? 0) + (!prepared && !preparationAttempted ? 1 : 0), nextAttemptAt, recordedAt: iso(now) };
         await store.writeMutable(`${base}/status.json`, status);
         return status;
       }

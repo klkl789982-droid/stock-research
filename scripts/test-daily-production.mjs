@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { nextProductionSchedule } from "../lib/production-schedule.mjs";
 import {
   assertPromotionFiles,
   classifyLatestProbeFailure,
@@ -125,7 +126,18 @@ assert.match(runnerSource, /"--porcelain=v1", "-uall"/u, "새 compact history는
 assert.match(runnerSource, /writeFreshnessStatus/u, "Daily Production은 latest official EOD와 snapshot freshness 상태를 별도로 기록해야 합니다.");
 assert.match(dailyHistorySource, /updateTradingCalendarDate\(requestedDate,[\s\S]*await runScript\("scripts\/resolve-history-returns\.mjs"\)/u, "거래일 상태와 가격 원장을 확정한 뒤 전체 history resolver를 호출해야 합니다.");
 assert.match(dailyHistorySource, /updateTradingCalendarDate\(requestedDate,[\s\S]*await runScript\("scripts\/resolve-intraday-model-top-outcomes\.mjs"\)/u, "거래일 상태와 가격 원장을 확정한 뒤 14:30 LIVE outcome resolver를 자동 호출해야 합니다.");
-assert.equal((workflowSource.match(/- cron:/gu) ?? []).length, 7, "익영업일 오전 공급 재확인과 기존 야간 복구 슬롯을 유지합니다.");
+assert.equal((workflowSource.match(/- cron:/gu) ?? []).length, 8, "익영업일 오전·13시 후반 공급 재확인과 기존 야간 복구 슬롯을 유지합니다.");
+assert.match(workflowSource, /cron: "33,43,53 4 \* \* 1-5"/u, "13:23 이후에도 LIVE 입력 마감 전 공급처를 재조회합니다(UTC 04시 = KST 13시).");
+for (const minute of [33, 43, 53]) {
+  assert.equal(nextProductionSchedule("DAILY", new Date(`2026-10-19T13:${minute - 1}:00+09:00`)), `2026-10-19T04:${minute}:00.000Z`);
+}
+assert.equal(nextProductionSchedule("DAILY", new Date("2026-10-18T13:30:00+09:00")), "2026-10-18T23:23:00.000Z", "일요일에는 새 오후 재조회 슬롯을 실행하지 않습니다.");
+assert.match(workflowSource, /group: daily-production-\$\{\{ github.ref \}\}\s+cancel-in-progress: false/u, "새 재조회 슬롯도 기존 승격·push 동시 실행 방지를 공유합니다.");
+assert.match(workflowSource, /npm run production:daily 2>&1/u, "재조회는 날짜 고정 없는 기존 공식 수집·검증·승격 경로를 사용합니다.");
+assert.doesNotMatch(workflowSource, /npm run production:daily[^\r\n]*--date=/u);
+for (const file of ["data/analysis/market-seeds/2026-10-16.json", "data/trading-calendar/status.json"]) {
+  assert.equal(assertPromotionFiles([file], "2026-10-16", runId)[0], file, "LIVE seed와 거래일 근거는 공식 모델과 동일한 원자적 게시 대상입니다.");
+}
 for (const step of ["Stage only allowlisted artifacts", "Commit and push atomic promotion"]) {
   const section = workflowSource.split(`- name: ${step}`)[1].split("- name:")[0];
   assert.match(section, /if: steps\.daily\.outputs\.freshness_path != ''/u);

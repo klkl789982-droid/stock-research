@@ -44,13 +44,17 @@ test("only diagnostic state changes; immutable create-only and quote window rema
   assert.match(runner, /formatDate\(actual\) !== signalDate/u);
   assert.match(runner, /finally\(\(\) => console\.log/u);
   const workflow = await readFile(new URL("../.github/workflows/intraday-model-top-official-signal.yml", import.meta.url), "utf8");
-  assert.match(workflow, /LIVE_STAGE_PATH_REJECTED/u);
-  assert.match(workflow, /LIVE_GITHUB_PUBLISHED_AT/u);
-  assert.match(workflow, /TB_AUTOMATION_READ_TOKEN: \$\{\{ secrets\.TB_AUTOMATION_READ_TOKEN \}\}/u);
+  // The runner producer was retired by the approved PC cutover. It must not
+  // retain secret-bearing collection/publication merely to satisfy old tests.
+  assert.match(workflow, /LIVE_PRODUCER_RETIRED/u);
+  assert.match(workflow, /permissions: \{\}/u);
+  assert.doesNotMatch(workflow, /schedule:|secrets\.|contents: write|run-intraday-model/u);
   assert.doesNotMatch(workflow, /git push.*--force/u);
   const topPanel = await readFile(new URL("../components/TopStocksPanel.tsx", import.meta.url), "utf8");
   const home = await readFile(new URL("../components/HomeDashboard.tsx", import.meta.url), "utf8");
   assert.doesNotMatch(topPanel, /오늘 Official Signal 생성에 실패/u);
   assert.match(topPanel, /실제 시도일/u);
-  assert.match(home, /상태 기준일.*liveStatus\?\.signalDate/u);
+  assert.match(home, /14:00 LIVE · 비공개 전달/u);
+  assert.match(home, /과거 14:30 실행 기록 · 운영 종료/u);
+  assert.match(home, /마지막 유효 관측 완료/u);
 });

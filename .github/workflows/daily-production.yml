@@ -6,6 +6,9 @@ on:
     # evening slots too; holidays/weekends never invent a new reference date.
     - cron: "23 23 * * 0-4"  # 08:23 KST Monday-Friday
     - cron: "23 0-4 * * 1-5" # 09:23-13:23 KST
+    # Re-probe late next-business-day publication before LIVE's input cutoff.
+    # Best-effort triggers, not a guarantee that collection finishes by 14:00.
+    - cron: "33,43,53 4 * * 1-5" # 13:33 / 13:43 / 13:53 KST
     # GitHub cron is best-effort, so use staggered KST evening/overnight recovery slots.
     # Every run is idempotent and processes the oldest missing official trading date first.
     - cron: "47 9 * * 1-5"   # 18:47 KST
