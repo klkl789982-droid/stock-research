@@ -156,3 +156,40 @@ test("a transient timeout can recover and a window-expired paced request is neve
   assert.equal(expired.source.getMetrics().retries, 0);
   assert.equal(expired.calls.some((call) => call.kind === "inquire-price"), false);
 });
+
+test("203650 HTTP 500 retries once within the window and keeps the successful attempt time", async () => {
+  const f = harness({ minuteTime: "140001", override: ({ kind, count, advance }) => {
+    if (kind === "inquire-price" && count === 1) { advance(400); return response({}, 500); }
+    return null;
+  } });
+  const quote = await f.source.collectQuote("203650", { date: DATE });
+  const requests = f.calls.filter(call => call.kind === "inquire-price");
+  assert.equal(requests.length, 2);
+  assert.ok(requests[1].at - requests[0].at >= 1000);
+  assert.equal(quote.requestedAt, new Date(requests[1].at).toISOString());
+  assert.notEqual(quote.requestedAt, new Date(requests[0].at).toISOString());
+  assert.equal(quote.asOfTime, "14:00:01");
+  assert.equal(f.source.getMetrics().retries, 1);
+});
+
+test("203650 persistent 500 is bounded; a later control cannot repair the rejected observation", async () => {
+  const f = harness({ override: ({ kind }) => kind === "inquire-price" ? response({}, 500) : null });
+  await assert.rejects(f.source.collectQuote("203650", { date: DATE }), /KIS_HTTP_500/u);
+  assert.equal(f.calls.filter(call => call.kind === "inquire-price").length, 2);
+  assert.equal(f.calls.some(call => call.kind === "inquire-time-itemchartprice"), false);
+  f.advance(301000);
+  const before = f.calls.length;
+  await assert.rejects(f.source.collectQuote("203650", { date: DATE }), /WINDOW_EXPIRED/u);
+  assert.equal(f.calls.length, before);
+});
+
+test("203650 successful HTTP body arriving after 14:05 is rejected without minute lookup", async () => {
+  const f = harness({ at: `${DATE}T05:04:59Z`, minuteTime: "140459", override: ({ kind, advance }) => {
+    if (kind === "inquire-price") advance(1100);
+    return null;
+  } });
+  await assert.rejects(f.source.collectQuote("203650", { date: DATE }), /WINDOW_EXPIRED/u);
+  assert.equal(f.calls.filter(call => call.kind === "inquire-price").length, 1);
+  assert.equal(f.calls.some(call => call.kind === "inquire-time-itemchartprice"), false);
+  assert.equal(f.source.getMetrics().retries, 0);
+});
