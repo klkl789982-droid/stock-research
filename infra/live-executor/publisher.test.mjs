@@ -6,7 +6,7 @@ import { mkdtemp, mkdir, readFile, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { publishLiveSignal } from "./publisher.mjs";
-import { buildIntradayModelTopSignal, hashIntradayModelTop } from "../../lib/intraday-model-top-official-signal.mjs";
+import { buildIntradayModelTopSignal, hashIntradayModelTop, validateIntradayModelTopSignal } from "../../lib/intraday-model-top-official-signal.mjs";
 
 const execute = promisify(execFile);
 const git = async (args, cwd) => (await execute("git", args, { cwd, windowsHide: true })).stdout.trim();
@@ -19,9 +19,14 @@ function fixture(observationType = "LIVE_OBSERVATION") {
     const date = new Date("2026-10-02T00:00:00Z"); date.setUTCDate(date.getUTCDate() - index);
     return [date.toISOString().slice(0, 10).replaceAll("-", ""), 100 + index / 10, 102 + index / 10, 98 + index / 10, 100 + index / 10, 1000 + index];
   });
-  const seed = { requestedDate: "2026-10-02", contentHash: "synthetic-seed", sourceManifest: { modelFormulaHashes: { "A-v1": "a", "B-v1": "b", "C-v1": "c", "D-v1": "d" } }, records: [{ code: "000001", name: "Synthetic", market: "KOSPI", eligible: true, rows }] };
-  const quote = { asOfDate: "2026-10-06", asOfTime: "14:30:10", receivedAt: "2026-10-06T05:30:11.000Z", open: 199, high: 202, low: 198, price: 200, volume: 2000, change: 5, rate: 2.5 };
-  return buildIntradayModelTopSignal({ seed, quotesByCode: new Map([["000001", quote]]), signalDate: "2026-10-06", collectionStartedAt: "2026-10-06T05:30:00.000Z", collectionCompletedAt: "2026-10-06T05:31:00.000Z", observationType });
+  const sourceHash = "a".repeat(64);
+  const seed = { requestedDate: "2026-10-02", generatedAt: "2026-10-06T03:00:00.000Z", contentHash: "e".repeat(64), sourceManifest: {
+    modelFormulaHashes: { "A-v1": "a".repeat(64), "B-v1": "b".repeat(64), "C-v1": "c".repeat(64), "D-v1": "d".repeat(64) }, sources: { officialDailyPrice: { normalizedInputHash: sourceHash,
+      availability: { requestedAt: "2026-10-06T02:58:00.000Z", observedAt: "2026-10-06T02:59:00.000Z", referenceDate: "2026-10-02", normalizedInputHash: sourceHash,
+        availabilityStatus: "OBSERVED", availabilityEvidence: "SYSTEM_OBSERVED_BATCH_COLLECTION", outcome: "success" } } },
+  }, records: [{ code: "000001", name: "Synthetic", market: "KOSPI", eligible: true, rows }] };
+  const quote = { asOfDate: "2026-10-06", asOfTime: "14:00:10", receivedAt: "2026-10-06T05:00:11.000Z", open: 199, high: 202, low: 198, price: 200, volume: 2000, change: 5, rate: 2.5 };
+  return buildIntradayModelTopSignal({ seed, quotesByCode: new Map([["000001", quote]]), signalDate: "2026-10-06", collectionStartedAt: "2026-10-06T05:00:00.000Z", collectionCompletedAt: "2026-10-06T05:01:00.000Z", observationType });
 }
 function changeSignal(signal, changes) {
   const body = { ...signal, ...changes };
@@ -76,8 +81,12 @@ test("isolated local Git publication preserves immutable content, latest pointer
 test("TEST_FIXTURE, partial signals and after-window timestamps cannot be published", async (t) => {
   const s = await sandbox(t);
   await assert.rejects(publish(s, { signal: fixture("TEST_FIXTURE") }), /REQUIRES_REAL_READY_LIVE/u);
-  await assert.rejects(publish(s, { signal: changeSignal(fixture(), { collection: { successful: 1, failed: 1, ineligible: 0 } }) }), /COLLECTION_INCOMPLETE/u);
-  await assert.rejects(publish(s, { signal: changeSignal(fixture(), { collectionCompletedAt: "2026-10-06T05:36:00.000Z" }) }), /COLLECTION_WINDOW_INVALID/u);
+  const partial = changeSignal(fixture(), { collection: { successful: 1, failed: 1, ineligible: 0 } });
+  const late = changeSignal(fixture(), { collectionCompletedAt: "2026-10-06T05:36:00.000Z" });
+  assert.ok(validateIntradayModelTopSignal(partial).includes("collectionCounts"));
+  assert.ok(validateIntradayModelTopSignal(late).includes("collectionWindow"));
+  await assert.rejects(publish(s, { signal: partial }), /^Error: PUBLISH_SIGNAL_INVALID$/u);
+  await assert.rejects(publish(s, { signal: late }), /^Error: PUBLISH_SIGNAL_INVALID$/u);
   assert.equal(await git(["rev-list", "--count", "main"], s.remote), "1");
 });
 

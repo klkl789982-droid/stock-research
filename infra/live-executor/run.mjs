@@ -19,6 +19,14 @@ enforceParentLease();
 const root = path.resolve(fileURLToPath(new URL("../../", import.meta.url)));
 const option = (key) => process.argv.find((arg) => arg.startsWith(`--${key}=`))?.slice(key.length + 3);
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+function reportFailure(event, error, fatal = false) {
+  const reason = safeReason(error);
+  console.log(JSON.stringify({ event, reason, at: new Date().toISOString() }));
+  if (process.connected) process.send({ type: "EXECUTOR_DIAGNOSTIC", event, reason }, () => { if (fatal) process.exit(1); });
+  // An IPC listener can otherwise keep a fatally failed daemon alive until the
+  // watchdog expires. Never leave a failed main() looking like a running worker.
+  if (fatal) { process.exitCode = 1; if (process.connected) setTimeout(() => process.exit(1), 100).unref(); }
+}
 async function main() {
   const command = option("mode") ?? "shadow", stateDir = option("state-dir");
   if (!["shadow", "daemon", "live", "verify", "serve", "prepare"].includes(command) || !stateDir || !path.isAbsolute(stateDir)) throw new Error("EXECUTOR_ARGUMENT_INVALID");
@@ -105,11 +113,15 @@ async function main() {
               if (date !== clock.date) await executor.advance({ mode: "live", date });
             }
           }
+        } catch (error) { reportFailure("executorFailed", error); }
+        finally {
+          // Also runs on clock-gate continue and recoverable failures. This is
+          // loop liveness only; failed clock/EOD checks still prohibit collection.
           if (Date.now() - lastHeartbeat >= 60000) {
             await store.writeMutable("live/daemon-status.json", { heartbeatAt: new Date().toISOString(), scheduler: "localPersistentProcess", result, apiAvailable: true, publicationEnabled: process.env.LIVE_EXECUTOR_PUBLISH_ENABLED === "true" });
             lastHeartbeat = Date.now();
           }
-        } catch (error) { console.log(JSON.stringify({ event: "executorFailed", reason: safeReason(error), at: new Date().toISOString() })); }
+        }
         await wait(clock.time >= "13:59:00" && clock.time <= "14:05:00" ? 250 : 10000);
       } } finally { await api.close(); }
     });
@@ -131,4 +143,4 @@ async function main() {
     console.log(JSON.stringify({ event: "authenticatedApiVerified", ...await verifyPrivateQuery({ api, token, mode, store: readStore }) }));
   } finally { await api.close(); }
 }
-await main().catch((error) => { console.error(JSON.stringify({ event: "executorError", reason: safeReason(error) })); process.exitCode = 1; });
+await main().catch((error) => reportFailure("executorError", error, true));

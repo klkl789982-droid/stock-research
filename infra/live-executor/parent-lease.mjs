@@ -7,11 +7,20 @@ export function enforceParentLease(runtime = process, { timeoutMs = 5000 } = {})
   if (!runtime.channel) return false;
   if (!Number.isInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > 5000) throw new Error("PARENT_LEASE_TIMEOUT_INVALID");
   const stop = () => runtime.exit(1);
-  let timer = setTimeout(stop, timeoutMs);
+  const expire = () => {
+    // Report a fixed code before stopping; the original timeout/kill policy is
+    // unchanged. Never include process.env, commands or arbitrary error text.
+    if (runtime.connected && typeof runtime.send === "function") {
+      try { runtime.send({ type: "EXECUTOR_DIAGNOSTIC", event: "executorError", reason: "PARENT_LEASE_EXPIRED" }, () => stop()); }
+      catch { stop(); }
+      setTimeout(stop, 100).unref();
+    } else stop();
+  };
+  let timer = setTimeout(expire, timeoutMs);
   timer.unref();
   runtime.on("message", (message) => {
     if (message?.type !== "HOST_LEASE") return;
-    clearTimeout(timer); timer = setTimeout(stop, timeoutMs); timer.unref();
+    clearTimeout(timer); timer = setTimeout(expire, timeoutMs); timer.unref();
   });
   runtime.once("disconnect", stop);
   if (!runtime.connected) stop();

@@ -2,11 +2,27 @@ import { spawn } from "node:child_process";
 import { stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { randomUUID } from "node:crypto";
 import { createLocalExecutionStore } from "./store.mjs";
 import { writerEnvironment } from "./writer-environment.mjs";
 
 const repositoryRoot = path.resolve(fileURLToPath(new URL("../../", import.meta.url)));
 const reasonFor = (error) => /^[A-Z][A-Z0-9_]{2,95}$/u.test(error?.message ?? "") ? error.message : "HOST_OPERATION_FAILED";
+export function supervisorRecorder(store, { sessionId = randomUUID(), now = () => new Date().toISOString() } = {}) {
+  let sequence = 0, lastFailure = null, pending = Promise.resolve();
+  const record = (value, updateStatus) => {
+    const operation = pending.then(async () => {
+      const checkedAt = now();
+      const receipt = { ...value, sessionId, sequence: ++sequence, hostPid: process.pid, checkedAt, publicationEnabled: false, scheduler: "windowsTaskScheduler" };
+      await store.writeImmutable(`live/supervisor-events/${sessionId}/${String(sequence).padStart(6, "0")}.json`, receipt);
+      if (["RESTART_WAIT", "EXHAUSTED"].includes(value.status)) lastFailure = { reason: value.reason, childExitCode: value.childExitCode, checkedAt };
+      if (updateStatus) await store.writeMutable("live/supervisor.json", { ...receipt, lastFailure });
+    });
+    pending = operation.catch(() => {});
+    return operation;
+  };
+  return { onStatus: value => record(value, true), onDiagnostic: value => record({ status: "CHILD_DIAGNOSTIC", ...value }, false) };
+}
 const wait = (ms, signal) => new Promise((resolve) => {
   if (signal?.aborted) { resolve(); return; }
   const complete = () => { clearTimeout(timer); signal?.removeEventListener("abort", complete); resolve(); };
@@ -16,6 +32,7 @@ const wait = (ms, signal) => new Promise((resolve) => {
 
 /** Fixed host calls this with run.mjs; test code injects isolated local child programs. */
 export async function superviseChild({ command, args, cwd, env, signal, onStatus = async () => {}, health = null,
+  onDiagnostic = async () => {},
   maxRestarts = 3, restartDelayMs = 30_000, healthIntervalMs = 10_000, terminateGraceMs = 10_000 }) {
   if (!Number.isInteger(maxRestarts) || maxRestarts < 0 || maxRestarts > 3) throw new Error("HOST_RESTART_LIMIT_INVALID");
   let restartCount = 0;
@@ -25,6 +42,7 @@ export async function superviseChild({ command, args, cwd, env, signal, onStatus
     const startedAt = new Date().toISOString();
     await emit({ status: "STARTING", restartCount, startedAt });
     let child, stopping = false, healthBusy = false, failure = null, forceTimer, leaseTimer;
+    const reported = new Set();
     const outcome = await new Promise((resolve) => {
       let finished = false;
       const finish = (code, cause) => {
@@ -55,7 +73,20 @@ export async function superviseChild({ command, args, cwd, env, signal, onStatus
           child.send({ type: "HOST_LEASE" }, (error) => { if (error && !stopping) { failure = "HOST_LEASE_LOST"; terminate(); } });
         }, 1000);
         child.once("error", () => finish(null, "HOST_CHILD_START_FAILED"));
-        child.once("exit", (code) => finish(code, code === 0 ? "HOST_CHILD_UNEXPECTED_EXIT" : "HOST_CHILD_FAILED"));
+        child.once("exit", (code, exitSignal) => { if (exitSignal) failure ??= "HOST_CHILD_SIGNALLED"; finish(code, code === 0 ? "HOST_CHILD_UNEXPECTED_EXIT" : "HOST_CHILD_FAILED"); });
+        child.on("message", message => {
+          if (message?.type !== "EXECUTOR_DIAGNOSTIC" || !["executorFailed", "executorError"].includes(message.event)
+            || !/^[A-Z][A-Z0-9_]{2,95}$/u.test(message.reason ?? "")) return;
+          const key = `${message.event}:${message.reason}`;
+          // Bound diagnostics per child; never persist stdout, response bodies,
+          // credentials or arbitrary IPC fields supplied alongside the code.
+          if (!reported.has(key) && reported.size < 32) {
+            reported.add(key);
+            Promise.resolve().then(() => onDiagnostic({ event: message.event, reason: message.reason, pid: child.pid, restartCount }))
+              .catch(() => { failure = "HOST_DIAGNOSTIC_WRITE_FAILED"; terminate(); });
+          }
+          if (message.event === "executorError") { failure = message.reason; terminate(); }
+        });
         child.once("spawn", () => { emit({ status: "RUNNING", restartCount, startedAt, pid: child.pid, readiness: "PROCESS_ONLY" }).catch(() => { failure = "HOST_STATUS_WRITE_FAILED"; terminate(); }); });
         signal?.addEventListener("abort", terminate, { once: true });
         if (signal?.aborted) terminate();
@@ -81,6 +112,7 @@ export async function startManagedHost({ stateDir, signal, root = repositoryRoot
   const envFile = path.join(root, ".env.local"), script = path.join(root, "infra/live-executor/run.mjs");
   if (!(await stat(envFile)).isFile() || !(await stat(script)).isFile()) throw new Error("HOST_REQUIRED_FILE_UNAVAILABLE");
   const store = createLocalExecutionStore(stateDir, { repositoryRoot: root });
+  const recorder = supervisorRecorder(store);
   let deliveryEnv;
   try { deliveryEnv = await writerEnvironment(); }
   catch (error) {
@@ -91,7 +123,7 @@ export async function startManagedHost({ stateDir, signal, root = repositoryRoot
     command: process.execPath, args: [`--env-file=${envFile}`, script, "--mode=daemon", `--state-dir=${stateDir}`], cwd: root,
     // Explicit inherited values take precedence over Node --env-file. No public publication from this host.
     env: { ...process.env, ...deliveryEnv, PRIVATE_LIVE_DELIVERY_READ_TOKEN: "", LIVE_EXECUTOR_PUBLISH_ENABLED: "false", LIVE_EXECUTOR_PUBLICATION_AUTHORIZED: "false" }, signal,
-    onStatus: (value) => store.writeMutable("live/supervisor.json", { ...value, checkedAt: new Date().toISOString(), publicationEnabled: false, scheduler: "windowsTaskScheduler" }),
+    ...recorder,
     health: async ({ startedAt }) => {
       const start = Date.parse(startedAt), now = Date.now();
       const status = await store.read("live/daemon-status.json");

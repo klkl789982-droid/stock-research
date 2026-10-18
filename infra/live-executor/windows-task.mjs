@@ -24,6 +24,7 @@ export function buildWindowsTask({ root, nodePath, powershellPath, stateDir, use
   <RegistrationInfo><Author>${xml(userSid)}</Author><Description>${xml(marker)}</Description></RegistrationInfo>
   <Triggers>
     <CalendarTrigger><StartBoundary>${xml(date)}T13:40:00+09:00</StartBoundary><Enabled>true</Enabled><ScheduleByDay><DaysInterval>1</DaysInterval></ScheduleByDay></CalendarTrigger>
+    <CalendarTrigger><StartBoundary>${xml(date)}T13:59:00+09:00</StartBoundary><Enabled>true</Enabled><ScheduleByDay><DaysInterval>1</DaysInterval></ScheduleByDay></CalendarTrigger>
     <LogonTrigger><Enabled>true</Enabled><UserId>${xml(userSid)}</UserId></LogonTrigger>
   </Triggers>
   <Principals><Principal id="Owner"><UserId>${xml(userSid)}</UserId><LogonType>InteractiveToken</LogonType><RunLevel>LeastPrivilege</RunLevel></Principal></Principals>
@@ -31,11 +32,11 @@ export function buildWindowsTask({ root, nodePath, powershellPath, stateDir, use
     <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy><DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries><StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
     <AllowHardTerminate>true</AllowHardTerminate><StartWhenAvailable>true</StartWhenAvailable><RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
     <AllowStartOnDemand>true</AllowStartOnDemand><Enabled>true</Enabled><Hidden>true</Hidden><RunOnlyIfIdle>false</RunOnlyIfIdle><WakeToRun>true</WakeToRun>
-    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit><Priority>7</Priority><RestartOnFailure><Interval>PT1M</Interval><Count>3</Count></RestartOnFailure>
+    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit><Priority>4</Priority><RestartOnFailure><Interval>PT1M</Interval><Count>3</Count></RestartOnFailure>
   </Settings>
   <Actions Context="Owner"><Exec><Command>${xml(powershellPath)}</Command><Arguments>${xml(args)}</Arguments><WorkingDirectory>${xml(root)}</WorkingDirectory></Exec></Actions>
 </Task>`;
-  return { taskName, taskPath: "\\", marker, xml: document, scheduleKst: "13:40 daily + current-user logon", scheduledUtc: "04:40 daily", publicationEnabled: false, accountMode: "InteractiveToken", limitations: ["Requires the configured Windows user to remain logged on", "Powered-off machines cannot run; waking from sleep depends on OS/firmware power settings", "A missed 14:00 observation cannot be backfilled"] };
+  return { taskName, taskPath: "\\", marker, xml: document, scheduleKst: "13:40 preparation + 13:59 recovery check + current-user logon", scheduledUtc: "04:40 and 04:59 daily", publicationEnabled: false, accountMode: "InteractiveToken", limitations: ["Requires the configured Windows user to remain logged on", "Powered-off machines cannot run; waking from sleep depends on OS/firmware power settings", "A missed 14:00 observation cannot be backfilled"] };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

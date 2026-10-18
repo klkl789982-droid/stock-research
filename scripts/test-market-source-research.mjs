@@ -181,3 +181,27 @@ test("read-only diagnosis distinguishes empty/business/network responses, key ex
   const failed = await diagnosePublicLatest({ date, control: "2026-10-07", serviceKey: "synthetic", fetchImpl: async () => { throw new Error("token in error"); } });
   assert.ok(failed.results.every((r) => r.status === "NETWORK_OR_PARSE_FAILURE")); assert.ok(!JSON.stringify(failed).includes("token in error"));
 });
+
+test("response audit preserves sanitized wire shape, original bytes and pre-normalization dates without a cache", async () => {
+  const evidence = [], requests = [];
+  const report = await diagnosePublicLatest({ date, control: "2026-10-07", serviceKey: "fixture-credential",
+    audit: true, onEvidence: async value => evidence.push(value), fetchImpl: async (url, init) => {
+      const q = new URL(url).searchParams; requests.push(q);
+      assert.equal(init.headers.Pragma, "no-cache"); assert.equal(init.cache, "no-store");
+      const row = { srtnCd: "999999", basDt: "20261008" };
+      return new Response(q.get("resultType") === "xml" ? "<resultCode>00</resultCode><totalCount>0</totalCount>"
+        : JSON.stringify({ response: { header: { resultCode: "00" }, body: { totalCount: 1, items: { item: [row] } } } }), { headers: { "cache-control": "no-cache", date: "Sun, 18 Oct 2026 08:00:00 GMT" } });
+    } });
+  assert.equal(requests.length, 13); assert.equal(evidence.length, 13);
+  assert.equal(report.results[0].rawContainsTarget, true); assert.equal(report.results[0].containsTarget, false);
+  assert.equal(report.results[0].filteredRowCount, 1);
+  assert.equal(report.results.find(r => r.mode === "literalExact").requestParameters.basDt, "20261008");
+  for (const item of evidence) { assert.equal(item.requestParameters.serviceKey, undefined); assert.match(item.responseBytesSha256, /^[a-f0-9]{64}$/u); }
+  assert.ok(!JSON.stringify({ report, evidence }).includes("fixture-credential"));
+});
+
+test("a positive totalCount with no original rows is a schema failure, not an empty-market conclusion", async () => {
+  const report = await diagnosePublicLatest({ date, control: "2026-10-07", serviceKey: "fixture-credential", fetchImpl: async () =>
+    Response.json({ response: { header: { resultCode: "00" }, body: { totalCount: 1, items: {} } } }) });
+  assert.ok(report.results.filter(r => r.mode !== "xmlExact").every(r => r.status === "BUSINESS_OR_SCHEMA_FAILURE"));
+});
