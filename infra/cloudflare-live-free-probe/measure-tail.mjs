@@ -1,8 +1,11 @@
-// Consume only this credential-free synthetic deployment's Wrangler JSON tail.
+// Accept only one of the two fixed isolated deployments' Wrangler JSON tails.
 // Print bounded aggregate platform metrics, never headers, bodies or raw events.
+const actual = process.argv.includes("--actual-isolated");
+const scriptName = actual ? "tight-budget-live-kis-diagnostic" : "tight-budget-live-free-probe";
+const entrypoints = actual ? ["KisDiagnostic", "KisDiagnosticBroker", "KisDiagnosticShard", "KisSlotShard"] : ["FreeProbe", "SyntheticBroker"];
 const groups = new Map(); let buffer = "", start = -1, depth = 0, quoted = false, escaped = false;
 function accept(event) {
-  if (event.scriptName !== "tight-budget-live-free-probe" || !["FreeProbe", "SyntheticBroker"].includes(event.entrypoint)) return;
+  if (event.scriptName !== scriptName || !entrypoints.includes(event.entrypoint)) return;
   const group = groups.get(event.entrypoint) ?? { cpu: [], wall: [], outcomes: {} };
   if (Number.isFinite(event.cpuTime)) group.cpu.push(event.cpuTime);
   if (Number.isFinite(event.wallTime)) group.wall.push(event.wallTime);
@@ -17,7 +20,7 @@ function stats(values) {
 let reported = false;
 function report() {
   if (reported) return; reported = true;
-  console.log(JSON.stringify({ syntheticOnly: true, platformCpuNotWallTime: true, sampledTailNotBillingLedger: true,
+  console.log(JSON.stringify({ syntheticOnly: !actual, actualKisDiagnostic: actual, platformCpuNotWallTime: true, sampledTailNotBillingLedger: true,
     metrics: Object.fromEntries([...groups].map(([key, value]) => [key, { cpuMs: stats(value.cpu), wallMs: stats(value.wall), outcomes: value.outcomes }])) }));
 }
 process.stdin.setEncoding("utf8");
