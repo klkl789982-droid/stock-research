@@ -1,5 +1,17 @@
 # Independent LIVE executor
 
+## Current deployment target — 14:00 KST, always-on Linux
+
+The completion target is **PC-independent** operation, not a Windows task.
+See [the server migration runbook](../../docs/live-server-migration.md) for the
+existing-resource audit, measured workload, staged systemd deployment, cost,
+single-producer cutover, verification and rollback. No server has been purchased
+or activated. Do not disable the current PC task before server proof is obtained.
+The systemd template is deliberately blocked until a root-controlled cutover
+marker exists. Its Node supervisor reuses the current 13:40 / 13:59 preparation
+and 14:00–14:05 collection policy. The older 14:10/14:30 description and evidence
+below are historical context, not additional active collection schedules.
+
 This Node.js 22+ service collects KIS prices directly. GitHub Actions, dispatch,
 and hosted runner startup are absent from its observation path. Existing
 `calculateIntradayModelTopScores` and `buildIntradayModelTopSignal` are imported

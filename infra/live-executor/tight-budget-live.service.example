@@ -2,18 +2,43 @@
 Description=Tight Budget independent LIVE observer
 Wants=network-online.target
 After=network-online.target
+ConditionPathExists=/etc/tight-budget/server-cutover-approved
+StartLimitIntervalSec=900
+StartLimitBurst=5
 
 [Service]
 Type=simple
 User=tightbudget
+Group=tightbudget
 WorkingDirectory=/opt/tight-budget
-EnvironmentFile=/etc/tight-budget/live.env
-ExecStart=/usr/bin/node /opt/tight-budget/infra/live-executor/run.mjs --mode=daemon --state-dir=/var/lib/tight-budget-live
+# systemd >= 250: values are not embedded in the unit or command line.
+LoadCredential=live.env:/etc/tight-budget/live.env
+LoadCredential=writer.env:/etc/tight-budget/site-relay-writer.env
+Environment=LIVE_EXECUTOR_ENV_FILE=%d/live.env
+Environment=PRIVATE_LIVE_DELIVERY_WRITER_ENV_FILE=%d/writer.env
+Environment=LIVE_EXECUTOR_SUPERVISOR_KIND=systemd
+Environment=TZ=Asia/Seoul
+Environment=NODE_OPTIONS=--max-old-space-size=1024
+ExecStart=/usr/bin/node /opt/tight-budget/infra/live-executor/host.mjs --state-dir=/var/lib/tight-budget-live
 Restart=on-failure
 RestartSec=10
+TimeoutStopSec=15
+KillMode=control-group
+StateDirectory=tight-budget-live
+StateDirectoryMode=0700
 UMask=0077
 NoNewPrivileges=true
 PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+ReadWritePaths=/var/lib/tight-budget-live /opt/tight-budget/.git
+LimitCORE=0
 
 [Install]
 WantedBy=multi-user.target

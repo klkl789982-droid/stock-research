@@ -1,0 +1,44 @@
+name: LIVE server portability tests (synthetic only)
+
+on:
+  push:
+    paths:
+      - 'infra/live-executor/**'
+      - '.github/workflows/live-server-portability.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-server-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  synthetic-linux-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      # No KIS/store credentials, actual quotes, dispatch, artifacts or publication.
+      # This runner tests portability only; it is NOT a LIVE execution path.
+      - name: Test synthetic persistence, recovery, API, relay and model invariance
+        # Fault tests deliberately stall/kill processes. Isolate test files so
+        # they cannot starve the separate heartbeat timing test on small hosts.
+        run: node --test --test-concurrency=1 infra/live-executor/*.test.mjs
+      - name: Verify systemd templates without installing or starting a service
+        shell: bash
+        run: |
+          set -euo pipefail
+          unit_dir=$(mktemp -d)
+          cp infra/live-executor/tight-budget-live.service.example "$unit_dir/tight-budget-live.service"
+          cp infra/live-executor/tight-budget-live-recovery.service.example "$unit_dir/tight-budget-live-recovery.service"
+          cp infra/live-executor/tight-budget-live-recovery.timer.example "$unit_dir/tight-budget-live-recovery.timer"
+          cp infra/live-executor/tight-budget-live-preflight.service.example "$unit_dir/tight-budget-live-preflight.service"
+          systemd-analyze verify "$unit_dir/tight-budget-live.service" "$unit_dir/tight-budget-live-recovery.service" "$unit_dir/tight-budget-live-recovery.timer" "$unit_dir/tight-budget-live-preflight.service"
+          systemd-analyze calendar 'Mon..Fri *-*-* 13:35:00 Asia/Seoul' 'Mon..Fri *-*-* 13:58:00 Asia/Seoul'

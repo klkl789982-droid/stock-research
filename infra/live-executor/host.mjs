@@ -8,12 +8,19 @@ import { writerEnvironment } from "./writer-environment.mjs";
 
 const repositoryRoot = path.resolve(fileURLToPath(new URL("../../", import.meta.url)));
 const reasonFor = (error) => /^[A-Z][A-Z0-9_]{2,95}$/u.test(error?.message ?? "") ? error.message : "HOST_OPERATION_FAILED";
-export function supervisorRecorder(store, { sessionId = randomUUID(), now = () => new Date().toISOString() } = {}) {
+export function hostConfiguration(root, env = process.env) {
+  const envFile = env.LIVE_EXECUTOR_ENV_FILE ?? path.join(root, ".env.local");
+  if (!path.isAbsolute(envFile) || /[\0\r\n]/u.test(envFile)) throw new Error("HOST_ENV_FILE_INVALID");
+  const scheduler = env.LIVE_EXECUTOR_SUPERVISOR_KIND ?? (process.platform === "win32" ? "windowsTaskScheduler" : "nodeProcessSupervisor");
+  if (!["windowsTaskScheduler", "systemd", "nodeProcessSupervisor"].includes(scheduler)) throw new Error("HOST_SUPERVISOR_KIND_INVALID");
+  return { envFile, scheduler };
+}
+export function supervisorRecorder(store, { sessionId = randomUUID(), now = () => new Date().toISOString(), scheduler = hostConfiguration(repositoryRoot).scheduler } = {}) {
   let sequence = 0, lastFailure = null, pending = Promise.resolve();
   const record = (value, updateStatus) => {
     const operation = pending.then(async () => {
       const checkedAt = now();
-      const receipt = { ...value, sessionId, sequence: ++sequence, hostPid: process.pid, checkedAt, publicationEnabled: false, scheduler: "windowsTaskScheduler" };
+      const receipt = { ...value, sessionId, sequence: ++sequence, hostPid: process.pid, checkedAt, publicationEnabled: false, scheduler };
       await store.writeImmutable(`live/supervisor-events/${sessionId}/${String(sequence).padStart(6, "0")}.json`, receipt);
       if (["RESTART_WAIT", "EXHAUSTED"].includes(value.status)) lastFailure = { reason: value.reason, childExitCode: value.childExitCode, checkedAt };
       if (updateStatus) await store.writeMutable("live/supervisor.json", { ...receipt, lastFailure });
@@ -109,10 +116,10 @@ export async function superviseChild({ command, args, cwd, env, signal, onStatus
 }
 
 export async function startManagedHost({ stateDir, signal, root = repositoryRoot }) {
-  const envFile = path.join(root, ".env.local"), script = path.join(root, "infra/live-executor/run.mjs");
+  const { envFile, scheduler } = hostConfiguration(root), script = path.join(root, "infra/live-executor/run.mjs");
   if (!(await stat(envFile)).isFile() || !(await stat(script)).isFile()) throw new Error("HOST_REQUIRED_FILE_UNAVAILABLE");
   const store = createLocalExecutionStore(stateDir, { repositoryRoot: root });
-  const recorder = supervisorRecorder(store);
+  const recorder = supervisorRecorder(store, { scheduler });
   let deliveryEnv;
   try { deliveryEnv = await writerEnvironment(); }
   catch (error) {

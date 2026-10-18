@@ -1,0 +1,28 @@
+[Unit]
+Description=Non-market Tight Budget server connection and private-storage preflight
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=tightbudget
+Group=tightbudget
+WorkingDirectory=/opt/tight-budget
+LoadCredential=live.env:/etc/tight-budget/live.env
+LoadCredential=writer.env:/etc/tight-budget/site-relay-writer.env
+Environment=LIVE_EXECUTOR_ENV_FILE=%d/live.env
+Environment=PRIVATE_LIVE_DELIVERY_WRITER_ENV_FILE=%d/writer.env
+Environment=LIVE_EXECUTOR_SUPERVISOR_KIND=systemd
+Environment=TZ=Asia/Seoul
+ExecStart=/usr/bin/node /opt/tight-budget/infra/live-executor/server-preflight.mjs --state-dir=/var/lib/tight-budget-live --storage-check --network-check --kis-calendar=today
+ExecStart=/usr/bin/node /opt/tight-budget/infra/live-executor/verify-writer.mjs
+StateDirectory=tight-budget-live
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/tight-budget-live
+LimitCORE=0
+TimeoutStartSec=120

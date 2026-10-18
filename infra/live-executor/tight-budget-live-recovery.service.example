@@ -1,0 +1,9 @@
+[Unit]
+Description=Recover a stopped Tight Budget host before the LIVE input cutoff
+After=network-online.target
+ConditionPathExists=/etc/tight-budget/server-cutover-approved
+
+[Service]
+Type=oneshot
+# start is a no-op when already active; never creates a second collector.
+ExecStart=/usr/bin/systemctl start tight-budget-live.service

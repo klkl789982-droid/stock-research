@@ -1,0 +1,14 @@
+[Unit]
+Description=Tight Budget pre-observation start-if-stopped recovery
+
+[Timer]
+OnCalendar=Mon..Fri *-*-* 13:35:00 Asia/Seoul
+OnCalendar=Mon..Fri *-*-* 13:58:00 Asia/Seoul
+AccuracySec=1s
+RandomizedDelaySec=0
+# Never replay a missed collection when a server returns after 14:05.
+Persistent=false
+Unit=tight-budget-live-recovery.service
+
+[Install]
+WantedBy=timers.target
