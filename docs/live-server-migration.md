@@ -131,7 +131,7 @@ activation. No purchase/account creation has been performed by the agent.
 
 Run as an approved server administrator after the server exists. Keep the PC
 task active while staging; **do not create the cutover marker yet**. Install Node
-24 from the vendor/OS's trusted source, Git and NTP. Verify `node --version` and
+24 from the vendor/OS's trusted source, Git and NTP. Verify `/usr/bin/node --version` and
 `timedatectl show -p NTPSynchronized` (true). No Windows logon is needed for a
 system service enabled under multi-user.target.
 
@@ -246,6 +246,11 @@ ESLint and `git diff --check` passed. Portable local tests cover real process re
 reopen, duplicate locks, bounded failed sends and exact unchanged model outputs.
 Linux CI additionally checks all executor tests and systemd template syntax/
 KST timer parsing without starting a service or using KIS secrets.
+Its first run passed all 94 Node tests but systemd correctly rejected the missing
+`/usr/bin/node` on the hosted runner (setup-node installs in a toolcache). The CI
+now substitutes that verified executable **only in temporary validation copies**;
+release units still require the actual server's `/usr/bin/node`. No executable
+check is disabled. This is not evidence that the server has been deployed.
 The first parallel local suite had one heartbeat-fixture timeout. Test files now
 run serially so deliberate process stalls cannot interfere with unrelated timing
 fixtures. The synthetic clock file also uses atomic replacement: its reader must

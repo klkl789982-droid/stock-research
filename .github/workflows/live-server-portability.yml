@@ -40,5 +40,11 @@ jobs:
           cp infra/live-executor/tight-budget-live-recovery.service.example "$unit_dir/tight-budget-live-recovery.service"
           cp infra/live-executor/tight-budget-live-recovery.timer.example "$unit_dir/tight-budget-live-recovery.timer"
           cp infra/live-executor/tight-budget-live-preflight.service.example "$unit_dir/tight-budget-live-preflight.service"
+          # setup-node installs into its toolcache, not the deployment host's
+          # /usr/bin/node. Validate temporary copies against that real binary;
+          # do not disable systemd's executable checks or alter release templates.
+          node_bin=$(command -v node)
+          test -x "$node_bin"
+          sed -i "s|ExecStart=/usr/bin/node |ExecStart=${node_bin} |g" "$unit_dir/tight-budget-live.service" "$unit_dir/tight-budget-live-preflight.service"
           systemd-analyze verify "$unit_dir/tight-budget-live.service" "$unit_dir/tight-budget-live-recovery.service" "$unit_dir/tight-budget-live-recovery.timer" "$unit_dir/tight-budget-live-preflight.service"
           systemd-analyze calendar 'Mon..Fri *-*-* 13:35:00 Asia/Seoul' 'Mon..Fri *-*-* 13:58:00 Asia/Seoul'
