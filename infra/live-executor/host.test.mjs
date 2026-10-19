@@ -182,6 +182,22 @@ test("one poll-phase drain does not forgive an actually absent parent", t => {
   assert.equal(diagnostics.find(r => r.type === "EXECUTOR_DIAGNOSTIC").reason, "PARENT_LEASE_EXPIRED");
 });
 
+test("one millisecond of cross-process future wall time cannot reject a fresh monotonic challenge", t => {
+  const messages = [], exits = []; let now = 0;
+  t.mock.method(Date, "now", () => 1000);
+  t.mock.method(globalThis, "setInterval", () => ({ unref() {} }));
+  t.mock.method(globalThis, "setTimeout", () => ({ unref() {} }));
+  t.mock.method(globalThis, "clearTimeout", () => {});
+  const runtime = Object.assign(new EventEmitter(), { channel: {}, connected: true,
+    exit: code => exits.push(code), send: (value, callback) => { messages.push(value); callback(); } });
+  enforceParentLease(runtime, { monotonicNow: () => now });
+  now = 1;
+  runtime.emit("message", { type: "HOST_LEASE", nonce: messages[0].nonce, sentAtMs: 1001 });
+  const receipt = messages.find(m => m.type === "EXECUTOR_LEASE_RECEIPT");
+  assert.equal(receipt.wireAgeMs, -1); assert.equal(receipt.accepted, true); assert.equal(receipt.roundTripMs, 1);
+  assert.equal(receipt.futureCount, 1); assert.deepEqual(exits, []);
+});
+
 test("expired, missing and consumed nonces cannot refresh a dead parent's lease", t => {
   const timeouts = [], immediates = [], exits = [], messages = []; let now = 0;
   t.mock.method(globalThis, "setInterval", () => ({ unref() {} }));

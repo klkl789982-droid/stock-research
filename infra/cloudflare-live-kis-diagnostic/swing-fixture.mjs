@@ -4,15 +4,19 @@ import { hashSwingContent, resolveSwingOutcome, validateForecastRecord } from ".
 
 // Fixed SYNTHETIC metadata only. These are not model calculations, quotes or a
 // historical LIVE observation. Every remote key is confined to the test tree.
-export function cloudSwingFixture() {
-  const date = "2000-01-03", at = `${date}T05:00:01.000Z`;
+export function syntheticProductionInputs({ date = "2000-01-03", seedDate = "1999-12-30" } = {}) {
+  const at = `${date}T05:00:01.000Z`;
   const codes = Array.from({ length: 553 }, (_, i) => String(900000 + i));
-  const prepared = { targetDate: date, seedReferenceDate: "1999-12-30", readiness: "READY", universe: 553, eligible: 508,
+  const prepared = { targetDate: date, seedReferenceDate: seedDate, readiness: "READY", universe: 553, eligible: 508,
     codes, eligibleCodes: codes.slice(0, 508), seedHash: "a".repeat(64) };
   const rows = codes.map((code, i) => ({ code, companyName: `SYNTHETIC-NOT-A-STOCK-${i}`, status: i < 508 ? "AVAILABLE" : "EXCLUDED",
     scores: i < 508 ? Object.fromEntries(["A-v1", "B-v1", "C-v1", "D-v1"].map((v, j) => [v, ((i + j * 31) % 101)])) : null,
     observedDate: date, observedTime: "14:00:01", quoteRequestedAt: at, quoteReceivedAt: at, minuteRequestedAt: at, minuteReceivedAt: at,
     originalRecordHash: "b".repeat(64), responseHash: "c".repeat(64), rawPricesStored: false, modelFormulaUnchanged: true }));
+  return { date, prepared, rows };
+}
+export function cloudSwingFixture() {
+  const { date, prepared, rows } = syntheticProductionInputs();
   return aggregateProduction(prepared, rows, `${date}T05:05:01.000Z`).swing;
 }
 

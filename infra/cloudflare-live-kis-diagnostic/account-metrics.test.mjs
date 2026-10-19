@@ -10,6 +10,7 @@ test("today filter is UTC midnight, never the month-to-date step counter", async
   const r = await readAccountMetrics({ token: "fixture-only", now: at, async fetchImpl(url, init) {
     assert.equal(url, "https://api.cloudflare.com/client/v4/graphql"); assert.equal(init.redirect, "error");
     const p = JSON.parse(init.body); assert.equal(p.variables.s, "2026-10-19T00:00:00Z"); assert.equal(p.variables.month, "2026-10-01");
+    assert.match(p.query, /stepCount allStepCount/u, "sleep/wait operations must not disappear from the daily billing evidence");
     return Response.json(payload);
   } });
   assert.equal(r.workersRequestsReported, 2); assert.equal(r.doRequestsReported, null);

@@ -4,8 +4,9 @@ import { pathToFileURL } from "node:url";
 const account = "a270e8d00736b9adbeaab41945266c99";
 const query = `query Usage($a:string!,$s:Time,$e:Time,$month:Date,$monthStart:Time,$storageFrom:Date){
   storageSchema:__type(name:"AccountWorkflowsAdaptive"){fields{name description}}
+  durationSchema:__type(name:"AccountDurableObjectsPeriodicGroupsSum"){fields{name description}}
   viewer{accounts(filter:{accountTag:$a}){
-  dayWorkflows:workflowsAdaptiveGroups(limit:100,filter:{datetimeHour_geq:$s,datetimeHour_leq:$e}){count sum{stepCount} dimensions{eventType}}
+  dayWorkflows:workflowsAdaptiveGroups(limit:100,filter:{datetimeHour_geq:$s,datetimeHour_leq:$e}){count sum{stepCount allStepCount} dimensions{eventType}}
   workers:workersInvocationsAdaptive(limit:1,filter:{datetime_geq:$s,datetime_leq:$e}){sum{requests}}
   doRequests:durableObjectsInvocationsAdaptiveGroups(limit:1,filter:{datetime_geq:$s,datetime_leq:$e}){sum{requests}}
   doCompute:durableObjectsPeriodicGroups(limit:1,filter:{datetime_geq:$s,datetime_leq:$e}){sum{duration rowsRead rowsWritten}}
@@ -27,7 +28,9 @@ export function summarizeAccountMetrics(payload, observedAt) {
   return { observedAt, utcDay: observedAt.slice(0, 10), source: "Cloudflare official GraphQL, account-wide UTC-day filter",
     workersRequestsReported: metric(value.workers, "requests"), doRequestsReported: metric(value.doRequests, "requests"),
     doDurationRawMetric: metric(value.doCompute, "duration"), sqlRowsReadReported: metric(value.doCompute, "rowsRead"), sqlRowsWrittenReported: metric(value.doCompute, "rowsWritten"),
+    doDurationUnit: payload.data.durationSchema?.fields?.some(f => f.name === "duration" && f.description === "Sum of Duration - GB*s") ? "GB_SECONDS_OFFICIAL_SCHEMA" : "UNVERIFIED",
     workflowDayEventGroups: value.dayWorkflows ?? null,
+    workflowAllOperationsReported: metric(value.dayWorkflows, "allStepCount"),
     persistentSqlNamespacePeakBytes: peaks.size && value.sql.length < 1000 ? [...peaks.values()].reduce((a, b) => a + b, 0) : null,
     workflowStorageGrowthRawMetric: metric(value.monthStorage, "storageRate"),
     workflowStorageEvidence: summarizeWorkflowStorage(value.storageEvents, payload.data.storageSchema),

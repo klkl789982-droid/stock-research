@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import { DatabaseSync } from "node:sqlite";
-import { productionObservation, aggregateProduction, nextPairSlots, bounds, normalDayBudget, assertProduction, checkCutover, activationConfig, LIVE_CRONS } from "./production-core.mjs";
+import { productionObservation, aggregateProduction, nextPairSlots, bounds, normalDayBudget, assertProduction, checkCutover, activationConfig, LIVE_CRONS, PRODUCTION_BUDGET } from "./production-core.mjs";
 import { ProductionDayState } from "./production-state.mjs";
 import { fixture } from "../cloudflare-live-free-probe/core.mjs";
 import { buildIntradayModelTopSignal, hashIntradayModelTop as hash } from "../../lib/intraday-model-top-official-signal.mjs";
@@ -18,9 +18,9 @@ const env = { LIVE_PRODUCTION_ENABLED: "true", LIVE_PRODUCER: "cloud", LIVE_CUTO
 let workflowSource = await fs.readFile(new URL("./src/production.mjs", import.meta.url), "utf8");
 workflowSource = workflowSource.replace('import { DurableObject, WorkflowEntrypoint } from "cloudflare:workers";', 'class DurableObject { constructor(ctx,env){this.ctx=ctx;this.env=env;} } class WorkflowEntrypoint {constructor(env){this.env=env;}}');
 workflowSource = workflowSource.replace('import { KisSlotShard } from "./slot-shard.mjs";', 'class KisSlotShard {}');
-for (const relative of ["../production-state.mjs", "../production-core.mjs", "../core.mjs", "../relay-budget.mjs", "../../../lib/kis-eod-private-store.mjs"])
+for (const relative of ["../production-state.mjs", "../production-core.mjs", "../production-fixture.mjs", "../core.mjs", "../relay-budget.mjs", "../../../lib/kis-eod-private-store.mjs"])
   workflowSource = workflowSource.replaceAll(JSON.stringify(relative), JSON.stringify(new URL(relative, new URL("./src/production.mjs", import.meta.url)).href));
-const { CloudLive, productionScheduled } = await import(`data:text/javascript;base64,${Buffer.from(workflowSource).toString("base64")}`);
+const { CloudLive, LiveDay, productionScheduled } = await import(`data:text/javascript;base64,${Buffer.from(workflowSource).toString("base64")}`);
 function inputFixture() {
   const records = Array.from({ length: 553 }, (_, i) => ({ code: String(100000 + i), name: `Synthetic${i}`, market: "KOSPI", eligible: i < 508,
     officialAsOfDate: seedDate, sourceHash: "b".repeat(64), rows: fixture(i).rows.map((row, index) => [new Date(Date.parse(`${seedDate}T00:00:00Z`) - index * 86400000).toISOString().slice(0, 10).replaceAll("-", ""), ...row.slice(1)]) }));
@@ -118,6 +118,7 @@ test("adjacent production slots maintain the220ms grid,200ms worst-case spacing 
 test("normal-day allocations fit Free; current experimental accumulation is not a per-day requirement", () => {
   const budget = normalDayBudget(); assert.ok(Object.values(budget).every(v => v.total < v.limit));
   assert.equal(budget.workflowSteps.total, 320); assert.equal(budget.sqlRowsRead.total, 1500000); assert.equal(budget.sqlRowsWritten.total, 55000);
+  assert.ok(PRODUCTION_BUDGET.workflowStorageGbMonths >= 71 * 65536 * 3 * 2 / 1e9, "retention reserve must include measured per-instance state, not only step outputs");
   assert.deepEqual(LIVE_CRONS, ["40,50 4 * * MON-FRI", "6,8,10 5 * * MON-FRI"]);
   assert.throws(() => assertProduction({ ...env, LIVE_PRODUCTION_ENABLED: "false" }), /DISABLED/u);
   assert.throws(() => checkCutover({}, b.start), /CUTOVER_BLOCKED/u);
@@ -231,4 +232,15 @@ test("duplicate cron shares same parent ID; weekend/disabled state never schedul
   assert.equal(ids[0], ids[1]);
   assert.equal((await productionScheduled(event, { ...bindings, LIVE_PRODUCTION_ENABLED: "false" })).status, "DISABLED");
   assert.equal((await productionScheduled({ scheduledTime: Date.parse("2026-10-18T04:40:00Z") }, bindings)).status, "WEEKEND");
+});
+
+test("native synthetic harness cannot touch a normal day object or run while production is active", async t => {
+  t.mock.method(Date, "now", () => Date.parse("2026-10-19T09:00:00Z"));
+  const object = Object.create(LiveDay.prototype);
+  object.ctx = { id: { toString: () => "normal-operational-day-id" } };
+  object.env = { LIVE_ENABLED: "false", DIAGNOSTIC_ONLY: "true", LIVE_PRODUCTION_ENABLED: "false",
+    LIVE_DAYS: { idFromName: name => ({ toString: () => name }) } };
+  await assert.rejects(object.isolatedFixture("fixture-only", "create"), /FIXTURE_IDENTITY/u);
+  object.env.LIVE_PRODUCTION_ENABLED = "true";
+  await assert.rejects(object.isolatedFixture("fixture-only", "create"), /DISABLED_DURING_PRODUCTION/u);
 });

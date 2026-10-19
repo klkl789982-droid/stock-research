@@ -681,6 +681,12 @@ export class KisDiagnostic extends WorkflowEntrypoint {
       await step.do("isolated synthetic swing first issuance", config, () => call("/swing-fixture?phase=create"));
       return step.do("reopen synthetic swing with existing five-session resolver", config, () => call("/swing-fixture?phase=read"));
     }
+    if (p.mode === "production-fixture") {
+      if (p.runId.length > 24) throw new Error("DIAG_PRODUCTION_FIXTURE_INVALID");
+      const isolated = this.env.LIVE_DAYS.get(this.env.LIVE_DAYS.idFromName(`isolated-fixture-${p.runId}`));
+      await step.do("native SQL synthetic production lifecycle", config, () => isolated.isolatedFixture(p.runId, "create"));
+      return step.do("native SQL restart readback and private normal reader", config, () => isolated.isolatedFixture(p.runId, "read"));
+    }
     if (["auth", "fixture", "audit", "inputs", "report", "calendar"].includes(p.mode)) return step.do(`isolated ${p.mode}`, config, () => call(`/${p.mode}`));
     if (p.mode === "batch-shard") return step.do("actual eight-symbol bounded invocation metadata only", config, async () => {
       if (!Array.isArray(p.codes) || p.codes.length < 1 || p.codes.length > 8 || p.codes.some(c => !/^[0-9A-Z]{6}$/u.test(c))) throw new Error("DIAG_CODES_INVALID");
