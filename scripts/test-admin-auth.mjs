@@ -98,7 +98,7 @@ test("all existing data APIs use a server-only boundary; no broad static/RSC/ima
   // A stale count17 prevented their boundary assertions from running at all.
   assert.deepEqual(files.sort(), ["backtests/rank", "company-analysis", "daily-production-status", "financial", "home-dashboard",
     "intraday-market-analysis", "intraday-model-top", "investor", "kis-eod-top-stocks", "market-analysis", "model-performance",
-    "model-performance/research", "price", "private-live", "private-live-delivery", "realtime", "screener", "stock", "top-stocks"]
+    "model-performance/research", "price", "private-cloud-verification", "private-live", "private-live-delivery", "realtime", "screener", "stock", "top-stocks"]
     .map(name => `app/api/${name}/route.ts`).sort());
   for (const file of files) {
     const source = ts.createSourceFile(file, await readFile(file, "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
@@ -119,7 +119,7 @@ test("all existing data APIs use a server-only boundary; no broad static/RSC/ima
 test("machine token scope and redacted publication response, never private KIS or ranking access", async () => {
   const headers = { Authorization: `Bearer ${env.TB_AUTOMATION_READ_TOKEN}` };
   for (const path of ["/api/top-stocks", "/api/model-performance", "/api/daily-production-status", "/api/intraday-model-top", "/api/home-dashboard"]) assert.equal(auth.isAutomationRequest(req(path, { headers }), env), true);
-  for (const path of ["/", "/api/model-performance/research", "/api/stock", "/api/kis-eod-top-stocks", "/api/private-live", "/api/private-live-delivery"]) assert.equal(auth.isAutomationRequest(req(path, { headers }), env), false);
+  for (const path of ["/", "/api/model-performance/research", "/api/stock", "/api/kis-eod-top-stocks", "/api/private-live", "/api/private-live-delivery", "/api/private-cloud-verification"]) assert.equal(auth.isAutomationRequest(req(path, { headers }), env), false);
   assert.deepEqual(auth.automationPublicationDto("/api/intraday-model-top", { signalDate: "2026-10-08", observationType: "LIVE_OBSERVATION", collectionCompletedAt: "2026-10-08T05:34:00Z", stocks: [{ observedPrice: 123 }], source: "private" }), { signalDate: "2026-10-08", observationType: "LIVE_OBSERVATION", collectionCompletedAt: "2026-10-08T05:34:00Z" });
   assert.equal(auth.isAutomationRequest(req("/api/top-stocks", { method: "POST", headers }), env), false);
   assert.equal(auth.isAutomationRequest(req("/api/top-stocks", { headers: { Authorization: "Bearer wrong" } }), env), false);
