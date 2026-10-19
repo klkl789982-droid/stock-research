@@ -1,0 +1,231 @@
+{
+  "admission": {
+    "schemaVersion": 1,
+    "utcDay": "2026-10-19",
+    "observedAt": "2026-10-19T10:26:25.565Z",
+    "workersFree": true,
+    "inventoryVerified": true,
+    "storageVerified": true,
+    "upperBound": {
+      "workflowSteps": 199,
+      "workerRequests": 596,
+      "doRequests": 2209,
+      "durationGbSeconds": 3166.5725888,
+      "sqlRowsRead": 2386542,
+      "sqlRowsWritten": 42814
+    },
+    "headroomAfterAnotherWholeNormalDay": {
+      "workflowSteps": 2481,
+      "workerRequests": 95404,
+      "doRequests": 82791,
+      "durationGbSeconds": 333.4274112000003,
+      "sqlRowsRead": 1113458,
+      "sqlRowsWritten": 2186
+    },
+    "persistentSqlBytes": 100000000,
+    "workflowStorageGbMonthsUpperBound": 0.184424064,
+    "lagReserve": {
+      "workflowSteps": 100,
+      "workerRequests": 500,
+      "doRequests": 1000,
+      "durationGbSeconds": 1000,
+      "sqlRowsRead": 500000,
+      "sqlRowsWritten": 10000
+    },
+    "aggregationLagMs": null,
+    "exactBillingClaimed": false,
+    "boundType": "CONSERVATIVE_ADMISSION_RESERVATION",
+    "assumptions": "Complete fixed-resource inventory, no active collection or additional trials; re-admit before any extra collection or resource expansion. Free hard limits stop rather than charge.",
+    "normalDay": {
+      "workflowSteps": {
+        "limit": 3000,
+        "liveIncludingRetry": 220,
+        "otherIncludingEod": 100,
+        "total": 320,
+        "headroom": 2680
+      },
+      "workerRequests": {
+        "limit": 100000,
+        "liveIncludingRetry": 2000,
+        "otherIncludingEod": 2000,
+        "total": 4000,
+        "headroom": 96000
+      },
+      "doRequests": {
+        "limit": 100000,
+        "liveIncludingRetry": 14000,
+        "otherIncludingEod": 1000,
+        "total": 15000,
+        "headroom": 85000
+      },
+      "durationGbSeconds": {
+        "limit": 13000,
+        "liveIncludingRetry": 8500,
+        "otherIncludingEod": 1000,
+        "total": 9500,
+        "headroom": 3500
+      },
+      "sqlRowsRead": {
+        "limit": 5000000,
+        "liveIncludingRetry": 1000000,
+        "otherIncludingEod": 500000,
+        "total": 1500000,
+        "headroom": 3500000
+      },
+      "sqlRowsWritten": {
+        "limit": 100000,
+        "liveIncludingRetry": 40000,
+        "otherIncludingEod": 15000,
+        "total": 55000,
+        "headroom": 45000
+      }
+    },
+    "workflowRetentionDays": 3,
+    "sqlDailyCapBytes": 2000000,
+    "sqlGlobalReserveStopBytes": 4000000000,
+    "storageDailyReset": false,
+    "paidFallback": false
+  },
+  "before": {
+    "utcDay": "2026-10-19",
+    "observedAt": "2026-10-19T09:32:06.613Z",
+    "workflowAllOperationsReported": 99,
+    "workersRequestsReported": 94,
+    "doRequestsReported": 1209,
+    "doDurationRawMetric": 2166.5725888,
+    "sqlRowsReadReported": 1886542,
+    "sqlRowsWrittenReported": 32814
+  },
+  "latest": {
+    "observedAt": "2026-10-19T10:26:25.565Z",
+    "utcDay": "2026-10-19",
+    "source": "Cloudflare official GraphQL, account-wide UTC-day filter",
+    "workersRequestsReported": 96,
+    "doRequestsReported": 1209,
+    "doDurationRawMetric": 2166.5725888,
+    "sqlRowsReadReported": 1886542,
+    "sqlRowsWrittenReported": 32814,
+    "doDurationUnit": "GB_SECONDS_OFFICIAL_SCHEMA",
+    "workflowDayEventGroups": [
+      {
+        "count": 75,
+        "dimensions": {
+          "eventType": "WORKFLOW_SUCCESS"
+        },
+        "sum": {
+          "allStepCount": 5,
+          "stepCount": 5
+        }
+      },
+      {
+        "count": 161,
+        "dimensions": {
+          "eventType": "WORKFLOW_RUNNING"
+        },
+        "sum": {
+          "allStepCount": 93,
+          "stepCount": 84
+        }
+      },
+      {
+        "count": 2,
+        "dimensions": {
+          "eventType": "WORKFLOW_FAILURE"
+        },
+        "sum": {
+          "allStepCount": 1,
+          "stepCount": 1
+        }
+      },
+      {
+        "count": 77,
+        "dimensions": {
+          "eventType": "WORKFLOW_START"
+        },
+        "sum": {
+          "allStepCount": 0,
+          "stepCount": 0
+        }
+      }
+    ],
+    "workflowAllOperationsReported": 99,
+    "persistentSqlNamespacePeakBytes": 2908160,
+    "workflowStorageGrowthRawMetric": 87212032,
+    "workflowStorageEvidence": {
+      "unit": "BYTES_OFFICIAL_SCHEMA",
+      "reportedEventCount": 5837,
+      "completeUnsampledRows": true,
+      "positiveGrowthBytes": 87212032,
+      "reportedPeakEquivalentGbMonths": 0.087212032,
+      "requiresZeroMonthBaselineInventory": true,
+      "aggregationLagVerified": false,
+      "admissionVerified": false
+    },
+    "aggregationLagMs": null,
+    "completeAdmissionProof": false,
+    "paidFallback": false,
+    "interpretation": "Empty telemetry is not proof of exact zero/remaining allowance. Storage is not a daily-reset counter. Include independent plan/inventory/lag and storage-unit proof before cutover."
+  },
+  "inventory": {
+    "checkedAt": "2026-10-19T10:26:25.563Z",
+    "workerCount": 4,
+    "workflowCount": 3,
+    "activeInstances": 0,
+    "allPagesRead": true,
+    "zeroMonthOpeningWorkflowState": true,
+    "onlyDailyCronActive": true,
+    "noAdditionalCollectionSinceLastReceipt": true
+  },
+  "workflowInventory": [
+    {
+      "name": "tight-budget-live-production",
+      "createdAt": "2026-10-18T17:38:42.828Z",
+      "count": 1,
+      "pages": 1,
+      "active": 0,
+      "today": 0,
+      "lastModified": "2026-10-18T17:39:31.033Z"
+    },
+    {
+      "name": "tight-budget-live-kis-diagnostic",
+      "createdAt": "2026-10-18T14:05:44.627Z",
+      "count": 1082,
+      "pages": 11,
+      "active": 0,
+      "today": 77,
+      "lastModified": "2026-10-19T09:24:57.590Z"
+    },
+    {
+      "name": "tight-budget-live-free-probe",
+      "createdAt": "2026-10-18T13:28:11.662Z",
+      "count": 186,
+      "pages": 2,
+      "active": 0,
+      "today": 0,
+      "lastModified": "2026-10-18T13:54:21.075Z"
+    }
+  ],
+  "schedules": [
+    {
+      "name": "tight-budget-eod-scheduler",
+      "value": [
+        "10,40 4-17 * * MON-FRI"
+      ]
+    },
+    {
+      "name": "tight-budget-live-free-probe",
+      "value": []
+    },
+    {
+      "name": "tight-budget-live-kis-diagnostic",
+      "value": []
+    },
+    {
+      "name": "tight-budget-live-prewarm",
+      "value": []
+    }
+  ],
+  "dashboardEvidence": "Workers Free Active / No payment method on file, independently inspected by authenticated Dashboard",
+  "kisCalls": 0,
+  "workflowCreated": false
+}

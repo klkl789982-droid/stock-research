@@ -19,7 +19,17 @@ export function retainedCloudVerification(original, followup) {
     && digest(native.deliveryHash) && digest(native.swingHash) && native.operationalPointerChanged === false
     && native.entryPolicy === "NEXT_CONFIRMED_SESSION_OPEN_STRICTLY_AFTER_ISSUANCE"
     && native.exitPolicy === "FIFTH_SESSION_CLOSE_INCLUDING_ENTRY" && native.existingResolver === "BLOCKED_MISSING_REFERENCE_PRICE";
+  const site = followup?.authenticatedOffHoursSiteVerification;
+  // Explicitly approved pre-cutover source-to-site proof; it does NOT certify
+  // a future14:00 scheduled run, and never substitutes the PC/synthetic data.
+  const retainedCloudSiteVerified = laterActualFull && site?.status === "PASS" && site.syntheticOnly === false
+    && site.observationType === "OFF_HOURS_DIAGNOSTIC" && site.run === candidate.workflow
+    && site.domain === "stock-research-chi.vercel.app" && site.top5Rows === 20
+    && site.sha256 === "a77d942b35162df7fc83ffbb594ac8f3eae91d0ea24257aeca53a35be641ee9f"
+    && site.authenticatedPageRendered === true && site.unauthenticatedApiStatus === 401
+    && site.unauthenticatedPageStatus === 307 && site.operationalPointerChanged === false;
   return { full, laterActualFull: Boolean(laterActualFull), swingRecordingCompatible: Boolean(swingRecordingCompatible),
+    retainedCloudSiteVerified: Boolean(retainedCloudSiteVerified),
     // This must come from normal real source-to-site evidence, not the above
     // trial, the PC's retained replay or a native synthetic fixture.
     normalCloudAuthenticatedSiteVerified: original?.verification?.normalProductionRelayAndAuthenticatedHomeReadbackFromCloud === "PASS" };

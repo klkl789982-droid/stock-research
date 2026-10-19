@@ -238,5 +238,25 @@
   ],
   "validation": {"distinctRelevantNodeTests":55,"skipped":0,"eslint":"Changed files PASS","wranglerBundleAndActualDeployment":"PASS","nextOrTypescriptCodeChanged":false,"unaffectedWholeSiteBuildRepeated":false,"formulaOrQualityPolicyChanged":false,"diffCheck":"PASS"},
   "handoff": {"pcCanBeTurnedOffForAutomaticLive":false,"requiredAction":"Keep the configured PC powered/awake and user logged in until cutover; no new token/payment required now.","rollback":"Existing outside-repository task/source backup retained. Stop only the verified host and confirm its child gone before restoring a prior pair. Cloud remains disabled/noCron; never start both producers or restore historical result pointers.","newFollowupScheduled":false},
+  "authenticatedOffHoursSiteVerification": {
+    "status": "PASS",
+    "verifiedAtUtc": "2026-10-19T10:24:00Z",
+    "domain": "stock-research-chi.vercel.app",
+    "page": "/operations/cloud-verification",
+    "api": "/api/private-cloud-verification",
+    "deployment": "dpl_FLAGpPFfaUQuPy74Ry71ZkoqqPqi",
+    "commit": "2842a3d2936eb21538fde1774aa94546b681130f",
+    "run": "actual553-20261019j",
+    "observationType": "OFF_HOURS_DIAGNOSTIC",
+    "syntheticOnly": false,
+    "sha256": "a77d942b35162df7fc83ffbb594ac8f3eae91d0ea24257aeca53a35be641ee9f",
+    "authenticatedPageRendered": true,
+    "top5Rows": 20,
+    "unauthenticatedApiStatus": 401,
+    "unauthenticatedPageStatus": 307,
+    "operationalPointerChanged": false,
+    "actual1400ScheduledSuccessVerified": false,
+    "secretOrSourcePriceExposed": false
+  },
   "containsSecretsRawPricesOrPrivateCandidateLists": false
 }

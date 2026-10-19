@@ -23,3 +23,15 @@ test("a synthetic, partial or tampered full-trial claim cannot close the actual-
     assert.equal(retainedCloudVerification(original, { realCloudBenchmark: { ...candidate, ...change } }).laterActualFull, false);
   }
 });
+
+test("pinned actual off-hours Cloud to authenticated Production page is pre-cutover proof only", async () => {
+  const original = JSON.parse(await fs.readFile(new URL("./actual-evidence.json", import.meta.url), "utf8"));
+  const f = JSON.parse(await fs.readFile(new URL("./operational-followup-20261019.json", import.meta.url), "utf8"));
+  assert.equal(retainedCloudVerification(original, f).retainedCloudSiteVerified, true);
+  assert.equal(retainedCloudVerification(original, f).normalCloudAuthenticatedSiteVerified, false);
+  for (const change of [{ syntheticOnly: true }, { run: "pc-result" }, { authenticatedPageRendered: false },
+    { sha256: "bad" }, { unauthenticatedApiStatus: 200 }, { operationalPointerChanged: true }]) {
+    const altered = { ...f, authenticatedOffHoursSiteVerification: { ...f.authenticatedOffHoursSiteVerification, ...change } };
+    assert.equal(retainedCloudVerification(original, altered).retainedCloudSiteVerified, false);
+  }
+});
