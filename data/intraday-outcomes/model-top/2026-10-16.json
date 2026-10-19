@@ -1,0 +1,4300 @@
+{
+  "schemaVersion": 1,
+  "dataset": "intraday-model-top-execution-outcomes",
+  "layer": "INTRADAY_1430_LIVE",
+  "signalDate": "2026-10-16",
+  "signalTime": "14:30:00",
+  "signalContentHash": "61ef2b00a208f2a36655578fc4b8fbacdccb5a06d2cf1f2912c6d55daac91e2e",
+  "executionPolicy": {
+    "policyId": "intraday-1430-t1-open-v1",
+    "entryTradingDayOffset": 1,
+    "entryPriceBasis": "officialDailyOpen",
+    "rationale": "first reproducible official price after a finalized 14:30 signal; intraday executable quote ledger is not stored",
+    "grossReturn": true,
+    "transactionCostsIncluded": false,
+    "slippageIncluded": false
+  },
+  "horizons": {
+    "1DAY": {
+      "holdingTradingDays": 1,
+      "offsetFromEntry": 0
+    },
+    "5DAY": {
+      "holdingTradingDays": 5,
+      "offsetFromEntry": 4
+    },
+    "20DAY": {
+      "holdingTradingDays": 20,
+      "offsetFromEntry": 19
+    },
+    "60DAY": {
+      "holdingTradingDays": 60,
+      "offsetFromEntry": 59
+    }
+  },
+  "generatedAt": "2026-10-19T03:19:49.333Z",
+  "updatedAt": "2026-10-19T03:19:49.333Z",
+  "source": {
+    "signalDataset": "intradayModelTopOfficialSignal",
+    "signalHash": "61ef2b00a208f2a36655578fc4b8fbacdccb5a06d2cf1f2912c6d55daac91e2e",
+    "marketPriceLedger": "data/market-prices/YYYY-MM-DD.json",
+    "tradingCalendar": "data/trading-calendar/status.json"
+  },
+  "records": [
+    {
+      "observationId": "117412a30927f7f36a30b154a843577d603ff1f995dc29de325b647792671a3f",
+      "modelVersion": "A-v1",
+      "ticker": "251970",
+      "companyName": "펌텍코리아",
+      "rank": 1,
+      "topNs": [
+        5,
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "25ec171a59dbe4f3a29ad47070d9f34baff807a4431de5ce1b10a3026e43550c",
+      "modelVersion": "A-v1",
+      "ticker": "053800",
+      "companyName": "안랩",
+      "rank": 2,
+      "topNs": [
+        5,
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "4a1db7f13466067217cb359c3e46729aa08dcf7e5b50fc645f44c4e95211e47f",
+      "modelVersion": "A-v1",
+      "ticker": "086450",
+      "companyName": "동국제약",
+      "rank": 3,
+      "topNs": [
+        5,
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "b905376cfdde721dcabc94dcb5b0470d09926abd0ad84789921454e2edefb3d1",
+      "modelVersion": "A-v1",
+      "ticker": "171090",
+      "companyName": "선익시스템",
+      "rank": 4,
+      "topNs": [
+        5,
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "15393c4308a614a25056583d2c0d36957de233b5a400a14157b600069f590127",
+      "modelVersion": "A-v1",
+      "ticker": "006110",
+      "companyName": "삼아알미늄",
+      "rank": 5,
+      "topNs": [
+        5,
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "0b3d0d5cc82918ea00cad2c8dcbb21c2a3af70b2f5cea64cb8dcce1be50da1cd",
+      "modelVersion": "A-v1",
+      "ticker": "028670",
+      "companyName": "팬오션",
+      "rank": 6,
+      "topNs": [
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "1560efa918a899d532c4b049e473a1a1d4d7bb2d9fcdc0b140bbed5bf78e5d91",
+      "modelVersion": "A-v1",
+      "ticker": "457190",
+      "companyName": "이수스페셜티케미컬",
+      "rank": 7,
+      "topNs": [
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "714ca0906ec1e4f918d6deef4de39b35a588c62dfbfdcecfa20b97d933526651",
+      "modelVersion": "A-v1",
+      "ticker": "489460",
+      "companyName": "바이오비쥬",
+      "rank": 8,
+      "topNs": [
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "8d5726dfea30474114b4f4e9ac3c9ecf55b78fe93b7166b62141ee0a7190ca5b",
+      "modelVersion": "A-v1",
+      "ticker": "006730",
+      "companyName": "서부T&D",
+      "rank": 9,
+      "topNs": [
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "d9e56ac8020ba57dd6a4d3ff64f3dfe9a7c38f48949eecafddddd101fa6771e4",
+      "modelVersion": "A-v1",
+      "ticker": "039440",
+      "companyName": "에스티아이",
+      "rank": 10,
+      "topNs": [
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "751236ffd8451ddeef233a9f0445a01537a17df8b7d7c58897a6d7cd3eafe15b",
+      "modelVersion": "A-v1",
+      "ticker": "012750",
+      "companyName": "에스원",
+      "rank": 11,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "d51248c938f9fbe9ab53eca236bf82cd4ec4ffebd38b01f804a3f7a81f57e74f",
+      "modelVersion": "A-v1",
+      "ticker": "078350",
+      "companyName": "한양디지텍",
+      "rank": 12,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "bc30ca2b113f41c094862ea6dc3f52e08d630d1a264c2282dd59dd3a3785acdf",
+      "modelVersion": "A-v1",
+      "ticker": "096530",
+      "companyName": "씨젠",
+      "rank": 13,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "8c716075c726d2b7a889a575f57f574289c1ca512cfc17d814585724a57d8017",
+      "modelVersion": "A-v1",
+      "ticker": "078600",
+      "companyName": "대주전자재료",
+      "rank": 14,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "239c9cf43d267943f36fc0d727b8920933f751f1c2d42cce49b69ed310c357df",
+      "modelVersion": "A-v1",
+      "ticker": "131970",
+      "companyName": "두산테스나",
+      "rank": 15,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "227b93a54910bcbc856c994f61712389a18614587ec606bfad2dad9de6e53c0e",
+      "modelVersion": "A-v1",
+      "ticker": "293490",
+      "companyName": "카카오게임즈",
+      "rank": 16,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "b05dbde48c80c42ac78e556bcd5859beccd9316d7192d226774f8ef50f4f5fcb",
+      "modelVersion": "A-v1",
+      "ticker": "328130",
+      "companyName": "루닛",
+      "rank": 17,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "42510ae66174148f0fa9b69b375c22375b84fe0b09e4c71f5d7d70e505f495f5",
+      "modelVersion": "A-v1",
+      "ticker": "011200",
+      "companyName": "HMM",
+      "rank": 18,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "926e991799f12fcd9f2f41d5eaf95c2c973f879478bfc64cca0366ffc6fae4a8",
+      "modelVersion": "A-v1",
+      "ticker": "452280",
+      "companyName": "한선엔지니어링",
+      "rank": 19,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "d487ef87eda096a0e32f16a1c5099177b65203f13dd86ef7a783b1964691b12f",
+      "modelVersion": "A-v1",
+      "ticker": "035760",
+      "companyName": "CJ ENM",
+      "rank": 20,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "4918b15e0063fd16aec798f5e2a992636fb4c2a9a2e5c377daeb4cbfeedbec1e",
+      "modelVersion": "B-v1",
+      "ticker": "251970",
+      "companyName": "펌텍코리아",
+      "rank": 1,
+      "topNs": [
+        5,
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "b410660ed776e9cd3f8235a2368c0df27ca148c9478a7dee49e4389e6e0d424a",
+      "modelVersion": "B-v1",
+      "ticker": "053800",
+      "companyName": "안랩",
+      "rank": 2,
+      "topNs": [
+        5,
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "0e7dbae7dc58d4f2e0f38946fe2f121caf63f51b7ca21f8b1419f4b509e0c204",
+      "modelVersion": "B-v1",
+      "ticker": "051160",
+      "companyName": "지어소프트",
+      "rank": 3,
+      "topNs": [
+        5,
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "c30162cdc9377d4ea3ea2ecebf356c82b11f1f1d18eb5b5f9a57b034920e5967",
+      "modelVersion": "B-v1",
+      "ticker": "396300",
+      "companyName": "세아메카닉스",
+      "rank": 4,
+      "topNs": [
+        5,
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "d3ad04e217d74dde9654a75ad8069b3c8a9f228adc1914e4a58233b1c584296b",
+      "modelVersion": "B-v1",
+      "ticker": "281820",
+      "companyName": "케이씨텍",
+      "rank": 5,
+      "topNs": [
+        5,
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "07ee90a84f0c1b18db5df9209f746322640479743e677e27c2c7918449353276",
+      "modelVersion": "B-v1",
+      "ticker": "092870",
+      "companyName": "엑시콘",
+      "rank": 6,
+      "topNs": [
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "fd06569e76ea89ed2fb13d5c6425b45ee349ef3aaccee037074dc9cc106f8a0f",
+      "modelVersion": "B-v1",
+      "ticker": "086450",
+      "companyName": "동국제약",
+      "rank": 7,
+      "topNs": [
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "a7f042a82b21ed314e831c2edd33818f775962250cfc7612516ad003165377b6",
+      "modelVersion": "B-v1",
+      "ticker": "012750",
+      "companyName": "에스원",
+      "rank": 8,
+      "topNs": [
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "01d2aae357af6aacc84265de435bc2964347b6c800e5563736d42d2c7bc91d1b",
+      "modelVersion": "B-v1",
+      "ticker": "078350",
+      "companyName": "한양디지텍",
+      "rank": 9,
+      "topNs": [
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "825124a2864dce6d88127b59966a7f52832762d9035b97e0a9a34c504e375ecb",
+      "modelVersion": "B-v1",
+      "ticker": "096530",
+      "companyName": "씨젠",
+      "rank": 10,
+      "topNs": [
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "636cb0f3e0ba28721a4b8ab8e668a8b5b5d6dfbbb42bc4e1cf2e61aa892e1d90",
+      "modelVersion": "B-v1",
+      "ticker": "080580",
+      "companyName": "오킨스전자",
+      "rank": 11,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "086aef1b6e19791a49c7c87c8da02884f0780aa900021cefde8cda0cecd421f3",
+      "modelVersion": "B-v1",
+      "ticker": "031980",
+      "companyName": "피에스케이홀딩스",
+      "rank": 12,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "23af1a1b82dccf91a60881d14b15c7a359a33b380e40ceda595d3290744d275f",
+      "modelVersion": "B-v1",
+      "ticker": "354320",
+      "companyName": "알멕",
+      "rank": 13,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "8260e7b66044cb25508b67ad529243ddd0612a94f34ff0d217d7ef6ee3910315",
+      "modelVersion": "B-v1",
+      "ticker": "064290",
+      "companyName": "인텍플러스",
+      "rank": 14,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "b1fd605d4009d99547b555040736bf09509da842a1a693fe0daf1f816fe48fdc",
+      "modelVersion": "B-v1",
+      "ticker": "452280",
+      "companyName": "한선엔지니어링",
+      "rank": 15,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "4c264a516fcf6fa4b7e17520c52e84d83d64886ca56f3e4cdc045ff06ca24195",
+      "modelVersion": "B-v1",
+      "ticker": "489460",
+      "companyName": "바이오비쥬",
+      "rank": 16,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "1ee5349987f75d477c4f02631f91fe2bd79da59a5799f2c9173430d897f98e4a",
+      "modelVersion": "B-v1",
+      "ticker": "039440",
+      "companyName": "에스티아이",
+      "rank": 17,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "6f3ed416a4c242494ef5758143eb66822d7c52daedd38a62601ca44a1cd8cc01",
+      "modelVersion": "B-v1",
+      "ticker": "003160",
+      "companyName": "디아이",
+      "rank": 18,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "86cc2d080a52bbc25a97cd769788a698cf11312b1cffdcc7eb92d5a6661b01e9",
+      "modelVersion": "B-v1",
+      "ticker": "171090",
+      "companyName": "선익시스템",
+      "rank": 19,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "d523d773409085bfd27433c84bdf66d0fe30862a1eb807d6b13e05c003d936fd",
+      "modelVersion": "B-v1",
+      "ticker": "131970",
+      "companyName": "두산테스나",
+      "rank": 20,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "3a5c30281447cae65aab704846038d44161be204ee44ee75bd4aa543800705bf",
+      "modelVersion": "C-v1",
+      "ticker": "035900",
+      "companyName": "JYP Ent.",
+      "rank": 1,
+      "topNs": [
+        5,
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "29be000e5b3f61ba695a8fc67d5a9d7a19b4bd287d4faca4ca861eb98c006f44",
+      "modelVersion": "C-v1",
+      "ticker": "139480",
+      "companyName": "이마트",
+      "rank": 2,
+      "topNs": [
+        5,
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "3299591b7019ea6ae58b3171fcf824fd6ee24a1e85d6717919235191e9db0f38",
+      "modelVersion": "C-v1",
+      "ticker": "034230",
+      "companyName": "파라다이스",
+      "rank": 3,
+      "topNs": [
+        5,
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "aa876a779e7824cfa4f8984c15806b18dab988b8a03a6a22e6940d06539d65e2",
+      "modelVersion": "C-v1",
+      "ticker": "171090",
+      "companyName": "선익시스템",
+      "rank": 4,
+      "topNs": [
+        5,
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "77591ca03bde777002cf2beecd3dfd5326e07c45ae87c34806e414ac77964bf3",
+      "modelVersion": "C-v1",
+      "ticker": "251970",
+      "companyName": "펌텍코리아",
+      "rank": 5,
+      "topNs": [
+        5,
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "ebd7d5f7bc51c74767a4194a22067dcc872cf673bfa3e1bc6552af55f1cd28a3",
+      "modelVersion": "C-v1",
+      "ticker": "003380",
+      "companyName": "하림지주",
+      "rank": 6,
+      "topNs": [
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "7b498d297fa02e4bc50461de0dace33145438abc5bbf74cc7a6996c81537f65e",
+      "modelVersion": "C-v1",
+      "ticker": "439090",
+      "companyName": "마녀공장",
+      "rank": 7,
+      "topNs": [
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "bcbe2947e65577c8991d0ddb1afc7bb98a52efedeb9addbd7ef11a7174555209",
+      "modelVersion": "C-v1",
+      "ticker": "122870",
+      "companyName": "와이지엔터테인먼트",
+      "rank": 8,
+      "topNs": [
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "b908f8d9a3e8ca179fb5db67c46e9808840df336f5d132680ff12cf862d41dbd",
+      "modelVersion": "C-v1",
+      "ticker": "000100",
+      "companyName": "유한양행",
+      "rank": 9,
+      "topNs": [
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "a5792f452ee312f159bb33c93477f3f9198358f02f690a29913fcaf6b720a05a",
+      "modelVersion": "C-v1",
+      "ticker": "237690",
+      "companyName": "에스티팜",
+      "rank": 10,
+      "topNs": [
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "7f1fd82308ca67ac4d02c7a20124f173ca1dc438e55e0b6ad5565315c836f967",
+      "modelVersion": "C-v1",
+      "ticker": "042520",
+      "companyName": "한스바이오메드",
+      "rank": 11,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "773cacfc460f528a2b2814c7d1be8c896170226cded0f28291c4858dc134f034",
+      "modelVersion": "C-v1",
+      "ticker": "352820",
+      "companyName": "하이브",
+      "rank": 12,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "6d915a4f815a3eff90c106b6f036e553f8b1a2ea3988bcddd8fc0869fb72f906",
+      "modelVersion": "C-v1",
+      "ticker": "452260",
+      "companyName": "한화갤러리아",
+      "rank": 13,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "08c779edecc62a1d28b54931770239f199e9ce29adf83fd58d19c8d572dbe14e",
+      "modelVersion": "C-v1",
+      "ticker": "293490",
+      "companyName": "카카오게임즈",
+      "rank": 14,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "a869141e76018ae3412d8eb64f0cfa9575f53effe6216d8cda9ee704dc814d1b",
+      "modelVersion": "C-v1",
+      "ticker": "041510",
+      "companyName": "에스엠",
+      "rank": 15,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "ee7d2bc34da6b7cee762dc79e00badb47eb2fe186a0d2f8ca8b2e28376257021",
+      "modelVersion": "C-v1",
+      "ticker": "067160",
+      "companyName": "SOOP",
+      "rank": 16,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "9b1008455f3f3db960a5c97e7c715754a9f9ca18ab4023bb28122cd35fb17aec",
+      "modelVersion": "C-v1",
+      "ticker": "090430",
+      "companyName": "아모레퍼시픽",
+      "rank": 17,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "5ed8fdc920574477e6ee9f559cfbfa1329bf59549d7ecb09ab517ef8eda9d49e",
+      "modelVersion": "C-v1",
+      "ticker": "004370",
+      "companyName": "농심",
+      "rank": 18,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "6bbc4da8d4ad538b2b238fd5745859a1c669abf271e5506b83ba4ee6b583121e",
+      "modelVersion": "C-v1",
+      "ticker": "003230",
+      "companyName": "삼양식품",
+      "rank": 19,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "ed761c42ff4dec902b8d07749084d82f3caeacd672a207f9f0b956f93a61d052",
+      "modelVersion": "C-v1",
+      "ticker": "263750",
+      "companyName": "펄어비스",
+      "rank": 20,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "9d6c57ef5a66df02c66f6402455e6b909d40c68381e17fbffa6a20306d129cfd",
+      "modelVersion": "D-v1",
+      "ticker": "251970",
+      "companyName": "펌텍코리아",
+      "rank": 1,
+      "topNs": [
+        5,
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "537879bdaeefb5d8953faf6736b4d1c3d9464d3d78a06fd7837ab78743d2cb92",
+      "modelVersion": "D-v1",
+      "ticker": "171090",
+      "companyName": "선익시스템",
+      "rank": 2,
+      "topNs": [
+        5,
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "9bcd15216dc4da561e932f11b9c1efafb1e2575ba54107514c8f120c1abfbf3d",
+      "modelVersion": "D-v1",
+      "ticker": "096530",
+      "companyName": "씨젠",
+      "rank": 3,
+      "topNs": [
+        5,
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "7f07b968f108284d7d61d744a786386b6f90f1509a09029132d0400cd69977e5",
+      "modelVersion": "D-v1",
+      "ticker": "051160",
+      "companyName": "지어소프트",
+      "rank": 4,
+      "topNs": [
+        5,
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "f07342ba6608fe7d2b420618fc02bdd31739f9ad4f770e69c18abb9c19d0df5f",
+      "modelVersion": "D-v1",
+      "ticker": "080580",
+      "companyName": "오킨스전자",
+      "rank": 5,
+      "topNs": [
+        5,
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "33876e3e0675a2b573f6c26e75c3d6e32c409cb4ce981ed53efcc01648975695",
+      "modelVersion": "D-v1",
+      "ticker": "053800",
+      "companyName": "안랩",
+      "rank": 6,
+      "topNs": [
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "89178669523d9c682b9a53a70f1b143466ab5dc3ee0fcdf4f61a3dcafb557e95",
+      "modelVersion": "D-v1",
+      "ticker": "064290",
+      "companyName": "인텍플러스",
+      "rank": 7,
+      "topNs": [
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "38adacea49fadf47c10210ebdc88cf973f9c180d820a6849b9e8e6d855044362",
+      "modelVersion": "D-v1",
+      "ticker": "328130",
+      "companyName": "루닛",
+      "rank": 8,
+      "topNs": [
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "d968f1a36f9d068bffdfebf30f1be4222f289e072817e201a53f3f4a4beba64a",
+      "modelVersion": "D-v1",
+      "ticker": "086450",
+      "companyName": "동국제약",
+      "rank": 9,
+      "topNs": [
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "279f8939804eee6bad1055f5a68cc2c6c84c2785eb6e2cf8d6759769337d9fa3",
+      "modelVersion": "D-v1",
+      "ticker": "021240",
+      "companyName": "코웨이",
+      "rank": 10,
+      "topNs": [
+        10,
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "c72d16593d634a268d07a94f9fc9863f0a3ed7cbf54095f559c8fdf3c557dea3",
+      "modelVersion": "D-v1",
+      "ticker": "031980",
+      "companyName": "피에스케이홀딩스",
+      "rank": 11,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "9db13f454e369d74fe66a01b677b0e2154d32ce7d9aca33e863bda7f25466b56",
+      "modelVersion": "D-v1",
+      "ticker": "033780",
+      "companyName": "KT&G",
+      "rank": 12,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "d3f333bc3063d9c14589ea15ccf50e43dc7fa95481915ee2964928f4b637a465",
+      "modelVersion": "D-v1",
+      "ticker": "003380",
+      "companyName": "하림지주",
+      "rank": 13,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "d46ddfce381c1a814ac3a47dea2daf537b9358688035ac11d021e25f7b291745",
+      "modelVersion": "D-v1",
+      "ticker": "092870",
+      "companyName": "엑시콘",
+      "rank": 14,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "93c9baf83137449e2b8d42143f3809085ce3f50c72c2ec7af3da1ea87c7a17d5",
+      "modelVersion": "D-v1",
+      "ticker": "039440",
+      "companyName": "에스티아이",
+      "rank": 15,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "d7b05e48a91981699868ee134abd8b814c66812be49eb393feb7f73697c2f9be",
+      "modelVersion": "D-v1",
+      "ticker": "452260",
+      "companyName": "한화갤러리아",
+      "rank": 16,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "541488745da072c36719f3060c731f442cdd5cf87b0327e164e848382b574573",
+      "modelVersion": "D-v1",
+      "ticker": "452280",
+      "companyName": "한선엔지니어링",
+      "rank": 17,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "fa1d2156f2702b30d70a3807b3c7d4956953fad8ddf6d0f9a40ab822e3e5b925",
+      "modelVersion": "D-v1",
+      "ticker": "011200",
+      "companyName": "HMM",
+      "rank": 18,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "af748350dacde58be497ea0ec0b45c35481679514f52d7fc4cf0a607df1025dc",
+      "modelVersion": "D-v1",
+      "ticker": "078350",
+      "companyName": "한양디지텍",
+      "rank": 19,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    },
+    {
+      "observationId": "d1703db03a3b5e8e93ca53202a284808edc1a86a89a26c74d3e50c9b38d567ce",
+      "modelVersion": "D-v1",
+      "ticker": "006730",
+      "companyName": "서부T&D",
+      "rank": 20,
+      "topNs": [
+        20
+      ],
+      "entry": {
+        "status": "PENDING",
+        "tradingDate": null,
+        "timestamp": null,
+        "price": null,
+        "priceBasis": "nextTradingDayOfficialOpen",
+        "reason": "pendingFutureTradingDay"
+      },
+      "horizons": {
+        "1DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "5DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "20DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        },
+        "60DAY": {
+          "status": "PENDING",
+          "targetTradingDate": null,
+          "closePrice": null,
+          "returnPercent": null,
+          "reason": "entry:pendingFutureTradingDay",
+          "resolvedAt": null
+        }
+      }
+    }
+  ],
+  "summary": {
+    "1DAY": {
+      "sampleCount": 0,
+      "maturity": {
+        "PENDING": 80,
+        "MATURE": 0,
+        "DATA_MISSING": 0
+      }
+    },
+    "5DAY": {
+      "sampleCount": 0,
+      "maturity": {
+        "PENDING": 80,
+        "MATURE": 0,
+        "DATA_MISSING": 0
+      }
+    },
+    "20DAY": {
+      "sampleCount": 0,
+      "maturity": {
+        "PENDING": 80,
+        "MATURE": 0,
+        "DATA_MISSING": 0
+      }
+    },
+    "60DAY": {
+      "sampleCount": 0,
+      "maturity": {
+        "PENDING": 80,
+        "MATURE": 0,
+        "DATA_MISSING": 0
+      }
+    }
+  },
+  "contentHash": "ffbc2c164495b0d92b4726498f2e3208d842d8201009a79becb6107cad166393"
+}
