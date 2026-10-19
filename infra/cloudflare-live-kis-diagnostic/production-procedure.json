@@ -1,13 +1,15 @@
 {
   "schemaVersion": 1,
-  "status": "STAGED_DISABLED_NOT_A_SCHEDULED_FOLLOWUP",
+  "status": "CLOUD_ACTIVE_PC_FENCED_SEE_CURRENT_RECEIPT",
+  "currentReceipt": "production-cutover-20261019.json",
+  "previousStagingProcedureCommit": "5b2056ce9d5b9cb3eae4525611866d07fa05a482",
   "costPolicy": "Workers Free only; no paid fallback, new account, trial, or automatic upgrade",
-  "currentOwner": "pc",
+  "currentOwner": "cloud",
   "scope": "Cloudflare LIVE only. Existing Daily EOD automation remains unchanged and independent of the PC. No full real collection in this change.",
   "scheduleCandidate": {
     "utc": ["40,50 4 * * MON-FRI", "6,8,10 5 * * MON-FRI"],
     "kst": ["13:40 parent preparation", "13:50 same fixed parent recovery, never another collection", "13:59 fresh official EOD/auth/calendar recheck in Workflow", "14:00-14:05 collection, absolute receipt cutoff", "14:06/14:08/14:10 frozen-outbox completion or relay only"],
-    "currentlyRegistered": false,
+    "currentlyRegistered": true,
     "dedup": "Fixed date parent and batch IDs, durable symbol leases, immutable outbox, no reobservation of an unknown/interrupted lease"
   },
   "after0900KstManualCheck": [
