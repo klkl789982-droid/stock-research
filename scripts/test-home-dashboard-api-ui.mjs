@@ -148,6 +148,11 @@ for (const [reason, label] of [["SITE_COMMIT_DIFFERS_REPOSITORY", "현재 화면
 }
 const failedWithOldProof = render(dashboard, false, { ...verified, runStatus: "FAILED", deployment: { ...verified.deployment, state: "UNVERIFIED", reason: "GITHUB_EVIDENCE_EXPIRED" } });
 assert.ok(failedWithOldProof.includes("수집·검증 실패") && failedWithOldProof.includes("사이트 확인 기록 오래됨"));
+for (const state of ["DEPLOYING", "DEPLOYMENT_FAILED", "VERIFICATION_FAILED"]) {
+  const output = render(dashboard, false, { ...verified, runStatus: "FAILED", deployment: { ...verified.deployment, state, reason: "SITE_COMMIT_DIFFERS_REPOSITORY" } });
+  assert.match(output, /공식 EOD<\/strong>[^<]*수집·검증 실패/u, "closed summary must retain collection failures alongside deployment evidence");
+  assert.match(output, /home-status-warning/u);
+}
 for (const [state, reason, label] of [["DEPLOYMENT_FAILED", "VERCEL_DEPLOYMENT_FAILED", "Git 저장 후 Vercel 배포 실패"], ["VERIFICATION_FAILED", "HTTP_401", "사이트 검증 인증 실패 (401)"], ["VERIFICATION_FAILED", "HTTP_403", "사이트 검증 접근 거부 (403)"], ["VERIFICATION_FAILED", "REQUEST_TIMEOUT", "사이트 검증 응답 시간 초과"], ["UNVERIFIED", "GITHUB_403", "배포 증거 조회 제한 (403)"]]) {
   const output = render(dashboard, false, { ...verified, deployment: { ...verified.deployment, state, reason } });
   assert.ok(output.includes(label)); assert.ok(output.includes("2026.10.07")); assert.ok(output.includes("확인 기록"));

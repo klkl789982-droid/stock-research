@@ -55,8 +55,12 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
   const outcome = performance.data ? latestOneDayPerformance(performance.data, 5) : null;
   const currentOperations = homeOperationStatus(operations.data, data, performance.data, { homeError: dashboard.error, performanceError: performance.error });
   const operation = dailyOperationState(currentOperations, data?.calendar);
+  // Keep collection/publication failures visible even when deployment evidence
+  // has its own pending/error state. Reuse the existing failure rules unchanged.
+  const collectionOperation = dailyOperationState(currentOperations ? { ...currentOperations, deployment: undefined } : null, data?.calendar);
+  const additionalEodFailure = ["FAILED", "PUBLICATION_FAILED"].includes(collectionOperation) && operation !== collectionOperation ? labels[collectionOperation] : null;
   const operationLabel = operations.error ? "운영 상태 조회 실패" : ["DEPLOYING", "UNVERIFIED"].includes(operation) ? homeDeploymentLabel(currentOperations?.deployment) : labels[operation] ?? "확인 불가";
-  const warning = operations.error || ["FAILED", "PUBLICATION_FAILED", "DEPLOYMENT_FAILED", "VERIFICATION_FAILED", "DELAYED"].includes(operation);
+  const warning = operations.error || Boolean(additionalEodFailure) || ["FAILED", "PUBLICATION_FAILED", "DEPLOYMENT_FAILED", "VERIFICATION_FAILED", "DELAYED"].includes(operation);
   const liveReadLabel = privateRelay.failed ? "LIVE 조회 실패" : privateRelay.disabled ? "LIVE 전달 연결 비활성" : !privateRelay.data ? "LIVE 조회 중" : !delivery ? "LIVE 관측 대기 · 전달된 결과 없음" : fixture ? "합성 연결 검증 · 실제 관측 아님" : privateRelay.data.freshnessStatus === "HISTORICAL" ? "이전 날짜 저장 관측" : "조회 확인";
   const liveModels = delivery?.models.map(model => ({ modelVersion: model.modelVersion,
     top: model.records.map(row => ({ code: row.ticker, name: row.companyName, rank: row.rank, score: row.score })) })) ?? [];
@@ -72,7 +76,7 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
     </header>
     <div className={"home-status-line " + (warning || privateRelay.failed ? "home-status-warning" : "")} aria-label="데이터 최신성 요약" role="status">
       <div className="home-status-results"><span><strong>저장된 LIVE 결과</strong> {fixture ? "합성 검증" : delivery ? homeDate(delivery.signalDate) + " · 14:00 KST" : privateRelay.data ? "없음" : "기준일 확인 불가"} · {liveReadLabel}</span>
-        <span><strong>공식 EOD</strong> {homeDate(data?.referenceDate)} · {operationLabel}</span></div>
+        <span><strong>공식 EOD</strong> {homeDate(data?.referenceDate)} · {operationLabel}{additionalEodFailure ? " · " + additionalEodFailure : ""}</span></div>
       <p className="home-collection-status"><strong>현재 자동 수집 상태</strong> 확인 불가 · 실행 기록 조회 미연결</p>
     </div>
     <section hidden={!operationsOpen} id="home-operations-details" className="home-surface home-operations" aria-labelledby="home-operations-heading" onKeyDown={event => { if (event.key === "Escape") { setOperationsOpen(false); operationsButton.current?.focus(); } }}>
