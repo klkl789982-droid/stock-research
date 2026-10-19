@@ -32,6 +32,7 @@ const evidence = JSON.parse(await fs.readFile(path.join(root, "infra/cloudflare-
 const full = evidence.actualFullUniverseBenchmark;
 if (full.processedSymbols !== 553 || full.completeModels !== full.requiredEligibleModels || full.collectionSucceeded !== true) blockers.push("ACTUAL_FULL_ELIGIBLE_SET_NOT_VERIFIED");
 if (evidence.verification.normalProductionRelayAndAuthenticatedHomeReadbackFromCloud !== "PASS") blockers.push("NORMAL_CLOUD_RELAY_AND_AUTHENTICATED_SITE_NOT_VERIFIED");
+if (evidence.verification.cloudSwingRecordingAndReadback !== "PASS") blockers.push("SWING_RECORDING_NOT_VERIFIED");
 console.log(JSON.stringify({ status: blockers.length ? "BLOCKED" : "READY_FOR_TWO_PHASE_CUTOVER", checkedAt: new Date(now).toISOString(),
   todayKst: today, input, blockers, normalDayBudget: normalDayBudget(), retention: { dailyDoCapBytes: PRODUCTION_BUDGET.retainedBytesPerDay,
     globalReservedStopBytes: 4000000000, workflowStateDays: 3, deletesExistingImmutableRecords: false },

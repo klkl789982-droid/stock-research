@@ -2,6 +2,7 @@ import { buildIntradayModelTopSignal, validateIntradayModelTopSignal, hashIntrad
 import { parseKisQuote, attachKisMinuteObservation } from "../../lib/kis-quote-provider-core.mjs";
 import { createLiveDelivery, validateLiveDelivery } from "../../lib/private-live-delivery.mjs";
 import { kst } from "./core.mjs";
+import { buildCloudSwingIntent } from "./cloud-swing.mjs";
 export { kst } from "./core.mjs";
 
 export const LIVE_CRONS = Object.freeze(["40,50 4 * * MON-FRI", "6,8,10 5 * * MON-FRI"]);
@@ -27,7 +28,7 @@ export function assertWindow(date, now) {
 }
 export function checkCutover(proof, now = Date.now()) {
   const required = ["workersFree", "accountUsageVerifiedAfterReset", "otherResourcesInventoried", "storageVerified", "retentionVerified",
-    "pcTaskDisabled", "pcHostStopped", "oldLiveTriggersDisabled", "fullEligibleSetVerified", "privateRelayVerified", "authenticatedSiteVerified"];
+    "pcTaskDisabled", "pcHostStopped", "oldLiveTriggersDisabled", "fullEligibleSetVerified", "privateRelayVerified", "authenticatedSiteVerified", "swingRecordingVerified"];
   const missing = required.filter(k => proof?.[k] !== true);
   if (!/^\d{4}-\d{2}-\d{2}$/u.test(proof?.utcDay ?? "") || proof.utcDay !== new Date(now).toISOString().slice(0, 10)
     || !Number.isFinite(Date.parse(proof?.checkedAt)) || now < Date.parse(proof.checkedAt) || now - Date.parse(proof.checkedAt) > 900000) missing.push("freshCutoverProof");
@@ -87,7 +88,8 @@ export function aggregateProduction(prepared, observations, exportedAt) {
     records: [...required].sort((a, b) => b.scores[modelVersion] - a.scores[modelVersion] || a.code.localeCompare(b.code)).slice(0, 5)
       .map((r, rank) => ({ ticker: r.code, companyName: r.companyName, score: r.scores[modelVersion], rank: rank + 1 })) }));
   const delivery = createLiveDelivery(models, { exportedAt, now: exportedAt }); validateLiveDelivery(delivery, exportedAt);
-  return { evidence: { ...evidence, contentHash }, delivery };
+  const storedEvidence = { ...evidence, contentHash };
+  return { evidence: storedEvidence, delivery, swing: buildCloudSwingIntent(storedEvidence, delivery) };
 }
 
 // SQL-independent allocator: adjacent quote/minute cells, unchanged220ms grid

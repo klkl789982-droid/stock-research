@@ -2,6 +2,7 @@ import { hashIntradayModelTop as hash } from "../../lib/intraday-model-top-offic
 import { assertPrivateKisEodPayload } from "../../lib/kis-eod-private-store.mjs";
 import { deliverPrivateLive } from "../../lib/private-live-delivery.mjs";
 import { assertProduction, assertWindow, bounds, aggregateProduction, nextPairSlots, PRODUCTION_BUDGET } from "./production-core.mjs";
+import { persistCloudSwingIntent } from "./cloud-swing.mjs";
 
 export class ProductionDayState {
   constructor({ sql, env, prepare, bundle, remote, now = Date.now, wait = ms => new Promise(r => setTimeout(r, ms)) }) {
@@ -115,15 +116,19 @@ export class ProductionDayState {
     const result = aggregateProduction(prepared, observations, new Date(this.now()).toISOString());
     this.write("outbox", result); return result.delivery;
   }
-  async relay(date) {
+  async relay(date, remote = this.remote) {
     this.check(date);
     const outbox = this.read("outbox"); if (!outbox) throw new Error("LIVE_CLOUD_NO_OUTBOX");
     const receipt = this.read("receipt"); if (receipt) return receipt;
     const attempt = this.read("relay-attempt") ?? { count: 0, next: 0 };
     if (attempt.count >= 3 || attempt.next > this.now()) throw new Error("LIVE_CLOUD_RELAY_BACKOFF");
     this.write("relay-attempt", { count: attempt.count + 1, next: this.now() + 60000 }, true);
-    await this.remote.writeImmutable(`cloud-live-score-evidence-v1/${date}/${outbox.evidence.contentHash}.json`, outbox.evidence);
-    const result = await deliverPrivateLive(this.remote, outbox.delivery, { now: new Date(this.now()).toISOString() });
+    await remote.writeImmutable(`cloud-live-score-evidence-v1/${date}/${outbox.evidence.contentHash}.json`, outbox.evidence);
+    // Freeze selections/first issuance before delivery. Restart or relay retry
+    // cannot regenerate the five-session record with a later creation time.
+    if (!outbox.swing) throw new Error("LIVE_CLOUD_SWING_OUTBOX_MISSING");
+    await persistCloudSwingIntent(remote, outbox.swing);
+    const result = await deliverPrivateLive(remote, outbox.delivery, { now: new Date(this.now()).toISOString() });
     return this.write("receipt", result);
   }
   status() { return { prepared: Boolean(this.read("prewarm")), finalInputReady: Boolean(this.read("final")),

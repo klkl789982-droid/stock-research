@@ -8,6 +8,8 @@ import { fixture } from "../cloudflare-live-free-probe/core.mjs";
 import { buildIntradayModelTopSignal, hashIntradayModelTop as hash } from "../../lib/intraday-model-top-official-signal.mjs";
 import { intradaySeedHash } from "../../lib/intraday-market-seed.mjs";
 import { readLatestPrivateLive, validateLiveDelivery } from "../../lib/private-live-delivery.mjs";
+import { validateForecastRecord } from "../../lib/forecast-swing-contract.mjs";
+import { buildCloudSwingIntent, persistCloudSwingIntent } from "./cloud-swing.mjs";
 
 const date = "2026-10-19", seedDate = "2026-10-16", b = bounds(date);
 const env = { LIVE_PRODUCTION_ENABLED: "true", LIVE_PRODUCER: "cloud", LIVE_CUTOVER_RECEIPT_HASH: "a".repeat(64) };
@@ -16,7 +18,7 @@ const env = { LIVE_PRODUCTION_ENABLED: "true", LIVE_PRODUCER: "cloud", LIVE_CUTO
 let workflowSource = await fs.readFile(new URL("./src/production.mjs", import.meta.url), "utf8");
 workflowSource = workflowSource.replace('import { DurableObject, WorkflowEntrypoint } from "cloudflare:workers";', 'class DurableObject { constructor(ctx,env){this.ctx=ctx;this.env=env;} } class WorkflowEntrypoint {constructor(env){this.env=env;}}');
 workflowSource = workflowSource.replace('import { KisSlotShard } from "./slot-shard.mjs";', 'class KisSlotShard {}');
-for (const relative of ["../production-state.mjs", "../production-core.mjs", "../core.mjs", "../../../lib/kis-eod-private-store.mjs"])
+for (const relative of ["../production-state.mjs", "../production-core.mjs", "../core.mjs", "../relay-budget.mjs", "../../../lib/kis-eod-private-store.mjs"])
   workflowSource = workflowSource.replaceAll(JSON.stringify(relative), JSON.stringify(new URL(relative, new URL("./src/production.mjs", import.meta.url)).href));
 const { CloudLive, productionScheduled } = await import(`data:text/javascript;base64,${Buffer.from(workflowSource).toString("base64")}`);
 function inputFixture() {
@@ -71,7 +73,27 @@ test("all553 synthetic inputs preserve original A/B/C/D scores and TOP5 ranks wi
   for (const model of value.delivery.models) assert.deepEqual(model.records, expected.top5[model.modelVersion].map(({ observationId: _id, ...row }) => { void _id; return row; }));
   for (const row of f.rows.filter(r => r.status === "AVAILABLE")) assert.deepEqual(row.scores, expected.records.find(r => r.ticker === row.code).scores);
   assert.equal(validateLiveDelivery(value.delivery, `${date}T05:06:00.000Z`), value.delivery);
+  assert.equal(value.swing.selections.length, 20);
+  assert.ok(value.swing.records.every(r => validateForecastRecord(r).valid && r.horizonTradingDays === 5
+    && r.entryPolicy === "NEXT_CONFIRMED_SESSION_OPEN_STRICTLY_AFTER_ISSUANCE"
+    && r.exitPolicy === "FIFTH_SESSION_CLOSE_INCLUDING_ENTRY" && r.observation.referencePrice === null
+    && r.predictions.expectedReturn === null && r.eligibility.inputTimingEligible === false));
   assert.ok(!/"(?:price|rows|open|high|low|close|volume|accessToken)"/u.test(JSON.stringify(value)));
+});
+
+test("swing intent preserves TOP5 union and first issuance; invalid or missing price stays blocked", async () => {
+  const seed = inputFixture(), f = observations(seed), remote = remoteFixture();
+  const value = aggregateProduction(prepared(seed), f.rows, `${date}T05:05:01.000Z`);
+  assert.deepEqual(buildCloudSwingIntent(value.evidence, value.delivery), value.swing);
+  await persistCloudSwingIntent(remote.store, value.swing);
+  await persistCloudSwingIntent(remote.store, value.swing);
+  assert.equal(remote.values.size, 1);
+  assert.ok(value.swing.records.every(r => r.createdAt === value.delivery.exportedAt && r.actualFill === null && r.costs.status === "UNRESOLVED"
+    && r.eligibility.blockers.includes("OBSERVATION:MISSING_REFERENCE_PRICE")));
+  const bad = structuredClone(value.swing); bad.records[0].observation.referencePrice = 1;
+  await assert.rejects(persistCloudSwingIntent(remote.store, bad), /CONTRACT_INVALID/u);
+  const changed = structuredClone(value.evidence); changed.observations[0].scores["A-v1"]++;
+  assert.throws(() => buildCloudSwingIntent(changed, value.delivery), /SOURCE_INVALID/u);
 });
 
 test("one missing required input, duplicates, altered dates and future receipts block publication", () => {
@@ -101,6 +123,11 @@ test("normal-day allocations fit Free; current experimental accumulation is not 
   assert.throws(() => checkCutover({}, b.start), /CUTOVER_BLOCKED/u);
   assert.throws(() => activationConfig({}, {}, b.start), /CUTOVER_BLOCKED/u);
   assert.throws(() => assertProduction({ ...env, LIVE_CUTOVER_RECEIPT_HASH: "" }), /DISABLED/u);
+  const proof = Object.fromEntries(["workersFree", "accountUsageVerifiedAfterReset", "otherResourcesInventoried", "storageVerified", "retentionVerified",
+    "pcTaskDisabled", "pcHostStopped", "oldLiveTriggersDisabled", "fullEligibleSetVerified", "privateRelayVerified", "authenticatedSiteVerified"].map(k => [k, true]));
+  Object.assign(proof, { utcDay: "2026-10-19", checkedAt: new Date(b.start).toISOString() });
+  assert.throws(() => activationConfig({}, proof, b.start), /swingRecordingVerified/u);
+  assert.equal(activationConfig({}, { ...proof, swingRecordingVerified: true }, b.start).vars.LIVE_PRODUCER, "cloud");
 });
 
 test("real SQLite day state survives restart, preserves conflict/hash guards and bans raw data", async t => {

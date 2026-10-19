@@ -4,6 +4,7 @@ import { ProductionDayState } from "../production-state.mjs";
 import { assertProduction, assertWindow, bounds, kst, productionObservation } from "../production-core.mjs";
 import { safeCode, edgeFetch } from "../core.mjs";
 import { createKisEodPrivateStore } from "../../../lib/kis-eod-private-store.mjs";
+import { privateRequestBudget } from "../relay-budget.mjs";
 const options = { retries: { limit: 0, delay: "1 second" }, timeout: "6 minutes" };
 const dateOf = run => { const m = /^live-(\d{4}-\d{2}-\d{2})$/u.exec(run ?? ""); if (!m) throw new Error("LIVE_CLOUD_DATE_INVALID"); return m[1]; };
 const vault = env => env.BROKER.get(env.BROKER.idFromName("single-approved-kis-credential-v1"));
@@ -18,7 +19,12 @@ export class LiveDay extends DurableObject {
   }
   prepare(date, final) { return this.state.prepare(date, final); }
   finish(date) { this.state.finish(date); return { status: "OUTBOX_FROZEN" }; }
-  relay(date) { return this.state.relay(date); }
+  async relay(date) {
+    const io = privateRequestBudget(edgeFetch);
+    const remote = createKisEodPrivateStore({ repository: "klkl789982-droid/tight-budget-private-data", token: this.env.PRIVATE_LIVE_DELIVERY_WRITE_TOKEN, fetchImpl: io.fetch });
+    try { return await this.state.relay(date, remote); }
+    catch (e) { if (io.exhausted) throw new Error("LIVE_CLOUD_RELAY_HTTP_BUDGET"); throw e; }
+  }
   status() { return { ...this.state.status(), productionEnabled: this.env.LIVE_PRODUCTION_ENABLED === "true", producer: this.env.LIVE_PRODUCER }; }
   failure(code) { return this.state.write("last-failure", { code: safeCode({ code }), at: new Date().toISOString() }, true); }
   async fetch(request) {

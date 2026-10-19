@@ -82,7 +82,13 @@ export class KisSlotShard extends DurableObject {
             if (attempt === 0 && e.code === "KIS_BUSINESS_NETWORK_ERROR" && !lastFailure?.startsWith("DIAG_PLATFORM_") && !lastFailure?.includes("BUDGET") && !lastFailure?.includes("DEADLINE") && Date.now() + 1000 < lease.deadline) { await sleep(1000); continue; }
             const error = new Error(lastFailure ?? safeCode(e)); if (e.sourceFailure) error.sourceFailure = e.sourceFailure; throw error;
           }
-          const payload = await response.json();
+          // Upstream500/429 responses may be HTML or empty. Parsing them first
+          // used to bypass the existing bounded transient retry entirely.
+          // Never retain/echo that body or call malformed200 a valid quote.
+          let payload = null;
+          try { payload = await response.json(); } catch { /* HTTP status still governs retries. */ }
+          if (response.ok && (!payload || typeof payload.rt_cd !== "string")) throw new Error("KIS_RESPONSE_INVALID");
+          if (!response.ok && calls.length) calls.at(-1).failure = `KIS_HTTP_${response.status}`;
           if (payload?.rt_cd !== "0" && /^[A-Z0-9]{3,24}$/u.test(payload?.msg_cd ?? "") && calls.length)
             calls.at(-1).failure = `KIS_BUSINESS_${payload.msg_cd}`;
           if (u.searchParams.get("dropFirst") === "true" && trId === "FHKST01010100" && attempt === 0 && response.ok && payload?.rt_cd === "0") {
@@ -90,7 +96,11 @@ export class KisSlotShard extends DurableObject {
             if (Date.now() + 1000 >= lease.deadline) throw new Error("DIAG_COLLECTION_DEADLINE"); await sleep(1000); continue;
           }
           const retryable = response.status === 429 || response.status >= 500 || payload?.msg_cd === "EGW00201";
-          if (retryable && attempt === 0 && Date.now() + 1000 < lease.deadline) { await sleep(1000); continue; }
+          if (retryable && attempt === 0 && Date.now() + 1000 < lease.deadline) {
+            retries.push({ kind: trId === "FHKST01010100" ? "quote" : "minute", reason: response.ok ? "KIS_RATE_LIMITED" : `KIS_HTTP_${response.status}`,
+              requestedAt: timing[`${calls.at(-1).kind}RequestedAt`], receivedAt: timing[`${calls.at(-1).kind}ReceivedAt`] });
+            await sleep(1000); continue;
+          }
           if (!response.ok || payload?.rt_cd !== "0") throw new Error(response.ok ? payload?.msg_cd === "EGW00201" ? "KIS_RATE_LIMITED" : "KIS_BUSINESS_ERROR" : `KIS_HTTP_${response.status}`);
           return payload;
         }

@@ -1,0 +1,88 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+
+// Execute the real slot transport. Only the Cloudflare base class, clock,
+// network, and final model projection are replaced by isolated fixtures.
+let source = await fs.readFile(new URL("./src/slot-shard.mjs", import.meta.url), "utf8");
+source = source.replace('import { DurableObject } from "cloudflare:workers";', 'class DurableObject { constructor(ctx,env){this.ctx=ctx;this.env=env;} }');
+source = source.replace('const sleep = ms => new Promise(r => setTimeout(r, ms));', 'const sleep = async ms => Date.fixtureAdvance(ms);');
+for (const relative of ["../../../lib/kis-api-client-core.mjs", "../../../lib/intraday-model-top-official-signal.mjs", "../core.mjs"])
+  source = source.replaceAll(JSON.stringify(relative), JSON.stringify(new URL(relative, new URL("./src/slot-shard.mjs", import.meta.url)).href));
+const { KisSlotShard } = await import(`data:text/javascript;base64,${Buffer.from(source).toString("base64")}`);
+const start = Date.parse("2026-10-19T05:00:00Z"), end = start + 300000;
+
+function harness(t, responses, initial = start) {
+  let now = initial, index = 0, slotHead = 0, complete = null;
+  const actualStarts = [];
+  t.mock.method(Date, "now", () => now);
+  Date.fixtureAdvance = ms => { now += ms; };
+  t.after(() => { delete Date.fixtureAdvance; });
+  const slot = () => { const n = Math.max(slotHead, Math.ceil((now + 220) / 220)); slotHead = n + 1; return { slot: n, notBefore: n * 220 }; };
+  const broker = { async fetch(input, init) {
+    const url = new URL(input);
+    if (url.pathname === "/slot-pair-acquire") return Response.json({ record: { eligible: true }, authenticationRecord: { accessToken: "fixture-only-not-real", generation: 1, expiresAtMs: end + 86400000 }, quoteSlot: slot(), minuteSlot: slot(), deadline: end });
+    if (url.pathname === "/extra-slot") return Response.json(slot());
+    if (url.pathname === "/slot-pair-complete") { complete = JSON.parse(init.body); return Response.json({ stored: true }); }
+    return Response.json({ reason: "LIVE_CLOUD_AUTH_INVALIDATED" }, { status: 503 });
+  } };
+  t.mock.method(globalThis, "fetch", async () => {
+    actualStarts.push(now);
+    const value = responses[Math.min(index++, responses.length - 1)];
+    now += value.delay ?? 10;
+    return value.response();
+  });
+  class FixtureShard extends KisSlotShard {
+    assertInvocation() {}
+    brokerFor() { return broker; }
+    minuteQueryTime() { return "14:00:00"; }
+    projectResult({ code, timing }) { return { code, ...timing, status: "AVAILABLE", rawPricesStored: false }; }
+  }
+  const shard = new FixtureShard({}, { KIS_APP_KEY: "fixture-key", KIS_APP_SECRET: "fixture-secret" });
+  return { async run() { const r = await shard.fetch(new Request("https://isolated/collect?run=failure-fixture&codes=203650")); return { value: (await r.json()).records[0], complete, actualStarts }; } };
+}
+const success = { response: () => Response.json({ rt_cd: "0" }) };
+const html500 = { response: () => new Response("upstream unavailable, not JSON", { status: 500 }) };
+
+test("non-JSON HTTP500 is retried once; the successful attempt retains its real timestamps", async t => {
+  const r = await harness(t, [html500, success, success]).run();
+  assert.equal(r.value.status, "AVAILABLE");
+  assert.equal(r.complete.calls.length, 3);
+  assert.equal(r.complete.calls[0].status, 500);
+  assert.equal(r.value.retryEvidence[0].reason, "KIS_HTTP_500");
+  assert.equal(Date.parse(r.value.quoteRequestedAt), r.complete.calls[1].started);
+  assert.equal(Date.parse(r.value.quoteReceivedAt), r.complete.calls[1].completed);
+  assert.notEqual(r.value.quoteRequestedAt, r.value.retryEvidence[0].requestedAt);
+  assert.ok(r.actualStarts.every((v, i) => !i || v - r.actualStarts[i - 1] >= 200));
+  assert.ok(!/fixture-key|fixture-secret|fixture-only-not-real|upstream unavailable/u.test(JSON.stringify(r.value)));
+});
+
+test("persistent HTTP500 is bounded at two requests and remains a failed required input", async t => {
+  const r = await harness(t, [html500]).run();
+  assert.equal(r.complete.calls.length, 2);
+  assert.equal(r.value.reason, "KIS_HTTP_500");
+  assert.equal(r.value.inputEligible, true);
+  assert.equal(r.value.status, undefined);
+});
+
+test("HTTP500 near14:05 cannot start a retry outside the observation window", async t => {
+  const r = await harness(t, [html500], end - 800).run();
+  assert.equal(r.complete.calls.length, 1);
+  assert.equal(r.value.reason, "KIS_HTTP_500");
+  assert.equal(r.value.status, undefined);
+});
+
+test("late success cannot replace a failed first attempt or become a valid observation", async t => {
+  const r = await harness(t, [{ ...success, delay: 2500 }], end - 1000).run();
+  assert.equal(r.complete.calls.length, 1);
+  assert.equal(r.value.reason, "DIAG_COLLECTION_DEADLINE");
+  assert.equal(r.value.status, undefined);
+  assert.equal(r.complete.calls[0].completed > end, true);
+});
+
+test("HTTP200 malformed JSON fails closed instead of fabricating a usable result", async t => {
+  const r = await harness(t, [{ response: () => new Response("not-json", { status: 200 }) }]).run();
+  assert.equal(r.value.status, undefined);
+  assert.equal(r.value.reason, "KIS_RESPONSE_INVALID");
+  assert.equal(r.complete.calls.length, 1);
+});
