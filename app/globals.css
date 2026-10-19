@@ -1,5 +1,78 @@
 @import "tailwindcss";
 
+/* Home-only information hierarchy. Other analysis screens keep their styles. */
+.tb-home-shell { background: #f3f5f7 !important; }
+.tb-home-shell::before { display: none; }
+.tb-home-shell .tb-brand-shell { background: #0a1733; box-shadow: none; }
+.tb-home-shell .tb-sidebar-surface { background: #112039; box-shadow: none; }
+.tb-home-shell .tb-muted-nav { color: #aebbcf; }
+.home-dashboard { width: 100%; max-width: 1660px; margin-inline: auto; color: #142038; }
+.home-dashboard [hidden] { display: none !important; }
+.home-intro, .home-section-caption { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.home-secondary-button { display: inline-flex; gap: 12px; align-items: center; border: 1px solid #c9d0da; border-radius: 8px; padding: 9px 13px; font-size: 14px; font-weight: 600; background: #fff; white-space: nowrap; }
+.home-status-line { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 12px 0; border-top: 1px solid #d7dde5; border-bottom: 1px solid #d7dde5; font-size: 14px; line-height: 1.6; color: #36465d; }
+.home-status-warning { border-left: 3px solid #b45309; padding-left: 12px; color: #92400e; }
+.home-surface { min-width: 0; border: 1px solid #d9dfe7; border-radius: 12px; background: #fff; padding: 20px; }
+.home-source-tabs { display: flex; gap: 22px; border-bottom: 1px solid #dce1e8; margin: -4px 0 18px; }
+.home-source-tabs > button { border-bottom: 3px solid transparent; padding: 13px 2px; margin-bottom: -1px; font-size: 17px; font-weight: 600; color: #536175; }
+.home-source-tabs > button[aria-selected="true"] { color: #a6481e; border-color: #b85a2e; }
+.home-section-caption h2 { font-size: 16px; font-weight: 600; }
+.home-section-caption > span { font-size: 13px; color: #526176; }
+.home-model-grid { display: grid; grid-template-columns: minmax(0,1fr); margin-top: 18px; gap: 24px; }
+.home-model-column { min-width: 0; }
+.home-model-explanation { margin-top: 6px; font-size: 13px; line-height: 1.6; color: #526176; }
+.home-model-explanation summary { width: fit-content; text-decoration: underline; text-underline-offset: 3px; }
+.home-model-explanation p { margin-top: 6px; }
+.home-rank-grid { display: grid; grid-template-columns: 1.6rem minmax(0,1fr) 3.8rem 2.4rem; align-items: center; gap: 7px; }
+.home-rank-heading { margin-top: 16px; padding-block: 8px; border-bottom: 1px solid #d9dfe7; font-size: 12px; color: #526176; }
+.home-rank-list > li { min-height: 70px; padding-block: 12px; border-bottom: 1px solid #eef0f4; }
+.home-rank-number { color: #627087; font-size: 14px; font-variant-numeric: tabular-nums; text-align: center; }
+.home-stock-button { min-width: 0; line-height: 1.4; }
+.home-stock-name { display: block; font-weight: 500; font-size: 16px; overflow-wrap: anywhere; }
+.home-stock-code { display: block; margin-top: 3px; color: #5f6d80; font-size: 12px; font-variant-numeric: tabular-nums; }
+.home-model-score { text-align: right; font-size: 16px; font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.home-rank-change { text-align: right; font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.home-ranking-note { margin-top: 20px; padding-top: 15px; border-top: 1px solid #e1e6ec; font-size: 13px; line-height: 1.7; color: #526176; }
+.home-ranking-note p { margin-top: 6px; }
+.home-empty { padding: 30px 0; color: #526176; }
+.home-empty h3 { font-size: 17px; font-weight: 600; color: #273b55; }
+.home-empty p { margin-top: 8px; font-size: 14px; line-height: 1.7; }
+.home-inline-notice { margin-block: 12px; border-left: 3px solid #b45309; padding: 7px 12px; font-size: 14px; color: #92400e; background: #fffbef; }
+.home-performance-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px; margin-top: 16px; }
+.home-performance-cell { min-width: 0; border-left: 2px solid #e2e7ee; padding-left: 12px; font-size: 14px; }
+.home-performance-cell p { font-size: 13px; line-height: 1.7; color: #526176; margin-top: 5px; }
+.home-return { display: block; margin-top: 6px; font-size: 22px; font-variant-numeric: tabular-nums; }
+.home-text-action { font-size: 14px; font-weight: 600; color: #a6481e; border-radius: 4px; text-decoration: underline; text-underline-offset: 4px; }
+.home-detail { margin-top: 18px; padding-top: 14px; border-top: 1px solid #e1e6ec; font-size: 14px; line-height: 1.7; color: #46566b; }
+.home-detail summary, .home-archive summary { cursor: pointer; font-weight: 500; padding-block: 3px; }
+.home-detail > p { margin-top: 9px; }
+.home-swing-pending { margin-top: 18px; border-top: 1px solid #e1e6ec; padding-top: 15px; font-size: 14px; }
+.home-swing-pending p { margin-top: 6px; color: #526176; line-height: 1.7; }
+.home-operation-columns { display: grid; grid-template-columns: minmax(0,1fr); gap: 24px; margin-top: 20px; font-size: 14px; }
+.home-facts { margin-top: 12px; display: grid; gap: 12px; font-size: 14px; line-height: 1.7; }
+.home-facts dt { color: #526176; font-size: 13px; }
+.home-facts dd { overflow-wrap: anywhere; }
+.home-pipeline { margin-top: 12px; display: grid; gap: 12px; line-height: 1.7; }
+.home-pipeline p { color: #526176; }
+.home-archive > details { border-top: 1px solid #e1e6ec; margin-top: 14px; padding-top: 10px; }
+@media (min-width: 640px) {
+  .home-model-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .home-performance-grid { grid-template-columns: repeat(4,minmax(0,1fr)); }
+}
+@media (min-width: 1024px) { .home-operation-columns { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (min-width: 1280px) {
+  .home-model-grid { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 0; }
+  .home-model-column { padding-inline: 16px; border-left: 1px solid #e2e7ee; }
+  .home-model-column:first-child { padding-left: 0; border-left: 0; }
+  .home-model-column:last-child { padding-right: 0; }
+}
+@media (max-width: 639px) {
+  .home-surface { padding: 16px; }
+  .home-intro { align-items: start; }
+  .home-status-line { gap: 6px 14px; }
+  .home-model-column + .home-model-column { border-top: 1px solid #d9dfe7; padding-top: 20px; }
+}
+
 :root {
   --background: #7f8d9b;
   --foreground: #111d35;

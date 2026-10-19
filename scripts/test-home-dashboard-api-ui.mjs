@@ -9,6 +9,7 @@ import * as helpers from "../lib/home-dashboard.mjs";
 import * as directional from "../lib/directional-transition.mjs";
 import * as schedule from "../lib/production-schedule.mjs";
 import * as liveTiming from "../lib/intraday-model-top-time-policy.mjs";
+import * as presentation from "../lib/home-presentation.mjs";
 
 const compile = (source, jsxFile = false) => ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true, ...(jsxFile ? { jsx: ts.JsxEmit.ReactJSX } : {}) } }).outputText;
 const source = await readFile(new URL("../app/api/home-dashboard/route.ts", import.meta.url), "utf8");
@@ -43,7 +44,7 @@ const top = await readFile(new URL("../components/TopStocksPanel.tsx", import.me
 for (const expression of [/AbortController/, /id === sequence.current/, /document.hidden/, /clearInterval/, /Cache-Control/]) assert.match(expression.source === "Cache-Control" ? source : panel, expression);
 assert.match(page, /<HomeDashboard/);
 assert.ok(page.indexOf('{searchError && <p role="alert"') < page.indexOf('<HomeDashboard'), "search failure must be visible before the dashboard");
-assert.match(panel, /col-span-2 sm:col-span-4/);
+assert.match(panel, /home-status-line/);
 assert.doesNotMatch(page, /BrandMark hero|tb-matte-hero/);
 assert.match(page, /ref=\{searchInputRef\} id="header-stock-search"/);
 assert.match(page, /setScreenerEntry\(\{ tab: "transition", pair, state, direction, mode \}\)/);
@@ -67,16 +68,26 @@ new Function("require", "exports", compile(await readFile(new URL("../components
   if (name === "./useLiveTransitionRevalidation") return { useLiveTransitionRevalidation: () => ({ rootRef: { current: null }, refreshVersion: 0 }) };
   throw new Error(name);
 }, homeCard);
+const rankings = {};
+new Function("require", "exports", compile(await readFile(new URL("../components/HomeModelRankings.tsx", import.meta.url), "utf8"), true))((name) => {
+  if (name === "react/jsx-runtime") return jsx;
+  if (name === "../lib/home-presentation.mjs") return presentation;
+  throw new Error(name);
+}, rankings);
 const render = (data = dashboard, failedPerformance = false, operationsInput = operations, failedHome = false) => {
   const resources = [{ url: "/api/home-dashboard?topN=5", data, error: failedHome }, { url: "/api/model-performance", data: failedPerformance ? null : performance, error: failedPerformance }, { url: "/api/daily-production-status", data: operationsInput, error: false }, { url: "/api/intraday-model-top?model=B&limit=1", data: null, error: true }];
   let index = 0;
   const uiExports = {};
   const requireUi = (name) => {
-    if (name === "./PrivateLiveDeliveryPanel") return { __esModule: true, default: () => null, usePrivateLiveDelivery: () => ({ data: null, failed: false, disabled: false }), privateRelaySummary: () => "관측 대기 · 전달된 결과 없음" };
+    if (name === "./PrivateLiveDeliveryPanel") return { PrivateLiveDeliveryView: () => null, usePrivateLiveDelivery: () => ({ data: { delivery: null }, failed: false, disabled: false }) };
+    if (name === "./HomeModelRankings") return { __esModule: true, ...rankings };
+    if (name === "../lib/home-presentation.mjs") return presentation;
     if (name === "./HomeTransitionCard") return { __esModule: true, ...homeCard };
     if (name === "../lib/intraday-model-top-time-policy.mjs") return liveTiming;
     if (name === "react/jsx-runtime") return jsx;
-    if (name === "react") return { ...React, useState: () => [resources[index++], () => {}], useRef: () => ({ current: 0 }), useEffect: () => {} };
+    // Explicitly inspect EOD and expanded diagnostics/archive. Default LIVE is
+    // covered separately; resource state must not consume the new UI states.
+    if (name === "react") return { ...React, useState: initial => [initial === null ? resources[index++] : initial === "LIVE" ? "EOD" : initial === false ? true : initial, () => {}], useRef: () => ({ current: 0 }), useEffect: () => {} };
     if (name === "../lib/home-dashboard.mjs") return helpers;
     if (name === "../lib/directional-transition.mjs") return directional;
     throw new Error(name);
@@ -85,11 +96,10 @@ const render = (data = dashboard, failedPerformance = false, operationsInput = o
   return renderToStaticMarkup(React.createElement(uiExports.default, { onSelectStock: () => {}, onOpenModel: () => {}, onOpenPerformance: () => {}, onOpenTransition: () => {} }));
 };
 const html = render();
-assert.match(html, /<h1 id="home-dashboard-heading"[^>]*>홈<\/h1>/u);
+assert.match(html, /<h1 id="home-dashboard-heading"[^>]*>시장 요약<\/h1>/u);
 assert.doesNotMatch(html, /오늘의 분석 대시보드|TIGHT BUDGET · DAILY RESEARCH/u);
 const modelUsage = {
   "A-v1": "상승장 · 주도주 탐색",
-  "A-v2": "상승장 · 주도주 탐색",
   "B-v1": "상승장 · 중기 추세 확인",
   "C-v1": "횡보장 · 단기 반등 신호가 나올 때",
   "D-v1": "상승장 · 추세와 진입 조건 함께 확인",
@@ -99,12 +109,12 @@ const modelCards = [...allModelsHtml.matchAll(/<article\b[^>]*>[\s\S]*?<\/articl
 assert.equal(modelCards.length, Object.keys(modelUsage).length);
 for (const [index, [version, usage]] of Object.entries(modelUsage).entries()) {
   const card = modelCards[index];
-  assert.ok(card.includes(`모델 ${version[0]} · ${version}`));
+  assert.ok(card.includes(`모델 ${version} 상세 순위`));
   assert.ok(card.includes(usage), `${version}: the usage must be in its existing ranking card`);
   assert.ok(card.includes("긴종목명검증") && card.includes("88.00") && card.includes("↑2"), "guidance must not replace rankings or scores");
 }
-assert.match(allModelsHtml, /mt-3 grid gap-2 sm:grid-cols-2/);
-assert.match(allModelsHtml, /relative mt-1 text-xs leading-5 text-slate-700/);
+assert.match(allModelsHtml, /home-model-grid/);
+assert.match(allModelsHtml, /home-ranking-note/);
 assert.doesNotMatch(allModelsHtml, /저점 매수|수익률 보장|장세 자동 전환|하락장 자동 차단/u);
 const caveats = ["장세별 설명은 산식의 특성에 따른 구분이며, 수익률 우위가 검증된 것은 아닙니다.", "하락장에서는 네 모델 모두 신규 매수 판단에 주의가 필요합니다."];
 for (const output of [allModelsHtml, render(null), render(null, false, operations, true)]) {
@@ -113,7 +123,7 @@ for (const output of [allModelsHtml, render(null), render(null, false, operation
 assert.ok(render(null, false, operations, true).includes("순위 조회 실패"));
 const emptyModel = render({ ...dashboard, models: { ...dashboard.models, models: [{ ...model, modelVersion: "C-v1", top: [] }] } });
 assert.ok(emptyModel.includes(modelUsage["C-v1"]) && emptyModel.includes("분석 가능한 종목 없음"));
-for (const text of ["홈", "모델 TOP3", "긴종목명검증", "000660", "골든크로스 접근", "골든크로스 확인", "해당 조건 종목 없음", "508/553", "미연결", "데이터 축적 중", "-1.25%", "관측 4건", "관측 대기 · 전달된 결과 없음", "확인 불가", "Daily EOD", "14:30 LIVE", "REJECTED", "↑2"]) assert.ok(html.includes(text), text);
+for (const text of ["시장 요약", "모델 TOP3", "긴종목명검증", "000660", "골든크로스 접근", "골든크로스 확인", "해당 조건 종목 없음", "508/553", "미연결", "집계 대기", "-1.25%", "관측 4건", "관측 대기 · 전달된 결과 없음", "확인 불가", "Daily EOD", "14:30 LIVE", "REJECTED", "↑2"]) assert.ok(html.includes(text), text);
 assert.ok(render(dashboard, true).includes("성과 조회 실패"));
 assert.ok(render({ ...dashboard, transitions: null }).includes("전환 지표 데이터 없음"));
 const noComparison = render({ ...dashboard, models: { ...dashboard.models, models: [{ ...model, comparisonStatus: "UNAVAILABLE", comparisonReason: "FORMULA_PROVENANCE_CHANGED_OR_MISSING" }] } });
@@ -133,7 +143,7 @@ for (const text of ["공식 EOD 운영 상태", "원본 대기", "수집·검증
 assert.doesNotMatch(render(dashboard, false, operations), /실제 사이트 확인 완료/u, "Legacy published date and success never render green");
 for (const [state, reason, label] of [["DEPLOYMENT_FAILED", "VERCEL_DEPLOYMENT_FAILED", "Git 저장 후 Vercel 배포 실패"], ["VERIFICATION_FAILED", "HTTP_401", "사이트 검증 인증 실패 (401)"], ["VERIFICATION_FAILED", "HTTP_403", "사이트 검증 접근 거부 (403)"], ["VERIFICATION_FAILED", "REQUEST_TIMEOUT", "사이트 검증 응답 시간 초과"], ["UNVERIFIED", "GITHUB_403", "배포 증거 조회 제한 (403)"]]) {
   const output = render(dashboard, false, { ...verified, deployment: { ...verified.deployment, state, reason } });
-  assert.ok(output.includes(label)); assert.ok(output.includes("2026-10-07")); assert.ok(output.includes("확인 기록"));
+  assert.ok(output.includes(label)); assert.ok(output.includes("2026.10.07")); assert.ok(output.includes("확인 기록"));
   assert.doesNotMatch(output, /실제 사이트 확인 완료/u);
 }
 console.log("home API allowlist/isolated failure/SSR/navigation/mobile hierarchy/stale guard tests passed");

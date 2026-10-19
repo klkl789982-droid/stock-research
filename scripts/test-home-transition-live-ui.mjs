@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { copyFile, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import { fileURLToPath } from "node:url";
@@ -11,6 +11,7 @@ import * as directional from "../lib/directional-transition.mjs";
 import * as evidencePolicy from "../lib/transition-evidence-policy.mjs";
 import * as homeHelpers from "../lib/home-dashboard.mjs";
 import * as liveTiming from "../lib/intraday-model-top-time-policy.mjs";
+import * as presentation from "../lib/home-presentation.mjs";
 import { createLiveTransitionStore } from "../lib/live-transition-store.mjs";
 import { parseLiveTransitionFilters, screenLiveTransitions } from "../lib/live-transition-screener.mjs";
 import { assertLiveFixtureArchive } from "./fixtures/live-transition/integrity.mjs";
@@ -59,7 +60,9 @@ try {
     assertLiveFixtureArchive(key, await readFile(new URL(`../${relative}`, import.meta.url)), archive);
     const target = path.join(fixtureRoot, relative);
     await mkdir(path.dirname(target), { recursive: true });
-    await symlink(fileURLToPath(new URL(`../${relative}`, import.meta.url)), target);
+    // Copy the hash-checked immutable fixture bytes; Windows does not grant
+    // unprivileged symlink creation. Never mutate the source fixture.
+    await copyFile(fileURLToPath(new URL(`../${relative}`, import.meta.url)), target);
   }
   for (const [relative, value] of [["data/intraday-signals/model-top/latest.json", snapshot.latest], ["data/trading-calendar/status.json", snapshot.calendar]]) {
     const target = path.join(fixtureRoot, relative);
@@ -121,12 +124,23 @@ const resources = [
   { url: "/api/daily-production-status", data: null, error: false },
   { url: "/api/intraday-model-top?model=B&limit=1", data: null, error: false },
 ];
-const dashboard = compile(dashboardSource, { react: harness(resources).hooks, "../lib/home-dashboard.mjs": homeHelpers, "../lib/intraday-model-top-time-policy.mjs": liveTiming, "./HomeTransitionCard": { __esModule: true, ...loadCard() } });
+const dashboardDependencies = { "../lib/home-presentation.mjs": presentation,
+  "./HomeModelRankings": compile(await read("components/HomeModelRankings.tsx"), { "../lib/home-presentation.mjs": presentation }),
+  "./PrivateLiveDeliveryPanel": { PrivateLiveDeliveryView: () => null, usePrivateLiveDelivery: () => ({ data: { delivery: null }, failed: false, disabled: false }) },
+  "../lib/home-dashboard.mjs": homeHelpers, "../lib/intraday-model-top-time-policy.mjs": liveTiming, "./HomeTransitionCard": { __esModule: true, ...loadCard() } };
+const dashboard = compile(dashboardSource, { ...dashboardDependencies, react: harness(resources).hooks });
 const dashboardHtml = html(React.createElement(dashboard.default, { ...callbacks, onOpenModel: noOp, onOpenPerformance: noOp }));
-assert.match(dashboardHtml, /aria-pressed="true"[^>]*>LIVE · 14:30 저장 관측/u);
-assert.match(dashboardHtml, /aria-pressed="false"[^>]*>EOD · 확정 일봉 비교/u);
+assert.match(dashboardHtml, /id="home-source-LIVE" aria-selected="true"/u);
+assert.match(dashboardHtml, /id="home-source-EOD" aria-selected="false"/u);
+assert.match(dashboardHtml, /14:00 관측 대기/u);
+assert.match(dashboardHtml, /Daily EOD로 자동 대체하지 않습니다/u);
 assert.ok(!dashboardHtml.includes("11종목"), "actual homepage defaults to LIVE despite EOD summary availability");
 assert.ok(dashboardHtml.includes("장중 잠정") || dashboardHtml.includes("LIVE"));
+const archiveStates = [...resources]; archiveStates[6] = true;
+const archiveDashboard = compile(dashboardSource, { ...dashboardDependencies, react: harness(archiveStates).hooks });
+const archiveHtml = html(React.createElement(archiveDashboard.default, { ...callbacks, onOpenModel: noOp, onOpenPerformance: noOp }));
+assert.match(archiveHtml, /LIVE · 14:30 저장 관측/u);
+assert.match(archiveHtml, /새 14:00 결과가 아니며/u);
 assert.ok(refreshCalls.includes(true), "homepage uses the shared freshness revalidation hook");
 
 // Transport can resolve after abort; discarded HOME requests cannot publish

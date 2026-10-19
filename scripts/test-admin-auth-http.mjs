@@ -50,8 +50,10 @@ try {
   const homeResponse = await request("/", { headers });
   assert.equal(homeResponse.status, 200);
   const homeHtml = await homeResponse.text();
-  assert.match(homeHtml, /전환 신호 · <!-- -->LIVE 장중 잠정|전환 신호 · LIVE 장중 잠정/u);
-  assert.match(homeHtml, /aria-pressed="true"[^>]*>LIVE · 14:30 저장 관측/u);
+  assert.match(homeHtml, /시장 요약/u);
+  assert.match(homeHtml, /id="home-source-LIVE" aria-selected="true"/u);
+  assert.match(homeHtml, /14:00 LIVE/u);
+  assert.match(homeHtml, /Daily EOD로 자동 대체하지 않습니다/u);
   assert.equal((await request("/api/model-performance", { headers })).status, 200);
   const research = await request("/api/screener?tab=transition&rules=directional-v2&sort=evidence", { headers });
   assert.equal(research.status, 200); assert.equal((await research.json()).evidencePolicy.version, "transition-evidence-research-v1");
