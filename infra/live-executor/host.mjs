@@ -49,6 +49,7 @@ export async function superviseChild({ command, args, cwd, env, signal, onStatus
     const startedAt = new Date().toISOString();
     await emit({ status: "STARTING", restartCount, startedAt });
     let child, stopping = false, healthBusy = false, failure = null, forceTimer, leaseTimer;
+    let leaseIssuedAt = 0, leaseCompletedAt = 0, maximumLeaseGapMs = 0;
     const reported = new Set();
     const outcome = await new Promise((resolve) => {
       let finished = false;
@@ -77,7 +78,13 @@ export async function superviseChild({ command, args, cwd, env, signal, onStatus
         child = spawn(command, args, { cwd, env, windowsHide: true, shell: false, stdio: ["ignore", "ignore", "ignore", "ipc"] });
         leaseTimer = setInterval(() => {
           if (stopping || !child.connected) return;
-          child.send({ type: "HOST_LEASE", sentAtMs: Date.now() }, (error) => { if (error && !stopping) { failure = "HOST_LEASE_LOST"; terminate(); } });
+          const sentAtMs = Date.now();
+          if (leaseIssuedAt) maximumLeaseGapMs = Math.max(maximumLeaseGapMs, sentAtMs - leaseIssuedAt);
+          leaseIssuedAt = sentAtMs;
+          child.send({ type: "HOST_LEASE", sentAtMs }, (error) => {
+            if (!error) leaseCompletedAt = Date.now();
+            else if (!stopping) { failure = "HOST_LEASE_LOST"; terminate(); }
+          });
         }, 1000);
         child.once("error", () => finish(null, "HOST_CHILD_START_FAILED"));
         child.once("exit", (code, exitSignal) => { if (exitSignal) failure ??= "HOST_CHILD_SIGNALLED"; finish(code, code === 0 ? "HOST_CHILD_UNEXPECTED_EXIT" : "HOST_CHILD_FAILED", exitSignal); });
@@ -90,7 +97,9 @@ export async function superviseChild({ command, args, cwd, env, signal, onStatus
           if (!reported.has(key) && reported.size < 32) {
             reported.add(key);
             const timing = Object.fromEntries(["leaseAgeMs", "timerDelayMs", "timeoutMs"].filter(k => Number.isFinite(message[k]) && message[k] >= 0 && message[k] <= 86400000).map(k => [k, message[k]]));
-            Promise.resolve().then(() => onDiagnostic({ event: message.event, reason: message.reason, pid: child.pid, restartCount, ...timing }))
+            const parentTiming = { parentLastLeaseIssuedAgeMs: leaseIssuedAt ? Math.max(0, Date.now() - leaseIssuedAt) : null,
+              parentLastLeaseCompletedAgeMs: leaseCompletedAt ? Math.max(0, Date.now() - leaseCompletedAt) : null, parentMaximumLeaseGapMs: maximumLeaseGapMs };
+            Promise.resolve().then(() => onDiagnostic({ event: message.event, reason: message.reason, pid: child.pid, restartCount, ...timing, ...parentTiming }))
               .catch(() => { failure = "HOST_DIAGNOSTIC_WRITE_FAILED"; terminate(); });
           }
           if (message.event === "executorError") { failure = message.reason; terminate(); }
