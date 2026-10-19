@@ -28,7 +28,8 @@ export function supervisorRecorder(store, { sessionId = randomUUID(), now = () =
     pending = operation.catch(() => {});
     return operation;
   };
-  return { onStatus: value => record(value, true), onDiagnostic: value => record({ status: "CHILD_DIAGNOSTIC", ...value }, false) };
+  return { onStatus: value => record(value, true), onDiagnostic: value => record({ status: "CHILD_DIAGNOSTIC", ...value }, false),
+    onLeaseHealth: value => store.writeMutable("live/lease-health.json", { ...value, checkedAt: now(), hostPid: process.pid, sessionId }) };
 }
 const wait = (ms, signal) => new Promise((resolve) => {
   if (signal?.aborted) { resolve(); return; }
@@ -39,7 +40,7 @@ const wait = (ms, signal) => new Promise((resolve) => {
 
 /** Fixed host calls this with run.mjs; test code injects isolated local child programs. */
 export async function superviseChild({ command, args, cwd, env, signal, onStatus = async () => {}, health = null,
-  onDiagnostic = async () => {},
+  onDiagnostic = async () => {}, onLeaseHealth = async () => {},
   maxRestarts = 3, restartDelayMs = 30_000, healthIntervalMs = 10_000, terminateGraceMs = 10_000 }) {
   if (!Number.isInteger(maxRestarts) || maxRestarts < 0 || maxRestarts > 3) throw new Error("HOST_RESTART_LIMIT_INVALID");
   let restartCount = 0;
@@ -50,6 +51,7 @@ export async function superviseChild({ command, args, cwd, env, signal, onStatus
     await emit({ status: "STARTING", restartCount, startedAt });
     let child, stopping = false, healthBusy = false, failure = null, forceTimer, leaseTimer;
     let leaseIssuedAt = 0, leaseCompletedAt = 0, maximumLeaseGapMs = 0;
+    let lastReceipt = null, receiptAt = 0;
     const reported = new Set();
     const outcome = await new Promise((resolve) => {
       let finished = false;
@@ -71,6 +73,8 @@ export async function superviseChild({ command, args, cwd, env, signal, onStatus
         healthBusy = true;
         try {
           if (!await health({ startedAt, pid: child?.pid })) { failure = "HOST_HEARTBEAT_STALE"; terminate(); }
+          await onLeaseHealth({ pid: child?.pid, parentLastLeaseIssuedAgeMs: leaseIssuedAt ? Math.max(0, Date.now() - leaseIssuedAt) : null,
+            parentMaximumLeaseGapMs: maximumLeaseGapMs, receiptAgeMs: receiptAt ? Math.max(0, Date.now() - receiptAt) : null, lastReceipt });
         } catch { failure = "HOST_HEALTH_CHECK_FAILED"; terminate(); }
         finally { healthBusy = false; }
       }, healthIntervalMs) : null;
@@ -89,6 +93,13 @@ export async function superviseChild({ command, args, cwd, env, signal, onStatus
         child.once("error", () => finish(null, "HOST_CHILD_START_FAILED"));
         child.once("exit", (code, exitSignal) => { if (exitSignal) failure ??= "HOST_CHILD_SIGNALLED"; finish(code, code === 0 ? "HOST_CHILD_UNEXPECTED_EXIT" : "HOST_CHILD_FAILED", exitSignal); });
         child.on("message", message => {
+          if (message?.type === "EXECUTOR_LEASE_RECEIPT") {
+            if (typeof message.accepted !== "boolean") return;
+            lastReceipt = { accepted: message.accepted,
+              wireAgeMs: Number.isFinite(message.wireAgeMs) && Math.abs(message.wireAgeMs) <= 86400000 ? message.wireAgeMs : null,
+              ...Object.fromEntries(["receivedCount", "futureCount", "staleCount"].filter(k => Number.isSafeInteger(message[k]) && message[k] >= 0).map(k => [k, message[k]])) };
+            receiptAt = Date.now(); return;
+          }
           if (message?.type !== "EXECUTOR_DIAGNOSTIC" || !["executorFailed", "executorError"].includes(message.event)
             || !/^[A-Z][A-Z0-9_]{2,95}$/u.test(message.reason ?? "")) return;
           const key = `${message.event}:${message.reason}`;
@@ -96,9 +107,10 @@ export async function superviseChild({ command, args, cwd, env, signal, onStatus
           // credentials or arbitrary IPC fields supplied alongside the code.
           if (!reported.has(key) && reported.size < 32) {
             reported.add(key);
-            const timing = Object.fromEntries(["leaseAgeMs", "timerDelayMs", "timeoutMs"].filter(k => Number.isFinite(message[k]) && message[k] >= 0 && message[k] <= 86400000).map(k => [k, message[k]]));
+            const timing = Object.fromEntries(["leaseAgeMs", "timerDelayMs", "timeoutMs", "leaseReceivedCount", "leaseFutureRejectedCount", "leaseStaleRejectedCount"].filter(k => Number.isFinite(message[k]) && message[k] >= 0 && message[k] <= 86400000).map(k => [k, message[k]]));
             const parentTiming = { parentLastLeaseIssuedAgeMs: leaseIssuedAt ? Math.max(0, Date.now() - leaseIssuedAt) : null,
-              parentLastLeaseCompletedAgeMs: leaseCompletedAt ? Math.max(0, Date.now() - leaseCompletedAt) : null, parentMaximumLeaseGapMs: maximumLeaseGapMs };
+              parentLastLeaseCompletedAgeMs: leaseCompletedAt ? Math.max(0, Date.now() - leaseCompletedAt) : null, parentMaximumLeaseGapMs: maximumLeaseGapMs,
+              childReceiptAgeMs: receiptAt ? Math.max(0, Date.now() - receiptAt) : null, lastReceipt };
             Promise.resolve().then(() => onDiagnostic({ event: message.event, reason: message.reason, pid: child.pid, restartCount, ...timing, ...parentTiming }))
               .catch(() => { failure = "HOST_DIAGNOSTIC_WRITE_FAILED"; terminate(); });
           }
