@@ -2,13 +2,16 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 const account = "a270e8d00736b9adbeaab41945266c99";
-const query = `query Usage($a:string!,$s:Time,$e:Time,$month:Date,$storageFrom:Date){viewer{accounts(filter:{accountTag:$a}){
+const query = `query Usage($a:string!,$s:Time,$e:Time,$month:Date,$monthStart:Time,$storageFrom:Date){
+  storageSchema:__type(name:"AccountWorkflowsAdaptive"){fields{name description}}
+  viewer{accounts(filter:{accountTag:$a}){
   dayWorkflows:workflowsAdaptiveGroups(limit:100,filter:{datetimeHour_geq:$s,datetimeHour_leq:$e}){count sum{stepCount} dimensions{eventType}}
   workers:workersInvocationsAdaptive(limit:1,filter:{datetime_geq:$s,datetime_leq:$e}){sum{requests}}
   doRequests:durableObjectsInvocationsAdaptiveGroups(limit:1,filter:{datetime_geq:$s,datetime_leq:$e}){sum{requests}}
   doCompute:durableObjectsPeriodicGroups(limit:1,filter:{datetime_geq:$s,datetime_leq:$e}){sum{duration rowsRead rowsWritten}}
   sql:durableObjectsSqlStorageGroups(limit:1000,filter:{date_geq:$storageFrom}){max{storedBytes} dimensions{namespaceId}}
   monthStorage:workflowsAdaptiveGroups(limit:1,filter:{date_geq:$month}){sum{storageRate}}
+  storageEvents:workflowsAdaptive(limit:10000,filter:{datetime_geq:$monthStart,datetime_leq:$e}){sampleInterval storageRate}
 }}}`;
 const metric = (groups, name) => Array.isArray(groups) && groups.length && groups.every(r => Number.isFinite(r.sum?.[name]) && r.sum[name] >= 0)
   ? groups.reduce((n, r) => n + r.sum[name], 0) : null;
@@ -26,9 +29,24 @@ export function summarizeAccountMetrics(payload, observedAt) {
     doDurationRawMetric: metric(value.doCompute, "duration"), sqlRowsReadReported: metric(value.doCompute, "rowsRead"), sqlRowsWrittenReported: metric(value.doCompute, "rowsWritten"),
     workflowDayEventGroups: value.dayWorkflows ?? null,
     persistentSqlNamespacePeakBytes: peaks.size && value.sql.length < 1000 ? [...peaks.values()].reduce((a, b) => a + b, 0) : null,
-    workflowStorageGrowthRawMetric: metric(value.monthStorage, "storageRate"), workflowStorageMetricUnit: "UNVERIFIED_NOT_CONVERTED_TO_GB_MONTHS",
+    workflowStorageGrowthRawMetric: metric(value.monthStorage, "storageRate"),
+    workflowStorageEvidence: summarizeWorkflowStorage(value.storageEvents, payload.data.storageSchema),
     aggregationLagMs: null, completeAdmissionProof: false, paidFallback: false,
     interpretation: "Empty telemetry is not proof of exact zero/remaining allowance. Storage is not a daily-reset counter. Include independent plan/inventory/lag and storage-unit proof before cutover." };
+}
+
+export function summarizeWorkflowStorage(events, schema) {
+  const unitVerified = schema?.fields?.some(f => f.name === "storageRate" && f.description === "Instance storage size growth in timestamp (bytes)") === true;
+  const completeUnsampledRows = Array.isArray(events) && events.length < 10000
+    && events.every(r => r.sampleInterval === 1 && Number.isFinite(r.storageRate));
+  const positiveGrowthBytes = unitVerified && completeUnsampledRows ? events.reduce((n, r) => n + Math.max(0, r.storageRate), 0) : null;
+  return { unit: unitVerified ? "BYTES_OFFICIAL_SCHEMA" : "UNVERIFIED", reportedEventCount: events?.length ?? null,
+    completeUnsampledRows, positiveGrowthBytes,
+    // If ALL account Workflow resources began with zero state this month, the
+    // positive growth is an upper bound on REPORTED state. Charging that peak
+    // for all30 days is conservative, but is NOT the exact GB-month bill.
+    reportedPeakEquivalentGbMonths: positiveGrowthBytes === null ? null : positiveGrowthBytes / 1e9,
+    requiresZeroMonthBaselineInventory: true, aggregationLagVerified: false, admissionVerified: false };
 }
 
 export async function readAccountMetrics({ token, now = new Date().toISOString(), fetchImpl = fetch }) {
@@ -38,7 +56,7 @@ export async function readAccountMetrics({ token, now = new Date().toISOString()
   try {
     response = await fetchImpl("https://api.cloudflare.com/client/v4/graphql", { method: "POST", redirect: "error", signal: AbortSignal.timeout(15000),
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ query, variables: { a: account, s: `${date}T00:00:00Z`, e: now, month: `${date.slice(0, 7)}-01`, storageFrom } }) });
+      body: JSON.stringify({ query, variables: { a: account, s: `${date}T00:00:00Z`, e: now, month: `${date.slice(0, 7)}-01`, monthStart: `${date.slice(0, 7)}-01T00:00:00Z`, storageFrom } }) });
     payload = await response.json();
   } catch { throw new Error("ACCOUNT_ANALYTICS_UNAVAILABLE"); }
   if ([401, 403].includes(response.status)) throw new Error("ACCOUNT_ANALYTICS_NOT_AUTHORIZED");

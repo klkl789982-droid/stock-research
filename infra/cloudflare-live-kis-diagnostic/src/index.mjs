@@ -15,6 +15,7 @@ import { assertPrivateKisEodPayload } from "../../../lib/kis-eod-private-store.m
 import { assertProduction, bounds } from "../production-core.mjs";
 import { productionScheduled } from "./production.mjs";
 import { verifyCloudSiteFixture } from "../site-fixture.mjs";
+import { verifyCloudSwingFixture } from "../swing-fixture.mjs";
 import { privateRequestBudget } from "../relay-budget.mjs";
 export { LiveDay, LiveBatch, CloudLive } from "./production.mjs";
 export { KisDiagnosticShard } from "./shard.mjs";
@@ -554,6 +555,11 @@ export class KisDiagnosticBroker extends DurableObject {
         const store = createKisEodPrivateStore({ repository: "klkl789982-droid/tight-budget-private-data", token: this.env.PRIVATE_LIVE_DELIVERY_WRITE_TOKEN, fetchImpl: io.fetch });
         return Response.json(await verifyCloudSiteFixture(store, u.searchParams.get("id"), run));
       }
+      if (u.pathname === "/swing-fixture") {
+        const io = privateRequestBudget(edgeFetch);
+        const store = createKisEodPrivateStore({ repository: "klkl789982-droid/tight-budget-private-data", token: this.env.PRIVATE_LIVE_DELIVERY_WRITE_TOKEN, fetchImpl: io.fetch });
+        return Response.json(await verifyCloudSwingFixture(store, run, u.searchParams.get("phase")));
+      }
       if (u.pathname === "/fixture") {
         const store = createKisEodPrivateStore({ repository: "klkl789982-droid/tight-budget-private-data", token: this.env.PRIVATE_LIVE_DELIVERY_WRITE_TOKEN, fetchImpl: edgeFetch });
         const key = `cloud-isolated-tests/${run}.json`, value = { namespace: "cloud-price-free-connectivity-test", run, payload: "NO_PRICES_NO_CREDENTIALS", publicationEligible: false };
@@ -671,6 +677,10 @@ export class KisDiagnostic extends WorkflowEntrypoint {
       if (!r.ok) throw new Error(safeCode({ code: value.reason })); return value;
     }
     if (p.mode === "site-fixture") return step.do("isolated score-only Preview fixture", config, () => call(`/site-fixture?id=${encodeURIComponent(p.fixtureId ?? "")}`));
+    if (p.mode === "swing-fixture") {
+      await step.do("isolated synthetic swing first issuance", config, () => call("/swing-fixture?phase=create"));
+      return step.do("reopen synthetic swing with existing five-session resolver", config, () => call("/swing-fixture?phase=read"));
+    }
     if (["auth", "fixture", "audit", "inputs", "report", "calendar"].includes(p.mode)) return step.do(`isolated ${p.mode}`, config, () => call(`/${p.mode}`));
     if (p.mode === "batch-shard") return step.do("actual eight-symbol bounded invocation metadata only", config, async () => {
       if (!Array.isArray(p.codes) || p.codes.length < 1 || p.codes.length > 8 || p.codes.some(c => !/^[0-9A-Z]{6}$/u.test(c))) throw new Error("DIAG_CODES_INVALID");
