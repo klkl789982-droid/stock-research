@@ -94,8 +94,24 @@ test("durable Redis adapter actual HTTP: create/read/delete, atomic shared limit
 test("all existing data APIs use a server-only boundary; no broad static/RSC/image bypass", async () => {
   async function walk(directory) { const files = []; for (const e of await readdir(directory, { withFileTypes: true })) { const path = `${directory}/${e.name}`; files.push(...(e.isDirectory() ? await walk(path) : e.name === "route.ts" ? [path] : [])); } return files; }
   const files = (await walk("app/api")).filter(file => !file.startsWith("app/api/auth/"));
-  assert.equal(files.length, 17);
-  for (const file of files) assert.match(await readFile(file, "utf8"), /export const GET = withAdminAccess\(handleGet\);/u, file);
+  // Keep an exact inventory, including the two existing private LIVE readers.
+  // A stale count17 prevented their boundary assertions from running at all.
+  assert.deepEqual(files.sort(), ["backtests/rank", "company-analysis", "daily-production-status", "financial", "home-dashboard",
+    "intraday-market-analysis", "intraday-model-top", "investor", "kis-eod-top-stocks", "market-analysis", "model-performance",
+    "model-performance/research", "price", "private-live", "private-live-delivery", "realtime", "screener", "stock", "top-stocks"]
+    .map(name => `app/api/${name}/route.ts`).sort());
+  for (const file of files) {
+    const source = ts.createSourceFile(file, await readFile(file, "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+    const exportedGet = source.statements.filter(statement => ts.isVariableStatement(statement)
+      && statement.modifiers?.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword))
+      .flatMap(statement => [...statement.declarationList.declarations]).filter(declaration => declaration.name.getText(source) === "GET");
+    assert.equal(exportedGet.length, 1, file);
+    const call = exportedGet[0].initializer;
+    // Both handleGet and the existing inline arrow handler must remain INSIDE
+    // the same server guard; formatting or handler style is not authorization.
+    assert.ok(call && ts.isCallExpression(call) && ts.isIdentifier(call.expression) && call.expression.text === "withAdminAccess" && call.arguments.length === 1, file);
+    assert.match(source.text, /import\s*\{\s*withAdminAccess\s*\}\s*from\s*["']@\/lib\/admin-access["']/u, file);
+  }
   for (const path of ["/", "/?view=models", "/data/history/test.json", "/.env", "/file.svg", "/_next/data/build/index.json", "/_next/static/chunks/test.map", "/_next/image?url=%2Fapi%2Fprice", "/api/top-stocks"]) assert.equal(isPublicResource(new URL(path, config.origin)), false, path);
   for (const path of ["/login", "/tb-mark-v3.png", "/tb-material-bg-v2.png", "/_next/static/chunks/app.js", "/_next/image?url=%2Ftb-mark-v3.png"]) assert.equal(isPublicResource(new URL(path, config.origin)), true, path);
   assert.deepEqual((await readdir("public")).filter(file => /\.(json|csv|parquet|db|sqlite)$/u.test(file)), []);
@@ -103,7 +119,7 @@ test("all existing data APIs use a server-only boundary; no broad static/RSC/ima
 test("machine token scope and redacted publication response, never private KIS or ranking access", async () => {
   const headers = { Authorization: `Bearer ${env.TB_AUTOMATION_READ_TOKEN}` };
   for (const path of ["/api/top-stocks", "/api/model-performance", "/api/daily-production-status", "/api/intraday-model-top", "/api/home-dashboard"]) assert.equal(auth.isAutomationRequest(req(path, { headers }), env), true);
-  for (const path of ["/", "/api/model-performance/research", "/api/stock", "/api/kis-eod-top-stocks"]) assert.equal(auth.isAutomationRequest(req(path, { headers }), env), false);
+  for (const path of ["/", "/api/model-performance/research", "/api/stock", "/api/kis-eod-top-stocks", "/api/private-live", "/api/private-live-delivery"]) assert.equal(auth.isAutomationRequest(req(path, { headers }), env), false);
   assert.deepEqual(auth.automationPublicationDto("/api/intraday-model-top", { signalDate: "2026-10-08", observationType: "LIVE_OBSERVATION", collectionCompletedAt: "2026-10-08T05:34:00Z", stocks: [{ observedPrice: 123 }], source: "private" }), { signalDate: "2026-10-08", observationType: "LIVE_OBSERVATION", collectionCompletedAt: "2026-10-08T05:34:00Z" });
   assert.equal(auth.isAutomationRequest(req("/api/top-stocks", { method: "POST", headers }), env), false);
   assert.equal(auth.isAutomationRequest(req("/api/top-stocks", { headers: { Authorization: "Bearer wrong" } }), env), false);
