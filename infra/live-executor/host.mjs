@@ -80,24 +80,26 @@ export async function superviseChild({ command, args, cwd, env, signal, onStatus
       }, healthIntervalMs) : null;
       try {
         child = spawn(command, args, { cwd, env, windowsHide: true, shell: false, stdio: ["ignore", "ignore", "ignore", "ipc"] });
-        leaseTimer = setInterval(() => {
-          if (stopping || !child.connected) return;
+        const respondToChallenge = message => {
+          if (stopping || !child.connected || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/u.test(message.nonce ?? "")) return;
           const sentAtMs = Date.now();
           if (leaseIssuedAt) maximumLeaseGapMs = Math.max(maximumLeaseGapMs, sentAtMs - leaseIssuedAt);
           leaseIssuedAt = sentAtMs;
-          child.send({ type: "HOST_LEASE", sentAtMs }, (error) => {
+          child.send({ type: "HOST_LEASE", nonce: message.nonce, sentAtMs }, (error) => {
             if (!error) leaseCompletedAt = Date.now();
             else if (!stopping) { failure = "HOST_LEASE_LOST"; terminate(); }
           });
-        }, 1000);
+        };
         child.once("error", () => finish(null, "HOST_CHILD_START_FAILED"));
         child.once("exit", (code, exitSignal) => { if (exitSignal) failure ??= "HOST_CHILD_SIGNALLED"; finish(code, code === 0 ? "HOST_CHILD_UNEXPECTED_EXIT" : "HOST_CHILD_FAILED", exitSignal); });
         child.on("message", message => {
+          if (message?.type === "EXECUTOR_LEASE_CHALLENGE") { respondToChallenge(message); return; }
           if (message?.type === "EXECUTOR_LEASE_RECEIPT") {
             if (typeof message.accepted !== "boolean") return;
             lastReceipt = { accepted: message.accepted,
               wireAgeMs: Number.isFinite(message.wireAgeMs) && Math.abs(message.wireAgeMs) <= 86400000 ? message.wireAgeMs : null,
-              ...Object.fromEntries(["receivedCount", "futureCount", "staleCount"].filter(k => Number.isSafeInteger(message[k]) && message[k] >= 0).map(k => [k, message[k]])) };
+              roundTripMs: Number.isFinite(message.roundTripMs) && message.roundTripMs >= 0 ? message.roundTripMs : null,
+              ...Object.fromEntries(["receivedCount", "futureCount", "staleCount", "nonceRejectedCount"].filter(k => Number.isSafeInteger(message[k]) && message[k] >= 0).map(k => [k, message[k]])) };
             receiptAt = Date.now(); return;
           }
           if (message?.type !== "EXECUTOR_DIAGNOSTIC" || !["executorFailed", "executorError"].includes(message.event)
@@ -107,7 +109,7 @@ export async function superviseChild({ command, args, cwd, env, signal, onStatus
           // credentials or arbitrary IPC fields supplied alongside the code.
           if (!reported.has(key) && reported.size < 32) {
             reported.add(key);
-            const timing = Object.fromEntries(["leaseAgeMs", "timerDelayMs", "timeoutMs", "leaseReceivedCount", "leaseFutureRejectedCount", "leaseStaleRejectedCount"].filter(k => Number.isFinite(message[k]) && message[k] >= 0 && message[k] <= 86400000).map(k => [k, message[k]]));
+            const timing = Object.fromEntries(["leaseAgeMs", "timerDelayMs", "timeoutMs", "leaseReceivedCount", "leaseFutureRejectedCount", "leaseFutureObservedCount", "leaseNonceRejectedCount", "leaseStaleRejectedCount"].filter(k => Number.isFinite(message[k]) && message[k] >= 0 && message[k] <= 86400000).map(k => [k, message[k]]));
             const parentTiming = { parentLastLeaseIssuedAgeMs: leaseIssuedAt ? Math.max(0, Date.now() - leaseIssuedAt) : null,
               parentLastLeaseCompletedAgeMs: leaseCompletedAt ? Math.max(0, Date.now() - leaseCompletedAt) : null, parentMaximumLeaseGapMs: maximumLeaseGapMs,
               childReceiptAgeMs: receiptAt ? Math.max(0, Date.now() - receiptAt) : null, lastReceipt };

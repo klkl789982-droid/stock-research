@@ -117,9 +117,13 @@ test("real child fatal IPC reports the fixed reason only; extra sensitive fields
   assert.equal(JSON.stringify(diagnostics).includes(marker), false);
 });
 
-test("a supervisor event-loop stall produces an explicit parent-lease expiry, with bounded recovery", { timeout: 15000 }, async () => {
+test("a supervisor event-loop stall produces an explicit parent-lease expiry, with bounded recovery", { timeout: 15000 }, async t => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "tb-lease-stall-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const childReason = path.join(directory, "expiry-reason");
   const moduleUrl = new URL("./parent-lease.mjs", import.meta.url).href;
-  const script = `import {enforceParentLease} from ${JSON.stringify(moduleUrl)};enforceParentLease();
+  const script = `import {writeFileSync} from 'node:fs';import {enforceParentLease} from ${JSON.stringify(moduleUrl)};
+    const send=process.send.bind(process);process.send=(m,cb)=>{if(m.reason==='PARENT_LEASE_EXPIRED')writeFileSync(${JSON.stringify(childReason)},m.reason);return send(m,cb);};enforceParentLease();
     process.send({type:'EXECUTOR_DIAGNOSTIC',event:'executorFailed',reason:'FIXTURE_READY'});setInterval(()=>{},1000);`;
   const result = await superviseChild({ command: process.execPath, args: ["--input-type=module", "-e", script], env: process.env, maxRestarts: 0,
     onDiagnostic: async value => {
@@ -130,7 +134,11 @@ test("a supervisor event-loop stall produces an explicit parent-lease expiry, wi
         const until = Date.now() + 6500; while (Date.now() < until) { /* test CPU stall */ }
       }
     } });
-  assert.equal(result.status, "EXHAUSTED"); assert.equal(result.reason, "PARENT_LEASE_EXPIRED");
+  assert.equal(result.status, "EXHAUSTED");
+  // An already-closed pipe may be observed before the queued child diagnostic.
+  // The independent child's own evidence, not parent callback ordering, proves expiry.
+  assert.ok(["PARENT_LEASE_EXPIRED", "HOST_LEASE_LOST"].includes(result.reason));
+  assert.equal(await readFile(childReason, "utf8"), "PARENT_LEASE_EXPIRED");
 });
 
 test("watchdog terminates an unresponsive actual child and records a safe code", async () => {
@@ -143,23 +151,25 @@ test("standalone CLI is unaffected by the managed parent lifetime lease", () => 
 });
 
 test("an expired timer drains an already queued IPC lease before stopping a live child", t => {
-  const timeouts = [], immediates = [], exits = [];
+  const timeouts = [], immediates = [], exits = [], messages = [];
+  t.mock.method(globalThis, "setInterval", () => ({ unref() {} }));
   t.mock.method(globalThis, "setTimeout", fn => { const timer = { fn, unref() { return this; } }; timeouts.push(timer); return timer; });
   t.mock.method(globalThis, "clearTimeout", () => {});
   t.mock.method(globalThis, "setImmediate", fn => { immediates.push(fn); return { unref() {} }; });
   const runtime = Object.assign(new EventEmitter(), { channel: {}, connected: true,
-    exit: code => exits.push(code), send: (_value, callback) => callback() });
+    exit: code => exits.push(code), send: (value, callback) => { messages.push(value); callback(); } });
   enforceParentLease(runtime);
   // libuv can service the overdue timer before the IPC poll callback after a
   // busy child resumes. No sleep, live processes, credentials or clock changes.
   timeouts[0].fn();
-  runtime.emit("message", { type: "HOST_LEASE", sentAtMs: Date.now() });
+  runtime.emit("message", { type: "HOST_LEASE", nonce: messages[0].nonce, sentAtMs: Date.now() });
   for (const fn of immediates) fn();
   assert.deepEqual(exits, []);
 });
 
 test("one poll-phase drain does not forgive an actually absent parent", t => {
   const timeouts = [], immediates = [], diagnostics = [], exits = [];
+  t.mock.method(globalThis, "setInterval", () => ({ unref() {} }));
   t.mock.method(globalThis, "setTimeout", fn => { const timer = { fn, unref() { return this; } }; timeouts.push(timer); return timer; });
   t.mock.method(globalThis, "clearTimeout", () => {});
   t.mock.method(globalThis, "setImmediate", fn => { immediates.push(fn); return { unref() {} }; });
@@ -169,38 +179,60 @@ test("one poll-phase drain does not forgive an actually absent parent", t => {
   timeouts[0].fn();
   for (const fn of immediates) fn();
   assert.equal(exits[0], 1);
-  assert.equal(diagnostics[0].reason, "PARENT_LEASE_EXPIRED");
+  assert.equal(diagnostics.find(r => r.type === "EXECUTOR_DIAGNOSTIC").reason, "PARENT_LEASE_EXPIRED");
 });
 
-test("stale or future queued IPC cannot refresh an expired parent's lease", t => {
-  const timeouts = [], immediates = [], exits = [];
+test("expired, missing and consumed nonces cannot refresh a dead parent's lease", t => {
+  const timeouts = [], immediates = [], exits = [], messages = []; let now = 0;
+  t.mock.method(globalThis, "setInterval", () => ({ unref() {} }));
   t.mock.method(globalThis, "setTimeout", fn => { const timer = { fn, unref() { return this; } }; timeouts.push(timer); return timer; });
   t.mock.method(globalThis, "clearTimeout", () => {});
   t.mock.method(globalThis, "setImmediate", fn => { immediates.push(fn); return { unref() {} }; });
   const runtime = Object.assign(new EventEmitter(), { channel: {}, connected: true,
-    exit: code => exits.push(code), send: (_value, callback) => callback() });
-  enforceParentLease(runtime);
+    exit: code => exits.push(code), send: (value, callback) => { messages.push(value); callback(); } });
+  enforceParentLease(runtime, { monotonicNow: () => now });
+  const nonce = messages[0].nonce; now = 6000;
   timeouts[0].fn();
-  runtime.emit("message", { type: "HOST_LEASE", sentAtMs: Date.now() - 6000 });
-  runtime.emit("message", { type: "HOST_LEASE", sentAtMs: Date.now() + 6000 });
+  runtime.emit("message", { type: "HOST_LEASE", nonce, sentAtMs: Date.now() });
+  runtime.emit("message", { type: "HOST_LEASE", nonce, sentAtMs: Date.now() });
+  runtime.emit("message", { type: "HOST_LEASE", sentAtMs: Date.now() });
   for (const fn of immediates) fn();
   assert.equal(exits[0], 1);
+  const receipts = messages.filter(r => r.type === "EXECUTOR_LEASE_RECEIPT");
+  assert.ok(receipts.every(r => r.accepted === false)); assert.equal(receipts.at(-1).staleCount, 1); assert.equal(receipts.at(-1).nonceRejectedCount, 2);
 });
 
-test("a real busy child drains already-arrived parent leases before declaring its live parent lost", { timeout: 10000 }, async t => {
+test("a real busy child accepts only a still-fresh one-use reply after synchronous work", { timeout: 10000 }, async t => {
   const moduleUrl = new URL("./parent-lease.mjs", import.meta.url).href;
   const script = `import {enforceParentLease} from ${JSON.stringify(moduleUrl)};
-    enforceParentLease(process,{timeoutMs:500});
+    enforceParentLease(process,{timeoutMs:1200});
     let began=false;
     process.on('message',m=>{if(m.type==='HOST_LEASE'&&!began){began=true;setTimeout(()=>{
       const until=Date.now()+800;while(Date.now()<until){};
       process.send({type:'WORK_FINISHED'});setTimeout(()=>process.exit(0),200);
     },100);}});`;
   const child = spawn(process.execPath, ["--input-type=module", "-e", script], { stdio: ["ignore", "ignore", "ignore", "ipc"], windowsHide: true });
-  const timer = setInterval(() => { if (child.connected) child.send({ type: "HOST_LEASE" }, () => {}); }, 50);
-  t.after(() => { clearInterval(timer); child.kill("SIGKILL"); });
+  child.on("message", m => { if (m.type === "EXECUTOR_LEASE_CHALLENGE" && child.connected) child.send({ type: "HOST_LEASE", nonce: m.nonce, sentAtMs: Date.now() }, () => {}); });
+  t.after(() => child.kill("SIGKILL"));
   const result = await new Promise(resolve => child.once("exit", code => resolve(code)));
   assert.equal(result, 0, "a responsive supervisor must not lose its child solely to synchronous event-loop work");
+});
+
+test("healthy real IPC survives the former future-clock failure condition for longer than the unchanged five-second deadline", { timeout: 12000 }, async () => {
+  const moduleUrl = new URL("./parent-lease.mjs", import.meta.url).href;
+  const script = `import {enforceParentLease} from ${JSON.stringify(moduleUrl)};
+    const realNow=Date.now;Date.now=()=>realNow()-6000;enforceParentLease();
+    setTimeout(()=>process.exit(0),6500);setInterval(()=>{},1000);`;
+  const receipts = [];
+  const child = spawn(process.execPath, ["--input-type=module", "-e", script], { stdio: ["ignore", "ignore", "ignore", "ipc"], windowsHide: true });
+  child.on("message", m => {
+    if (m.type === "EXECUTOR_LEASE_CHALLENGE" && child.connected) child.send({ type: "HOST_LEASE", nonce: m.nonce, sentAtMs: Date.now() }, () => {});
+    if (m.type === "EXECUTOR_LEASE_RECEIPT") receipts.push(m);
+  });
+  const code = await new Promise(resolve => child.once("exit", resolve));
+  assert.equal(code, 0); assert.ok(receipts.length >= 6);
+  assert.ok(receipts.every(r => r.accepted && r.roundTripMs < 5000));
+  assert.ok(receipts.at(-1).futureCount >= 6, "the old wireAge<0 rule would reject every lease");
 });
 
 test("abrupt supervisor death terminates its real managed child by lease expiry", { timeout: 15000 }, async (t) => {
@@ -208,7 +240,7 @@ test("abrupt supervisor death terminates its real managed child by lease expiry"
   const ready = path.join(directory, "child-ready"), ended = path.join(directory, "child-ended");
   const moduleUrl = new URL("./parent-lease.mjs", import.meta.url).href;
   const childScript = `import {writeFileSync} from 'node:fs';import {enforceParentLease} from ${JSON.stringify(moduleUrl)};enforceParentLease(process,{timeoutMs:500});process.on('exit',()=>writeFileSync(${JSON.stringify(ended)},'stopped'));writeFileSync(${JSON.stringify(ready)},String(process.pid));setInterval(()=>{},1000);`;
-  const parentScript = `const {spawn}=require('node:child_process');const child=spawn(process.execPath,['--input-type=module','-e',${JSON.stringify(childScript)}],{stdio:['ignore','ignore','ignore','ipc'],windowsHide:true});setInterval(()=>{if(child.connected)child.send({type:'HOST_LEASE'},()=>{});},100);`;
+  const parentScript = `const {spawn}=require('node:child_process');const child=spawn(process.execPath,['--input-type=module','-e',${JSON.stringify(childScript)}],{stdio:['ignore','ignore','ignore','ipc'],windowsHide:true});child.on('message',m=>{if(m.type==='EXECUTOR_LEASE_CHALLENGE'&&child.connected)child.send({type:'HOST_LEASE',nonce:m.nonce,sentAtMs:Date.now()},()=>{});});`;
   const parent = spawn(process.execPath, ["-e", parentScript], { stdio: "ignore", windowsHide: true });
   let childPid;
   t.after(async () => {
