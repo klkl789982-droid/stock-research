@@ -83,6 +83,7 @@ assert.match(css, /min-width: 640px[\s\S]*\.home-rank-list > li \{ min-height: 9
 assert.match(css, /\.home-dashboard \[hidden\]/);
 assert.match(css, /\.home-stock-name[^}]*font-size: 16px;[^}]*text-wrap: balance;/);
 assert.doesNotMatch(css.slice(0, css.indexOf(":root")), /text-overflow: ellipsis/);
-assert.match(css, /grid-template-columns: 1\.3rem minmax\(0,1fr\) 3\.25rem 2rem/);
+assert.match(css, /grid-template-columns: 1\.5rem minmax\(0,1fr\) 3\.25rem 2rem/);
+assert.match(css, /\.home-rank-heading > span \{ white-space: nowrap; \}/);
 assert.doesNotMatch(source, /onOpenSearch|종목 검색/);
 console.log("Home summary: date/KST, LIVE20/EOD12, shared stocks, scores, verified changes, navigation, default/no-fallback, unknown/failure, lazy archive, keyboard tabs and responsive rules passed");

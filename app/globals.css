@@ -28,8 +28,9 @@
 .home-model-explanation { margin-top: 6px; font-size: 13px; line-height: 1.6; color: #526176; }
 .home-model-explanation summary { width: fit-content; text-decoration: underline; text-underline-offset: 3px; }
 .home-model-explanation p { margin-top: 6px; }
-.home-rank-grid { display: grid; grid-template-columns: 1.3rem minmax(0,1fr) 3.25rem 2rem; align-items: center; gap: 5px; }
+.home-rank-grid { display: grid; grid-template-columns: 1.5rem minmax(0,1fr) 3.25rem 2rem; align-items: center; gap: 5px; }
 .home-rank-heading { margin-top: 16px; padding-block: 8px; border-bottom: 1px solid #d9dfe7; font-size: 12px; color: #526176; }
+.home-rank-heading > span { white-space: nowrap; }
 .home-rank-list > li { min-height: 70px; padding-block: 12px; border-bottom: 1px solid #eef0f4; }
 .home-rank-number { color: #627087; font-size: 14px; font-variant-numeric: tabular-nums; text-align: center; }
 .home-stock-button { min-width: 0; line-height: 1.4; }
