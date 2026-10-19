@@ -67,6 +67,7 @@ try {
 } finally { if (savedDocument === undefined) delete globalThis.document; else globalThis.document = savedDocument; }
 const css = await read("app/globals.css");
 assert.match(css, /min-width: 640px[\s\S]*repeat\(2,minmax/); assert.match(css, /min-width: 1280px[\s\S]*repeat\(4,minmax/);
+assert.match(css, /min-width: 640px[\s\S]*\.home-rank-list > li \{ min-height: 90px; \}/, "long names reserve equal comparison-row height, without enlarging mobile rows");
 assert.match(css, /\.home-dashboard \[hidden\]/);
 assert.doesNotMatch(source, /onOpenSearch|종목 검색/);
 console.log("Home summary: date/KST, LIVE20/EOD12, shared stocks, scores, verified changes, navigation, default/no-fallback, unknown/failure, lazy archive, keyboard tabs and responsive rules passed");

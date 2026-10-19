@@ -57,6 +57,8 @@
 .home-archive > details { border-top: 1px solid #e1e6ec; margin-top: 14px; padding-top: 10px; }
 @media (min-width: 640px) {
   .home-model-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  /* Reserve two name lines so equal ranks align across model columns. */
+  .home-rank-list > li { min-height: 90px; }
   .home-performance-grid { grid-template-columns: repeat(4,minmax(0,1fr)); }
 }
 @media (min-width: 1024px) { .home-operation-columns { grid-template-columns: repeat(2,minmax(0,1fr)); } }
