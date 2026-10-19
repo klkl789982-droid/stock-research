@@ -124,8 +124,11 @@ export function createLocalExecutionStore(stateDir, { repositoryRoot = defaultRe
       try {
         const prior = await readOwner();
         if (prior) {
-          try { process.kill(prior.pid, 0); fail("LIVE_STORE_LOCKED"); }
-          catch (error) { if (error.code !== "ESRCH") throw Object.assign(new Error("LIVE_STORE_LOCKED"), { code: "LIVE_STORE_LOCKED" }); }
+          try { process.kill(prior.pid, 0); throw Object.assign(new Error("LIVE_STORE_LOCKED"), { code: "LIVE_STORE_LOCKED", ownerPid: prior.pid }); }
+          catch (error) {
+            if (error.code === "LIVE_STORE_LOCKED") throw error;
+            if (error.code !== "ESRCH") throw Object.assign(new Error("LIVE_STORE_LOCKED"), { code: "LIVE_STORE_LOCKED" });
+          }
           await fs.unlink(filename);
         }
         if (!await acquire()) fail("LIVE_STORE_LOCKED");

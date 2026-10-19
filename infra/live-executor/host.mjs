@@ -22,7 +22,7 @@ export function supervisorRecorder(store, { sessionId = randomUUID(), now = () =
       const checkedAt = now();
       const receipt = { ...value, sessionId, sequence: ++sequence, hostPid: process.pid, checkedAt, publicationEnabled: false, scheduler };
       await store.writeImmutable(`live/supervisor-events/${sessionId}/${String(sequence).padStart(6, "0")}.json`, receipt);
-      if (["RESTART_WAIT", "EXHAUSTED"].includes(value.status)) lastFailure = { reason: value.reason, childExitCode: value.childExitCode, checkedAt };
+      if (["RESTART_WAIT", "EXHAUSTED"].includes(value.status)) lastFailure = { reason: value.reason, childExitCode: value.childExitCode, childExitSignal: value.childExitSignal ?? null, checkedAt };
       if (updateStatus) await store.writeMutable("live/supervisor.json", { ...receipt, lastFailure });
     });
     pending = operation.catch(() => {});
@@ -52,12 +52,12 @@ export async function superviseChild({ command, args, cwd, env, signal, onStatus
     const reported = new Set();
     const outcome = await new Promise((resolve) => {
       let finished = false;
-      const finish = (code, cause) => {
+      const finish = (code, cause, exitSignal = null) => {
         if (finished) return;
         finished = true;
         clearInterval(healthTimer); clearInterval(leaseTimer); clearTimeout(forceTimer);
         signal?.removeEventListener("abort", terminate);
-        resolve({ code, reason: failure ?? cause });
+        resolve({ code, exitSignal, reason: failure ?? cause });
       };
       const terminate = () => {
         if (stopping) return;
@@ -77,10 +77,10 @@ export async function superviseChild({ command, args, cwd, env, signal, onStatus
         child = spawn(command, args, { cwd, env, windowsHide: true, shell: false, stdio: ["ignore", "ignore", "ignore", "ipc"] });
         leaseTimer = setInterval(() => {
           if (stopping || !child.connected) return;
-          child.send({ type: "HOST_LEASE" }, (error) => { if (error && !stopping) { failure = "HOST_LEASE_LOST"; terminate(); } });
+          child.send({ type: "HOST_LEASE", sentAtMs: Date.now() }, (error) => { if (error && !stopping) { failure = "HOST_LEASE_LOST"; terminate(); } });
         }, 1000);
         child.once("error", () => finish(null, "HOST_CHILD_START_FAILED"));
-        child.once("exit", (code, exitSignal) => { if (exitSignal) failure ??= "HOST_CHILD_SIGNALLED"; finish(code, code === 0 ? "HOST_CHILD_UNEXPECTED_EXIT" : "HOST_CHILD_FAILED"); });
+        child.once("exit", (code, exitSignal) => { if (exitSignal) failure ??= "HOST_CHILD_SIGNALLED"; finish(code, code === 0 ? "HOST_CHILD_UNEXPECTED_EXIT" : "HOST_CHILD_FAILED", exitSignal); });
         child.on("message", message => {
           if (message?.type !== "EXECUTOR_DIAGNOSTIC" || !["executorFailed", "executorError"].includes(message.event)
             || !/^[A-Z][A-Z0-9_]{2,95}$/u.test(message.reason ?? "")) return;
@@ -89,7 +89,8 @@ export async function superviseChild({ command, args, cwd, env, signal, onStatus
           // credentials or arbitrary IPC fields supplied alongside the code.
           if (!reported.has(key) && reported.size < 32) {
             reported.add(key);
-            Promise.resolve().then(() => onDiagnostic({ event: message.event, reason: message.reason, pid: child.pid, restartCount }))
+            const timing = Object.fromEntries(["leaseAgeMs", "timerDelayMs", "timeoutMs"].filter(k => Number.isFinite(message[k]) && message[k] >= 0 && message[k] <= 86400000).map(k => [k, message[k]]));
+            Promise.resolve().then(() => onDiagnostic({ event: message.event, reason: message.reason, pid: child.pid, restartCount, ...timing }))
               .catch(() => { failure = "HOST_DIAGNOSTIC_WRITE_FAILED"; terminate(); });
           }
           if (message.event === "executorError") { failure = message.reason; terminate(); }
@@ -100,19 +101,34 @@ export async function superviseChild({ command, args, cwd, env, signal, onStatus
       } catch { finish(null, "HOST_CHILD_START_FAILED"); }
     });
     if (signal?.aborted) {
-      const result = { status: "STOPPED", restartCount, stoppedAt: new Date().toISOString(), reason: "HOST_STOP_REQUESTED" };
+      const result = { status: "STOPPED", restartCount, stoppedAt: new Date().toISOString(), reason: "HOST_STOP_REQUESTED", childExitCode: outcome.code, childExitSignal: outcome.exitSignal };
       await emit(result); return result;
     }
     if (restartCount >= maxRestarts) {
-      const result = { status: "EXHAUSTED", restartCount, stoppedAt: new Date().toISOString(), reason: outcome.reason, childExitCode: outcome.code };
+      const result = { status: "EXHAUSTED", restartCount, stoppedAt: new Date().toISOString(), reason: outcome.reason, childExitCode: outcome.code, childExitSignal: outcome.exitSignal };
       await emit(result); return result;
     }
     restartCount += 1;
-    await emit({ status: "RESTART_WAIT", restartCount, reason: outcome.reason, childExitCode: outcome.code, retryAt: new Date(Date.now() + restartDelayMs).toISOString() });
+    await emit({ status: "RESTART_WAIT", restartCount, reason: outcome.reason, childExitCode: outcome.code, childExitSignal: outcome.exitSignal, retryAt: new Date(Date.now() + restartDelayMs).toISOString() });
     await wait(restartDelayMs, signal);
   }
   const result = { status: "STOPPED", restartCount, stoppedAt: new Date().toISOString(), reason: "HOST_STOP_REQUESTED" };
   await emit(result); return result;
+}
+
+export async function withManagedHostOwnership(store, run, { now = Date.now, isAlive = pid => { process.kill(pid, 0); return true; } } = {}) {
+  try { return await store.withLock("host", run); }
+  catch (error) {
+    if (error?.code !== "LIVE_STORE_LOCKED") throw error;
+    const prior = await store.read("live/supervisor.json"), daemon = await store.read("live/daemon-status.json");
+    const age = now() - Date.parse(daemon?.heartbeatAt), started = Date.parse(prior?.startedAt);
+    if (!Number.isSafeInteger(error.ownerPid) || error.ownerPid !== prior?.hostPid || prior?.status !== "RUNNING"
+      || daemon?.apiAvailable !== true || !Number.isFinite(age) || age < 0 || age > 420000
+      || !Number.isFinite(started) || Date.parse(daemon.heartbeatAt) < started || !Number.isSafeInteger(prior.pid) || prior.pid < 1
+      || !isAlive(prior.hostPid) || !isAlive(prior.pid)) throw new Error("HOST_ALREADY_RUNNING_HEALTH_UNVERIFIED");
+    return { status: "ALREADY_RUNNING", reason: "EXISTING_HOST_AND_HEARTBEAT_VERIFIED", existingHostPid: prior.hostPid,
+      heartbeatAt: daemon.heartbeatAt, observationCreated: false };
+  }
 }
 
 export async function startManagedHost({ stateDir, signal, root = repositoryRoot }) {
@@ -120,13 +136,14 @@ export async function startManagedHost({ stateDir, signal, root = repositoryRoot
   if (!(await stat(envFile)).isFile() || !(await stat(script)).isFile()) throw new Error("HOST_REQUIRED_FILE_UNAVAILABLE");
   const store = createLocalExecutionStore(stateDir, { repositoryRoot: root });
   const recorder = supervisorRecorder(store, { scheduler });
+  return withManagedHostOwnership(store, async () => {
   let deliveryEnv;
   try { deliveryEnv = await writerEnvironment(); }
   catch (error) {
     deliveryEnv = { PRIVATE_LIVE_DELIVERY_SEND_ENABLED: "false" };
     await store.writeMutable("live/site-relay-configuration.json", { status: "BLOCKED", reason: reasonFor(error), checkedAt: new Date().toISOString() });
   }
-  return store.withLock("host", async () => superviseChild({
+  return superviseChild({
     command: process.execPath, args: [`--env-file=${envFile}`, script, "--mode=daemon", `--state-dir=${stateDir}`], cwd: root,
     // Explicit inherited values take precedence over Node --env-file. No public publication from this host.
     env: { ...process.env, ...deliveryEnv, PRIVATE_LIVE_DELIVERY_READ_TOKEN: "", LIVE_EXECUTOR_PUBLISH_ENABLED: "false", LIVE_EXECUTOR_PUBLICATION_AUTHORIZED: "false" }, signal,
@@ -139,7 +156,8 @@ export async function startManagedHost({ stateDir, signal, root = repositoryRoot
       // The collection itself can legitimately occupy the complete five-minute window.
       return now - heartbeat <= 420_000;
     },
-  }));
+  });
+  });
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

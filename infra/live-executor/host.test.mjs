@@ -3,11 +3,12 @@ import test from "node:test";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { superviseChild, supervisorRecorder } from "./host.mjs";
+import { superviseChild, supervisorRecorder, withManagedHostOwnership } from "./host.mjs";
 import { createLocalExecutionStore } from "./store.mjs";
 import { buildWindowsTask } from "./windows-task.mjs";
 import { spawn } from "node:child_process";
 import { enforceParentLease } from "./parent-lease.mjs";
+import { EventEmitter } from "node:events";
 
 const task = { root: "C:\\Users\\operator\\Tight Budget", nodePath: "C:\\Program Files\\nodejs\\node.exe", powershellPath: "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", stateDir: "C:\\Users\\operator\\AppData\\Local\\TightBudget\\live-executor", userSid: "S-1-5-21-123-456-789-1002", date: "2026-10-12" };
 
@@ -76,6 +77,34 @@ test("restart evidence survives RUNNING updates and a fresh supervisor session",
   assert.deepEqual(await store.read("live/supervisor-events/synthetic-session-1/000001.json"), original);
 });
 
+test("a duplicate scheduled launch succeeds only for the verified live lock owner and never launches another collector", async t => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "tb-duplicate-host-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const store = createLocalExecutionStore(directory), at = Date.now(); let launches = 0;
+  await store.writeMutable("live/supervisor.json", { status: "RUNNING", hostPid: process.pid, pid: process.pid, startedAt: new Date(at - 1000).toISOString() });
+  await store.writeMutable("live/daemon-status.json", { heartbeatAt: new Date(at).toISOString(), apiAvailable: true });
+  await store.withLock("host", async () => {
+    const result = await withManagedHostOwnership(store, async () => { launches++; }, { now: () => at });
+    assert.equal(result.status, "ALREADY_RUNNING"); assert.equal(result.existingHostPid, process.pid);
+    assert.equal(result.observationCreated, false); assert.equal(launches, 0);
+    const lock = JSON.parse(await readFile(path.join(directory, ".locks/host.json"), "utf8"));
+    assert.equal(lock.pid, process.pid, "the original lock is not stolen/released");
+    await assert.rejects(withManagedHostOwnership(store, () => { launches++; }, { now: () => at + 420001 }), /HEALTH_UNVERIFIED/u);
+    await assert.rejects(withManagedHostOwnership(store, () => { launches++; }, { now: () => at, isAlive: () => false }), /HEALTH_UNVERIFIED/u);
+  });
+  assert.equal(launches, 0);
+});
+
+test("an unexplained lock, future heartbeat or different owner is not hidden as a successful duplicate", async () => {
+  const at = Date.now(), prior = { status: "RUNNING", hostPid: 123, pid: 124, startedAt: new Date(at - 1000).toISOString() };
+  for (const mutation of [v => { v.error.ownerPid = 456; }, v => { delete v.error.ownerPid; }, v => { v.daemon.heartbeatAt = new Date(at + 1).toISOString(); }, v => { v.daemon.apiAvailable = false; }]) {
+    const data = { error: { code: "LIVE_STORE_LOCKED", ownerPid: 123 }, daemon: { heartbeatAt: new Date(at).toISOString(), apiAvailable: true } };
+    mutation(data);
+    const store = { async withLock() { throw data.error; }, async read(key) { return key.endsWith("supervisor.json") ? prior : data.daemon; } };
+    await assert.rejects(withManagedHostOwnership(store, () => assert.fail("no duplicate launch"), { now: () => at, isAlive: () => true }), /HEALTH_UNVERIFIED/u);
+  }
+});
+
 test("real child fatal IPC reports the fixed reason only; extra sensitive fields never enter diagnostics", async () => {
   const diagnostics = [], marker = "synthetic-private-field-do-not-log";
   const script = `process.send({type:'EXECUTOR_DIAGNOSTIC',event:'executorError',reason:'MODEL_FORMULA_INTEGRITY_FAILED',password:${JSON.stringify(marker)}});setInterval(()=>{},1000);`;
@@ -83,6 +112,7 @@ test("real child fatal IPC reports the fixed reason only; extra sensitive fields
     onDiagnostic: async value => { diagnostics.push(value); } });
   assert.equal(result.status, "EXHAUSTED");
   assert.equal(result.reason, "MODEL_FORMULA_INTEGRITY_FAILED");
+  assert.ok(Object.hasOwn(result, "childExitSignal"), "OS termination signal must not be lost when exit code is null");
   assert.equal(diagnostics.length, 1);
   assert.equal(JSON.stringify(diagnostics).includes(marker), false);
 });
@@ -110,6 +140,51 @@ test("watchdog terminates an unresponsive actual child and records a safe code",
 
 test("standalone CLI is unaffected by the managed parent lifetime lease", () => {
   assert.equal(enforceParentLease({ channel: undefined }), false);
+});
+
+test("an expired timer drains an already queued IPC lease before stopping a live child", t => {
+  const timeouts = [], immediates = [], exits = [];
+  t.mock.method(globalThis, "setTimeout", fn => { const timer = { fn, unref() { return this; } }; timeouts.push(timer); return timer; });
+  t.mock.method(globalThis, "clearTimeout", () => {});
+  t.mock.method(globalThis, "setImmediate", fn => { immediates.push(fn); return { unref() {} }; });
+  const runtime = Object.assign(new EventEmitter(), { channel: {}, connected: true,
+    exit: code => exits.push(code), send: (_value, callback) => callback() });
+  enforceParentLease(runtime);
+  // libuv can service the overdue timer before the IPC poll callback after a
+  // busy child resumes. No sleep, live processes, credentials or clock changes.
+  timeouts[0].fn();
+  runtime.emit("message", { type: "HOST_LEASE", sentAtMs: Date.now() });
+  for (const fn of immediates) fn();
+  assert.deepEqual(exits, []);
+});
+
+test("one poll-phase drain does not forgive an actually absent parent", t => {
+  const timeouts = [], immediates = [], diagnostics = [], exits = [];
+  t.mock.method(globalThis, "setTimeout", fn => { const timer = { fn, unref() { return this; } }; timeouts.push(timer); return timer; });
+  t.mock.method(globalThis, "clearTimeout", () => {});
+  t.mock.method(globalThis, "setImmediate", fn => { immediates.push(fn); return { unref() {} }; });
+  const runtime = Object.assign(new EventEmitter(), { channel: {}, connected: true,
+    exit: code => exits.push(code), send: (value, callback) => { diagnostics.push(value); callback(); } });
+  enforceParentLease(runtime);
+  timeouts[0].fn();
+  for (const fn of immediates) fn();
+  assert.equal(exits[0], 1);
+  assert.equal(diagnostics[0].reason, "PARENT_LEASE_EXPIRED");
+});
+
+test("stale or future queued IPC cannot refresh an expired parent's lease", t => {
+  const timeouts = [], immediates = [], exits = [];
+  t.mock.method(globalThis, "setTimeout", fn => { const timer = { fn, unref() { return this; } }; timeouts.push(timer); return timer; });
+  t.mock.method(globalThis, "clearTimeout", () => {});
+  t.mock.method(globalThis, "setImmediate", fn => { immediates.push(fn); return { unref() {} }; });
+  const runtime = Object.assign(new EventEmitter(), { channel: {}, connected: true,
+    exit: code => exits.push(code), send: (_value, callback) => callback() });
+  enforceParentLease(runtime);
+  timeouts[0].fn();
+  runtime.emit("message", { type: "HOST_LEASE", sentAtMs: Date.now() - 6000 });
+  runtime.emit("message", { type: "HOST_LEASE", sentAtMs: Date.now() + 6000 });
+  for (const fn of immediates) fn();
+  assert.equal(exits[0], 1);
 });
 
 test("a real busy child drains already-arrived parent leases before declaring its live parent lost", { timeout: 10000 }, async t => {
