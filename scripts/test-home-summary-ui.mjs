@@ -23,6 +23,17 @@ assert.equal(dates.homeDate("2026-10-19"), "2026.10.19");
 for (const invalid of [null, "", "2026-02-30", "2026-10-19T00:00:00Z", "today"]) assert.equal(dates.homeDate(invalid), "확인 불가");
 assert.equal(dates.homeTime("2026-10-18T15:00:02Z"), "2026.10.19 00:00:02 KST");
 assert.equal(dates.homeTime("invalid"), "확인 불가");
+for (const [state, reason, label] of [
+  ["DEPLOYING", "VERCEL_DEPLOYMENT_PENDING", "배포 진행 중"],
+  ["DEPLOYING", "SITE_COMMIT_DIFFERS_REPOSITORY", "현재 화면 버전 미확인"],
+  ["DEPLOYING", "SITE_SNAPSHOT_DIFFERS_REPOSITORY", "데이터 반영 미확인"],
+  ["DEPLOYING", null, "데이터 반영 미확인"],
+  ["UNVERIFIED", "GITHUB_EVIDENCE_EXPIRED", "사이트 확인 기록 오래됨"],
+  ["VERIFICATION_FAILED", "HTTP_401", "사이트 확인 실패"],
+  ["DEPLOYMENT_FAILED", "VERCEL_DEPLOYMENT_FAILED", "배포 실패"],
+  ["VERIFIED", null, "실제 사이트 확인 완료"],
+]) assert.equal(dates.homeDeploymentLabel({ state, reason }), label);
+assert.equal(dates.homeDeploymentLabel(null), "사이트 확인 불가");
 const ranking = compile(await read("components/HomeModelRankings.tsx"), { "../lib/home-presentation.mjs": dates }).default;
 // Synthetic rendering fixtures only, never passed to an application store/API.
 const models = ["A", "B", "C", "D"].map(model => ({ modelVersion: model + "-v1", comparisonStatus: "AVAILABLE", previousDate: "2026-10-16", top: Array.from({ length: 5 }, (_, i) => ({ code: String(i).padStart(6, "0"), name: "매우 긴 합성 종목명 " + i, rank: i + 1, score: i === 0 ? 0 : 81.234 + i, previousRank: i + 3, rankChange: 2 })) }));
@@ -57,7 +68,8 @@ const panels = find(tree, node => node.props.role === "tabpanel");
 assert.equal(panels[0].props.hidden, false); assert.equal(panels[1].props.hidden, true);
 const markup = html(tree);
 assert.match(markup, /LIVE 결과 조회 실패/u); assert.match(markup, /Daily EOD로 자동 대체하지 않습니다/u);
-assert.match(markup, /현재 LIVE 실행: 확인되지 않음/u); assert.match(markup, /운영 상태 조회 실패/u);
+assert.match(markup, /저장된 LIVE 결과/u); assert.match(markup, /현재 자동 수집 상태/u);
+assert.match(markup, /확인 불가 · 실행 기록 조회 미연결/u); assert.match(markup, /운영 상태 조회 실패/u);
 assert.equal(find(tree, node => node.props.id === "home-operations-details")[0].props.hidden, true);
 const savedDocument = globalThis.document; const focused = [];
 try {
@@ -69,5 +81,8 @@ const css = await read("app/globals.css");
 assert.match(css, /min-width: 640px[\s\S]*repeat\(2,minmax/); assert.match(css, /min-width: 1280px[\s\S]*repeat\(4,minmax/);
 assert.match(css, /min-width: 640px[\s\S]*\.home-rank-list > li \{ min-height: 90px; \}/, "long names reserve equal comparison-row height, without enlarging mobile rows");
 assert.match(css, /\.home-dashboard \[hidden\]/);
+assert.match(css, /\.home-stock-name[^}]*font-size: 16px;[^}]*text-wrap: balance;/);
+assert.doesNotMatch(css.slice(0, css.indexOf(":root")), /text-overflow: ellipsis/);
+assert.match(css, /grid-template-columns: 1\.3rem minmax\(0,1fr\) 3\.25rem 2rem/);
 assert.doesNotMatch(source, /onOpenSearch|종목 검색/);
 console.log("Home summary: date/KST, LIVE20/EOD12, shared stocks, scores, verified changes, navigation, default/no-fallback, unknown/failure, lazy archive, keyboard tabs and responsive rules passed");

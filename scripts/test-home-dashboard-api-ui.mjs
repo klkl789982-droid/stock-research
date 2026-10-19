@@ -141,6 +141,13 @@ for (const altered of [{ ...dashboard, models: null }, { ...dashboard, dataIdent
 const verifiedHtml = render(dashboard, false, verified);
 for (const text of ["공식 EOD 운영 상태", "원본 대기", "수집·검증 완료", "저장소 게시", "실제 사이트 확인 완료", "마지막 정상 저장 데이터", "마지막 실제 사이트 확인", "다음 영업일 13시 이후", "도착 시각은 보장되지 않습니다"]) assert.ok(verifiedHtml.includes(text), text);
 assert.doesNotMatch(render(dashboard, false, operations), /실제 사이트 확인 완료/u, "Legacy published date and success never render green");
+for (const [reason, label] of [["SITE_COMMIT_DIFFERS_REPOSITORY", "현재 화면 버전 미확인"], ["SITE_SNAPSHOT_DIFFERS_REPOSITORY", "데이터 반영 미확인"], ["VERCEL_DEPLOYMENT_PENDING", "배포 진행 중"]]) {
+  const output = render(dashboard, false, { ...verified, deployment: { ...verified.deployment, state: "DEPLOYING", reason } });
+  assert.ok(output.includes(label));
+  if (reason !== "VERCEL_DEPLOYMENT_PENDING") assert.doesNotMatch(output, /EOD · 배포 중/u);
+}
+const failedWithOldProof = render(dashboard, false, { ...verified, runStatus: "FAILED", deployment: { ...verified.deployment, state: "UNVERIFIED", reason: "GITHUB_EVIDENCE_EXPIRED" } });
+assert.ok(failedWithOldProof.includes("수집·검증 실패") && failedWithOldProof.includes("사이트 확인 기록 오래됨"));
 for (const [state, reason, label] of [["DEPLOYMENT_FAILED", "VERCEL_DEPLOYMENT_FAILED", "Git 저장 후 Vercel 배포 실패"], ["VERIFICATION_FAILED", "HTTP_401", "사이트 검증 인증 실패 (401)"], ["VERIFICATION_FAILED", "HTTP_403", "사이트 검증 접근 거부 (403)"], ["VERIFICATION_FAILED", "REQUEST_TIMEOUT", "사이트 검증 응답 시간 초과"], ["UNVERIFIED", "GITHUB_403", "배포 증거 조회 제한 (403)"]]) {
   const output = render(dashboard, false, { ...verified, deployment: { ...verified.deployment, state, reason } });
   assert.ok(output.includes(label)); assert.ok(output.includes("2026.10.07")); assert.ok(output.includes("확인 기록"));

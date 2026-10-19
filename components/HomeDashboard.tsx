@@ -4,7 +4,7 @@ import { dailyOperationState, latestOneDayPerformance, publicationReasonLabel, h
 import HomeTransitionCard, { type HomeEodTransitions, type HomeTransitionNavigation } from "./HomeTransitionCard";
 import { PrivateLiveDeliveryView, usePrivateLiveDelivery } from "./PrivateLiveDeliveryPanel";
 import HomeModelRankings from "./HomeModelRankings";
-import { homeDate, homeTime } from "../lib/home-presentation.mjs";
+import { homeDate, homeTime, homeDeploymentLabel } from "../lib/home-presentation.mjs";
 type Stock = { code: string; name: string; market?: string };
 type Ranked = Stock & { rank: number; score: number; previousRank?: number | null; rankChange?: number | null };
 type Model = { modelVersion: string; rankingUniverseCount: number; top: Ranked[]; comparisonStatus?: string; previousDate?: string | null };
@@ -55,7 +55,7 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
   const outcome = performance.data ? latestOneDayPerformance(performance.data, 5) : null;
   const currentOperations = homeOperationStatus(operations.data, data, performance.data, { homeError: dashboard.error, performanceError: performance.error });
   const operation = dailyOperationState(currentOperations, data?.calendar);
-  const operationLabel = operations.error ? "운영 상태 조회 실패" : labels[operation] ?? "확인 불가";
+  const operationLabel = operations.error ? "운영 상태 조회 실패" : ["DEPLOYING", "UNVERIFIED"].includes(operation) ? homeDeploymentLabel(currentOperations?.deployment) : labels[operation] ?? "확인 불가";
   const warning = operations.error || ["FAILED", "PUBLICATION_FAILED", "DEPLOYMENT_FAILED", "VERIFICATION_FAILED", "DELAYED"].includes(operation);
   const liveReadLabel = privateRelay.failed ? "LIVE 조회 실패" : privateRelay.disabled ? "LIVE 전달 연결 비활성" : !privateRelay.data ? "LIVE 조회 중" : !delivery ? "LIVE 관측 대기 · 전달된 결과 없음" : fixture ? "합성 연결 검증 · 실제 관측 아님" : privateRelay.data.freshnessStatus === "HISTORICAL" ? "이전 날짜 저장 관측" : "마지막 정상 저장 관측";
   const liveModels = delivery?.models.map(model => ({ modelVersion: model.modelVersion,
@@ -66,17 +66,18 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
       ?? <p className="col-span-full text-sm text-slate-600">{performance.error ? "성과 조회 실패" : "확정 성과 확인 중"}</p>}
   </div>;
   return <section className="home-dashboard space-y-5" aria-labelledby="home-dashboard-heading">
-    <header className="home-intro"><div><h1 id="home-dashboard-heading" className="text-2xl font-semibold tracking-tight text-[var(--tb-navy)]">시장 요약</h1><p className="mt-1 text-sm text-slate-600">저장된 분석을 비교하고 관심 종목의 근거를 확인하세요.</p></div>
+    <header className="home-intro"><h1 id="home-dashboard-heading" className="text-2xl font-semibold tracking-tight text-[var(--tb-navy)]">시장 요약</h1>
       <button ref={operationsButton} type="button" className="tb-focus home-secondary-button" aria-expanded={operationsOpen} aria-controls="home-operations-details" onClick={() => setOperationsOpen(!operationsOpen)}>운영 상세 <span aria-hidden="true">{operationsOpen ? "−" : "+"}</span></button>
+      <p className="home-intro-description">저장된 분석에서 관심 종목의 근거를 확인하세요.</p>
     </header>
     <div className={"home-status-line " + (warning || privateRelay.failed ? "home-status-warning" : "")} aria-label="데이터 최신성 요약" role="status">
-      <span><span className="text-slate-600">마지막 LIVE </span>{fixture ? "합성 검증" : homeDate(delivery?.signalDate)} <span className="text-slate-600">· 분석 기준 14:00 KST</span></span>
-      <span>공식 EOD {homeDate(data?.referenceDate)}</span><span>{liveReadLabel}</span>
-      <span>현재 LIVE 실행: 확인되지 않음</span><span className="font-medium">EOD · {operationLabel}</span>
+      <div className="home-status-results"><span><strong>저장된 LIVE 결과</strong> {fixture ? "합성 검증" : delivery ? homeDate(delivery.signalDate) + " · 14:00 KST" : privateRelay.data ? "없음" : "기준일 확인 불가"} · {liveReadLabel}</span>
+        <span><strong>공식 EOD</strong> {homeDate(data?.referenceDate)} · {operationLabel}</span></div>
+      <p className="home-collection-status"><strong>현재 자동 수집 상태</strong> 확인 불가 · 실행 기록 조회 미연결</p>
     </div>
     <section hidden={!operationsOpen} id="home-operations-details" className="home-surface home-operations" aria-labelledby="home-operations-heading" onKeyDown={event => { if (event.key === "Escape") { setOperationsOpen(false); operationsButton.current?.focus(); } }}>
       <h2 id="home-operations-heading" className="text-lg font-semibold">운영 상세</h2>
-      <p className="mt-1 text-sm text-slate-600">마지막 정상 결과와 현재 실행은 별개입니다. 현재 Cloud 실행 상태를 제공하는 조회가 없어 실행 중·성공으로 추정하지 않습니다.</p>
+      <p className="mt-1 text-sm text-slate-600">저장된 LIVE 결과는 마지막으로 전달받아 읽은 기록입니다. 현재 자동 수집의 시작·진행·성공·실패 기록은 이 화면에 연결되지 않아 확인할 수 없습니다. 저장 결과가 있다고 현재 수집이 정상이라고 판단하지 않습니다.</p>
       <div className="home-operation-columns">
         <section><h3 className="font-semibold">14:00 LIVE · 비공개 전달</h3><dl className="home-facts">
           <div><dt>현재 조회 상태</dt><dd>{liveReadLabel}</dd></div>
@@ -90,14 +91,14 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
             <li><strong>1. 원본 확인</strong><p>{operations.data?.sourceStatus === "NO_NEW_DATA" ? "추가 원본 대기" : operations.data?.sourceStatus === "AVAILABLE" ? "원본 확인" : "확인 불가"} · 마지막 원본 조회 {time(operations.data?.lastSourceCheckAt)}</p></li>
             <li><strong>2. 수집·검증</strong><p>수집 {homeDate(operations.data?.latestCollectedReferenceDate)} · 수집·검증 완료 {homeDate(operations.data?.latestValidatedReferenceDate)}</p></li>
             <li><strong>3. 저장소 게시</strong><p>{operations.data?.repositoryStatusAvailable ? homeDate(operations.data.publishedReferenceDate) : "확인 불가"}</p></li>
-            <li><strong>4. 실제 사이트</strong><p>{labels[currentOperations?.deployment?.state ?? "UNVERIFIED"] ?? "미확인"} · 확인 시각 {time(operations.data?.deployment?.checkedAt)}</p></li>
+            <li><strong>4. 실제 사이트</strong><p>{homeDeploymentLabel(currentOperations?.deployment)} · 기록 조회 {time(operations.data?.deployment?.checkedAt)}</p></li>
           </ol>
         </section>
       </div>
       <details className="home-detail"><summary className="tb-focus rounded">공식 EOD 검증 기록·실패 이유·출처</summary><dl className="home-facts">
         <div><dt>마지막 정상 저장 데이터 / 현재 사이트 기준일</dt><dd>{homeDate(operations.data?.lastGoodStoredReferenceDate)} / {homeDate(operations.data?.siteApiReferenceDate)}</dd></div>
         <div><dt>마지막 실제 사이트 확인</dt><dd>{operations.data?.deployment?.lastVerified ? <><a className="tb-focus rounded underline" href={operations.data.deployment.lastVerified.runUrl} target="_blank" rel="noreferrer">{homeDate(operations.data.deployment.lastVerified.referenceDate)} 확인 기록</a> · {time(operations.data.deployment.lastVerified.verifiedAt)}</> : "확인 기록 없음"}</dd></div>
-        <div><dt>현재 배포·검증 사유</dt><dd>{publicationReasonLabel(currentOperations?.deployment?.reason)}</dd></div>
+        <div><dt>현재 배포·검증 사유</dt><dd>{publicationReasonLabel(currentOperations?.deployment?.reason)}{currentOperations?.deployment?.state === "DEPLOYING" && currentOperations.deployment.reason !== "VERCEL_DEPLOYMENT_PENDING" ? " · 버전·내용 불일치만으로 실제 배포 진행 중이라고 판단하지 않습니다." : null}</dd></div>
         {operations.data?.latestAttempt && <div><dt>최근 실행 시도 (수동 포함)</dt><dd><a className="tb-focus rounded underline" href={operations.data.latestAttempt.runUrl} target="_blank" rel="noreferrer">{operations.data.latestAttempt.conclusion ?? operations.data.latestAttempt.status}</a> · {({ COLLECTION: "수집", VALIDATION: "검증", REPOSITORY: "저장소 게시", VERIFICATION: "사이트 확인", WORKFLOW: "실행 환경" } as Record<string, string>)[operations.data.latestAttempt.stage ?? ""] ?? "단계 확인 불가"} · {time(operations.data.latestAttempt.completedAt ?? operations.data.latestAttempt.startedAt)}</dd></div>}
         <div><dt>최근 수집 실패 사유</dt><dd>{operations.data?.recentFailureReason ?? "기록 없음"}</dd></div>
         <div><dt>최신 원본 기준일 / 미반영 거래일</dt><dd>{homeDate(operations.data?.latestConfirmedTradingDate)} / {operations.data?.lagTradingDays ?? "미확인"}</dd></div>
