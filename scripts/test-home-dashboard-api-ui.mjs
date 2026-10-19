@@ -148,6 +148,14 @@ for (const [reason, label] of [["SITE_COMMIT_DIFFERS_REPOSITORY", "현재 화면
 }
 const failedWithOldProof = render(dashboard, false, { ...verified, runStatus: "FAILED", deployment: { ...verified.deployment, state: "UNVERIFIED", reason: "GITHUB_EVIDENCE_EXPIRED" } });
 assert.ok(failedWithOldProof.includes("수집·검증 실패") && failedWithOldProof.includes("사이트 확인 기록 오래됨"));
+const storedFailure = { ...verified, runStatus: "FAILED", recentFailureReason: "LATEST_PROBE_NETWORK_TIMEOUT", lastFailureAt: "2026-10-19T10:41:10.500Z", lastAttemptAt: "2026-10-19T10:41:10.500Z",
+  repositoryStatusAvailable: false, deployment: { ...verified.deployment, state: "UNVERIFIED", reason: "GITHUB_TIMEOUT" } };
+const fallback = render(dashboard, false, storedFailure);
+assert.match(fallback, /저장 당시 수집·검증 실패 · 현재 실행 조회 불가/u);
+assert.match(fallback, /현재 화면 배포에 포함된 과거 기록/u);
+assert.match(fallback, /2026.10.19 19:41:10 KST/u);
+assert.match(fallback, /home-status-warning/u); assert.doesNotMatch(fallback, /실제 사이트 확인 완료/u);
+assert.doesNotMatch(render(dashboard, false, { ...storedFailure, repositoryStatusAvailable: true }), /저장 당시 수집·검증 실패/u);
 for (const state of ["DEPLOYING", "DEPLOYMENT_FAILED", "VERIFICATION_FAILED"]) {
   const output = render(dashboard, false, { ...verified, runStatus: "FAILED", deployment: { ...verified.deployment, state, reason: "SITE_COMMIT_DIFFERS_REPOSITORY" } });
   assert.match(output, /공식 EOD<\/strong>[^<]*수집·검증 실패/u, "closed summary must retain collection failures alongside deployment evidence");

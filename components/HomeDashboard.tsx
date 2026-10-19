@@ -14,6 +14,7 @@ type PerformanceRow = { modelVersion: string; horizon: string; topN: number; sig
 type Performance = { daily: PerformanceRow[]; live?: { daily: PerformanceRow[] } };
 type Verification = { referenceDate: string; verifiedAt: string | null; runUrl: string; commitSha: string; snapshotHash: string };
 type Operations = { latestAttempt?: { status: string; conclusion: string | null; stage: string | null; startedAt: string; completedAt: string | null; runUrl: string } | null; lastAutomaticRunAt?: string | null; lastAutomaticRunConclusion?: string | null; lastSuccessAt?: string | null; lastGoodStoredReferenceDate?: string | null; siteApiReferenceDate?: string | null; publishedReferenceDate?: string | null; latestConfirmedTradingDate?: string | null; latestCollectedReferenceDate?: string | null; latestValidatedReferenceDate?: string | null; lastSourceCheckAt?: string | null; sourceStatus?: string; recentFailureReason?: string | null; freshnessStatus?: string; repositoryPublicationStatus?: string; repositoryStatusAvailable?: boolean; siteApiMatchesPublished?: boolean; runStatus?: string; lagTradingDays?: number | null; deployment?: { state: string; reason: string | null; lastVerified: Verification | null; verification?: Verification | null; checkedAt?: string | null; intendedIdentity?: { referenceDate: string; snapshotHash: string; commitSha: string } | null } };
+type OperationEvidence = Operations & { lastFailureAt?: string | null; lastAttemptAt?: string | null };
 function useResource<T>(url: string) {
   const [state, setState] = useState<{ url: string; data: T | null; error: boolean } | null>(null);
   const sequence = useRef(0);
@@ -42,7 +43,7 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
 }) {
   const dashboard = useResource<Dashboard>("/api/home-dashboard?topN=5");
   const performance = useResource<Performance>("/api/model-performance");
-  const operations = useResource<Operations>("/api/daily-production-status");
+  const operations = useResource<OperationEvidence>("/api/daily-production-status");
   const privateRelay = usePrivateLiveDelivery();
   const live = useResource<{ signalDate: string; collectionCompletedAt: string }>("/api/intraday-model-top?model=B&limit=1");
   const [source, setSource] = useState<"LIVE" | "EOD">("LIVE");
@@ -55,11 +56,13 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
   const outcome = performance.data ? latestOneDayPerformance(performance.data, 5) : null;
   const currentOperations = homeOperationStatus(operations.data, data, performance.data, { homeError: dashboard.error, performanceError: performance.error });
   const operation = dailyOperationState(currentOperations, data?.calendar);
+  const failureLabel = (state: string) => operations.data?.repositoryStatusAvailable === false && ["FAILED", "PUBLICATION_FAILED"].includes(state)
+    ? "저장 당시 " + labels[state] + " · 현재 실행 조회 불가" : labels[state];
   // Keep collection/publication failures visible even when deployment evidence
   // has its own pending/error state. Reuse the existing failure rules unchanged.
   const collectionOperation = dailyOperationState(currentOperations ? { ...currentOperations, deployment: undefined } : null, data?.calendar);
-  const additionalEodFailure = ["FAILED", "PUBLICATION_FAILED"].includes(collectionOperation) && operation !== collectionOperation ? labels[collectionOperation] : null;
-  const operationLabel = operations.error ? "운영 상태 조회 실패" : ["DEPLOYING", "UNVERIFIED"].includes(operation) ? homeDeploymentLabel(currentOperations?.deployment) : labels[operation] ?? "확인 불가";
+  const additionalEodFailure = ["FAILED", "PUBLICATION_FAILED"].includes(collectionOperation) && operation !== collectionOperation ? failureLabel(collectionOperation) : null;
+  const operationLabel = operations.error ? "운영 상태 조회 실패" : ["DEPLOYING", "UNVERIFIED"].includes(operation) ? homeDeploymentLabel(currentOperations?.deployment) : failureLabel(operation) ?? "확인 불가";
   const warning = operations.error || Boolean(additionalEodFailure) || ["FAILED", "PUBLICATION_FAILED", "DEPLOYMENT_FAILED", "VERIFICATION_FAILED", "DELAYED"].includes(operation);
   const liveReadLabel = privateRelay.failed ? "LIVE 조회 실패" : privateRelay.disabled ? "LIVE 전달 연결 비활성" : !privateRelay.data ? "LIVE 조회 중" : !delivery ? "LIVE 관측 대기 · 전달된 결과 없음" : fixture ? "합성 연결 검증 · 실제 관측 아님" : privateRelay.data.freshnessStatus === "HISTORICAL" ? "이전 날짜 저장 관측" : "조회 확인";
   const liveModels = delivery?.models.map(model => ({ modelVersion: model.modelVersion,
@@ -100,11 +103,12 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
         </section>
       </div>
       <details className="home-detail"><summary className="tb-focus rounded">공식 EOD 검증 기록·실패 이유·출처</summary><dl className="home-facts">
+        <div><dt>실행 상태 정보 출처</dt><dd>{!operations.data ? "조회 실패 또는 확인 중" : operations.data.repositoryStatusAvailable ? "저장소의 최신 실행 기록" : "현재 화면 배포에 포함된 과거 기록 · 최신 실행 조회 불가"} · 기록 시각 {time(operations.data?.lastAttemptAt)}</dd></div>
         <div><dt>마지막 정상 저장 데이터 / 현재 사이트 기준일</dt><dd>{homeDate(operations.data?.lastGoodStoredReferenceDate)} / {homeDate(operations.data?.siteApiReferenceDate)}</dd></div>
         <div><dt>마지막 실제 사이트 확인</dt><dd>{operations.data?.deployment?.lastVerified ? <><a className="tb-focus rounded underline" href={operations.data.deployment.lastVerified.runUrl} target="_blank" rel="noreferrer">{homeDate(operations.data.deployment.lastVerified.referenceDate)} 확인 기록</a> · {time(operations.data.deployment.lastVerified.verifiedAt)}</> : "확인 기록 없음"}</dd></div>
         <div><dt>현재 배포·검증 사유</dt><dd>{publicationReasonLabel(currentOperations?.deployment?.reason)}{currentOperations?.deployment?.state === "DEPLOYING" && currentOperations.deployment.reason !== "VERCEL_DEPLOYMENT_PENDING" ? " · 버전·내용 불일치만으로 실제 배포 진행 중이라고 판단하지 않습니다." : null}</dd></div>
         {operations.data?.latestAttempt && <div><dt>최근 실행 시도 (수동 포함)</dt><dd><a className="tb-focus rounded underline" href={operations.data.latestAttempt.runUrl} target="_blank" rel="noreferrer">{operations.data.latestAttempt.conclusion ?? operations.data.latestAttempt.status}</a> · {({ COLLECTION: "수집", VALIDATION: "검증", REPOSITORY: "저장소 게시", VERIFICATION: "사이트 확인", WORKFLOW: "실행 환경" } as Record<string, string>)[operations.data.latestAttempt.stage ?? ""] ?? "단계 확인 불가"} · {time(operations.data.latestAttempt.completedAt ?? operations.data.latestAttempt.startedAt)}</dd></div>}
-        <div><dt>최근 수집 실패 사유</dt><dd>{operations.data?.recentFailureReason ?? "기록 없음"}</dd></div>
+        <div><dt>최근 수집 실패 사유</dt><dd>{operations.data?.recentFailureReason ?? "기록 없음"}{operations.data?.lastFailureAt ? " · 발생 " + time(operations.data.lastFailureAt) : ""}</dd></div>
         <div><dt>최신 원본 기준일 / 미반영 거래일</dt><dd>{homeDate(operations.data?.latestConfirmedTradingDate)} / {operations.data?.lagTradingDays ?? "미확인"}</dd></div>
         <div><dt>마지막 자동 실행</dt><dd>{time(operations.data?.lastAutomaticRunAt)} · {operations.data?.lastAutomaticRunConclusion ?? "미확인"}</dd></div>
         <div><dt>마지막 수집·저장 기록</dt><dd>{time(operations.data?.lastSuccessAt)}</dd></div>
