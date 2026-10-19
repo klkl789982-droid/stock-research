@@ -115,7 +115,21 @@
     "localSwingSelections": 20,
     "localSwingUniqueTickers": 18,
     "localSwingCreatedAtUtc": "2026-10-19T05:03:35.448Z",
-    "authenticatedProductionHome": "NOT_VERIFIED this turn, administrator session required"
+    "authenticatedProductionHome": "NOT_VERIFIED this turn, administrator session required",
+    "postCollectionSupervisor": {
+      "checkedAtUtc": "2026-10-19T05:27:44.478Z",
+      "taskEnabled": true,
+      "multipleInstances": "IgnoreNew",
+      "supervisorStatus": "RUNNING",
+      "restartCount": 1,
+      "diagnosticAtUtc": "2026-10-19T05:06:56.368Z",
+      "diagnosticCode": "PARENT_LEASE_EXPIRED",
+      "restartedAtUtc": "2026-10-19T05:07:27.051Z",
+      "heartbeatAtUtc": "2026-10-19T05:27:44.478Z",
+      "rootCause": "UNCONFIRMED. The fixed diagnostic proves the child lease expired, not why IPC or event-loop processing was delayed.",
+      "collectionImpact": "The market collection, local immutable storage and private delivery had completed before the restart. Do not claim uninterrupted PC operation.",
+      "runtimeChangedThisTurn": false
+    }
   },
   "validation": {
     "relatedTests": "84/84 PASS,0 skipped; same hard-link tests rerun outside sandbox after EPERM",
