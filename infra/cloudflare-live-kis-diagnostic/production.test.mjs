@@ -119,6 +119,7 @@ test("normal-day allocations fit Free; current experimental accumulation is not 
   const budget = normalDayBudget(); assert.ok(Object.values(budget).every(v => v.total < v.limit));
   assert.equal(budget.workflowSteps.total, 320); assert.equal(budget.sqlRowsRead.total, 1500000); assert.equal(budget.sqlRowsWritten.total, 55000);
   assert.ok(PRODUCTION_BUDGET.workflowStorageGbMonths >= 71 * 65536 * 3 * 2 / 1e9, "retention reserve must include measured per-instance state, not only step outputs");
+  assert.ok(PRODUCTION_BUDGET.workflowStorageGbMonths >= 5341184 * 3 * 2 / 1e9, "reserve the measured full-run footprint and three-day retention with headroom");
   assert.deepEqual(LIVE_CRONS, ["40,50 4 * * MON-FRI", "6,8,10 5 * * MON-FRI"]);
   assert.throws(() => assertProduction({ ...env, LIVE_PRODUCTION_ENABLED: "false" }), /DISABLED/u);
   assert.throws(() => checkCutover({}, b.start), /CUTOVER_BLOCKED/u);

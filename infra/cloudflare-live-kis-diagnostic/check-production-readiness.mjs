@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { repositoryInputs } from "../live-executor/runtime.mjs";
 import { normalDayBudget, PRODUCTION_BUDGET } from "./production-core.mjs";
+import { retainedCloudVerification } from "./readiness-evidence.mjs";
 const root = path.resolve(fileURLToPath(new URL("../../", import.meta.url)));
 const arg = name => process.argv.find(a => a.startsWith(`--${name}=`))?.slice(name.length + 3);
 const now = Date.now(), today = new Date(now + 9 * 3600000).toISOString().slice(0, 10), blockers = [];
@@ -29,12 +30,16 @@ if (arg("snapshot")) {
   } catch { blockers.push("ACCOUNT_SNAPSHOT_INVALID"); }
 } else blockers.push("ACCOUNT_SNAPSHOT_REQUIRED");
 const evidence = JSON.parse(await fs.readFile(path.join(root, "infra/cloudflare-live-kis-diagnostic/actual-evidence.json"), "utf8"));
-const full = evidence.actualFullUniverseBenchmark;
+let followup = null;
+try { followup = JSON.parse(await fs.readFile(path.join(root, "infra/cloudflare-live-kis-diagnostic/operational-followup-20261019.json"), "utf8")); }
+catch (e) { if (e.code !== "ENOENT") throw e; }
+const verified = retainedCloudVerification(evidence, followup), full = verified.full;
 if (full.processedSymbols !== 553 || full.completeModels !== full.requiredEligibleModels || full.collectionSucceeded !== true) blockers.push("ACTUAL_FULL_ELIGIBLE_SET_NOT_VERIFIED");
-if (evidence.verification.normalProductionRelayAndAuthenticatedHomeReadbackFromCloud !== "PASS") blockers.push("NORMAL_CLOUD_RELAY_AND_AUTHENTICATED_SITE_NOT_VERIFIED");
-if (evidence.verification.cloudSwingRecordingAndReadback !== "PASS") blockers.push("SWING_RECORDING_NOT_VERIFIED");
+if (!verified.normalCloudAuthenticatedSiteVerified) blockers.push("NORMAL_CLOUD_RELAY_AND_AUTHENTICATED_SITE_NOT_VERIFIED");
+if (!verified.swingRecordingCompatible && evidence.verification.cloudSwingRecordingAndReadback !== "PASS") blockers.push("SWING_RECORDING_NOT_VERIFIED");
 console.log(JSON.stringify({ status: blockers.length ? "BLOCKED" : "READY_FOR_TWO_PHASE_CUTOVER", checkedAt: new Date(now).toISOString(),
-  todayKst: today, input, blockers, normalDayBudget: normalDayBudget(), retention: { dailyDoCapBytes: PRODUCTION_BUDGET.retainedBytesPerDay,
+  todayKst: today, input, blockers, actualCloudFullTrialVerified: verified.laterActualFull,
+  cloudSwingRecordingCompatibilityVerified: verified.swingRecordingCompatible, normalDayBudget: normalDayBudget(), retention: { dailyDoCapBytes: PRODUCTION_BUDGET.retainedBytesPerDay,
     globalReservedStopBytes: 4000000000, workflowStateDays: 3, deletesExistingImmutableRecords: false },
   sideEffects: { kisCalls: 0, collectionTriggered: false, pcTaskChanged: false, productionFlagsChanged: false } }));
 process.exitCode = blockers.length ? 2 : 0;

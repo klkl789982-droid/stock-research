@@ -27,8 +27,8 @@
     "durationGbSeconds": 9500,
     "sqlRowsRead": 1500000,
     "sqlRowsWritten": 55000,
-    "workflowStorageGbMonthsPlanningReserveNotMeasuredBound": 0.03,
-    "workflowStorageReserveBasis": "A real2-step isolated fixture added65,536bytes.71 instances*65,536bytes*3retentiondays=13,959,168bytes peak (0.013959168GB-month if charged for all30days). Twice that projection rounded up is0.03, not a certified production upper bound.",
+    "workflowStorageGbMonthsPlanningReserveNotMeasuredBound": 0.04,
+    "workflowStorageReserveBasis": "The real full diagnostic added5,341,184bytes between the before/after unsampled reported growth.3retained daily runs *2headroom=32,047,104bytes peak (0.032047104GB-month if charged for all30days); round up to0.04. This measured diagnostic projection is not a certified normal Production upper bound.",
     "marketCallsLiveHardCap": 1400,
     "otherServices": "Existing GitHub Actions EOD/Vercel/private Git infrastructure reused. Their own aggregate usage must remain within existing free limits; Cloudflare allocation does not prove their headroom."
   },
