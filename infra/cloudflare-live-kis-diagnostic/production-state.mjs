@@ -3,11 +3,13 @@ import { assertPrivateKisEodPayload } from "../../lib/kis-eod-private-store.mjs"
 import { deliverPrivateLive } from "../../lib/private-live-delivery.mjs";
 import { assertProduction, assertWindow, bounds, aggregateProduction, nextPairSlots, PRODUCTION_BUDGET } from "./production-core.mjs";
 import { persistCloudSwingIntent } from "./cloud-swing.mjs";
+import { safeCode } from "./core.mjs";
 
 export class ProductionDayState {
-  constructor({ sql, env, prepare, bundle, remote, now = Date.now, wait = ms => new Promise(r => setTimeout(r, ms)) }) {
+  constructor({ sql, env, prepare, bundle, remote, now = Date.now, wait = ms => new Promise(r => setTimeout(r, ms)), transaction = fn => fn(), scheduleDeadline = (ms, fn) => { const timer = setTimeout(fn, ms); timer.unref?.(); return () => clearTimeout(timer); } }) {
     this.sql = sql; this.env = env; this.prepareInput = prepare; this.bundle = bundle; this.remote = remote; this.now = now; this.wait = wait;
-    this.serial = Promise.resolve();
+    this.transaction = transaction; this.scheduleDeadline = scheduleDeadline; this.pending = new Map(); this.draining = false; this.controlDepth = 0;
+    this.credit = { r: 0, w: 0 }; this.cursorUsage = { r: 0, w: 0 }; this.usageUpdates = 0;
     sql.exec("CREATE TABLE IF NOT EXISTS docs (id TEXT PRIMARY KEY,digest TEXT NOT NULL,body TEXT NOT NULL)").toArray();
     sql.exec("CREATE TABLE IF NOT EXISTS leases (code TEXT PRIMARY KEY,expires INTEGER NOT NULL,completed INTEGER NOT NULL)").toArray();
     sql.exec("CREATE INDEX IF NOT EXISTS active_lease ON leases(completed,expires)").toArray();
@@ -16,16 +18,36 @@ export class ProductionDayState {
     const prior = sql.exec("SELECT r,w FROM usage WHERE id=1").toArray()[0];
     this.meter = prior ? { r: prior.r + 1, w: prior.w } : { r: 1, w: 2 };
     if (!prior) sql.exec("INSERT INTO usage VALUES (1,1,2)").toArray();
+    // Prepay startup/schema/index overhead on every reopen. Unused credit is
+    // deliberately lost on restart; the persisted high-water mark never resets.
+    this.reserve(128, 32, true);
+  }
+  critical(fn) { this.controlDepth++; try { return fn(); } finally { this.controlDepth--; } }
+  reserve(r, w, critical = this.controlDepth > 0) {
+    const limitR = PRODUCTION_BUDGET.sqlRowsRead - (critical ? 64 : 20000);
+    const limitW = PRODUCTION_BUDGET.sqlRowsWritten - (critical ? 64 : 6000);
+    const addR = this.credit.r < r ? Math.max(1024, r) : 0, addW = this.credit.w < w ? Math.max(128, w) : 0;
+    if (this.meter.r + addR + (addR || addW ? 2 : 0) > limitR || this.meter.w + addW + (addR || addW ? 2 : 0) > limitW) throw new Error("LIVE_CLOUD_SQL_BUDGET");
+    if (!addR && !addW) return;
+    const next = { r: this.meter.r + addR + 2, w: this.meter.w + addW + 2 };
+    const m = this.sql.exec("UPDATE usage SET r=?,w=? WHERE id=1", next.r, next.w); m.toArray();
+    if (!Number.isFinite(m.rowsRead) || !Number.isFinite(m.rowsWritten) || m.rowsRead > 2 || m.rowsWritten > 2) throw new Error("LIVE_CLOUD_SQL_METER_CHANGED");
+    this.meter = next; this.credit.r += addR; this.credit.w += addW; this.usageUpdates++;
   }
   q(query, ...args) {
-    if (this.meter.r + 1000 > PRODUCTION_BUDGET.sqlRowsRead || this.meter.w + 1000 > PRODUCTION_BUDGET.sqlRowsWritten) throw new Error("LIVE_CLOUD_SQL_BUDGET");
+    // Indexed point reads / at most eight active leases. Aggregate diagnostics
+    // use an explicit bounded scan rather than this hot-path allowance.
+    const maxRead = query.includes("COUNT(") || query.includes("SUM(") || query.includes("LIMIT 554") ? 2048 : 32, maxWrite = 16;
+    if (this.inTransaction && (this.credit.r < maxRead || this.credit.w < maxWrite)) throw new Error("LIVE_CLOUD_SQL_RESERVATION_REQUIRED");
+    this.reserve(maxRead, maxWrite);
+    // Reserve the individual statement BEFORE executing it. If SQLite throws
+    // or returns no cursor telemetry, retain the entire pessimistic charge.
+    this.credit.r -= maxRead; this.credit.w -= maxWrite;
     const c = this.sql.exec(query, ...args), rows = c.toArray();
     if (!Number.isFinite(c.rowsRead) || !Number.isFinite(c.rowsWritten)) throw new Error("LIVE_CLOUD_SQL_METER_UNAVAILABLE");
-    // Integer-primary-key UPDATE avoids REPLACE/delete/index churn. Reserve2
-    // reads+writes for the meter itself, and verify that bound in real cursors.
-    this.meter.r += c.rowsRead + 2; this.meter.w += c.rowsWritten + 2;
-    const m = this.sql.exec("UPDATE usage SET r=?,w=? WHERE id=1", this.meter.r, this.meter.w); m.toArray();
-    if (m.rowsRead > 2 || m.rowsWritten > 2) throw new Error("LIVE_CLOUD_SQL_METER_CHANGED");
+    this.credit.r += maxRead - c.rowsRead; this.credit.w += maxWrite - c.rowsWritten;
+    this.cursorUsage.r += c.rowsRead; this.cursorUsage.w += c.rowsWritten;
+    if (c.rowsRead > maxRead || c.rowsWritten > maxWrite) throw new Error("LIVE_CLOUD_SQL_QUERY_BOUND");
     return rows;
   }
   read(id) {
@@ -45,8 +67,9 @@ export class ProductionDayState {
   check(date, collection = false) {
     assertProduction(this.env);
     if (!/^\d{4}-\d{2}-\d{2}$/u.test(date ?? "")) throw new Error("LIVE_CLOUD_DATE_INVALID");
-    const prior = this.read("date"); if (prior && prior.date !== date) throw new Error("LIVE_CLOUD_DATE_CONFLICT");
+    const prior = this.dateReceipt ?? this.read("date"); if (prior && prior.date !== date) throw new Error("LIVE_CLOUD_DATE_CONFLICT");
     if (!prior) this.write("date", { date });
+    this.dateReceipt = prior ?? { date };
     if (this.read("revoked")) throw new Error("LIVE_CLOUD_OWNER_REVOKED");
     if (collection) assertWindow(date, this.now());
   }
@@ -70,20 +93,57 @@ export class ProductionDayState {
   async acquire(date, code) {
     this.check(date, true);
     const previous = this.read(`observation:${code}`); if (previous) return { existing: previous };
-    const original = this.read("final"); if (!original?.codes.includes(code)) throw new Error("LIVE_CLOUD_NOT_PREPARED");
-    const operation = this.serial.then(async () => {
-      while (this.q("SELECT code FROM leases WHERE completed=0 AND expires>?", this.now()).length >= 8) {
-        await this.wait(50); this.check(date, true);
-      }
-      if (this.q("SELECT code FROM leases WHERE code=?", code).length) throw new Error("LIVE_CLOUD_ATTEMPT_ALREADY_RESERVED");
-      const s = this.slots(date, code), deadline = bounds(date).end;
-      this.q("INSERT INTO leases VALUES (?,?,0)", code, deadline);
-      // Raw prior history and the pinned bearer cross only an internal DO
-      // binding into shard RAM. They are never a Workflow result or SQL record.
-      const data = await this.bundle(date, original, code);
-      return { ...data, ...s, deadline, signalDate: date, seedReferenceDate: original.seedReferenceDate };
+    const original = this.finalReceipt ?? this.read("final"); if (!original?.codes.includes(code)) throw new Error("LIVE_CLOUD_NOT_PREPARED");
+    this.finalReceipt = original;
+    if (this.pending.has(code)) throw new Error("LIVE_CLOUD_ATTEMPT_ALREADY_RESERVED");
+    return new Promise((resolve, reject) => {
+      const job = { date, code, original, resolve, reject }; this.pending.set(code, job);
+      // One absolute deadline notification, never repeated SQL polling.
+      job.cancel = this.scheduleDeadline(Math.max(0, bounds(date).end - this.now() + 1), () => {
+        if (this.pending.get(code) !== job) return;
+        this.pending.delete(code); reject(new Error("LIVE_CLOUD_WINDOW_EXPIRED"));
+      });
+      this.drain();
     });
-    this.serial = operation.then(() => {}, () => {}); return operation;
+  }
+  drain() {
+    if (this.draining) return; this.draining = true;
+    try {
+      while (this.pending.size) {
+        const job = this.pending.values().next().value;
+        try {
+          this.check(job.date, true);
+          if (this.q("SELECT code FROM leases WHERE code=?", job.code).length) throw new Error("LIVE_CLOUD_ATTEMPT_ALREADY_RESERVED");
+          if (this.q("SELECT code FROM leases WHERE completed=0 AND expires>?", this.now()).length >= 8) break;
+          // Persist slots+allocator+lease atomically before any market call.
+          // Accounting credit is committed BEFORE the transaction, so aborted
+          // SQL and unused credits after a crash are still conservatively paid.
+          this.reserve(512, 128);
+          const deadline = bounds(job.date).end;
+          const slots = this.transaction(() => {
+            this.inTransaction = true;
+            try { const s = this.slots(job.date, job.code); this.q("INSERT INTO leases VALUES (?,?,0)", job.code, deadline); return s; }
+            finally { this.inTransaction = false; }
+          });
+          this.pending.delete(job.code); job.cancel();
+          // Never hold the queue/transaction across broker network I/O.
+          Promise.resolve().then(() => this.bundle(job.date, job.original, job.code)).then(data => job.resolve({ ...data, ...slots, deadline,
+            signalDate: job.date, seedReferenceDate: job.original.seedReferenceDate }), error => {
+            try { this.critical(() => { this.write(`observation:${job.code}`, { code: job.code, reason: safeCode(error), rawPricesStored: false });
+              this.q("UPDATE leases SET completed=1 WHERE code=?", job.code); }); } catch { /* prepaid state remains fail-closed */ }
+            job.reject(error); this.drain();
+          });
+        } catch (error) {
+          this.pending.delete(job.code); job.cancel(); job.reject(error);
+          // Fail all waiting calls on owner/window/budget failure without a
+          // fresh database query per waiter. Active completions remain allowed.
+          if (/SQL_|WINDOW_|OWNER_|DISABLED/.test(error.message)) {
+            for (const pending of this.pending.values()) { pending.cancel(); pending.reject(error); }
+            this.pending.clear(); break;
+          }
+        }
+      }
+    } finally { this.draining = false; }
   }
   extra(date, code, kind) {
     this.check(date, true);
@@ -94,8 +154,19 @@ export class ProductionDayState {
     this.write("allocator", { head: first + 1, count: state.count + 1 }, true); return { slot: first, notBefore: first * 220 };
   }
   complete(date, code, value) {
+    try { return this.critical(() => {
+      this.reserve(2048, 512);
+      return this.transaction(() => {
+        this.inTransaction = true;
+        try { return this.completeReserved(date, code, value); } finally { this.inTransaction = false; }
+      });
+    }); }
+    finally { this.drain(); }
+  }
+  completeReserved(date, code, value) {
     this.check(date);
     if (value.metadata?.code !== code || !Array.isArray(value.calls) || value.calls.length > 16 || value.metadata.rawPricesStored !== false) throw new Error("LIVE_CLOUD_METADATA_INVALID");
+    if (!this.q("SELECT code FROM leases WHERE code=?", code).length) throw new Error("LIVE_CLOUD_LEASE_INVALID");
     for (const c of value.calls) {
       const s = this.q("SELECT code,kind,body FROM slots WHERE slot=?", c.slot)[0];
       if (!s || s.code !== code || s.kind !== c.kind || !Number.isSafeInteger(c.started) || c.started < c.slot * 220 || c.started > c.slot * 220 + 20
@@ -108,6 +179,9 @@ export class ProductionDayState {
     this.q("UPDATE leases SET completed=1 WHERE code=?", code); return { stored: true };
   }
   finish(date) {
+    return this.critical(() => this.finishReserved(date));
+  }
+  finishReserved(date) {
     this.check(date);
     const existing = this.read("outbox"); if (existing) return existing.delivery;
     const prepared = this.read("final"); if (!prepared) throw new Error("LIVE_CLOUD_NOT_PREPARED");
@@ -117,20 +191,42 @@ export class ProductionDayState {
     this.write("outbox", result); return result.delivery;
   }
   async relay(date, remote = this.remote) {
-    this.check(date);
-    const outbox = this.read("outbox"); if (!outbox) throw new Error("LIVE_CLOUD_NO_OUTBOX");
-    const receipt = this.read("receipt"); if (receipt) return receipt;
-    const attempt = this.read("relay-attempt") ?? { count: 0, next: 0 };
+    this.critical(() => this.check(date));
+    const outbox = this.critical(() => this.read("outbox")); if (!outbox) throw new Error("LIVE_CLOUD_NO_OUTBOX");
+    const receipt = this.critical(() => this.read("receipt")); if (receipt) return receipt;
+    const attempt = this.critical(() => this.read("relay-attempt")) ?? { count: 0, next: 0 };
     if (attempt.count >= 3 || attempt.next > this.now()) throw new Error("LIVE_CLOUD_RELAY_BACKOFF");
-    this.write("relay-attempt", { count: attempt.count + 1, next: this.now() + 60000 }, true);
+    this.critical(() => this.write("relay-attempt", { count: attempt.count + 1, next: this.now() + 60000 }, true));
     await remote.writeImmutable(`cloud-live-score-evidence-v1/${date}/${outbox.evidence.contentHash}.json`, outbox.evidence);
     // Freeze selections/first issuance before delivery. Restart or relay retry
     // cannot regenerate the five-session record with a later creation time.
     if (!outbox.swing) throw new Error("LIVE_CLOUD_SWING_OUTBOX_MISSING");
     await persistCloudSwingIntent(remote, outbox.swing);
     const result = await deliverPrivateLive(remote, outbox.delivery, { now: new Date(this.now()).toISOString() });
-    return this.write("receipt", result);
+    return this.critical(() => this.write("receipt", result));
   }
-  status() { return { prepared: Boolean(this.read("prewarm")), finalInputReady: Boolean(this.read("final")),
-    outbox: Boolean(this.read("outbox")), receipt: this.read("receipt"), meteredSql: this.meter, rawPricesStored: false }; }
+  failure(code, stage = "UNSPECIFIED_LEGACY") { return this.critical(() => this.write("last-failure", { code, stage, at: new Date(this.now()).toISOString() }, true)); }
+  incidentStatus() {
+    return this.critical(() => {
+      const prepared = this.read("final"), expected = prepared?.codes ?? [];
+      const observations = this.q("SELECT digest,body FROM docs WHERE id>='observation:' AND id<'observation;' ORDER BY id LIMIT 554").map(r => {
+        const value = JSON.parse(r.body); if (hash(value) !== r.digest) throw new Error("LIVE_CLOUD_HASH_MISMATCH"); return value;
+      });
+      const leases = this.q("SELECT code,expires,completed FROM leases ORDER BY code LIMIT 554");
+      const seen = new Set(observations.map(r => r.code));
+      return { ...this.status(), lastFailure: this.read("last-failure"), universe: expected.length, eligible: prepared?.eligible ?? null,
+        seedReferenceDate: prepared?.seedReferenceDate ?? null, inputCommit: prepared?.inputCommit ?? null,
+        completed: observations.filter(r => ["AVAILABLE", "EXCLUDED"].includes(r.status)).length,
+        failed: observations.filter(r => !["AVAILABLE", "EXCLUDED"].includes(r.status)).map(r => ({ code: r.code, reason: r.reason })),
+        missing: expected.filter(code => !seen.has(code)),
+        leases: leases.map(r => ({ code: r.code, status: r.completed ? "COMPLETED" : r.expires <= this.now() ? "EXPIRED_NOT_REUSABLE" : "ACTIVE" })),
+        observationTimeBounds: observations.length ? {
+          first: observations.map(r => r.quoteRequestedAt).filter(Boolean).sort()[0] ?? null,
+          last: observations.map(r => r.minuteReceivedAt).filter(Boolean).sort().at(-1) ?? null } : null,
+        sourcePricesIncluded: false };
+    });
+  }
+  status() { return this.critical(() => ({ prepared: Boolean(this.read("prewarm")), finalInputReady: Boolean(this.read("final")),
+    outbox: Boolean(this.read("outbox")), receipt: this.read("receipt"), meteredSql: { ...this.meter }, runtimeCursorSql: { ...this.cursorUsage }, usageUpdates: this.usageUpdates,
+    waitingInMemory: this.pending.size, rawPricesStored: false })); }
 }

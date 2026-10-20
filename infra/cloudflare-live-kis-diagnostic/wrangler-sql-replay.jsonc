@@ -1,0 +1,14 @@
+{
+  "name": "tight-budget-live-sql-replay",
+  "account_id": "a270e8d00736b9adbeaab41945266c99",
+  "main": "sql-replay-worker.mjs",
+  "compatibility_date": "2026-10-18",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": { "enabled": false },
+  "workflows": [{"name":"tight-budget-live-sql-replay","binding":"SQL_REPLAY","class_name":"SqlReplay","default_retention":{"success_retention":"3 days","error_retention":"3 days"}}],
+  "durable_objects": {"bindings":[{"name":"SQL_REPLAY_DAYS","class_name":"SqlReplayDay"}]},
+  "migrations": [{"tag":"sql-test-v1","new_sqlite_classes":["SqlReplayDay"]}],
+  "triggers": {"crons":[]}
+}

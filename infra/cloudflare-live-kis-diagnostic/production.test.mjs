@@ -60,7 +60,8 @@ function sandbox(t, seed = inputFixture()) {
   const sql = { get databaseSize() { return db.prepare("PRAGMA page_count").get().page_count * 4096; }, exec(query, ...args) {
     const rows = db.prepare(query).all(...args); return { toArray: () => rows, rowsRead: rows.length + 1, rowsWritten: /^(INSERT|UPDATE)/u.test(query) ? 2 : 0 };
   } };
-  const options = { sql, env, remote: remote.store, now: () => ms, prepare: async () => prepared(seed), bundle: async () => ({ authenticationRecord: { accessToken: "fixture-only", expiresAtMs: b.end + 100000 } }) };
+  const transaction = fn => { db.exec("BEGIN"); try { const value = fn(); db.exec("COMMIT"); return value; } catch (e) { db.exec("ROLLBACK"); throw e; } };
+  const options = { sql, env, transaction, remote: remote.store, now: () => ms, prepare: async () => prepared(seed), bundle: async () => ({ authenticationRecord: { accessToken: "fixture-only", expiresAtMs: b.end + 100000 } }) };
   return { seed, db, sql, remote, options, state: new ProductionDayState(options), set: value => { ms = value; } };
 }
 
@@ -172,10 +173,12 @@ test("outbox freezes before failed relay; restart+retry delivers identical hashe
 });
 
 test("missing SQL billing telemetry and quota exhaustion stop before further work", t => {
-  const f = sandbox(t); f.state.meter.w = 39500;
+  const f = sandbox(t); f.state.meter.w = 34100;
+  assert.throws(() => f.state.read("date"), /SQL_BUDGET/u);
+  assert.doesNotThrow(() => f.state.status(), "reserved diagnostics remain available after collection admission stops");
+  f.state.meter.w = 40000;
   assert.throws(() => f.state.status(), /SQL_BUDGET/u);
-  const unmetered = new ProductionDayState({ ...f.options, sql: { ...f.sql, exec(query, ...args) { const c = f.sql.exec(query, ...args); return { toArray: () => c.toArray() }; } } });
-  assert.throws(() => unmetered.status(), /METER_UNAVAILABLE/u);
+  assert.throws(() => new ProductionDayState({ ...f.options, sql: { ...f.sql, exec(query, ...args) { const c = f.sql.exec(query, ...args); return { toArray: () => c.toArray() }; } } }), /METER_CHANGED/u);
 });
 
 test("staged deployment cannot schedule or expose HTTP; no formula or existing Daily workflow changes", async () => {
@@ -233,6 +236,60 @@ test("duplicate cron shares same parent ID; weekend/disabled state never schedul
   assert.equal(ids[0], ids[1]);
   assert.equal((await productionScheduled(event, { ...bindings, LIVE_PRODUCTION_ENABLED: "false" })).status, "DISABLED");
   assert.equal((await productionScheduled({ scheduledTime: Date.parse("2026-10-18T04:40:00Z") }, bindings)).status, "WEEKEND");
+});
+
+test("async relay rejection reaches catch and failure-record error never masks first cause", async t => {
+  const logs = []; t.mock.method(console, "error", value => logs.push(JSON.parse(value)));
+  let recorded = null;
+  const target = { async finish() {}, async relay() { throw new Error("PRIVATE_STORE_NETWORK_FAILED"); },
+    async failure(code, stage) { recorded = { code, stage }; throw new Error("LIVE_CLOUD_SQL_BUDGET"); } };
+  const bindings = { ...env, LIVE_DAYS: { idFromName: x => x, get: () => target } };
+  const step = { async do(_name, _options, fn) { return fn(); } };
+  await assert.rejects(new CloudLive(bindings).run({ payload: { mode: "relay", date } }, step), /PRIVATE_STORE_NETWORK_FAILED/u);
+  assert.deepEqual(recorded, { code: "PRIVATE_STORE_NETWORK_FAILED", stage: "RELAY" });
+  assert.deepEqual(logs, [{ event: "LIVE_CLOUD_FAILURE_RECORD_FAILED", primaryCode: "PRIVATE_STORE_NETWORK_FAILED", stage: "RELAY", recordingCode: "LIVE_CLOUD_SQL_BUDGET" }]);
+});
+
+test("reopen loses unused SQL credits conservatively and durable leases fence duplicate observation", async t => {
+  const f = sandbox(t); await f.state.prepare(date, true); f.set(b.start);
+  const leases = []; for (const r of f.seed.records.slice(0, 8)) leases.push(await f.state.acquire(date, r.code));
+  const before = { ...f.state.meter }, reopened = new ProductionDayState(f.options);
+  assert.ok(reopened.meter.r >= before.r && reopened.meter.w >= before.w);
+  await assert.rejects(reopened.acquire(date, f.seed.records[0].code), /ALREADY_RESERVED/u);
+  let settled = false; const queued = reopened.acquire(date, f.seed.records[8].code).then(v => { settled = true; return v; });
+  await Promise.resolve(); assert.equal(settled, false);
+  const lease = leases[0], row = observations(f.seed).rows[0]; f.set(lease.minuteSlot.notBefore + 22);
+  const calls = [["quote", lease.quoteSlot], ["minute", lease.minuteSlot]].map(([kind, s]) => ({ kind, slot: s.slot, started: s.notBefore, completed: s.notBefore + 22, status: 200 }));
+  const payload = { metadata: row, calls };
+  reopened.complete(date, row.code, payload); await queued;
+  reopened.complete(date, row.code, payload); // exact completion replay is idempotent
+  const changed = structuredClone(payload); changed.metadata.scores["A-v1"]++;
+  assert.throws(() => reopened.complete(date, row.code, changed), /IMMUTABLE_CONFLICT/u);
+});
+
+test("bundle failure closes durable reservation and does not strand later capacity", async t => {
+  const f = sandbox(t); let calls = 0;
+  const state = new ProductionDayState({ ...f.options, bundle: async () => { if (++calls === 1) throw new Error("LIVE_CLOUD_PIN_UNAVAILABLE"); return {}; } });
+  await state.prepare(date, true); f.set(b.start);
+  await assert.rejects(state.acquire(date, f.seed.records[0].code), /PIN_UNAVAILABLE/u);
+  assert.equal(state.read(`observation:${f.seed.records[0].code}`).reason, "LIVE_CLOUD_PIN_UNAVAILABLE");
+  assert.equal(f.db.prepare("SELECT completed FROM leases WHERE code=?").get(f.seed.records[0].code).completed, 1);
+  assert.ok(await state.acquire(date, f.seed.records[1].code));
+});
+
+test("partial completion rollback preserves slots and immutable observation; failed SQL retains pessimistic prepaid cost", async t => {
+  const f = sandbox(t); await f.state.prepare(date, true); f.set(b.start);
+  const code = f.seed.records[0].code, lease = await f.state.acquire(date, code), row = observations(f.seed).rows[0];
+  f.set(lease.minuteSlot.notBefore + 22);
+  const calls = [["quote", lease.quoteSlot], ["minute", lease.minuteSlot]].map(([kind, s]) => ({ kind, slot: s.slot, started: s.notBefore, completed: s.notBefore + 22, status: 200 }));
+  calls[1].slot++;
+  assert.throws(() => f.state.complete(date, code, { metadata: row, calls }), /RATE_EVIDENCE_INVALID/u);
+  assert.equal(f.db.prepare("SELECT body FROM slots WHERE slot=?").get(lease.quoteSlot.slot).body, null);
+  assert.equal(f.state.read(`observation:${code}`), null);
+  const before = { ...f.state.meter }, credit = { ...f.state.credit };
+  assert.throws(() => f.state.q("SELECT missing_column FROM docs"));
+  assert.ok(f.state.credit.r <= credit.r - 32 && f.state.credit.w <= credit.w - 16);
+  assert.ok(f.state.meter.r >= before.r && f.state.meter.w >= before.w);
 });
 
 test("native synthetic harness cannot touch a normal day object or run while production is active", async t => {

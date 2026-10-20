@@ -23,8 +23,14 @@ export class KisSlotShard extends DurableObject {
       await Promise.all(Array.from({ length: Math.min(2, codes.length) }, async () => {
         while (next < codes.length) {
           const ticker = codes[next++];
-          const r = await this.fetch(new Request(`https://isolated/collect?run=${run}&codes=${ticker}&dropFirst=${retryCodes.has(ticker)}`), budget);
-          if (!r.ok) throw new Error("DIAG_SHARD_FAILED"); records.push(...(await r.json()).records);
+          try {
+            const r = await this.fetch(new Request(`https://isolated/collect?run=${run}&codes=${ticker}&dropFirst=${retryCodes.has(ticker)}`), budget);
+            if (!r.ok) throw new Error("DIAG_SHARD_FAILED"); records.push(...(await r.json()).records);
+          } catch (error) {
+            // Settle BOTH lanes and every fixed symbol; one failed completion
+            // must not leave an unobserved Promise lane running after response.
+            records.push({ code: ticker, reason: safeCode(error), rawPricesStored: false, eligibleForLive: false });
+          }
         }
       }));
       return Response.json({ records, rawPricesStored: false, eligibleForLive: false });
@@ -114,7 +120,13 @@ export class KisSlotShard extends DurableObject {
     } catch (e) { result = { code, reason: safeCode(e), ...(e.sourceFailure ? { sourceFailure: e.sourceFailure } : {}),
       ...(calls.length ? { failedEndpoint: calls.at(-1).kind, httpStatus: calls.at(-1).status,
         providerFailureCode: calls.at(-1).failure, inputEligible: lease?.record?.eligible === true } : {}), rawPricesStored: false, eligibleForLive: false }; }
-    if (lease && !lease.existing) await control(`/slot-pair-complete?code=${code}`, { metadata: result, calls, skipped, authHint: bearer });
+    if (lease && !lease.existing) {
+      try { await control(`/slot-pair-complete?code=${code}`, { metadata: result, calls, skipped, authHint: bearer }); }
+      catch (error) {
+        console.error(JSON.stringify({ event: "LIVE_COMPLETION_RECORD_FAILED", code, primaryCode: result.reason ?? "OBSERVATION_READY", recordingCode: safeCode(error) }));
+        throw new Error(result.reason ?? "DIAG_COMPLETION_RECORD_FAILED");
+      }
+    }
     return Response.json({ records: [result], rawPricesStored: false, eligibleForLive: false });
   }
 }

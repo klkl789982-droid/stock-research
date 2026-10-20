@@ -15,7 +15,7 @@ const day = (env, date) => env.LIVE_DAYS.get(env.LIVE_DAYS.idFromName(date), { l
 export class LiveDay extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
-    this.state = new ProductionDayState({ sql: ctx.storage.sql, env,
+    this.state = new ProductionDayState({ sql: ctx.storage.sql, env, transaction: fn => ctx.storage.transactionSync(fn),
       prepare: date => vault(env).livePrepare(date), bundle: (date, prepared, code) => vault(env).liveBundle(date, prepared, code),
       remote: createKisEodPrivateStore({ repository: "klkl789982-droid/tight-budget-private-data", token: env.PRIVATE_LIVE_DELIVERY_WRITE_TOKEN, fetchImpl: edgeFetch }) });
   }
@@ -28,7 +28,8 @@ export class LiveDay extends DurableObject {
     catch (e) { if (io.exhausted) throw new Error("LIVE_CLOUD_RELAY_HTTP_BUDGET"); throw e; }
   }
   status() { return { ...this.state.status(), productionEnabled: this.env.LIVE_PRODUCTION_ENABLED === "true", producer: this.env.LIVE_PRODUCER }; }
-  failure(code) { return this.state.write("last-failure", { code: safeCode({ code }), at: new Date().toISOString() }, true); }
+  incidentStatus() { return { ...this.state.incidentStatus(), productionEnabled: this.env.LIVE_PRODUCTION_ENABLED === "true", producer: this.env.LIVE_PRODUCER }; }
+  failure(code, stage) { return this.state.failure(safeCode({ code }), stage); }
   async isolatedFixture(run, phase) {
     assertDiagnostic(this.env);
     if (!/^[A-Za-z0-9_-]{1,24}$/u.test(run ?? "") || this.ctx.id.toString() !== this.env.LIVE_DAYS.idFromName(`isolated-fixture-${run}`).toString()) throw new Error("DIAG_PRODUCTION_FIXTURE_IDENTITY");
@@ -63,24 +64,31 @@ export class CloudLive extends WorkflowEntrypoint {
     if (!/^\d{4}-\d{2}-\d{2}$/u.test(date ?? "")) throw new Error("LIVE_CLOUD_DATE_INVALID");
     const target = day(this.env, date);
     if (p.mode === "status") return step.do("read only production readiness", options, () => target.status());
+    if (p.mode === "incident-status") return step.do("bounded score-only incident inventory", options, () => target.incidentStatus());
     assertProduction(this.env);
+    let stage = p.mode === "batch" ? "BATCH_COLLECTION" : p.mode === "relay" ? "RELAY" : "PREPARE";
     try {
-      if (p.mode === "relay") return step.do("retry frozen score-only outbox", options, async () => { await target.finish(date); return target.relay(date); });
+      if (p.mode === "relay") return await step.do("retry frozen score-only outbox", options, async () => { await target.finish(date); return target.relay(date); });
       if (p.mode === "batch") {
         await step.sleepUntil("wait for absolute1400", new Date(bounds(date).start));
-        return step.do("bounded eight-symbol LIVE invocation", options, async () => {
+        return await step.do("bounded eight-symbol LIVE invocation", options, async () => {
           assertWindow(date, Date.now());
           if (!Array.isArray(p.codes) || !p.codes.length || p.codes.length > 8) throw new Error("LIVE_CLOUD_CODES_INVALID");
           const shard = this.env.LIVE_BATCHES.get(this.env.LIVE_BATCHES.idFromName(`${date}-${p.codes[0]}`), { locationHint: "apac-ne" });
-          const r = await shard.fetch(`https://internal/collect-batch?run=live-${date}&codes=${p.codes.join(",")}`);
+          const r = await shard.fetch(`https://internal/collect-batch?run=live-${date}&codes=${p.codes.join(",")}`, {
+            signal: AbortSignal.timeout(Math.max(1, bounds(date).end + 5000 - Date.now())) });
           if (!r.ok) throw new Error("LIVE_CLOUD_BATCH_FAILED");
-          const value = await r.json(); return { completed: value.records.length, sourcePricesIncluded: false };
+          const value = await r.json();
+          if (value.records.length !== p.codes.length) throw new Error("LIVE_CLOUD_BATCH_INCOMPLETE");
+          return { attempted: value.records.length, successful: value.records.filter(r => ["AVAILABLE", "EXCLUDED"].includes(r.status)).length,
+            failed: value.records.filter(r => !["AVAILABLE", "EXCLUDED"].includes(r.status)).map(r => ({ code: r.code, reason: safeCode({ code: r.reason }) })), sourcePricesIncluded: false };
         });
       }
       if (p.mode !== "day") throw new Error("LIVE_CLOUD_MODE_INVALID");
       await step.do("1340 preparation no market prices", options, async () => {
         try { return { prepared: await target.prepare(date, false) }; } catch (e) { return { reason: safeCode(e) }; }
       });
+      stage = "FINAL_INPUT";
       await step.sleepUntil("1359 fresh EOD recheck", new Date(bounds(date).start - 60000));
       let prepared = null;
       for (let i = 0; i < 6 && !prepared; i++) {
@@ -93,6 +101,7 @@ export class CloudLive extends WorkflowEntrypoint {
       if (!prepared) throw new Error("LIVE_CLOUD_INPUT_NOT_READY");
       // Fixed child IDs are created BEFORE the quote window. The scheduled
       // parent may start at13:40:58; it never waits for a14:00 cron invocation.
+      stage = "CREATE_BATCHES";
       await step.do("precreate fixed batch ids", options, async () => {
         const definitions = [];
         for (let i = 0; i < prepared.codes.length; i += 8) definitions.push({ id: `live-${date}-batch${i / 8}`,
@@ -106,11 +115,15 @@ export class CloudLive extends WorkflowEntrypoint {
         return { batches: definitions.length, symbols: prepared.codes.length };
       });
       await step.sleepUntil("finalize after absolute collection cutoff", new Date(bounds(date).end + 1000));
+      stage = "FINALIZE";
       await step.do("validate all required inputs and freeze outbox", options, () => target.finish(date));
-      return step.do("publish private score-only delivery", options, () => target.relay(date));
+      stage = "RELAY";
+      return await step.do("publish private score-only delivery", options, () => target.relay(date));
     } catch (e) {
-      await step.do("record fixed failure code", options, () => target.failure(safeCode(e)));
-      throw new Error(safeCode(e));
+      const primaryCode = safeCode(e);
+      try { await step.do("record fixed failure code", options, () => target.failure(primaryCode, stage)); }
+      catch (recordError) { console.error(JSON.stringify({ event: "LIVE_CLOUD_FAILURE_RECORD_FAILED", primaryCode, stage, recordingCode: safeCode(recordError) })); }
+      throw new Error(primaryCode);
     }
   }
 }
