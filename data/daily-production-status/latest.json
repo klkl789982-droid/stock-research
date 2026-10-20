@@ -6,49 +6,30 @@
     "referenceDate": "2026-10-19",
     "snapshotHash": "e75c02f440fe2c72351f9443d85e6d0f89f209c7d8be8d26970d9e11295641ac"
   },
-  "observedOfficialDate": "2026-10-19",
-  "freshnessStatus": "fresh",
-  "freshnessReason": "sameReferenceDate",
-  "runStatus": "NO_NEW_OFFICIAL_EOD",
-  "updatedAt": "2026-10-20T13:10:35.299Z",
-  "lastAttemptAt": "2026-10-20T13:10:35.299Z",
+  "observedOfficialDate": null,
+  "freshnessStatus": "unavailable",
+  "freshnessReason": "LATEST_PROBE_NETWORK_TIMEOUT",
+  "runStatus": "FAILED",
+  "updatedAt": "2026-10-20T13:41:15.267Z",
+  "lastAttemptAt": "2026-10-20T13:41:15.267Z",
   "lastAutomaticRunAt": "2026-10-20T09:33:46.794Z",
   "lastSuccessAt": "2026-10-20T02:01:47.646Z",
-  "lastOfficialEodDate": "2026-10-19",
+  "lastOfficialEodDate": null,
   "lastKnownOfficialEodDate": "2026-10-19",
   "lastSourceCheckAt": "2026-10-20T13:10:35.299Z",
   "latestCollectedReferenceDate": "2026-10-19",
   "latestValidatedReferenceDate": "2026-10-19",
-  "sourceStatus": "NO_NEW_DATA",
+  "sourceStatus": "UNAVAILABLE",
   "lagTradingDays": 0,
-  "recentFailureReason": null,
-  "lastFailureAt": null,
+  "recentFailureReason": "LATEST_PROBE_NETWORK_TIMEOUT",
+  "lastFailureAt": "2026-10-20T13:41:15.267Z",
   "lastRecordedFailure": {
     "reason": "LATEST_PROBE_NETWORK_TIMEOUT",
-    "at": "2026-10-19T10:41:10.500Z"
+    "at": "2026-10-20T13:41:15.267Z"
   },
   "publishedReferenceDate": "2026-10-19",
-  "publicationStatus": "unchanged",
+  "publicationStatus": "lastGoodPreserved",
   "trigger": "workflow_dispatch",
-  "sourceEvidence": [
-    {
-      "source": "공공데이터포털",
-      "operation": "getStockPriceInfoLatestProbe",
-      "referenceDate": "2026-10-19",
-      "requestedAt": "2026-10-20T13:10:31.511Z",
-      "observedAt": "2026-10-20T13:10:35.217Z",
-      "sourceTimestamp": "20261019",
-      "sourceTimestampSemantics": "marketDateBasDt",
-      "minObservedBasDt": "20261019",
-      "maxObservedBasDt": "20261019",
-      "sourcePublishedAt": null,
-      "availabilityEvidence": "SYSTEM_OBSERVED_PROBE_RESPONSE",
-      "availabilityStatus": "OBSERVED",
-      "recordCount": 260,
-      "normalizedInputHash": null,
-      "requestId": "c7c37adb72e1f4da0d154d9ccc19dfb0b04f2b18d3061c3b8866228bbf464d65",
-      "outcome": "success"
-    }
-  ],
-  "contentHash": "ef5f193a2b7848983a2ff58e17da8081dc3873a7e75749470e8527703b873eed"
+  "sourceEvidence": [],
+  "contentHash": "d5e643343e53379d8e0e3655791340bd3c9c871eca6e80cf2709f25ded79d12f"
 }
