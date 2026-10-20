@@ -4,6 +4,7 @@ import { dailyOperationState, latestOneDayPerformance, publicationReasonLabel, h
 import HomeTransitionCard, { type HomeEodTransitions, type HomeTransitionNavigation } from "./HomeTransitionCard";
 import { PrivateLiveDeliveryView, usePrivateLiveDelivery } from "./PrivateLiveDeliveryPanel";
 import HomeModelRankings from "./HomeModelRankings";
+import HomeCloudExecutionStatus, { cloudExecutionLabel, cloudExecutionWarning, type CloudExecutionResponse } from "./HomeCloudExecutionStatus";
 import { homeDate, homeTime, homeDeploymentLabel } from "../lib/home-presentation.mjs";
 type Stock = { code: string; name: string; market?: string };
 type Ranked = Stock & { rank: number; score: number; previousRank?: number | null; rankChange?: number | null };
@@ -46,6 +47,7 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
   const operations = useResource<OperationEvidence>("/api/daily-production-status");
   const privateRelay = usePrivateLiveDelivery();
   const live = useResource<{ signalDate: string; collectionCompletedAt: string }>("/api/intraday-model-top?model=B&limit=1");
+  const execution = useResource<CloudExecutionResponse>("/api/private-live-execution");
   const [source, setSource] = useState<"LIVE" | "EOD">("LIVE");
   const [operationsOpen, setOperationsOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -63,7 +65,7 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
   const collectionOperation = dailyOperationState(currentOperations ? { ...currentOperations, deployment: undefined } : null, data?.calendar);
   const additionalEodFailure = ["FAILED", "PUBLICATION_FAILED"].includes(collectionOperation) && operation !== collectionOperation ? failureLabel(collectionOperation) : null;
   const operationLabel = operations.error ? "운영 상태 조회 실패" : ["DEPLOYING", "UNVERIFIED"].includes(operation) ? homeDeploymentLabel(currentOperations?.deployment) : failureLabel(operation) ?? "확인 불가";
-  const warning = operations.error || Boolean(additionalEodFailure) || ["FAILED", "PUBLICATION_FAILED", "DEPLOYMENT_FAILED", "VERIFICATION_FAILED", "DELAYED"].includes(operation);
+  const warning = operations.error || Boolean(additionalEodFailure) || cloudExecutionWarning(execution) || ["FAILED", "PUBLICATION_FAILED", "DEPLOYMENT_FAILED", "VERIFICATION_FAILED", "DELAYED"].includes(operation);
   const liveReadLabel = privateRelay.failed ? "LIVE 조회 실패" : privateRelay.disabled ? "LIVE 전달 연결 비활성" : !privateRelay.data ? "LIVE 조회 중" : !delivery ? "LIVE 관측 대기 · 전달된 결과 없음" : fixture ? "합성 연결 검증 · 실제 관측 아님" : privateRelay.data.freshnessStatus === "HISTORICAL" ? "이전 날짜 저장 관측" : "조회 확인";
   const liveModels = delivery?.models.map(model => ({ modelVersion: model.modelVersion,
     top: model.records.map(row => ({ code: row.ticker, name: row.companyName, rank: row.rank, score: row.score })) })) ?? [];
@@ -80,11 +82,12 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
     <div className={"home-status-line " + (warning || privateRelay.failed ? "home-status-warning" : "")} aria-label="데이터 최신성 요약" role="status">
       <div className="home-status-results"><span><strong>저장된 LIVE 결과</strong> {fixture ? "합성 검증" : delivery ? homeDate(delivery.signalDate) + " · 14:00 KST" : privateRelay.data ? "없음" : "기준일 확인 불가"} · {liveReadLabel}</span>
         <span><strong>공식 EOD</strong> {homeDate(data?.referenceDate)} · {operationLabel}{additionalEodFailure ? " · " + additionalEodFailure : ""}</span></div>
-      <p className="home-collection-status"><strong>현재 자동 수집 상태</strong> 확인 불가 · 실행 기록 조회 미연결</p>
+      <p className="home-collection-status"><strong>현재 자동 수집 상태</strong> {cloudExecutionLabel(execution)}</p>
     </div>
     <section hidden={!operationsOpen} id="home-operations-details" className="home-surface home-operations" aria-labelledby="home-operations-heading" onKeyDown={event => { if (event.key === "Escape") { setOperationsOpen(false); operationsButton.current?.focus(); } }}>
       <h2 id="home-operations-heading" className="text-lg font-semibold">운영 상세</h2>
-      <p className="mt-1 text-sm text-slate-600">저장된 LIVE 결과는 마지막으로 전달받아 읽은 기록입니다. 현재 자동 수집의 시작·진행·성공·실패 기록은 이 화면에 연결되지 않아 확인할 수 없습니다. 저장 결과가 있다고 현재 수집이 정상이라고 판단하지 않습니다.</p>
+      <p className="mt-1 text-sm text-slate-600">저장된 LIVE 결과는 마지막 정상 전달 기록이며, 아래 오늘 Cloud 실행 상태와 별도입니다. 실행 기록의 확인 시각과 실제 관측 시각을 구분하며, 저장 결과가 있다고 오늘 수집이 정상이라고 판단하지 않습니다.</p>
+      <HomeCloudExecutionStatus state={execution} lastDeliveryHash={delivery?.deliveryHash} />
       <div className="home-operation-columns">
         <section><h3 className="font-semibold">14:00 LIVE · 비공개 전달</h3><dl className="home-facts">
           <div><dt>현재 조회 상태</dt><dd>{liveReadLabel}</dd></div>

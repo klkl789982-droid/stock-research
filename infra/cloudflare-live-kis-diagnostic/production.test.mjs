@@ -18,7 +18,7 @@ const env = { LIVE_PRODUCTION_ENABLED: "true", LIVE_PRODUCER: "cloud", LIVE_CUTO
 let workflowSource = await fs.readFile(new URL("./src/production.mjs", import.meta.url), "utf8");
 workflowSource = workflowSource.replace('import { DurableObject, WorkflowEntrypoint } from "cloudflare:workers";', 'class DurableObject { constructor(ctx,env){this.ctx=ctx;this.env=env;} } class WorkflowEntrypoint {constructor(env){this.env=env;}}');
 workflowSource = workflowSource.replace('import { KisSlotShard } from "./slot-shard.mjs";', 'class KisSlotShard {}');
-for (const relative of ["../production-state.mjs", "../production-core.mjs", "../production-fixture.mjs", "../core.mjs", "../relay-budget.mjs", "../../../lib/kis-eod-private-store.mjs"])
+for (const relative of ["../production-state.mjs", "../production-core.mjs", "../production-fixture.mjs", "../core.mjs", "../relay-budget.mjs", "../../../lib/kis-eod-private-store.mjs", "../../../lib/private-live-execution-status.mjs"])
   workflowSource = workflowSource.replaceAll(JSON.stringify(relative), JSON.stringify(new URL(relative, new URL("./src/production.mjs", import.meta.url)).href));
 const { CloudLive, LiveDay, productionScheduled } = await import(`data:text/javascript;base64,${Buffer.from(workflowSource).toString("base64")}`);
 function inputFixture() {
@@ -218,7 +218,7 @@ test("553-symbol eight-lease synthetic replay measures allocator span and SQL bu
 
 test("actual Workflow survives missing13:40 EOD and precreates70 fixed children after fresh13:59 readiness", async t => {
   let now = b.start - 1200000; t.mock.method(Date, "now", () => now);
-  const batches = [], events = [], target = { async prepare(_date, final) {
+  const batches = [], events = [], metadata = [], target = { async publishExecution(_date,event) { metadata.push(event); }, async prepare(_date, final) {
     events.push(final ? "FINAL_INPUT" : "PREWARM"); if (!final) throw new Error("LIVE_CLOUD_INPUT_NOT_READY");
     assert.equal(now, b.start - 60000); return { codes: Array.from({ length: 553 }, (_, i) => String(100000 + i)) };
   }, async finish() { assert.ok(now > b.end); events.push("FINISH"); }, async relay() { events.push("RELAY"); return { status: "PRIVATE_RELAY_VERIFIED" }; }, async failure() { assert.fail("Unexpected workflow failure"); } };
@@ -227,6 +227,8 @@ test("actual Workflow survives missing13:40 EOD and precreates70 fixed children 
   const result = await new CloudLive(bindings).run({ payload: { mode: "day", date } }, step);
   assert.equal(result.status, "PRIVATE_RELAY_VERIFIED"); assert.equal(batches.length, 70);
   assert.equal(new Set(batches.map(d => d.id)).size, 70); assert.deepEqual(events, ["PREWARM", "FINAL_INPUT", "FINISH", "RELAY"]);
+  assert.deepEqual(metadata,["PREPARATION","READY","VALIDATED","DELIVERED"]);
+  assert.equal(batches.filter(d=>d.params.reportStatus).length,1,"only one batch may publish progress metadata");
 });
 
 test("duplicate cron shares same parent ID; weekend/disabled state never schedules collection", async () => {
@@ -241,7 +243,7 @@ test("duplicate cron shares same parent ID; weekend/disabled state never schedul
 test("async relay rejection reaches catch and failure-record error never masks first cause", async t => {
   const logs = []; t.mock.method(console, "error", value => logs.push(JSON.parse(value)));
   let recorded = null;
-  const target = { async finish() {}, async relay() { throw new Error("PRIVATE_STORE_NETWORK_FAILED"); },
+  const target = { async publishExecution() {}, async finish() {}, async relay() { throw new Error("PRIVATE_STORE_NETWORK_FAILED"); },
     async failure(code, stage) { recorded = { code, stage }; throw new Error("LIVE_CLOUD_SQL_BUDGET"); } };
   const bindings = { ...env, LIVE_DAYS: { idFromName: x => x, get: () => target } };
   const step = { async do(_name, _options, fn) { return fn(); } };
@@ -301,4 +303,32 @@ test("native synthetic harness cannot touch a normal day object or run while pro
   await assert.rejects(object.isolatedFixture("fixture-only", "create"), /FIXTURE_IDENTITY/u);
   object.env.LIVE_PRODUCTION_ENABLED = "true";
   await assert.rejects(object.isolatedFixture("fixture-only", "create"), /DISABLED_DURING_PRODUCTION/u);
+});
+
+test("frozen stage metadata is price-free, immutable across restarts and leaves result pointers alone",async t=>{
+  const f=sandbox(t);await f.state.prepare(date,true);f.set(b.end+1000);
+  const row=observations(f.seed).rows[0];f.state.write(`observation:${row.code}`,row);
+  f.state.failure("LIVE_CLOUD_SQL_BUDGET","FINALIZE");
+  const before={...f.state.cursorUsage},r=f.state.freezeExecution(date,"RECONCILE","ERRORED");
+  assert.equal(r.collection.available,1);assert.equal(r.collection.missing,552);assert.equal(r.collection.requiredMissing,507);
+  assert.equal(r.error.code,"LIVE_CLOUD_SQL_BUDGET");assert.equal(r.input.finalReady,true);
+  assert.equal(f.state.read("outbox"),null);assert.equal(f.state.read("receipt"),null);assert.equal(f.remote.values.size,0);
+  assert.ok(!/"(?:price|rows|open|high|low|close|volume|accessToken)"/u.test(JSON.stringify(r)));
+  f.set(b.end+90000);assert.deepEqual(new ProductionDayState(f.options).freezeExecution(date,"RECONCILE","ERRORED"),r);
+  t.diagnostic(JSON.stringify({metadataOnly:true,nativeLocalCursorBefore:before,nativeLocalCursorAfter:f.state.cursorUsage}));
+});
+
+test("metadata-only reconciliation never prepares, collects, freezes result or relays result",async()=>{
+  const calls=[];const target={async publishExecution(...args){calls.push(args);return{status:"EXECUTION_METADATA_STORED"};}};
+  const bindings={...env,LIVE_DAYS:{idFromName:x=>x,get:()=>target},LIVE:{async get(id){assert.equal(id,`live-${date}`);return{async status(){return{status:"errored",error:{name:"WorkflowInternalError"}};}};}}};
+  const result=await new CloudLive(bindings).run({payload:{mode:"publish-execution-status",date}},{do:(_n,_o,fn)=>fn()});
+  assert.equal(result.status,"EXECUTION_METADATA_STORED");assert.deepEqual(calls,[[date,"RECONCILE","ERRORED"]]);
+});
+
+test("collection starts before telemetry and telemetry rejection never masks collector failure",async t=>{
+  t.mock.method(Date,"now",()=>b.start+1000);t.mock.method(console,"error",()=>{});const calls=[];
+  const target={async publishExecution(){calls.push("metadata");throw Error("PRIVATE_STORE_NETWORK_FAILED");},async failure(code){calls.push(code);}};
+  const bindings={...env,LIVE_DAYS:{idFromName:x=>x,get:()=>target},LIVE_BATCHES:{idFromName:x=>x,get:()=>({fetch:async()=>{calls.push("collector");throw Error("LIVE_CLOUD_BATCH_FAILED");}})}};
+  await assert.rejects(new CloudLive(bindings).run({payload:{mode:"batch",date,codes:["100000"],reportStatus:true}},{sleepUntil:async()=>{},do:(_n,_o,fn)=>fn()}),/LIVE_CLOUD_BATCH_FAILED/);
+  assert.deepEqual(calls,["collector","metadata","LIVE_CLOUD_BATCH_FAILED"]);
 });

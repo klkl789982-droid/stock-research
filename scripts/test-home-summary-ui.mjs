@@ -35,6 +35,7 @@ for (const [state, reason, label] of [
 ]) assert.equal(dates.homeDeploymentLabel({ state, reason }), label);
 assert.equal(dates.homeDeploymentLabel(null), "사이트 확인 불가");
 const ranking = compile(await read("components/HomeModelRankings.tsx"), { "../lib/home-presentation.mjs": dates }).default;
+const execution = compile(await read("components/HomeCloudExecutionStatus.tsx"), { "../lib/home-presentation.mjs": dates });
 // Synthetic rendering fixtures only, never passed to an application store/API.
 const models = ["A", "B", "C", "D"].map(model => ({ modelVersion: model + "-v1", comparisonStatus: "AVAILABLE", previousDate: "2026-10-16", top: Array.from({ length: 5 }, (_, i) => ({ code: String(i).padStart(6, "0"), name: "매우 긴 합성 종목명 " + i, rank: i + 1, score: i === 0 ? 0 : 81.234 + i, previousRank: i + 3, rankChange: 2 })) }));
 const stockOpens = [], modelOpens = [];
@@ -55,10 +56,12 @@ const resources = [
   { url: "/api/model-performance", data: null, error: false },
   { url: "/api/daily-production-status", data: null, error: true },
   { url: "/api/intraday-model-top?model=B&limit=1", data: null, error: true },
+  { url: "/api/private-live-execution", data: null, error: true },
 ];
-const state = { ...React, useEffect: () => {}, useRef: value => ({ current: value }), useState: initial => { const id = slot++; return [id < 4 ? resources[id] : initial, value => updates.push({ id, value })]; } };
+const state = { ...React, useEffect: () => {}, useRef: value => ({ current: value }), useState: initial => { const id = slot++; return [id < 5 ? resources[id] : initial, value => updates.push({ id, value })]; } };
 const dashboard = compile(source, { react: state, "../lib/home-dashboard.mjs": helpers, "../lib/home-presentation.mjs": dates,
   "./HomeModelRankings": { __esModule: true, default: ranking }, "./HomeTransitionCard": { __esModule: true, default: () => { throw Error("archive must be lazy"); } },
+  "./HomeCloudExecutionStatus": { __esModule: true, ...execution },
   "./PrivateLiveDeliveryPanel": { usePrivateLiveDelivery: () => ({ data: { delivery: null }, failed: true, disabled: false }), PrivateLiveDeliveryView: () => null },
 }).default;
 const tree = dashboard({ ...props, onOpenPerformance: () => {}, onOpenTransition: () => {} });
@@ -69,13 +72,13 @@ assert.equal(panels[0].props.hidden, false); assert.equal(panels[1].props.hidden
 const markup = html(tree);
 assert.match(markup, /LIVE 결과 조회 실패/u); assert.match(markup, /Daily EOD로 자동 대체하지 않습니다/u);
 assert.match(markup, /저장된 LIVE 결과/u); assert.match(markup, /현재 자동 수집 상태/u);
-assert.match(markup, /확인 불가 · 실행 기록 조회 미연결/u); assert.match(markup, /운영 상태 조회 실패/u);
+assert.match(markup, /실행 기록 조회 실패 · 마지막 정상 결과와 별도/u); assert.match(markup, /운영 상태 조회 실패/u);
 assert.equal(find(tree, node => node.props.id === "home-operations-details")[0].props.hidden, true);
 const savedDocument = globalThis.document; const focused = [];
 try {
   globalThis.document = { getElementById: id => ({ focus: () => focused.push(id) }) };
   find(tree, node => node.props.role === "tablist")[0].props.onKeyDown({ key: "ArrowRight", preventDefault() {} });
-  assert.deepEqual(updates.at(-1), { id: 4, value: "EOD" }); assert.deepEqual(focused, ["home-source-EOD"]);
+  assert.deepEqual(updates.at(-1), { id: 5, value: "EOD" }); assert.deepEqual(focused, ["home-source-EOD"]);
 } finally { if (savedDocument === undefined) delete globalThis.document; else globalThis.document = savedDocument; }
 const css = await read("app/globals.css");
 assert.match(css, /min-width: 640px[\s\S]*repeat\(2,minmax/); assert.match(css, /min-width: 1280px[\s\S]*repeat\(4,minmax/);

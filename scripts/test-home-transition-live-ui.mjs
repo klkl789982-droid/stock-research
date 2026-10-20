@@ -123,9 +123,11 @@ const resources = [
   { url: "/api/model-performance", data: null, error: false },
   { url: "/api/daily-production-status", data: null, error: false },
   { url: "/api/intraday-model-top?model=B&limit=1", data: null, error: false },
+  { url: "/api/private-live-execution", data: null, error: true },
 ];
 const dashboardDependencies = { "../lib/home-presentation.mjs": presentation,
   "./HomeModelRankings": compile(await read("components/HomeModelRankings.tsx"), { "../lib/home-presentation.mjs": presentation }),
+  "./HomeCloudExecutionStatus": compile(await read("components/HomeCloudExecutionStatus.tsx"), { "../lib/home-presentation.mjs": presentation }),
   "./PrivateLiveDeliveryPanel": { PrivateLiveDeliveryView: () => null, usePrivateLiveDelivery: () => ({ data: { delivery: null }, failed: false, disabled: false }) },
   "../lib/home-dashboard.mjs": homeHelpers, "../lib/intraday-model-top-time-policy.mjs": liveTiming, "./HomeTransitionCard": { __esModule: true, ...loadCard() } };
 const dashboard = compile(dashboardSource, { ...dashboardDependencies, react: harness(resources).hooks });
@@ -136,7 +138,7 @@ assert.match(dashboardHtml, /14:00 관측 대기/u);
 assert.match(dashboardHtml, /Daily EOD로 자동 대체하지 않습니다/u);
 assert.ok(!dashboardHtml.includes("11종목"), "actual homepage defaults to LIVE despite EOD summary availability");
 assert.ok(dashboardHtml.includes("장중 잠정") || dashboardHtml.includes("LIVE"));
-const archiveStates = [...resources]; archiveStates[6] = true;
+const archiveStates = [...resources]; archiveStates[7] = true;
 const archiveDashboard = compile(dashboardSource, { ...dashboardDependencies, react: harness(archiveStates).hooks });
 const archiveHtml = html(React.createElement(archiveDashboard.default, { ...callbacks, onOpenModel: noOp, onOpenPerformance: noOp }));
 assert.match(archiveHtml, /LIVE · 14:30 저장 관측/u);

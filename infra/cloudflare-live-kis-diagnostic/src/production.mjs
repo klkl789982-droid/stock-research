@@ -7,6 +7,7 @@ import { createKisEodPrivateStore } from "../../../lib/kis-eod-private-store.mjs
 import { privateRequestBudget } from "../relay-budget.mjs";
 import { assertDiagnostic } from "../core.mjs";
 import { verifyNativeProductionFixture } from "../production-fixture.mjs";
+import { executionRecordKey } from "../../../lib/private-live-execution-status.mjs";
 const options = { retries: { limit: 0, delay: "1 second" }, timeout: "6 minutes" };
 const dateOf = run => { const m = /^live-(\d{4}-\d{2}-\d{2})$/u.exec(run ?? ""); if (!m) throw new Error("LIVE_CLOUD_DATE_INVALID"); return m[1]; };
 const vault = env => env.BROKER.get(env.BROKER.idFromName("single-approved-kis-credential-v1"));
@@ -30,6 +31,13 @@ export class LiveDay extends DurableObject {
   status() { return { ...this.state.status(), productionEnabled: this.env.LIVE_PRODUCTION_ENABLED === "true", producer: this.env.LIVE_PRODUCER }; }
   incidentStatus() { return { ...this.state.incidentStatus(), productionEnabled: this.env.LIVE_PRODUCTION_ENABLED === "true", producer: this.env.LIVE_PRODUCER }; }
   failure(code, stage) { return this.state.failure(safeCode({ code }), stage); }
+  async publishExecution(date,event,workflowState,error) {
+    const record=this.state.freezeExecution(date,event,workflowState,error);
+    const io=privateRequestBudget(edgeFetch,12);
+    const remote=createKisEodPrivateStore({repository:"klkl789982-droid/tight-budget-private-data",token:this.env.PRIVATE_LIVE_DELIVERY_WRITE_TOKEN,fetchImpl:io.fetch});
+    await remote.writeImmutable(executionRecordKey(record),record);
+    return {status:"EXECUTION_METADATA_STORED",signalDate:date,recordHash:record.recordHash};
+  }
   async isolatedFixture(run, phase) {
     assertDiagnostic(this.env);
     if (!/^[A-Za-z0-9_-]{1,24}$/u.test(run ?? "") || this.ctx.id.toString() !== this.env.LIVE_DAYS.idFromName(`isolated-fixture-${run}`).toString()) throw new Error("DIAG_PRODUCTION_FIXTURE_IDENTITY");
@@ -66,17 +74,38 @@ export class CloudLive extends WorkflowEntrypoint {
     if (p.mode === "status") return step.do("read only production readiness", options, () => target.status());
     if (p.mode === "incident-status") return step.do("bounded score-only incident inventory", options, () => target.incidentStatus());
     assertProduction(this.env);
+    // Management-only metadata reconciliation; never prepare/collect/finish/relay.
+    if(p.mode==="publish-execution-status")return step.do("publish existing execution metadata only",options,async()=>{
+      const original=await (await this.env.LIVE.get(`live-${date}`)).status();
+      const state=String(original.status??"UNKNOWN").toUpperCase();
+      // The durable failure has the original code and stage. A generic
+      // Workflow wrapper error must not replace that more specific evidence.
+      return target.publishExecution(date,"RECONCILE",["RUNNING","COMPLETE","ERRORED","TERMINATED"].includes(state)?state:"UNKNOWN");
+    });
+    const emit=async(event,error=null)=>{
+      try{return await target.publishExecution(date,event,"RUNNING",error);}
+      catch(e){console.error(JSON.stringify({event:"LIVE_CLOUD_STATUS_DELIVERY_FAILED",phase:event,code:safeCode(e)}));return {status:"STATUS_DELIVERY_FAILED"};}
+    };
+    const report=async(event,error=null)=>{
+      try{return await step.do(`private execution metadata ${event}`,{retries:{limit:0,delay:"1 second"},timeout:"30 seconds"},()=>emit(event,error));}
+      catch(e){console.error(JSON.stringify({event:"LIVE_CLOUD_STATUS_STEP_FAILED",phase:event,code:safeCode(e)}));return {status:"STATUS_DELIVERY_FAILED"};}
+    };
     let stage = p.mode === "batch" ? "BATCH_COLLECTION" : p.mode === "relay" ? "RELAY" : "PREPARE";
     try {
-      if (p.mode === "relay") return await step.do("retry frozen score-only outbox", options, async () => { await target.finish(date); return target.relay(date); });
+      if (p.mode === "relay") { const result=await step.do("retry frozen score-only outbox", options, async () => { await target.finish(date); return target.relay(date); });await report("DELIVERED");return result; }
       if (p.mode === "batch") {
         await step.sleepUntil("wait for absolute1400", new Date(bounds(date).start));
         return await step.do("bounded eight-symbol LIVE invocation", options, async () => {
           assertWindow(date, Date.now());
           if (!Array.isArray(p.codes) || !p.codes.length || p.codes.length > 8) throw new Error("LIVE_CLOUD_CODES_INVALID");
           const shard = this.env.LIVE_BATCHES.get(this.env.LIVE_BATCHES.idFromName(`${date}-${p.codes[0]}`), { locationHint: "apac-ne" });
-          const r = await shard.fetch(`https://internal/collect-batch?run=live-${date}&codes=${p.codes.join(",")}`, {
-            signal: AbortSignal.timeout(Math.max(1, bounds(date).end + 5000 - Date.now())) });
+          // Start the independent collector before optional metadata I/O. A
+          // telemetry outage cannot postpone the first broker request or mask a
+          // rejection. Only one precreated batch reports collection progress.
+          const collecting=shard.fetch(`https://internal/collect-batch?run=live-${date}&codes=${p.codes.join(",")}`, {
+            signal: AbortSignal.timeout(Math.max(1, bounds(date).end + 5000 - Date.now())) }).then(response=>({response}),error=>({error}));
+          if(p.reportStatus===true)await emit("COLLECTION");
+          const outcome=await collecting;if(outcome.error)throw outcome.error;const r=outcome.response;
           if (!r.ok) throw new Error("LIVE_CLOUD_BATCH_FAILED");
           const value = await r.json();
           if (value.records.length !== p.codes.length) throw new Error("LIVE_CLOUD_BATCH_INCOMPLETE");
@@ -85,9 +114,10 @@ export class CloudLive extends WorkflowEntrypoint {
         });
       }
       if (p.mode !== "day") throw new Error("LIVE_CLOUD_MODE_INVALID");
-      await step.do("1340 preparation no market prices", options, async () => {
+      const initial=await step.do("1340 preparation no market prices", options, async () => {
         try { return { prepared: await target.prepare(date, false) }; } catch (e) { return { reason: safeCode(e) }; }
       });
+      await report("PREPARATION",initial.reason?{code:initial.reason,stage:"PREPARE"}:null);
       stage = "FINAL_INPUT";
       await step.sleepUntil("1359 fresh EOD recheck", new Date(bounds(date).start - 60000));
       let prepared = null;
@@ -105,7 +135,7 @@ export class CloudLive extends WorkflowEntrypoint {
       await step.do("precreate fixed batch ids", options, async () => {
         const definitions = [];
         for (let i = 0; i < prepared.codes.length; i += 8) definitions.push({ id: `live-${date}-batch${i / 8}`,
-          params: { mode: "batch", date, codes: prepared.codes.slice(i, i + 8) } });
+          params: { mode: "batch", date, codes: prepared.codes.slice(i, i + 8), ...(i===0?{reportStatus:true}:{}) } });
         try { await this.env.LIVE.createBatch(definitions); }
         catch {
           // Never create replacement IDs after an unknown create response.
@@ -114,15 +144,23 @@ export class CloudLive extends WorkflowEntrypoint {
         }
         return { batches: definitions.length, symbols: prepared.codes.length };
       });
+      // All collectors are already precreated; this read/write does not hold
+      // their broker slots or delay their absolute14:00 wake-up.
+      await report("READY");
       await step.sleepUntil("finalize after absolute collection cutoff", new Date(bounds(date).end + 1000));
       stage = "FINALIZE";
       await step.do("validate all required inputs and freeze outbox", options, () => target.finish(date));
+      await report("VALIDATED");
       stage = "RELAY";
-      return await step.do("publish private score-only delivery", options, () => target.relay(date));
+      const result=await step.do("publish private score-only delivery", options, () => target.relay(date));
+      await report("DELIVERED");return result;
     } catch (e) {
       const primaryCode = safeCode(e);
       try { await step.do("record fixed failure code", options, () => target.failure(primaryCode, stage)); }
       catch (recordError) { console.error(JSON.stringify({ event: "LIVE_CLOUD_FAILURE_RECORD_FAILED", primaryCode, stage, recordingCode: safeCode(recordError) })); }
+      // Batch failures remain in per-symbol/day evidence. Do not fan out70
+      // telemetry writes; the day/three relay parents publish bounded failures.
+      if(p.mode!=="batch")await report(p.mode==="relay"&&["06","08","10"].includes(p.relaySlot)?`FAILURE_RELAY${p.relaySlot}`:"FAILURE_DAY",{code:primaryCode,stage});
       throw new Error(primaryCode);
     }
   }
@@ -134,7 +172,7 @@ export async function productionScheduled(event, env) {
   const t = kst(event.scheduledTime), weekday = new Date(`${t.date}T00:00:00Z`).getUTCDay();
   if ([0, 6].includes(weekday)) return { status: "WEEKEND" };
   const mode = t.time < "14:00:00" ? "day" : "relay", id = mode === "day" ? `live-${t.date}` : `live-${t.date}-relay${t.time.slice(3, 5)}`;
-  try { await env.LIVE.create({ id, params: { mode, date: t.date } }); }
+  try { await env.LIVE.create({ id, params: { mode, date: t.date, ...(mode==="relay"?{relaySlot:t.time.slice(3,5)}:{}) } }); }
   catch { const existing = await env.LIVE.get(id); await existing.status(); }
   return { id, mode };
 }

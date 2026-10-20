@@ -4,6 +4,7 @@ import { deliverPrivateLive } from "../../lib/private-live-delivery.mjs";
 import { assertProduction, assertWindow, bounds, aggregateProduction, nextPairSlots, PRODUCTION_BUDGET } from "./production-core.mjs";
 import { persistCloudSwingIntent } from "./cloud-swing.mjs";
 import { safeCode } from "./core.mjs";
+import { EXECUTION_PREFIX, EXECUTION_EVENTS, sealExecutionRecord } from "../../lib/private-live-execution-status.mjs";
 
 export class ProductionDayState {
   constructor({ sql, env, prepare, bundle, remote, now = Date.now, wait = ms => new Promise(r => setTimeout(r, ms)), transaction = fn => fn(), scheduleDeadline = (ms, fn) => { const timer = setTimeout(fn, ms); timer.unref?.(); return () => clearTimeout(timer); } }) {
@@ -206,6 +207,34 @@ export class ProductionDayState {
     return this.critical(() => this.write("receipt", result));
   }
   failure(code, stage = "UNSPECIFIED_LEGACY") { return this.critical(() => this.write("last-failure", { code, stage, at: new Date(this.now()).toISOString() }, true)); }
+  freezeExecution(date, event, workflowState = "RUNNING", error = undefined) {
+    return this.critical(() => {
+      assertProduction(this.env);
+      if (!EXECUTION_EVENTS.includes(event) || this.read("date")?.date !== date) throw new Error("LIVE_CLOUD_DATE_CONFLICT");
+      const frozen = this.read(`execution-status:${event}`); if (frozen) return frozen;
+      const initial=this.read("prewarm"), final=this.read("final"), outbox=this.read("outbox"), receipt=this.read("receipt");
+      const observations=this.q("SELECT digest,body FROM docs WHERE id>='observation:' AND id<'observation;' ORDER BY id LIMIT 554").map(r=>{
+        const value=JSON.parse(r.body);if(hash(value)!==r.digest)throw new Error("LIVE_CLOUD_HASH_MISMATCH");return value;
+      });
+      const byCode=new Map(observations.map(r=>[r.code,r])), expected=final?.codes??[];
+      if(observations.length>553||byCode.size!==observations.length||expected.length&&observations.some(r=>!expected.includes(r.code)))throw new Error("LIVE_CLOUD_INCOMPLETE");
+      const available=observations.filter(r=>r.status==="AVAILABLE").length,excluded=observations.filter(r=>r.status==="EXCLUDED").length;
+      const first=observations.map(r=>r.quoteRequestedAt).filter(Boolean).sort()[0]??null,last=observations.map(r=>r.minuteReceivedAt).filter(Boolean).sort().at(-1)??null;
+      const failure=error===undefined?this.read("last-failure"):error;
+      const allowedStages=["PREPARE","FINAL_INPUT","CREATE_BATCHES","BATCH_COLLECTION","FINALIZE","RELAY"];
+      const value=sealExecutionRecord({schemaVersion:1,namespace:EXECUTION_PREFIX,source:"CLOUDFLARE_DURABLE_STATE",signalDate:date,runId:`live-${date}`,
+        recordedAt:new Date(this.now()).toISOString(),event,workflowState,
+        error:failure?{code:safeCode({code:failure.code}),stage:allowedStages.includes(failure.stage)?failure.stage:"UNKNOWN"}:null,
+        input:{initialReady:!!initial,finalReady:!!final,seedReferenceDate:final?.seedReferenceDate??initial?.seedReferenceDate??null,
+          checkedAt:final?.remoteCheckedAt??initial?.remoteCheckedAt??null,initialReadyAt:initial?.readyAt??null,finalReadyAt:final?.readyAt??null},
+        collection:{expected:553,eligible:final?.eligible??null,available,excluded,failed:observations.length-available-excluded,missing:553-observations.length,
+          requiredMissing:final?.eligibleCodes?final.eligibleCodes.filter(c=>byCode.get(c)?.status!=="AVAILABLE").length:null,
+          activeLeases:this.q("SELECT code FROM leases WHERE completed=0 AND expires>?",this.now()).length,firstRequestedAt:first,lastReceivedAt:last},
+        validation:{outboxFrozen:!!outbox,deliveryHash:outbox?.delivery?.deliveryHash??null,frozenAt:outbox?.delivery?.exportedAt??null},
+        delivery:{verified:receipt?.status==="PRIVATE_RELAY_VERIFIED",deliveryHash:receipt?.deliveryHash??null}});
+      return this.write(`execution-status:${event}`,value);
+    });
+  }
   incidentStatus() {
     return this.critical(() => {
       const prepared = this.read("final"), expected = prepared?.codes ?? [];

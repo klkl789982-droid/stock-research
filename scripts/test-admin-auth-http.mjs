@@ -35,7 +35,7 @@ try {
   assert.ok(ready && !startupFailed, "isolated Next.js server must start");
   for (const path of ["/", "/?view=models", "/?stock=005930", "/?view=screener", "/data/history/2026-10-07.json", "/.env", "/_next/image?url=%2Fapi%2Fprice&w=64&q=75"]) { const r = await request(path); assert.equal(r.status, 307, path); assert.equal(new URL(r.headers.get("location"), origin).pathname, "/login"); }
   assert.equal((await request("/", { headers: { RSC: "1", "x-middleware-subrequest": "proxy:proxy:proxy:proxy:proxy" } })).status, 307);
-  const apis = ["backtests/rank", "company-analysis", "daily-production-status", "financial", "home-dashboard", "intraday-market-analysis", "intraday-model-top", "investor", "kis-eod-top-stocks", "market-analysis", "model-performance", "model-performance/research", "price", "realtime", "screener", "stock", "top-stocks"];
+  const apis = ["backtests/rank", "company-analysis", "daily-production-status", "financial", "home-dashboard", "intraday-market-analysis", "intraday-model-top", "investor", "kis-eod-top-stocks", "market-analysis", "model-performance", "model-performance/research", "price", "private-live-execution", "realtime", "screener", "stock", "top-stocks"];
   for (const api of apis) { const r = await request(`/api/${api}`); assert.equal(r.status, 401, api); assert.ok(r.headers.get("cache-control").includes("no-store")); }
   assert.equal((await request("/api/screener?tab=transition&rules=directional-v2&sort=evidence&trendEvidence=improving")).status, 401, "Research evidence never bypasses admin authentication");
   assert.equal((await request("/api/screener?tab=transition&mode=LIVE")).status, 401, "LIVE remains behind administrator authentication");
@@ -99,6 +99,8 @@ try {
   const logout = await request("/api/auth/logout", { method: "POST", headers: { ...headers, Origin: origin } }); assert.equal(logout.status, 200); assert.match(logout.headers.get("set-cookie"), /Max-Age=0/);
   assert.equal((await request("/api/auth/session", { headers })).status, 401);
   assert.equal((await request("/", { headers })).status, 307);
+  assert.equal((await request("/api/private-live-execution", { headers })).status, 401);
+  assert.equal((await request("/api/private-live-execution", { headers: { Authorization: `Bearer ${machine}` } })).status, 401);
   const machineResponse = await request("/api/model-performance", { headers: { Authorization: `Bearer ${machine}` } }); assert.equal(machineResponse.status, 200);
   const machinePerformance = await machineResponse.json();
   assert.deepEqual(Object.keys(machinePerformance), ["dataIdentity", "publicationReady", "latestEodReferenceDate"]);
@@ -115,7 +117,7 @@ try {
   assert.equal((await request("/api/screener", { headers: { Authorization: `Bearer ${machine}` } })).status, 401);
   for (let i = 0; i < 2; i++) assert.equal((await login({ username, password: "wrong" })).status, 401);
   assert.equal((await login({ username, password })).status, 429);
-  console.log("HTTP security passed: 17 APIs, pages/static/RSC policy, login/errors/limit, cookie tamper, CSRF, real server revocation, scoped automation");
+  console.log(`HTTP security passed: ${apis.length} APIs, pages/static/RSC policy, login/errors/limit, cookie tamper, CSRF, real server revocation, scoped automation`);
   if (process.argv.includes("--preview")) {
     fixture.reset();
     console.log(`AUTH_TEST_PREVIEW_URL=${origin}/login`);
