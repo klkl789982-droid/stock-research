@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
+import { homeTime } from "../lib/home-presentation.mjs";
 
 type Model = { model: string; modelVersion: string; collectionStartedAt?: string; collectionCompletedAt?: string; records: { ticker: string; companyName: string; rank: number; score: number }[] };
-type Relay = { status: string; source: string; servedAt: string; freshnessStatus?: string; deliveryHash?: string; delivery: { signalDate?: string; exportedAt?: string; deliveryHash?: string; models: Model[] } | null };
+export type Relay = { status: string; source: string; servedAt: string; freshnessStatus?: string; deliveryHash?: string; delivery: { signalDate?: string; exportedAt?: string; deliveryHash?: string; sourceHash?: string; models: Model[] } | null };
 export type PrivateRelayState = { data: Relay | null; failed: boolean; disabled: boolean };
 export function privateRelaySummary(state: PrivateRelayState) {
   if (state.failed) return "조회 실패 · 최신 상태 미확인";
@@ -11,9 +12,9 @@ export function privateRelaySummary(state: PrivateRelayState) {
   if (state.data?.delivery) return `저장 관측 · ${state.data.delivery.signalDate}${state.data.freshnessStatus === "HISTORICAL" ? " · 이전 날짜" : " · 최신성 별도 확인"}`;
   return state.data ? "관측 대기 · 전달된 결과 없음" : "인증된 전달 결과 확인 중";
 }
-const time = (value?: string) => value && Number.isFinite(Date.parse(value)) ? new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", dateStyle: "short", timeStyle: "medium" }).format(new Date(value)) + " KST" : "확인 불가";
+const time = (value?: string) => homeTime(value);
 
-export function PrivateLiveDeliveryView({ data, failed = false, disabled = false }: { data: Relay | null; failed?: boolean; disabled?: boolean }) {
+export function PrivateLiveDeliveryView({ data, failed = false, disabled = false, integrityOnly = false }: { data: Relay | null; failed?: boolean; disabled?: boolean; integrityOnly?: boolean }) {
   const [probe, setProbe] = useState("idle");
   if (disabled) return null;
   const fixture = data?.source === "privateRelayFixture", delivery = data?.delivery;
@@ -25,14 +26,16 @@ export function PrivateLiveDeliveryView({ data, failed = false, disabled = false
       setProbe(response.ok && result.permissionStatus === "READ_OK_WRITE_DENIED" && result.writeDenied === true ? "verified" : "failed");
     } catch { setProbe("failed"); }
   }
+  const integrity = <details className="mt-3 text-sm text-slate-700"><summary className="tb-focus cursor-pointer rounded">전달 무결성 확인</summary><p className="mt-2 break-all">SHA256 {data?.deliveryHash ?? delivery?.deliveryHash ?? "확인 불가"}</p><p className="mt-2 break-all">원본 식별 해시 {delivery?.sourceHash ?? "확인 기록 없음"}</p><p>인증 API 조회 시각 {time(data?.servedAt)} · 관측 시각과 다름</p></details>;
+  const readerProbe = fixture && <div className="mt-3 text-sm"><button type="button" disabled={probe === "checking" || probe === "verified"} onClick={() => void verifyReader()} className="tb-focus rounded border px-3 py-2 disabled:opacity-60">읽기 전용 권한 검증</button><p role="status" className="mt-1 text-slate-600">{probe === "verified" ? "원격 읽기·해시 일치 / 테스트 쓰기 403 차단 확인" : probe === "checking" ? "테스트 경로에서만 권한 확인 중" : probe === "failed" ? "읽기 전용 권한 미검증 · 설정 확인 필요" : "합성 테스트 경로에 1회 생성 요청을 보내 쓰기 거부를 확인합니다. 운영 경로는 변경하지 않습니다."}</p></div>;
+  if (integrityOnly) return <div aria-label="비공개 전달 무결성">{integrity}{readerProbe}</div>;
   return <section className="tb-card min-w-0 p-4" aria-label="비공개 저장소 전달 결과">
     <h2 className="text-base font-semibold">{fixture ? "합성 자료 · 비공개 연결 검증" : "비공개 LIVE 저장 순위 · 14:00"}</h2>
     {!delivery ? <p role="status" className="mt-2 text-sm text-slate-600">{failed ? "비공개 결과 조회 실패 · 마지막 결과와 최신 상태를 확인할 수 없습니다." : data ? "아직 전달된 14:00 관측 결과가 없습니다. 운영 연결·관측 대기 중입니다." : "인증된 저장 결과 확인 중"}</p> : <>
       <p className="mt-1 text-xs text-slate-600">{fixture ? "실제 시세·모델 순위·14:00 관측이 아닙니다. 공식 EOD와 성과 계산에 사용하지 않습니다." : `관측 기준일 ${delivery.signalDate} · ${data?.freshnessStatus === "HISTORICAL" ? "이전 날짜 저장 기록 · 현재 거래일의 정상 관측으로 표시하지 않습니다." : "저장된 관측 결과 · 거래일 최신성은 별도 확인이 필요합니다."}`}</p>
       {!fixture && <dl className="mt-2 grid gap-1 text-xs text-slate-600 sm:grid-cols-2"><div><dt>분석 기준</dt><dd>{delivery.signalDate} 14:00 KST</dd></div><div><dt>실제 관측 구간</dt><dd>{time(delivery.models[0]?.collectionStartedAt)} ~ {time(delivery.models[0]?.collectionCompletedAt)}</dd></div><div><dt>전달 파일 생성</dt><dd>{time(delivery.exportedAt)}</dd></div><div><dt>사이트 조회</dt><dd>{time(data?.servedAt)}</dd></div></dl>}
       <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">{delivery.models.map(model => <article key={model.model} className="min-w-0 rounded-lg bg-[#f7f3eb] p-3"><h3 className="text-sm font-semibold">{model.model} · TOP5</h3><ol className="mt-2 space-y-2 text-xs">{model.records.map(row => <li key={row.ticker} className="flex justify-between gap-2"><span className="min-w-0 break-words">{row.rank}. {row.companyName}<span className="block text-slate-500">{row.ticker}</span></span><span className="tabular-nums">{row.score.toFixed(2)}</span></li>)}</ol></article>)}</div>
-      <details className="mt-3 text-xs text-slate-600"><summary className="tb-focus cursor-pointer rounded">전달 무결성 확인</summary><p className="mt-2 break-all">SHA256 {data?.deliveryHash ?? delivery.deliveryHash}</p><p>인증 API 조회 시각 {time(data?.servedAt)} · 관측 시각과 다름</p></details>
-      {fixture && <div className="mt-3 text-xs"><button type="button" disabled={probe === "checking" || probe === "verified"} onClick={() => void verifyReader()} className="tb-focus rounded border px-3 py-2 disabled:opacity-60">읽기 전용 권한 검증</button><p role="status" className="mt-1 text-slate-600">{probe === "verified" ? "원격 읽기·해시 일치 / 테스트 쓰기 403 차단 확인" : probe === "checking" ? "테스트 경로에서만 권한 확인 중" : probe === "failed" ? "읽기 전용 권한 미검증 · 설정 확인 필요" : "합성 테스트 경로에 1회 생성 요청을 보내 쓰기 거부를 확인합니다. 운영 경로는 변경하지 않습니다."}</p></div>}
+      {integrity}{readerProbe}
     </>}
   </section>;
 }

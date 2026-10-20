@@ -1,0 +1,27 @@
+{
+  "scope": "Home UI only; no schedules, credentials, auth policy, formulas, outcomes or persistence changes",
+  "baselineCommit": "4d0d94d",
+  "features": [
+    {"before":"TB logo / header desktop and mobile search / logout","after":"Same header actions; remove only the duplicate home search CTA","preserved":"Stock search handlers, code-based selection, logout"},
+    {"before":"Home title and five-cell status strip","after":"Market summary title and compact status line","preserved":"Official EOD date, last valid LIVE date/time, current-state unknown/failure, EOD operational state"},
+    {"before":"Private14:00 LIVE TOP5 panel,20rows","after":"Default14:00 LIVE tab, four comparable model columns","preserved":"All20 model-specific ranks/scores and original observation times; no EOD fallback"},
+    {"before":"Daily EOD TOP3,12rows","after":"Daily EOD tab, four comparable model columns","preserved":"Model version, universe, date, verified prior rank comparison only"},
+    {"before":"EOD model card navigation and stock buttons","after":"Model heading and explicit stock buttons in both tabs","preserved":"Existing onOpenModel / onSelectStock code routing; no nested clickable cards"},
+    {"before":"Model market-usage explanations and risk notes","after":"Short purpose beside model name, expandable explanation","preserved":"No model superiority or probability claim; bearish-market caution"},
+    {"before":"Daily and old14:30 latest1D performance /5D20D links","after":"Compact A/B/C/D comparison with separately labeled evaluation layers","preserved":"Actual entry/exit basis, sample count, signal/result dates, detailed performance navigation"},
+    {"before":"No14:00 swing performance in home","after":"Explicit pending5-session observation criterion, not same-day entry return","preserved":"Existing next-session-open to fifth-session-close contract; no fabricated results or forecasts"},
+    {"before":"Large right-side official EOD operations card","after":"Top operation-details button and expandable full-width panel","preserved":"Source check, collection/validation, repository publication, site verification and all failure distinctions"},
+    {"before":"Operational date/timestamp fields","after":"Operation-details panel","preserved":"Latest source/collected/validated/published dates, last good stored/site dates, source check, automatic run, success, deployment evidence check times"},
+    {"before":"Verification run URL, last verified date/time, failure stage/reason","after":"Operation-details panel","preserved":"Actual links, missing proof versus failed proof, current versus historical verification"},
+    {"before":"Private delivery SHA256, source metadata and Preview-only reader probe","after":"Operation-details integrity section","preserved":"Read-only credential probe remains isolated Preview-only with original server policy"},
+    {"before":"Historical14:30 transition accordion including LIVE/EOD selector, counts, stock and screener links","after":"Past records /14:30 transition analysis","preserved":"Original HomeTransitionCard and callbacks, pair/state/direction/mode; mount when opened"},
+    {"before":"Historical14:30 execution accordion","after":"Past records /14:30 execution","preserved":"Scheduled, first runner step, script start, prior schedule, last good observation and artifact timestamps"},
+    {"before":"Supply-delay and unconnected market-source explanations","after":"Operation-details explanatory section","preserved":"No fabricated KOSPI/KOSDAQ/FX/turnover values or KIS public-source expansion"},
+    {"before":"Sidebar Home / stock analysis / models / screener","after":"Same destinations","preserved":"Desktop and mobile navigation"},
+    {"before":"Disabled market/backtest/watchlist placeholder entries","after":"Secondary prepared-later group","preserved":"Same disabled destinations and explicit preparing state; no invented routes"},
+    {"before":"Long textured background, stacked cream cards","after":"Home-scoped calm solid background and thin dividers","preserved":"Navy/orange brand; other analysis pages keep existing styles"}
+  ],
+  "datePresentation": "YYYY.MM.DD and24-hour KST; reference date is not collection time",
+  "reviewTargets": [390,768,1440],
+  "productionDeploymentAuthorizedInThisTask": false
+}

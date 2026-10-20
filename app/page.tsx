@@ -402,10 +402,10 @@ const navigationButtons = (closeOnSelect: boolean) => <>
   <button type="button" onClick={openModelsFromNavigation} className={`tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold ${pageView === "models" ? "bg-[rgba(182,91,50,0.13)] text-[var(--tb-orange)]" : "text-slate-300 hover:bg-white/10 hover:text-white"}`}><span aria-hidden="true">▦</span> 모델</button>
   <div className="my-3 border-t border-white/10" />
   <button type="button" onClick={openScreenerFromNavigation} className={`tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold ${pageView === "screener" ? "bg-[rgba(182,91,50,0.13)] text-[var(--tb-orange)]" : "text-slate-300 hover:bg-white/10 hover:text-white"}`}><span aria-hidden="true">▽</span> 스크리닝</button>
-  {[['▥', '시장 현황'], ['⌁', '백테스트'], ['☆', '관심 종목']].map(([icon, label]) => <div key={label} className="tb-muted-nav flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium" aria-disabled="true"><span aria-hidden="true">{icon}</span><span>{label}</span><span className="ml-auto text-[8px] uppercase tracking-wider">준비 중</span></div>)}
+  <section aria-label="보조 메뉴 · 준비 중" className="mt-6 border-t border-white/10 pt-4"><h2 className="px-3 pb-2 text-xs font-medium text-slate-400">보조 메뉴</h2>{[['▥', '시장 현황'], ['⌁', '백테스트'], ['☆', '관심 종목']].map(([icon, label]) => <div key={label} className="tb-muted-nav flex items-center gap-3 rounded-lg px-3 py-2 text-sm" aria-disabled="true"><span aria-hidden="true">{icon}</span><span>{label}</span><span className="ml-auto text-xs">준비 중</span></div>)}</section>
 </>;
 return (
-    <main ref={pageTopRef} className="tb-page-ambient min-h-screen text-slate-900">
+    <main ref={pageTopRef} className={"tb-page-ambient min-h-screen text-slate-900" + (pageView === "home" && !searchedStock ? " tb-home-shell" : "")}>
       <header className="tb-brand-shell sticky top-0 z-30 border-b border-white/10 text-white shadow-[0_8px_25px_rgba(7,18,40,0.14)]">
         <div className="flex w-full items-center gap-3 px-3 py-2 sm:gap-4 sm:px-6 lg:px-6">
           <button type="button" onClick={() => setMobileNavOpen(true)} aria-label="메뉴 열기" aria-expanded={mobileNavOpen} className="tb-focus inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/15 text-xl leading-none text-white hover:bg-white/10 lg:hidden">☰</button>
@@ -444,7 +444,6 @@ return (
           onSelectStock={handleSearch}
           onOpenModel={(model) => { openModelsFromNavigation(); setModelInitialTab(model); }}
           onOpenPerformance={() => { openModelsFromNavigation(); setModelPageTab("performance"); }}
-          onOpenSearch={openSearchFromNavigation}
           onOpenTransition={(pair, state, direction, mode) => { openScreenerFromNavigation(); setScreenerEntry({ tab: "transition", pair, state, direction, mode }); }}
         /></div>}
 
