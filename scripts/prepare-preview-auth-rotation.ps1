@@ -17,9 +17,23 @@ if (-not $Directory.StartsWith(([IO.Path]::GetFullPath($root) + [IO.Path]::Direc
 }
 if ($ClearClipboard) { Set-Clipboard -Value ''; Write-Host 'Current clipboard cleared. No secret was printed.'; return }
 if ($Copy) {
+  $clipboardSettings = $null
+  try {
+    # Read the key once, then inspect optional properties without asking the
+    # registry provider for a missing value (which throws in Windows PS 5.1).
+    $clipboardSettings = Get-ItemProperty -LiteralPath 'HKCU:\Software\Microsoft\Clipboard' -ErrorAction Stop
+  } catch [System.Management.Automation.ItemNotFoundException] {
+    # A missing key, like an absent property, has no explicit enabled setting.
+  } catch {
+    throw 'Cannot verify clipboard privacy settings. No secret was copied.'
+  }
   foreach ($name in @('EnableClipboardHistory', 'EnableCloudClipboard')) {
-    $setting = Get-ItemPropertyValue -LiteralPath 'HKCU:\Software\Microsoft\Clipboard' -Name $name -ErrorAction SilentlyContinue
-    if ($setting -eq 1) { throw 'Turn off Windows clipboard history/cloud sync before copying a secret, then retry. No secret was copied.' }
+    $property = if ($null -ne $clipboardSettings) { $clipboardSettings.PSObject.Properties[$name] } else { $null }
+    if ($null -eq $property) { continue }
+    if ($property.Value -isnot [int] -or $property.Value -notin @(0, 1)) {
+      throw 'Clipboard privacy setting is invalid or unknown. No secret was copied.'
+    }
+    if ($property.Value -eq 1) { throw 'Turn off Windows clipboard history/cloud sync before copying a secret, then retry. No secret was copied.' }
   }
   $key = if ($Copy -eq 'PasswordHash') { 'TB_ADMIN_PASSWORD_HASH' } else { 'TB_SESSION_SECRET' }
   $file = Join-Path $Directory ($key + '.secret')
@@ -28,9 +42,8 @@ if ($Copy) {
   $value = [IO.File]::ReadAllText($file)
   $pattern = if ($Copy -eq 'PasswordHash') { '^scrypt\$131072\$8\$1\$[a-f0-9]{32}\$[a-f0-9]{64}$' } else { '^[A-Za-z0-9_-]{43}$' }
   if ($value -cnotmatch $pattern) { throw 'Secret file format is invalid; nothing was copied.' }
-  Set-Clipboard -Value $value
-  $value = $null
-  Write-Host ('Copied ' + $key + ' without displaying it. Paste ONLY into the two named Preview Secret entries; not Production or common Preview. Clear clipboard afterward.')
+  try { Set-Clipboard -Value $value -ErrorAction Stop } finally { $value = $null }
+  Write-Host ('COPY_SUCCEEDED: ' + $key + '. No secret was printed. Paste ONLY into the two named Preview Secret entries; not Production or common Preview. Clear clipboard afterward.')
   return
 }
 if (Test-Path -LiteralPath $Directory) {
