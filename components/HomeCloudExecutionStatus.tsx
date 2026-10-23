@@ -14,7 +14,10 @@ type State = { data: CloudExecutionResponse | null; error: boolean };
 const labels: Record<Phase, string> = { SUCCEEDED: "완료", FAILED: "실패", BLOCKED: "차단", RUNNING: "진행 확인", PENDING: "대기", UNKNOWN: "확인 불가" };
 const reasons: Record<string, string> = { LIVE_CLOUD_SQL_BUDGET: "저장 처리 예산 초과", LIVE_CLOUD_INPUT_NOT_READY: "필수 EOD 입력 미준비",
   LIVE_CLOUD_INCOMPLETE: "관측 기록 부족", LIVE_CLOUD_REQUIRED_INPUT_MISSING: "필수 종목 입력 미충족", LIVE_CLOUD_OBSERVATION_WINDOW: "관측 시간 기준 미충족",
-  PRIVATE_STORE_NETWORK_FAILED: "비공개 저장소 연결 실패", PRIVATE_STORE_AUTHORIZATION_FAILED: "비공개 저장소 권한 확인 필요", LIVE_CLOUD_WINDOW_EXPIRED: "관측 시간 종료" };
+  PRIVATE_STORE_NETWORK_FAILED: "비공개 저장소 연결 실패", PRIVATE_STORE_AUTHORIZATION_FAILED: "비공개 저장소 권한 확인 필요", LIVE_CLOUD_WINDOW_EXPIRED: "관측 시간 종료",
+  DIAG_EOD_STATUS_INCONSISTENT: "공식 EOD 게시 상태와 기준일 불일치", DIAG_EOD_SEED_INVALID: "EOD 모델 입력 검증 실패",
+  LIVE_CLOUD_STORAGE_BUDGET: "실행 기록 저장 용량 상한 도달", LIVE_CLOUD_PIN_UNAVAILABLE: "고정한 모델 입력을 읽지 못함",
+  LIVE_CLOUD_CHILD_ERRORED: "종목별 수집 실행 실패", LIVE_CLOUD_CHILD_NOT_COMPLETE: "종목별 수집 완료 미확인" };
 export function cloudExecutionLabel(state: State) {
   if (state.error) return "실행 기록 조회 실패 · 마지막 정상 결과와 별도";
   if (!state.data) return "실행 기록 조회 중";

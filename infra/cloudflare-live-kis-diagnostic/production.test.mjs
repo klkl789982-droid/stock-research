@@ -292,6 +292,45 @@ test("bundle failure closes durable reservation and does not strand later capaci
   assert.ok(await state.acquire(date, f.seed.records[1].code));
 });
 
+test("bundle and diagnostic write failures still close the durable lease and settle queued work", async t => {
+  const f = sandbox(t); const code=f.seed.records[0].code;let rejectBundle;
+  const logs=[];t.mock.method(console,"error",value=>logs.push(JSON.parse(value)));
+  const state=new ProductionDayState({...f.options,bundle:async(_date,_prepared,ticker)=>{
+    if(ticker===code)return new Promise((_resolve,reject)=>{rejectBundle=reject;});return {};
+  }});
+  await state.prepare(date,true); f.set(b.start);
+  const write=state.write.bind(state);
+  state.write=(id,...args)=>{if(id===`observation:${code}`)throw new Error("LIVE_CLOUD_STORAGE_BUDGET");return write(id,...args);};
+  const first=assert.rejects(state.acquire(date,code),/PIN_UNAVAILABLE/);
+  for(const row of f.seed.records.slice(1,8))await state.acquire(date,row.code);
+  const queued=state.acquire(date,f.seed.records[8].code);
+  assert.equal(state.pending.size,1,"ninth symbol must actually wait behind eight durable leases");
+  rejectBundle(new Error("LIVE_CLOUD_PIN_UNAVAILABLE"));await first;
+  assert.equal(f.db.prepare("SELECT completed FROM leases WHERE code=?").get(code).completed,1);
+  assert.equal(state.read(`observation:${code}`),null,"missing evidence must not become a successful observation");
+  await assert.rejects(state.acquire(date,code),/ALREADY_RESERVED/);
+  assert.ok(await queued);assert.equal(state.pending.size,0);
+  assert.deepEqual(logs,[{event:"LIVE_BUNDLE_FAILURE_RECORD_FAILED",primaryCode:"LIVE_CLOUD_PIN_UNAVAILABLE",recordingCode:"LIVE_CLOUD_STORAGE_BUDGET"}]);
+  assert.throws(()=>state.finish(date),/CHILD_RESULTS_UNVERIFIED/);
+});
+
+test("final EOD failure retains the exact input cause instead of a generic wrapper", async t => {
+  let now=b.start-1200000;t.mock.method(Date,"now",()=>now);
+  const recorded=[],target={prepare:async()=>{throw new Error("DIAG_EOD_STATUS_INCONSISTENT");},publishExecution:async()=>{},failure:async(code,stage)=>{recorded.push({code,stage});}};
+  const bindings={...env,LIVE_DAYS:{idFromName:x=>x,get:()=>target}};
+  const step={do:(_n,_o,fn)=>fn(),sleepUntil:async(_n,at)=>{now=Math.max(now,at.getTime());},sleep:async()=>{now+=10000;}};
+  await assert.rejects(new CloudLive(bindings).run({payload:{mode:"day",date}},step),/DIAG_EOD_STATUS_INCONSISTENT/);
+  assert.deepEqual(recorded,[{code:"DIAG_EOD_STATUS_INCONSISTENT",stage:"FINAL_INPUT"}]);
+});
+
+test("a recovery batch cannot publish progress into the regular execution metadata", async t => {
+  t.mock.method(Date,"now",()=>b.start+1000);let publications=0;
+  const target={publishExecution:async()=>{publications++;}};
+  const bindings={...env,LIVE_DAYS:{idFromName:x=>x,get:()=>target},LIVE_BATCHES:{idFromName:x=>x,get:()=>({fetch:async()=>Response.json({records:[{code:"100000",status:"AVAILABLE"}]})})}};
+  const result=await new CloudLive(bindings).run({payload:{mode:"batch",date,runId:`live-${date}-recovery-test`,codes:["100000"],reportStatus:true}},{do:(_n,_o,fn)=>fn()});
+  assert.equal(result.successful,1);assert.equal(publications,0);
+});
+
 test("partial completion rollback preserves slots and immutable observation; failed SQL retains pessimistic prepaid cost", async t => {
   const f = sandbox(t); await f.state.prepare(date, true); f.set(b.start);
   const code = f.seed.records[0].code, lease = await f.state.acquire(date, code), row = observations(f.seed).rows[0];

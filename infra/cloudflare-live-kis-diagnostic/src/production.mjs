@@ -141,7 +141,7 @@ export class CloudLive extends WorkflowEntrypoint {
             // Keep the request deadline within the already proven five-minute
             // primary-window bound; the day cutoff is still enforced below.
             signal: AbortSignal.timeout(Math.max(1, Math.min(300000, bounds(date).end + 5000 - Date.now()))) }).then(response=>({response}),error=>({error}));
-          if(p.reportStatus===true)await emit("COLLECTION");
+          if(p.reportStatus===true&&runId===`live-${date}`)await emit("COLLECTION");
           const outcome=await collecting;
           if(outcome.error){
             const diagnostic=String(outcome.error?.message??"").slice(0,160).replace(/[A-Za-z0-9+/=_-]{32,}/gu,"[redacted]");
@@ -164,7 +164,7 @@ export class CloudLive extends WorkflowEntrypoint {
           throw error;
         }
       }
-      let prepared = null;
+      let prepared = null, lastInputFailure = null;
       if (recovery) {
         prepared = await step.do("adopt immutable pre-1400 input", options, async () => {
           const source = await day(this.env, date).recoverySource(date);
@@ -183,16 +183,17 @@ export class CloudLive extends WorkflowEntrypoint {
             try { return { prepared: await target.prepare(date, true) }; } catch (e) { return { reason: safeCode(e) }; }
           });
           prepared = attempt.prepared;
+          lastInputFailure = attempt.reason ?? lastInputFailure;
           if (!prepared && i < 5) await step.sleep(`bounded input backoff${i}`, "10 seconds");
         }
       }
-      if (!prepared) throw new Error("LIVE_CLOUD_INPUT_NOT_READY");
+      if (!prepared) throw new Error(lastInputFailure ?? "LIVE_CLOUD_INPUT_NOT_READY");
       // Fixed child IDs are created BEFORE the quote window. The scheduled
       // parent may start at13:40:58; it never waits for a14:00 cron invocation.
       stage = "CREATE_BATCHES";
       const definitions = [];
       for (let i = 0; i < prepared.codes.length; i += 8) definitions.push({ id: `${runId}-batch${i / 8}`,
-        params: { mode: "batch", date, runId, codes: prepared.codes.slice(i, i + 8), ...(i===0?{reportStatus:true}:{}) } });
+        params: { mode: "batch", date, runId, codes: prepared.codes.slice(i, i + 8), ...(i===0&&!recovery?{reportStatus:true}:{}) } });
       await step.do("precreate fixed batch ids", options, async () => {
         try { await this.env.LIVE.createBatch(definitions); }
         catch {

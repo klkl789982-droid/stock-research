@@ -58,6 +58,14 @@ test("read-only API fixed path, private repository, sanitized errors and fixture
  const failed=await privateLiveExecutionResponse(req,{env,now,fetchImpl:async()=>Response.json({private:false,full_name:env.PRIVATE_LIVE_DELIVERY_REPOSITORY})});assert.equal(failed.status,503);assert.deepEqual(await failed.json(),{error:"PRIVATE_LIVE_EXECUTION_UNAVAILABLE"});
  const preview=await privateLiveExecutionResponse(req,{env:{...env,PRIVATE_LIVE_DELIVERY_FIXTURE_ID:"test"},now,fetchImpl:()=>assert.fail("fixture must not be production status")});assert.equal((await preview.json()).status,"NO_EXECUTION_RECORD");
 });
+
+test("late progress never hides a terminal regular-run failure retained in the same directory",async()=>{
+ const terminal=record();const progress=fixture();progress.recordedAt="2026-10-20T10:01:00.000Z";progress.event="COLLECTION";progress.workflowState="RUNNING";progress.error=null;
+ const later=sealExecutionRecord(progress),values=new Map([terminal,later].map(v=>[executionRecordKey(v),v]));
+ const result=await readTodayExecution({verifyPrivateRepository:async()=>{},listKeys:async()=>[...values.keys()].map(key=>({name:key.split("/").at(-1),type:"file"})),read:async key=>({value:values.get(key)})},{now:"2026-10-20T10:02:00.000Z"});
+ assert.equal(result.record.event,"RECONCILE");assert.equal(result.record.error.code,"LIVE_CLOUD_SQL_BUDGET");
+ assert.equal(result.record.recordHash,terminal.recordHash,"select existing evidence, never rewrite an immutable record");
+});
 test("actual component renders failure, no-record, unavailable and complete without claiming liveness",async()=>{
  const exports={};new Function("require","exports",ts.transpileModule(await fs.readFile(new URL("../components/HomeCloudExecutionStatus.tsx",import.meta.url),"utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText)(n=>n==="react/jsx-runtime"?jsx:dates,exports);
  const dto=executionStatusDto(record(),now),state={data:{targetDate:date,servedAt:now,record:dto},error:false};

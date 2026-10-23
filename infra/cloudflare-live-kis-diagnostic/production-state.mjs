@@ -149,8 +149,13 @@ export class ProductionDayState {
           // Never hold the queue/transaction across broker network I/O.
           Promise.resolve().then(() => this.bundle(job.date, job.original, job.code)).then(data => job.resolve({ ...data, ...slots, deadline,
             signalDate: job.date, seedReferenceDate: job.original.seedReferenceDate }), error => {
-            try { this.critical(() => { this.write(`observation:${job.code}`, { code: job.code, reason: safeCode(error), rawPricesStored: false });
-              this.q("UPDATE leases SET completed=1 WHERE code=?", job.code); }); } catch { /* prepaid state remains fail-closed */ }
+            try { this.critical(() => this.write(`observation:${job.code}`, { code: job.code, reason: safeCode(error), rawPricesStored: false })); }
+            catch (recordError) { console.error(JSON.stringify({ event: "LIVE_BUNDLE_FAILURE_RECORD_FAILED", primaryCode: safeCode(error), recordingCode: safeCode(recordError) })); }
+            // Releasing an already attempted symbol is independent of its
+            // diagnostic write. Keep the durable lease row as a duplicate
+            // fence; never delete/reclaim it or turn missing input into success.
+            try { this.critical(() => this.q("UPDATE leases SET completed=1 WHERE code=?", job.code)); }
+            catch (releaseError) { console.error(JSON.stringify({ event: "LIVE_BUNDLE_LEASE_RELEASE_FAILED", primaryCode: safeCode(error), recordingCode: safeCode(releaseError) })); }
             job.reject(error); this.drain();
           });
         } catch (error) {
