@@ -142,7 +142,13 @@ export class CloudLive extends WorkflowEntrypoint {
             // primary-window bound; the day cutoff is still enforced below.
             signal: AbortSignal.timeout(Math.max(1, Math.min(300000, bounds(date).end + 5000 - Date.now()))) }).then(response=>({response}),error=>({error}));
           if(p.reportStatus===true)await emit("COLLECTION");
-          const outcome=await collecting;if(outcome.error)throw outcome.error;const r=outcome.response;
+          const outcome=await collecting;
+          if(outcome.error){
+            const diagnostic=String(outcome.error?.message??"").slice(0,160).replace(/[A-Za-z0-9+/=_-]{32,}/gu,"[redacted]");
+            console.error(JSON.stringify({event:"LIVE_BATCH_FETCH_REJECTED",errorName:String(outcome.error?.name??"Error").slice(0,40),diagnostic}));
+            throw outcome.error;
+          }
+          const r=outcome.response;
           if (!r.ok) throw new Error("LIVE_CLOUD_BATCH_FAILED");
           const value = await r.json();
           if (value.records.length !== p.codes.length) throw new Error("LIVE_CLOUD_BATCH_INCOMPLETE");
