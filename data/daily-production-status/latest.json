@@ -10,8 +10,8 @@
   "freshnessStatus": "unavailable",
   "freshnessReason": "LATEST_PROBE_NETWORK_TIMEOUT",
   "runStatus": "FAILED",
-  "updatedAt": "2026-10-23T07:11:34.501Z",
-  "lastAttemptAt": "2026-10-23T07:11:34.501Z",
+  "updatedAt": "2026-10-23T07:41:16.808Z",
+  "lastAttemptAt": "2026-10-23T07:41:16.808Z",
   "lastAutomaticRunAt": "2026-10-23T05:03:53.483Z",
   "lastSuccessAt": "2026-10-23T04:48:09.224Z",
   "lastOfficialEodDate": null,
@@ -22,14 +22,14 @@
   "sourceStatus": "UNAVAILABLE",
   "lagTradingDays": 0,
   "recentFailureReason": "LATEST_PROBE_NETWORK_TIMEOUT",
-  "lastFailureAt": "2026-10-23T07:11:34.501Z",
+  "lastFailureAt": "2026-10-23T07:41:16.808Z",
   "lastRecordedFailure": {
     "reason": "LATEST_PROBE_NETWORK_TIMEOUT",
-    "at": "2026-10-23T07:11:34.501Z"
+    "at": "2026-10-23T07:41:16.808Z"
   },
   "publishedReferenceDate": "2026-10-22",
   "publicationStatus": "lastGoodPreserved",
   "trigger": "workflow_dispatch",
   "sourceEvidence": [],
-  "contentHash": "d65b4690021748bc3780cc4450324bd9354dd831ec3151dbf6b9d132a268dad8"
+  "contentHash": "8dba001096f154217fd6f95dfbd541742e874c9fd4652bc09977b5481207ffd9"
 }
