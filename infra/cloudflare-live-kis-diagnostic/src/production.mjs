@@ -128,7 +128,7 @@ export class CloudLive extends WorkflowEntrypoint {
       if (p.mode === "relay") { const result=await step.do("retry frozen score-only outbox", options, async () => { await target.finish(date); return target.relay(date); });await report("DELIVERED");return result; }
       if (p.mode === "batch") {
         await step.sleepUntil("wait for absolute1400", new Date(bounds(date).start));
-        return await step.do("bounded eight-symbol LIVE invocation", options, async () => {
+        try { return await step.do("bounded eight-symbol LIVE invocation", options, async () => {
           assertWindow(date, Date.now());
           if (!Array.isArray(p.codes) || !p.codes.length || p.codes.length > 8) throw new Error("LIVE_CLOUD_CODES_INVALID");
           if (runOf(runId).date !== date) throw new Error("LIVE_CLOUD_DATE_INVALID");
@@ -158,7 +158,11 @@ export class CloudLive extends WorkflowEntrypoint {
           if(result.failed.length)try{await target.failure(result.failed[0].reason,"BATCH_COLLECTION");}
           catch(error){console.error(JSON.stringify({event:"LIVE_CLOUD_BATCH_FAILURE_RECORD_FAILED",primaryCode:result.failed[0].reason,recordingCode:safeCode(error)}));}
           return result;
-        });
+        }); } catch (error) {
+          const diagnostic=String(error?.message??"").slice(0,160).replace(/[A-Za-z0-9+/=_-]{32,}/gu,"[redacted]");
+          console.error(JSON.stringify({event:"LIVE_BATCH_STEP_REJECTED",errorName:String(error?.name??"Error").slice(0,40),diagnostic}));
+          throw error;
+        }
       }
       let prepared = null;
       if (recovery) {
