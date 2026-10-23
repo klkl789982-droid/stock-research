@@ -52,6 +52,10 @@ export async function verifyNativeProductionFixture({ sql, remote, run, phase })
       state.complete(date, row.code, { metadata, calls });
       if (next < rows.length) await enqueue();
     }
+    const batches=[];
+    for(let i=0;i<rows.length;i+=8){const codes=rows.slice(i,i+8).map(row=>row.code);batches.push({id:`live-${date}-batch${i/8}`,codes,
+      workflowStatus:"complete",attempted:codes.length,successful:codes.length,failures:[]});}
+    state.reconcileBatches(date,{schemaVersion:1,date,batches,firstFailure:null});
     now = b.end + 1000; state.finish(date); await state.relay(date);
     state.write("fixture-complete", { syntheticOnly: true });
   }

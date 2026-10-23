@@ -12,6 +12,27 @@ const options = { retries: { limit: 0, delay: "1 second" }, timeout: "6 minutes"
 const dateOf = run => { const m = /^live-(\d{4}-\d{2}-\d{2})$/u.exec(run ?? ""); if (!m) throw new Error("LIVE_CLOUD_DATE_INVALID"); return m[1]; };
 const vault = env => env.BROKER.get(env.BROKER.idFromName("single-approved-kis-credential-v1"));
 const day = (env, date) => env.LIVE_DAYS.get(env.LIVE_DAYS.idFromName(date), { locationHint: "apac-ne" });
+const childState = value => String(value ?? "unknown").toLowerCase();
+export function batchResult(definition, status) {
+  const codes = definition.params.codes, workflowStatus = childState(status?.status);
+  if (workflowStatus === "complete") {
+    const output = status?.output;
+    if (!output || output.attempted !== codes.length || !Number.isSafeInteger(output.successful) || !Array.isArray(output.failed)
+      || output.successful < 0 || output.successful + output.failed.length !== codes.length
+      || new Set(output.failed.map(row => row.code)).size !== output.failed.length
+      || output.failed.some(row => !codes.includes(row.code) || safeCode({ code: row.reason }) !== row.reason
+        || row.failureStage !== undefined && !["LEASE_ACQUIRE","LEASED_SETUP","COLLECTION","UNKNOWN"].includes(row.failureStage)))
+      return { id: definition.id, codes, workflowStatus, attempted: 0, successful: 0,
+        failures: codes.map(code => ({ code, reason: "LIVE_CLOUD_CHILD_OUTPUT_INVALID", failureStage: "UNKNOWN" })) };
+    return { id: definition.id, codes, workflowStatus, attempted: output.attempted, successful: output.successful,
+      failures: output.failed.map(row => ({ code: row.code, reason: row.reason, failureStage: row.failureStage ?? "UNKNOWN" })) };
+  }
+  const wrapper = safeCode(status?.error);
+  const reason = wrapper === "DIAG_REQUEST_FAILED" ? workflowStatus === "errored" ? "LIVE_CLOUD_CHILD_ERRORED"
+    : workflowStatus === "terminated" ? "LIVE_CLOUD_CHILD_TERMINATED" : "LIVE_CLOUD_CHILD_NOT_COMPLETE" : wrapper;
+  return { id: definition.id, codes, workflowStatus: ["errored","terminated","queued","running","waiting","paused"].includes(workflowStatus) ? workflowStatus : "unknown",
+    attempted: 0, successful: 0, failures: codes.map(code => ({ code, reason, failureStage: "UNKNOWN" })) };
+}
 
 export class LiveDay extends DurableObject {
   constructor(ctx, env) {
@@ -31,6 +52,7 @@ export class LiveDay extends DurableObject {
   status() { return { ...this.state.status(), productionEnabled: this.env.LIVE_PRODUCTION_ENABLED === "true", producer: this.env.LIVE_PRODUCER }; }
   incidentStatus() { return { ...this.state.incidentStatus(), productionEnabled: this.env.LIVE_PRODUCTION_ENABLED === "true", producer: this.env.LIVE_PRODUCER }; }
   failure(code, stage) { return this.state.failure(safeCode({ code }), stage); }
+  reconcileBatches(date, value) { return this.state.reconcileBatches(date, value); }
   async publishExecution(date,event,workflowState,error) {
     const record=this.state.freezeExecution(date,event,workflowState,error);
     const io=privateRequestBudget(edgeFetch,12);
@@ -109,8 +131,12 @@ export class CloudLive extends WorkflowEntrypoint {
           if (!r.ok) throw new Error("LIVE_CLOUD_BATCH_FAILED");
           const value = await r.json();
           if (value.records.length !== p.codes.length) throw new Error("LIVE_CLOUD_BATCH_INCOMPLETE");
-          return { attempted: value.records.length, successful: value.records.filter(r => ["AVAILABLE", "EXCLUDED"].includes(r.status)).length,
-            failed: value.records.filter(r => !["AVAILABLE", "EXCLUDED"].includes(r.status)).map(r => ({ code: r.code, reason: safeCode({ code: r.reason }) })), sourcePricesIncluded: false };
+          const result={ attempted: value.records.length, successful: value.records.filter(r => ["AVAILABLE", "EXCLUDED"].includes(r.status)).length,
+            failed: value.records.filter(r => !["AVAILABLE", "EXCLUDED"].includes(r.status)).map(r => ({ code: r.code, reason: safeCode({ code: r.reason }),
+              failureStage: ["LEASE_ACQUIRE","LEASED_SETUP","COLLECTION"].includes(r.failureStage) ? r.failureStage : "UNKNOWN" })), sourcePricesIncluded: false };
+          if(result.failed.length)try{await target.failure(result.failed[0].reason,"BATCH_COLLECTION");}
+          catch(error){console.error(JSON.stringify({event:"LIVE_CLOUD_BATCH_FAILURE_RECORD_FAILED",primaryCode:result.failed[0].reason,recordingCode:safeCode(error)}));}
+          return result;
         });
       }
       if (p.mode !== "day") throw new Error("LIVE_CLOUD_MODE_INVALID");
@@ -132,10 +158,10 @@ export class CloudLive extends WorkflowEntrypoint {
       // Fixed child IDs are created BEFORE the quote window. The scheduled
       // parent may start at13:40:58; it never waits for a14:00 cron invocation.
       stage = "CREATE_BATCHES";
+      const definitions = [];
+      for (let i = 0; i < prepared.codes.length; i += 8) definitions.push({ id: `live-${date}-batch${i / 8}`,
+        params: { mode: "batch", date, codes: prepared.codes.slice(i, i + 8), ...(i===0?{reportStatus:true}:{}) } });
       await step.do("precreate fixed batch ids", options, async () => {
-        const definitions = [];
-        for (let i = 0; i < prepared.codes.length; i += 8) definitions.push({ id: `live-${date}-batch${i / 8}`,
-          params: { mode: "batch", date, codes: prepared.codes.slice(i, i + 8), ...(i===0?{reportStatus:true}:{}) } });
         try { await this.env.LIVE.createBatch(definitions); }
         catch {
           // Never create replacement IDs after an unknown create response.
@@ -148,6 +174,23 @@ export class CloudLive extends WorkflowEntrypoint {
       // their broker slots or delay their absolute14:00 wake-up.
       await report("READY");
       await step.sleepUntil("finalize after absolute collection cutoff", new Date(bounds(date).end + 1000));
+      stage = "BATCH_COLLECTION";
+      const batches=[];
+      // Workflow status RPCs are split into bounded groups. A COMPLETE child
+      // is not success unless its output accounts for every assigned symbol.
+      for(let offset=0;offset<definitions.length;offset+=24){
+        const group=definitions.slice(offset,offset+24);
+        const values=await step.do(`reconcile child outputs ${offset/24}`,options,()=>Promise.all(group.map(async definition=>{
+          try{return batchResult(definition,await (await this.env.LIVE.get(definition.id)).status());}
+          catch(error){return batchResult(definition,{status:"unknown",error});}
+        })));
+        batches.push(...values);
+      }
+      const firstFailure=batches.flatMap(batch=>batch.failures.map(row=>({...row,batchId:batch.id})))[0]??null;
+      if(firstFailure)try{await step.do("preserve first child failure",options,()=>target.failure(firstFailure.reason,"BATCH_COLLECTION"));}
+      catch(error){console.error(JSON.stringify({event:"LIVE_CLOUD_FAILURE_RECORD_FAILED",primaryCode:firstFailure.reason,stage:"BATCH_COLLECTION",recordingCode:safeCode(error)}));}
+      await step.do("persist child reconciliation",options,()=>target.reconcileBatches(date,{schemaVersion:1,date,batches,firstFailure}));
+      if(firstFailure)throw new Error(firstFailure.reason);
       stage = "FINALIZE";
       await step.do("validate all required inputs and freeze outbox", options, () => target.finish(date));
       await report("VALIDATED");

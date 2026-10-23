@@ -20,7 +20,7 @@ workflowSource = workflowSource.replace('import { DurableObject, WorkflowEntrypo
 workflowSource = workflowSource.replace('import { KisSlotShard } from "./slot-shard.mjs";', 'class KisSlotShard {}');
 for (const relative of ["../production-state.mjs", "../production-core.mjs", "../production-fixture.mjs", "../core.mjs", "../relay-budget.mjs", "../../../lib/kis-eod-private-store.mjs", "../../../lib/private-live-execution-status.mjs"])
   workflowSource = workflowSource.replaceAll(JSON.stringify(relative), JSON.stringify(new URL(relative, new URL("./src/production.mjs", import.meta.url)).href));
-const { CloudLive, LiveDay, productionScheduled } = await import(`data:text/javascript;base64,${Buffer.from(workflowSource).toString("base64")}`);
+const { CloudLive, LiveDay, productionScheduled, batchResult } = await import(`data:text/javascript;base64,${Buffer.from(workflowSource).toString("base64")}`);
 function inputFixture() {
   const records = Array.from({ length: 553 }, (_, i) => ({ code: String(100000 + i), name: `Synthetic${i}`, market: "KOSPI", eligible: i < 508,
     officialAsOfDate: seedDate, sourceHash: "b".repeat(64), rows: fixture(i).rows.map((row, index) => [new Date(Date.parse(`${seedDate}T00:00:00Z`) - index * 86400000).toISOString().slice(0, 10).replaceAll("-", ""), ...row.slice(1)]) }));
@@ -44,6 +44,16 @@ function observations(seed) {
 function prepared(seed) { return { targetDate: date, seedReferenceDate: seedDate, readiness: "READY", universe: 553, eligible: 508,
   codes: seed.records.map(r => r.code), eligibleCodes: seed.records.filter(r => r.eligible).map(r => r.code),
   inputCommit: "a".repeat(40), seedHash: seed.contentHash, remoteCheckedAt: `${date}T04:59:02.000Z`, readyAt: `${date}T04:59:03.000Z` }; }
+function reconciliation(seed, changes = new Map()) {
+  const batches = [];
+  for (let i = 0; i < seed.records.length; i += 8) {
+    const codes = seed.records.slice(i, i + 8).map(row => row.code), failures = codes.flatMap(code => changes.has(code) ? [{ code, reason: changes.get(code), failureStage: "LEASE_ACQUIRE" }] : []);
+    batches.push({ id: `live-${date}-batch${i / 8}`, codes, workflowStatus: "complete", attempted: codes.length,
+      successful: codes.length - failures.length, failures });
+  }
+  const firstFailure = batches.flatMap(batch => batch.failures.map(row => ({ ...row, batchId: batch.id })))[0] ?? null;
+  return { schemaVersion: 1, date, batches, firstFailure };
+}
 function remoteFixture() {
   const values = new Map(); let fail = false, requests = 0;
   const store = { async verifyPrivateRepository() {}, async read(k) { requests++; return values.has(k) ? { value: structuredClone(values.get(k)) } : null; },
@@ -155,7 +165,7 @@ test("same symbol cannot be collected twice and failed/late lease never becomes 
   const first = await f.state.acquire(date, f.seed.records[0].code);
   await assert.rejects(f.state.acquire(date, f.seed.records[0].code), /ALREADY_RESERVED/u);
   assert.equal(first.minuteSlot.slot, first.quoteSlot.slot + 1);
-  assert.throws(() => f.state.finish(date), /INCOMPLETE/u);
+  assert.throws(() => f.state.finish(date), /CHILD_RESULTS_UNVERIFIED/u);
   f.set(b.end + 1); await assert.rejects(f.state.acquire(date, f.seed.records[1].code), /WINDOW_EXPIRED/u);
 });
 
@@ -163,6 +173,7 @@ test("outbox freezes before failed relay; restart+retry delivers identical hashe
   const f = sandbox(t); await f.state.prepare(date, true);
   const observed = observations(f.seed).rows;
   for (const r of observed) f.state.write(`observation:${r.code}`, r);
+  f.state.reconcileBatches(date, reconciliation(f.seed));
   f.set(b.end + 1000); const first = f.state.finish(date);
   f.remote.failNext(); await assert.rejects(f.state.relay(date), /NETWORK_FAILED/u);
   const frozen = f.state.read("outbox"); f.set(b.end + 61001);
@@ -210,7 +221,7 @@ test("553-symbol eight-lease synthetic replay measures allocator span and SQL bu
   }
   assert.ok(last - b.start < 245000, "synthetic22ms response replay, not a real network throughput claim");
   assert.ok(f.state.meter.w < 39000); assert.ok(f.state.meter.r < 1000000);
-  f.set(b.end + 1000); f.state.finish(date);
+  f.set(b.end + 1000); f.state.reconcileBatches(date, reconciliation(f.seed)); f.state.finish(date);
   t.diagnostic(JSON.stringify({ syntheticOnly: true, symbols: next, collectionSpanMs: last - b.start,
     fakeSqlRowsReadUpper: f.state.meter.r, fakeSqlRowsWrittenUpper: f.state.meter.w, sqliteBytes: f.sql.databaseSize,
     realKisCalls: 0, billedCloudflareRowsMeasured: false }));
@@ -221,12 +232,14 @@ test("actual Workflow survives missing13:40 EOD and precreates70 fixed children 
   const batches = [], events = [], metadata = [], target = { async publishExecution(_date,event) { metadata.push(event); }, async prepare(_date, final) {
     events.push(final ? "FINAL_INPUT" : "PREWARM"); if (!final) throw new Error("LIVE_CLOUD_INPUT_NOT_READY");
     assert.equal(now, b.start - 60000); return { codes: Array.from({ length: 553 }, (_, i) => String(100000 + i)) };
-  }, async finish() { assert.ok(now > b.end); events.push("FINISH"); }, async relay() { events.push("RELAY"); return { status: "PRIVATE_RELAY_VERIFIED" }; }, async failure() { assert.fail("Unexpected workflow failure"); } };
-  const bindings = { ...env, LIVE_DAYS: { idFromName: x => x, get: () => target }, LIVE: { async createBatch(defs) { assert.ok(now < b.start); batches.push(...defs); } } };
+  }, async reconcileBatches(_date,value) { assert.equal(value.batches.length,70); events.push("RECONCILE"); },
+  async finish() { assert.ok(now > b.end); events.push("FINISH"); }, async relay() { events.push("RELAY"); return { status: "PRIVATE_RELAY_VERIFIED" }; }, async failure() { assert.fail("Unexpected workflow failure"); } };
+  const bindings = { ...env, LIVE_DAYS: { idFromName: x => x, get: () => target }, LIVE: { async createBatch(defs) { assert.ok(now < b.start); batches.push(...defs); },
+    async get(id) { const definition=batches.find(row=>row.id===id);return{async status(){return{status:"complete",output:{attempted:definition.params.codes.length,successful:definition.params.codes.length,failed:[]}};}}; } } };
   const step = { async do(_name, _options, fn) { return fn(); }, async sleepUntil(_name, at) { now = Math.max(now, at.getTime()); }, async sleep() { now += 10000; } };
   const result = await new CloudLive(bindings).run({ payload: { mode: "day", date } }, step);
   assert.equal(result.status, "PRIVATE_RELAY_VERIFIED"); assert.equal(batches.length, 70);
-  assert.equal(new Set(batches.map(d => d.id)).size, 70); assert.deepEqual(events, ["PREWARM", "FINAL_INPUT", "FINISH", "RELAY"]);
+  assert.equal(new Set(batches.map(d => d.id)).size, 70); assert.deepEqual(events, ["PREWARM", "FINAL_INPUT", "RECONCILE", "FINISH", "RELAY"]);
   assert.deepEqual(metadata,["PREPARATION","READY","VALIDATED","DELIVERED"]);
   assert.equal(batches.filter(d=>d.params.reportStatus).length,1,"only one batch may publish progress metadata");
 });
@@ -316,6 +329,43 @@ test("frozen stage metadata is price-free, immutable across restarts and leaves 
   assert.ok(!/"(?:price|rows|open|high|low|close|volume|accessToken)"/u.test(JSON.stringify(r)));
   f.set(b.end+90000);assert.deepEqual(new ProductionDayState(f.options).freezeExecution(date,"RECONCILE","ERRORED"),r);
   t.diagnostic(JSON.stringify({metadataOnly:true,nativeLocalCursorBefore:before,nativeLocalCursorAfter:f.state.cursorUsage}));
+});
+
+test("COMPLETE child failures and queued restarts remain failures instead of disappearing behind finalize",()=>{
+  const complete={id:`live-${date}-batch0`,params:{codes:["100000","100001"]}};
+  assert.deepEqual(batchResult(complete,{status:"COMPLETE",output:{attempted:2,successful:1,failed:[{code:"100001",reason:"LIVE_CLOUD_SQL_BUDGET"}]}}),
+    {id:complete.id,codes:complete.params.codes,workflowStatus:"complete",attempted:2,successful:1,failures:[{code:"100001",reason:"LIVE_CLOUD_SQL_BUDGET",failureStage:"UNKNOWN"}]});
+  assert.deepEqual(batchResult(complete,{status:"queued"}).failures,
+    complete.params.codes.map(code=>({code,reason:"LIVE_CLOUD_CHILD_NOT_COMPLETE",failureStage:"UNKNOWN"})));
+  assert.ok(batchResult(complete,{status:"complete",output:{attempted:2,successful:2,failed:[{code:"999999",reason:"KIS_HTTP_500"}]}})
+    .failures.every(row=>row.reason==="LIVE_CLOUD_CHILD_OUTPUT_INVALID"));
+});
+
+test("batch reconciliation accounts for unleased failures and preserves the first cause across finalize and relay",async t=>{
+  const f=sandbox(t);await f.state.prepare(date,true);const rows=observations(f.seed).rows,failedCode=rows[1].code;
+  f.state.write(`observation:${rows[0].code}`,rows[0]);
+  const evidence=reconciliation(f.seed,new Map([[failedCode,"LIVE_CLOUD_SQL_BUDGET"]]));
+  f.state.reconcileBatches(date,evidence);f.state.failure("LIVE_CLOUD_SQL_BUDGET","BATCH_COLLECTION");
+  f.state.failure("LIVE_CLOUD_INCOMPLETE","FINALIZE");f.state.failure("LIVE_CLOUD_INCOMPLETE","RELAY");
+  f.set(b.end+1000);
+  assert.throws(()=>f.state.finish(date),/LIVE_CLOUD_SQL_BUDGET/u);
+  const status=f.state.incidentStatus();
+  assert.deepEqual(status.failed,[{code:failedCode,reason:"LIVE_CLOUD_SQL_BUDGET",failureStage:"LEASE_ACQUIRE"}]);
+  assert.equal(status.missing.length,551);assert.equal(status.lastFailure.code,"LIVE_CLOUD_SQL_BUDGET");
+  const record=f.state.freezeExecution(date,"FAILURE_RELAY06","RUNNING",{code:"LIVE_CLOUD_INCOMPLETE",stage:"RELAY"});
+  assert.deepEqual(record.error,{code:"LIVE_CLOUD_SQL_BUDGET",stage:"BATCH_COLLECTION"});
+  assert.equal(record.collection.available,1);assert.equal(record.collection.failed,1);assert.equal(record.collection.missing,551);
+});
+
+test("day parent rejects COMPLETE children with failed output before finalize",async t=>{
+  let now=b.start-1200000;t.mock.method(Date,"now",()=>now);const definitions=[];let finishCalled=false,recorded=null;
+  const target={async publishExecution(){},async prepare(_date,final){if(!final)throw Error("LIVE_CLOUD_INPUT_NOT_READY");return{codes:Array.from({length:553},(_,i)=>String(100000+i))};},
+    async failure(code,stage){recorded??={code,stage};return recorded;},async reconcileBatches(){},async finish(){finishCalled=true;},async relay(){assert.fail("relay must not run");}};
+  const bindings={...env,LIVE_DAYS:{idFromName:x=>x,get:()=>target},LIVE:{async createBatch(rows){definitions.push(...rows);},async get(id){const d=definitions.find(row=>row.id===id);
+    return{async status(){const failed=id.endsWith("batch1")?[{code:d.params.codes[0],reason:"LIVE_CLOUD_SQL_BUDGET"}]:[];return{status:"complete",output:{attempted:d.params.codes.length,successful:d.params.codes.length-failed.length,failed}};}};}}};
+  const step={do:(_n,_o,fn)=>fn(),sleepUntil:async(_n,at)=>{now=Math.max(now,at.getTime());},sleep:async()=>{now+=10000;}};
+  await assert.rejects(new CloudLive(bindings).run({payload:{mode:"day",date}},step),/LIVE_CLOUD_SQL_BUDGET/u);
+  assert.deepEqual(recorded,{code:"LIVE_CLOUD_SQL_BUDGET",stage:"BATCH_COLLECTION"});assert.equal(finishCalled,false);
 });
 
 test("metadata-only reconciliation never prepares, collects, freezes result or relays result",async()=>{

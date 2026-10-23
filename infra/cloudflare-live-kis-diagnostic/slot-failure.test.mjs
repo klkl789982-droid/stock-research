@@ -12,7 +12,7 @@ for (const relative of ["../../../lib/kis-api-client-core.mjs", "../../../lib/in
 const { KisSlotShard } = await import(`data:text/javascript;base64,${Buffer.from(source).toString("base64")}`);
 const start = Date.parse("2026-10-19T05:00:00Z"), end = start + 300000;
 
-function harness(t, responses, initial = start) {
+function harness(t, responses, initial = start, failures = {}) {
   let now = initial, index = 0, slotHead = 0, complete = null;
   const actualStarts = [];
   t.mock.method(Date, "now", () => now);
@@ -21,9 +21,11 @@ function harness(t, responses, initial = start) {
   const slot = () => { const n = Math.max(slotHead, Math.ceil((now + 220) / 220)); slotHead = n + 1; return { slot: n, notBefore: n * 220 }; };
   const broker = { async fetch(input, init) {
     const url = new URL(input);
+    if (url.pathname === "/slot-pair-acquire" && failures.acquire) return Response.json({ reason: failures.acquire }, { status: 503 });
     if (url.pathname === "/slot-pair-acquire") return Response.json({ record: { eligible: true }, authenticationRecord: { accessToken: "fixture-only-not-real", generation: 1, expiresAtMs: end + 86400000 }, quoteSlot: slot(), minuteSlot: slot(), deadline: end });
     if (url.pathname === "/extra-slot") return Response.json(slot());
-    if (url.pathname === "/slot-pair-complete") { complete = JSON.parse(init.body); return Response.json({ stored: true }); }
+    if (url.pathname === "/slot-pair-complete") { complete = JSON.parse(init.body); return failures.complete
+      ? Response.json({ reason: failures.complete }, { status: 503 }) : Response.json({ stored: true }); }
     return Response.json({ reason: "LIVE_CLOUD_AUTH_INVALIDATED" }, { status: 503 });
   } };
   t.mock.method(globalThis, "fetch", async () => {
@@ -85,4 +87,16 @@ test("HTTP200 malformed JSON fails closed instead of fabricating a usable result
   assert.equal(r.value.status, undefined);
   assert.equal(r.value.reason, "KIS_RESPONSE_INVALID");
   assert.equal(r.complete.calls.length, 1);
+});
+
+test("failure before lease acquisition is retained in the batch output with its stage", async t => {
+  const r = await harness(t, [], start, { acquire: "LIVE_CLOUD_SQL_BUDGET" }).run();
+  assert.equal(r.value.reason, "LIVE_CLOUD_SQL_BUDGET");
+  assert.equal(r.value.failureStage, "LEASE_ACQUIRE");
+  assert.equal(r.complete, null);
+});
+
+test("successful collection followed by durable storage failure preserves the storage code", async t => {
+  const h = harness(t, [success, success], start, { complete: "LIVE_CLOUD_STORAGE_BUDGET" });
+  await assert.rejects(h.run(), /LIVE_CLOUD_STORAGE_BUDGET/u);
 });

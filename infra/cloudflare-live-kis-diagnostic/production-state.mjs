@@ -186,8 +186,11 @@ export class ProductionDayState {
     this.check(date);
     const existing = this.read("outbox"); if (existing) return existing.delivery;
     const prepared = this.read("final"); if (!prepared) throw new Error("LIVE_CLOUD_NOT_PREPARED");
+    const reconciliation = this.read("batch-reconciliation");
+    if (!reconciliation) throw new Error("LIVE_CLOUD_CHILD_RESULTS_UNVERIFIED");
+    if (reconciliation.firstFailure) throw new Error(reconciliation.firstFailure.reason);
     const observations = prepared.codes.map(code => this.read(`observation:${code}`));
-    if (observations.some(r => !r)) throw new Error("LIVE_CLOUD_INCOMPLETE");
+    if (observations.some(r => !r)) throw new Error("LIVE_CLOUD_COMPLETION_MISMATCH");
     const result = aggregateProduction(prepared, observations, new Date(this.now()).toISOString());
     this.write("outbox", result); return result.delivery;
   }
@@ -206,7 +209,39 @@ export class ProductionDayState {
     const result = await deliverPrivateLive(remote, outbox.delivery, { now: new Date(this.now()).toISOString() });
     return this.critical(() => this.write("receipt", result));
   }
-  failure(code, stage = "UNSPECIFIED_LEGACY") { return this.critical(() => this.write("last-failure", { code, stage, at: new Date(this.now()).toISOString() }, true)); }
+  reconcileBatches(date, value) {
+    return this.critical(() => {
+      this.check(date);
+      const prepared = this.read("final");
+      if (!prepared || value?.schemaVersion !== 1 || value.date !== date || !Array.isArray(value.batches) || value.batches.length !== Math.ceil(prepared.codes.length / 8))
+        throw new Error("LIVE_CLOUD_CHILD_RESULTS_INVALID");
+      const flattened = [], failed = new Set();
+      for (const [index, batch] of value.batches.entries()) {
+        const expected = prepared.codes.slice(index * 8, index * 8 + 8);
+        if (batch.id !== `live-${date}-batch${index}` || !Array.isArray(batch.codes) || JSON.stringify(batch.codes) !== JSON.stringify(expected)
+          || !["complete", "errored", "terminated", "queued", "running", "waiting", "paused", "unknown"].includes(batch.workflowStatus)
+          || !Array.isArray(batch.failures) || new Set(batch.failures.map(row => row.code)).size !== batch.failures.length
+          || batch.failures.some(row => !expected.includes(row.code) || failed.has(row.code)
+            || safeCode({ code: row.reason }) !== row.reason || !["LEASE_ACQUIRE","LEASED_SETUP","COLLECTION","UNKNOWN"].includes(row.failureStage)))
+          throw new Error("LIVE_CLOUD_CHILD_RESULTS_INVALID");
+        if (batch.workflowStatus === "complete" && (!Number.isSafeInteger(batch.attempted) || batch.attempted !== expected.length
+          || !Number.isSafeInteger(batch.successful) || batch.successful < 0 || batch.successful + batch.failures.length !== batch.attempted))
+          throw new Error("LIVE_CLOUD_CHILD_RESULTS_INVALID");
+        if (batch.workflowStatus !== "complete" && (batch.attempted !== 0 || batch.successful !== 0 || batch.failures.length !== expected.length))
+          throw new Error("LIVE_CLOUD_CHILD_RESULTS_INVALID");
+        for (const row of batch.failures) failed.add(row.code);
+        flattened.push(...batch.codes);
+      }
+      if (JSON.stringify(flattened) !== JSON.stringify(prepared.codes)) throw new Error("LIVE_CLOUD_CHILD_RESULTS_INVALID");
+      const expectedFirst = value.batches.flatMap(batch => batch.failures.map(row => ({ ...row, batchId: batch.id })))[0] ?? null;
+      if (JSON.stringify(value.firstFailure ?? null) !== JSON.stringify(expectedFirst)) throw new Error("LIVE_CLOUD_CHILD_RESULTS_INVALID");
+      return this.write("batch-reconciliation", value);
+    });
+  }
+  failure(code, stage = "UNSPECIFIED_LEGACY") { return this.critical(() => {
+    const prior = this.read("last-failure");
+    return prior ?? this.write("last-failure", { code, stage, at: new Date(this.now()).toISOString() });
+  }); }
   freezeExecution(date, event, workflowState = "RUNNING", error = undefined) {
     return this.critical(() => {
       assertProduction(this.env);
@@ -220,14 +255,20 @@ export class ProductionDayState {
       if(observations.length>553||byCode.size!==observations.length||expected.length&&observations.some(r=>!expected.includes(r.code)))throw new Error("LIVE_CLOUD_INCOMPLETE");
       const available=observations.filter(r=>r.status==="AVAILABLE").length,excluded=observations.filter(r=>r.status==="EXCLUDED").length;
       const first=observations.map(r=>r.quoteRequestedAt).filter(Boolean).sort()[0]??null,last=observations.map(r=>r.minuteReceivedAt).filter(Boolean).sort().at(-1)??null;
-      const failure=error===undefined?this.read("last-failure"):error;
+      // The first durable collection/control error is primary. Finalize and
+      // relay wrappers must not replace it with LIVE_CLOUD_INCOMPLETE.
+      const failure=this.read("last-failure")??error??null;
+      const reconciliation=this.read("batch-reconciliation");
+      const reconciledFailures=new Map((reconciliation?.batches??[]).flatMap(batch=>batch.failures).map(row=>[row.code,row]));
+      const observedFailed=observations.filter(r=>!["AVAILABLE","EXCLUDED"].includes(r.status)).map(r=>r.code);
+      const failedCodes=new Set([...observedFailed,...reconciledFailures.keys()]);
       const allowedStages=["PREPARE","FINAL_INPUT","CREATE_BATCHES","BATCH_COLLECTION","FINALIZE","RELAY"];
       const value=sealExecutionRecord({schemaVersion:1,namespace:EXECUTION_PREFIX,source:"CLOUDFLARE_DURABLE_STATE",signalDate:date,runId:`live-${date}`,
         recordedAt:new Date(this.now()).toISOString(),event,workflowState,
         error:failure?{code:safeCode({code:failure.code}),stage:allowedStages.includes(failure.stage)?failure.stage:"UNKNOWN"}:null,
         input:{initialReady:!!initial,finalReady:!!final,seedReferenceDate:final?.seedReferenceDate??initial?.seedReferenceDate??null,
           checkedAt:final?.remoteCheckedAt??initial?.remoteCheckedAt??null,initialReadyAt:initial?.readyAt??null,finalReadyAt:final?.readyAt??null},
-        collection:{expected:553,eligible:final?.eligible??null,available,excluded,failed:observations.length-available-excluded,missing:553-observations.length,
+        collection:{expected:553,eligible:final?.eligible??null,available,excluded,failed:failedCodes.size,missing:553-available-excluded-failedCodes.size,
           requiredMissing:final?.eligibleCodes?final.eligibleCodes.filter(c=>byCode.get(c)?.status!=="AVAILABLE").length:null,
           activeLeases:this.q("SELECT code FROM leases WHERE completed=0 AND expires>?",this.now()).length,firstRequestedAt:first,lastReceivedAt:last},
         validation:{outboxFrozen:!!outbox,deliveryHash:outbox?.delivery?.deliveryHash??null,frozenAt:outbox?.delivery?.exportedAt??null},
@@ -241,13 +282,16 @@ export class ProductionDayState {
       const observations = this.q("SELECT digest,body FROM docs WHERE id>='observation:' AND id<'observation;' ORDER BY id LIMIT 554").map(r => {
         const value = JSON.parse(r.body); if (hash(value) !== r.digest) throw new Error("LIVE_CLOUD_HASH_MISMATCH"); return value;
       });
-      const leases = this.q("SELECT code,expires,completed FROM leases ORDER BY code LIMIT 554");
+      const leases = this.q("SELECT code,expires,completed FROM leases ORDER BY code LIMIT 554"), reconciliation = this.read("batch-reconciliation");
       const seen = new Set(observations.map(r => r.code));
+      const reconciledFailures = new Map((reconciliation?.batches ?? []).flatMap(batch => batch.failures).map(row => [row.code, row]));
+      const failed = new Map(observations.filter(r => !["AVAILABLE", "EXCLUDED"].includes(r.status)).map(r => [r.code, { reason: r.reason, failureStage: r.failureStage ?? "UNKNOWN" }]));
+      for (const [code, row] of reconciledFailures) if (!seen.has(code)) failed.set(code, row);
       return { ...this.status(), lastFailure: this.read("last-failure"), universe: expected.length, eligible: prepared?.eligible ?? null,
         seedReferenceDate: prepared?.seedReferenceDate ?? null, inputCommit: prepared?.inputCommit ?? null,
         completed: observations.filter(r => ["AVAILABLE", "EXCLUDED"].includes(r.status)).length,
-        failed: observations.filter(r => !["AVAILABLE", "EXCLUDED"].includes(r.status)).map(r => ({ code: r.code, reason: r.reason })),
-        missing: expected.filter(code => !seen.has(code)),
+        failed: [...failed].map(([code, row]) => ({ code, reason: row.reason, failureStage: row.failureStage })),
+        missing: expected.filter(code => !seen.has(code) && !reconciledFailures.has(code)),
         leases: leases.map(r => ({ code: r.code, status: r.completed ? "COMPLETED" : r.expires <= this.now() ? "EXPIRED_NOT_REUSABLE" : "ACTIVE" })),
         observationTimeBounds: observations.length ? {
           first: observations.map(r => r.quoteRequestedAt).filter(Boolean).sort()[0] ?? null,

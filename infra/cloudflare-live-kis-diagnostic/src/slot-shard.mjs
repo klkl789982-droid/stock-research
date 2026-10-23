@@ -117,14 +117,19 @@ export class KisSlotShard extends DurableObject {
       const minute = await read(`/uapi/domestic-stock/v1/quotations/inquire-time-itemchartprice?FID_ETC_CLS_CODE=&FID_COND_MRKT_DIV_CODE=J&FID_INPUT_ISCD=${code}&FID_INPUT_HOUR_1=${timing.minuteRequestedExchangeTime.replaceAll(":", "")}&FID_PW_DATA_INCU_YN=N`, "FHKST03010200");
       result = this.projectResult({ quote, minute, code, timing, input: lease.record, seedReferenceDate: lease.seedReferenceDate, seedContext: lease.seedContext, signalDate: lease.signalDate });
       if (retries.length) result.retryEvidence = retries;
-    } catch (e) { result = { code, reason: safeCode(e), ...(e.sourceFailure ? { sourceFailure: e.sourceFailure } : {}),
+    } catch (e) { result = { code, reason: safeCode(e), failureStage: lease ? calls.length ? "COLLECTION" : "LEASED_SETUP" : "LEASE_ACQUIRE",
+      ...(e.sourceFailure ? { sourceFailure: e.sourceFailure } : {}),
       ...(calls.length ? { failedEndpoint: calls.at(-1).kind, httpStatus: calls.at(-1).status,
         providerFailureCode: calls.at(-1).failure, inputEligible: lease?.record?.eligible === true } : {}), rawPricesStored: false, eligibleForLive: false }; }
     if (lease && !lease.existing) {
       try { await control(`/slot-pair-complete?code=${code}`, { metadata: result, calls, skipped, authHint: bearer }); }
       catch (error) {
         console.error(JSON.stringify({ event: "LIVE_COMPLETION_RECORD_FAILED", code, primaryCode: result.reason ?? "OBSERVATION_READY", recordingCode: safeCode(error) }));
-        throw new Error(result.reason ?? "DIAG_COMPLETION_RECORD_FAILED");
+        // A collection error remains primary. If collection succeeded but its
+        // durable completion failed, preserve that concrete storage/control
+        // code in the child Workflow output instead of replacing it with a
+        // generic wrapper.
+        throw new Error(result.reason ?? safeCode(error));
       }
     }
     return Response.json({ records: [result], rawPricesStored: false, eligibleForLive: false });
