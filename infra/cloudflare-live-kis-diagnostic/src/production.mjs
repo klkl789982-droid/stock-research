@@ -127,7 +127,7 @@ export class CloudLive extends WorkflowEntrypoint {
     try {
       if (p.mode === "relay") { const result=await step.do("retry frozen score-only outbox", options, async () => { await target.finish(date); return target.relay(date); });await report("DELIVERED");return result; }
       if (p.mode === "batch") {
-        await step.sleepUntil("wait for absolute1400", new Date(bounds(date).start));
+        if (Date.now() < bounds(date).start) await step.sleepUntil("wait for absolute1400", new Date(bounds(date).start));
         try { return await step.do("bounded eight-symbol LIVE invocation", options, async () => {
           assertWindow(date, Date.now());
           if (!Array.isArray(p.codes) || !p.codes.length || p.codes.length > 8) throw new Error("LIVE_CLOUD_CODES_INVALID");
