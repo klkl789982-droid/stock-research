@@ -137,7 +137,10 @@ export class CloudLive extends WorkflowEntrypoint {
           // telemetry outage cannot postpone the first broker request or mask a
           // rejection. Only one precreated batch reports collection progress.
           const collecting=shard.fetch(`https://internal/collect-batch?run=${runId}&codes=${p.codes.join(",")}`, {
-            signal: AbortSignal.timeout(Math.max(1, bounds(date).end + 5000 - Date.now())) }).then(response=>({response}),error=>({error}));
+            // A recovery window can be much longer than one batch invocation.
+            // Keep the request deadline within the already proven five-minute
+            // primary-window bound; the day cutoff is still enforced below.
+            signal: AbortSignal.timeout(Math.max(1, Math.min(300000, bounds(date).end + 5000 - Date.now()))) }).then(response=>({response}),error=>({error}));
           if(p.reportStatus===true)await emit("COLLECTION");
           const outcome=await collecting;if(outcome.error)throw outcome.error;const r=outcome.response;
           if (!r.ok) throw new Error("LIVE_CLOUD_BATCH_FAILED");
