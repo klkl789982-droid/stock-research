@@ -110,7 +110,7 @@ test("swing intent preserves TOP5 union and first issuance; invalid or missing p
 test("one missing required input, duplicates, altered dates and future receipts block publication", () => {
   const seed = inputFixture(), f = observations(seed), p = prepared(seed);
   for (const mutation of [r => r.slice(1), r => [...r.slice(0, -1), r[0]], r => r.map((x, i) => i ? x : { ...x, status: "ERROR", scores: null }),
-    r => r.map((x, i) => i ? x : { ...x, minuteReceivedAt: `${date}T05:05:00.001Z` }), r => r.map((x, i) => i ? x : { ...x, observedDate: seedDate }),
+    r => r.map((x, i) => i ? x : { ...x, minuteReceivedAt: `${date}T06:30:00.001Z` }), r => r.map((x, i) => i ? x : { ...x, observedDate: seedDate }),
     r => r.map((x, i) => i ? x : { ...x, observedTime: "13:59:59" }), r => r.map((x, i) => i ? x : { ...x, observedTime: "14:00:02" }),
     r => r.map((x, i) => i ? x : { ...x, originalRecordHash: null })]) {
     assert.throws(() => aggregateProduction(p, mutation(f.rows), `${date}T05:06:00.000Z`), /LIVE_CLOUD_/u);
@@ -179,7 +179,7 @@ test("outbox freezes before failed relay; restart+retry delivers identical hashe
   const frozen = f.state.read("outbox"); f.set(b.end + 61001);
   const reopened = new ProductionDayState(f.options); assert.equal((await reopened.relay(date)).status, "PRIVATE_RELAY_VERIFIED");
   assert.deepEqual(reopened.read("outbox"), frozen);
-  assert.equal((await readLatestPrivateLive(f.remote.store, { now: `${date}T05:10:00.000Z` })).deliveryHash, first.deliveryHash);
+  assert.equal((await readLatestPrivateLive(f.remote.store, { now: `${date}T06:40:00.000Z` })).deliveryHash, first.deliveryHash);
   const calls = f.remote.requests(); await reopened.relay(date); assert.equal(f.remote.requests(), calls);
 });
 
@@ -320,6 +320,21 @@ test("terminal observation storage failure releases one of eight leases for the 
   assert.throws(() => f.state.complete(date, code, { metadata: row, calls }), /STORAGE_BUDGET/u);
   assert.equal(f.db.prepare("SELECT completed FROM leases WHERE code=?").get(code).completed, 1);
   assert.ok(await queued);
+});
+
+test("same-day recovery adopts only immutable pre-1400 input and keeps late observations inside the close bound", async t => {
+  const primary = sandbox(t); await primary.state.prepare(date, true);
+  const source = primary.state.recoverySource(date), recovery = sandbox(t, primary.seed);
+  recovery.set(b.start + 60 * 60 * 1000 + 5000);
+  assert.deepEqual(recovery.state.adoptPrepared(date, source), source);
+  assert.throws(() => recovery.state.adoptPrepared(date, { ...source, readyAt: new Date(b.start + 1).toISOString() }), /RECOVERY_INPUT_INVALID/u);
+  const delayed = observations(primary.seed).rows.map(row => ({ ...row, observedTime: "15:00:01", quoteRequestedAt: `${date}T06:00:01.000Z`,
+    quoteReceivedAt: `${date}T06:00:01.010Z`, minuteRequestedAt: `${date}T06:00:01.200Z`, minuteReceivedAt: `${date}T06:00:01.210Z` }));
+  for (const row of delayed) recovery.state.write(`observation:${row.code}`, row);
+  const result = reconciliation(primary.seed), runId = `live-${date}-recovery-test`;
+  result.runId = runId; result.batches = result.batches.map((batch, index) => ({ ...batch, id: `${runId}-batch${index}` }));
+  recovery.state.reconcileBatches(date, result);
+  assert.equal(recovery.state.finish(date).models[0].officialSignalTime, "14:00:00");
 });
 
 test("native synthetic harness is isolated, production-compatible off-window and blocked during observation", async t => {

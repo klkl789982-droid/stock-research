@@ -15,7 +15,10 @@ export const PRODUCTION_BUDGET = Object.freeze({ workflowSteps: 220, workerReque
 export const OTHER_DAILY_RESERVE = Object.freeze({ workflowSteps: 100, workerRequests: 2000, doRequests: 1000,
   durationGbSeconds: 1000, sqlRowsRead: 500000, sqlRowsWritten: 15000 });
 export const versions = Object.freeze(["A-v1", "B-v1", "C-v1", "D-v1"]);
-export const bounds = date => ({ start: Date.parse(`${date}T14:00:00+09:00`), end: Date.parse(`${date}T14:05:00+09:00`) });
+// 14:00 remains the signal anchor. A delayed recovery may observe until the
+// Korean cash-market close, while every actual request/response timestamp is
+// retained. Nothing collected after 15:30 KST is eligible.
+export const bounds = date => ({ start: Date.parse(`${date}T14:00:00+09:00`), end: Date.parse(`${date}T15:30:00+09:00`) });
 export function assertProduction(env) {
   if (env.LIVE_PRODUCTION_ENABLED !== "true" || env.LIVE_PRODUCER !== "cloud"
     || !/^[a-f0-9]{64}$/u.test(env.LIVE_CUTOVER_RECEIPT_HASH ?? "")) throw new Error("LIVE_CLOUD_DISABLED");

@@ -7,5 +7,5 @@ export const FORMULA_HASHES = Object.freeze({
   "lib/combined-technical-score.mjs": "033a5f3e40adba3c74360e646b622b95683b1a83805baeb079227226658e732f",
   "lib/intraday-model-top-official-signal.mjs": "9d3238acf2de93858bd07360989cb2f9d763555e8b6d8b052e876f05ba2c24c5",
   "lib/intraday-model-b-official-signal.mjs": "d2463cad1960ed96c282c7c998ff1883f4c3c27484bbdd7db1c214b1c3f264ce",
-  "lib/intraday-model-top-time-policy.mjs": "d9c0cf27c5094318ce1d9af2c5906b4b0920228ef277d384f0810d7ee605efa8"
+  "lib/intraday-model-top-time-policy.mjs": "cdefe1698937a395de27e7d65ac31b80c2346679ca3a8aa2fcf1250ebd3a7653"
 });

@@ -85,6 +85,25 @@ export class ProductionDayState {
     // Receipt is written only after all fresh input/auth/calendar checks finish.
     return this.write(final ? "final" : "prewarm", { ...value, readyAt: new Date(this.now()).toISOString() });
   }
+  recoverySource(date) {
+    return this.critical(() => {
+      this.check(date);
+      if (this.read("outbox") || this.read("receipt")) throw new Error("LIVE_CLOUD_RECOVERY_NOT_ALLOWED");
+      const prepared = this.read("final");
+      if (!prepared) throw new Error("LIVE_CLOUD_NOT_PREPARED");
+      return prepared;
+    });
+  }
+  adoptPrepared(date, prepared) {
+    return this.critical(() => {
+      this.check(date, true);
+      if (prepared?.targetDate !== date || prepared.readiness !== "READY" || prepared.universe !== 553
+        || !Array.isArray(prepared.codes) || prepared.codes.length !== 553 || new Set(prepared.codes).size !== 553
+        || !Array.isArray(prepared.eligibleCodes) || prepared.eligibleCodes.length !== prepared.eligible
+        || !Number.isFinite(Date.parse(prepared.readyAt)) || Date.parse(prepared.readyAt) >= bounds(date).start) throw new Error("LIVE_CLOUD_RECOVERY_INPUT_INVALID");
+      this.write("prewarm", prepared); return this.write("final", prepared);
+    });
+  }
   slots(date, code) {
     const counter = this.read("allocator") ?? { head: 0, count: 0 };
     const s = nextPairSlots({ now: this.now(), head: counter.head, count: counter.count, date });
@@ -220,12 +239,13 @@ export class ProductionDayState {
     return this.critical(() => {
       this.check(date);
       const prepared = this.read("final");
-      if (!prepared || value?.schemaVersion !== 1 || value.date !== date || !Array.isArray(value.batches) || value.batches.length !== Math.ceil(prepared.codes.length / 8))
+      const runId = value?.runId ?? `live-${date}`, runPattern = new RegExp(`^live-${date}(?:-recovery-[A-Za-z0-9_-]{1,24})?$`, "u");
+      if (!prepared || value?.schemaVersion !== 1 || value.date !== date || !runPattern.test(runId ?? "") || !Array.isArray(value.batches) || value.batches.length !== Math.ceil(prepared.codes.length / 8))
         throw new Error("LIVE_CLOUD_CHILD_RESULTS_INVALID");
       const flattened = [], failed = new Set();
       for (const [index, batch] of value.batches.entries()) {
         const expected = prepared.codes.slice(index * 8, index * 8 + 8);
-        if (batch.id !== `live-${date}-batch${index}` || !Array.isArray(batch.codes) || JSON.stringify(batch.codes) !== JSON.stringify(expected)
+        if (batch.id !== `${runId}-batch${index}` || !Array.isArray(batch.codes) || JSON.stringify(batch.codes) !== JSON.stringify(expected)
           || !["complete", "errored", "terminated", "queued", "running", "waiting", "paused", "unknown"].includes(batch.workflowStatus)
           || !Array.isArray(batch.failures) || new Set(batch.failures.map(row => row.code)).size !== batch.failures.length
           || batch.failures.some(row => !expected.includes(row.code) || failed.has(row.code)
