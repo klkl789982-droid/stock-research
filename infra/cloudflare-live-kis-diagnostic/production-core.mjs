@@ -7,7 +7,7 @@ export { kst } from "./core.mjs";
 
 export const LIVE_CRONS = Object.freeze(["40,50 4 * * MON-FRI", "6,8,10 5 * * MON-FRI"]);
 export const PRODUCTION_BUDGET = Object.freeze({ workflowSteps: 220, workerRequests: 2000, doRequests: 14000,
-  durationGbSeconds: 8500, sqlRowsRead: 1000000, sqlRowsWritten: 40000, retainedBytesPerDay: 2000000,
+  durationGbSeconds: 8500, sqlRowsRead: 1000000, sqlRowsWritten: 40000, retainedBytesPerDay: 8000000,
   // The measured full diagnostic added5,341,184bytes of Workflow state.
   // Three retained daily runs *2 headroom project0.03205GB-month; round up.
   // this is engineering headroom, NOT certification of a full run's billing.

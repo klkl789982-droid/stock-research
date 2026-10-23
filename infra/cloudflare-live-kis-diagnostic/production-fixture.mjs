@@ -34,7 +34,7 @@ export async function verifyNativeProductionFixture({ sql, remote, run, phase })
   if (phase === "create" && !state.read("fixture-complete")) {
     if (state.read("fixture-started")) throw new Error("DIAG_PRODUCTION_FIXTURE_INTERRUPTED");
     state.write("fixture-started", { syntheticOnly: true });
-    await state.prepare(date, true); now = b.start;
+    await state.prepare(date, false); await state.prepare(date, true); now = b.start;
     // A bounded virtual clock simulates the exact553-symbol allocator without
     // waiting on wall time or issuing a single quote request.
     const active = []; let next = 0;

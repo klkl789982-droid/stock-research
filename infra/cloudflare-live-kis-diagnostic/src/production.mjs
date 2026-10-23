@@ -5,13 +5,18 @@ import { assertProduction, assertWindow, bounds, kst, productionObservation } fr
 import { safeCode, edgeFetch } from "../core.mjs";
 import { createKisEodPrivateStore } from "../../../lib/kis-eod-private-store.mjs";
 import { privateRequestBudget } from "../relay-budget.mjs";
-import { assertDiagnostic } from "../core.mjs";
 import { verifyNativeProductionFixture } from "../production-fixture.mjs";
 import { executionRecordKey } from "../../../lib/private-live-execution-status.mjs";
 const options = { retries: { limit: 0, delay: "1 second" }, timeout: "6 minutes" };
 const dateOf = run => { const m = /^live-(\d{4}-\d{2}-\d{2})$/u.exec(run ?? ""); if (!m) throw new Error("LIVE_CLOUD_DATE_INVALID"); return m[1]; };
 const vault = env => env.BROKER.get(env.BROKER.idFromName("single-approved-kis-credential-v1"));
 const day = (env, date) => env.LIVE_DAYS.get(env.LIVE_DAYS.idFromName(date), { locationHint: "apac-ne" });
+export function assertIsolatedProductionFixture(env, now = Date.now()) {
+  assertProduction(env);
+  if (env.LIVE_ENABLED !== "false" || env.DIAGNOSTIC_ONLY !== "true") throw new Error("DIAG_PRODUCTION_FIXTURE_DISABLED");
+  const t = kst(now), weekday = new Date(`${t.date}T00:00:00Z`).getUTCDay();
+  if (weekday > 0 && weekday < 6 && t.time >= "13:35:00" && t.time <= "14:10:00") throw new Error("DIAG_PRODUCTION_FIXTURE_WINDOW_EXCLUDED");
+}
 const childState = value => String(value ?? "unknown").toLowerCase();
 export function batchResult(definition, status) {
   const codes = definition.params.codes, workflowStatus = childState(status?.status);
@@ -61,7 +66,7 @@ export class LiveDay extends DurableObject {
     return {status:"EXECUTION_METADATA_STORED",signalDate:date,recordHash:record.recordHash};
   }
   async isolatedFixture(run, phase) {
-    assertDiagnostic(this.env);
+    assertIsolatedProductionFixture(this.env);
     if (!/^[A-Za-z0-9_-]{1,24}$/u.test(run ?? "") || this.ctx.id.toString() !== this.env.LIVE_DAYS.idFromName(`isolated-fixture-${run}`).toString()) throw new Error("DIAG_PRODUCTION_FIXTURE_IDENTITY");
     const io = privateRequestBudget(edgeFetch);
     const remote = createKisEodPrivateStore({ repository: "klkl789982-droid/tight-budget-private-data", token: this.env.PRIVATE_LIVE_DELIVERY_WRITE_TOKEN, fetchImpl: io.fetch });

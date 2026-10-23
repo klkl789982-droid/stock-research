@@ -12,8 +12,8 @@ import { createHash } from "node:crypto";
 import { FORMULA_HASHES } from "../formula-manifest.mjs";
 import { parseKisHolidayResponse } from "../../../lib/kis-eod-provider.mjs";
 import { assertPrivateKisEodPayload } from "../../../lib/kis-eod-private-store.mjs";
-import { assertProduction, bounds } from "../production-core.mjs";
-import { productionScheduled } from "./production.mjs";
+import { assertProduction, bounds, PRODUCTION_BUDGET } from "../production-core.mjs";
+import { productionScheduled, assertIsolatedProductionFixture } from "./production.mjs";
 import { verifyCloudSiteFixture } from "../site-fixture.mjs";
 import { verifyCloudSwingFixture } from "../swing-fixture.mjs";
 import { privateRequestBudget } from "../relay-budget.mjs";
@@ -58,12 +58,12 @@ export class KisDiagnosticBroker extends DurableObject {
     if (!response.ok || parseKisHolidayResponse(await response.json(), date, new Date().toISOString()).isTradingDay !== true) throw new Error("LIVE_CLOUD_NOT_TRADING_DAY");
     const value = await this.inputs();
     if (value.readiness !== "READY" || value.targetDate !== date || Date.now() >= bounds(date).start) throw new Error("LIVE_CLOUD_INPUT_NOT_READY");
-    // Retain all immutable records. Reserve2MB/day rather than assuming daily
+    // Retain all immutable records. Reserve the measured day cap rather than assuming daily
     // quota reset releases SQL storage; stop below4GB, with no automatic delete.
     if (!this.state(`capacity:${date}`)) {
       const reserved = this.state("liveCapacityReserved") || 100000000;
-      if (reserved + 2000000 >= 4000000000) throw new Error("LIVE_CLOUD_ACCOUNT_STORAGE_BUDGET");
-      this.set("liveCapacityReserved", reserved + 2000000); this.set(`capacity:${date}`, 1);
+      if (reserved + PRODUCTION_BUDGET.retainedBytesPerDay >= 4000000000) throw new Error("LIVE_CLOUD_ACCOUNT_STORAGE_BUDGET");
+      this.set("liveCapacityReserved", reserved + PRODUCTION_BUDGET.retainedBytesPerDay); this.set(`capacity:${date}`, 1);
     }
     return { ...value, codes: this.seed.records.map(r => r.code), eligibleCodes: this.seed.records.filter(r => r.eligible).map(r => r.code) };
   }
@@ -668,9 +668,16 @@ export class KisDiagnosticBroker extends DurableObject {
 
 export class KisDiagnostic extends WorkflowEntrypoint {
   async run(event, step) {
-    assertDiagnostic(this.env);
     const p = event.payload ?? {};
     if (!runIdOk(p.runId)) throw new Error("DIAG_RUN_ID_INVALID");
+    if (p.mode === "production-fixture") {
+      assertIsolatedProductionFixture(this.env);
+      if (p.runId.length > 24) throw new Error("DIAG_PRODUCTION_FIXTURE_INVALID");
+      const isolated = this.env.LIVE_DAYS.get(this.env.LIVE_DAYS.idFromName(`isolated-fixture-${p.runId}`));
+      await step.do("native SQL synthetic production lifecycle", config, () => isolated.isolatedFixture(p.runId, "create"));
+      return step.do("native SQL restart readback and private normal reader", config, () => isolated.isolatedFixture(p.runId, "read"));
+    }
+    assertDiagnostic(this.env);
     const broker = this.env.BROKER.get(this.env.BROKER.idFromName(brokerName));
     async function call(path, body = null) {
       const r = await broker.fetch(`https://isolated${path}${path.includes("?") ? "&" : "?"}run=${p.runId}`, body ? { method: "POST", body: JSON.stringify(body) } : undefined), value = await r.json();
@@ -680,12 +687,6 @@ export class KisDiagnostic extends WorkflowEntrypoint {
     if (p.mode === "swing-fixture") {
       await step.do("isolated synthetic swing first issuance", config, () => call("/swing-fixture?phase=create"));
       return step.do("reopen synthetic swing with existing five-session resolver", config, () => call("/swing-fixture?phase=read"));
-    }
-    if (p.mode === "production-fixture") {
-      if (p.runId.length > 24) throw new Error("DIAG_PRODUCTION_FIXTURE_INVALID");
-      const isolated = this.env.LIVE_DAYS.get(this.env.LIVE_DAYS.idFromName(`isolated-fixture-${p.runId}`));
-      await step.do("native SQL synthetic production lifecycle", config, () => isolated.isolatedFixture(p.runId, "create"));
-      return step.do("native SQL restart readback and private normal reader", config, () => isolated.isolatedFixture(p.runId, "read"));
     }
     if (["auth", "fixture", "audit", "inputs", "report", "calendar"].includes(p.mode)) return step.do(`isolated ${p.mode}`, config, () => call(`/${p.mode}`));
     if (p.mode === "batch-shard") return step.do("actual eight-symbol bounded invocation metadata only", config, async () => {

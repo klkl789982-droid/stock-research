@@ -161,7 +161,14 @@ export class ProductionDayState {
         this.inTransaction = true;
         try { return this.completeReserved(date, code, value); } finally { this.inTransaction = false; }
       });
-    }); }
+    }); } catch (error) {
+      // A terminal observation/storage error must not retain one of the eight
+      // active leases until cutoff. The immutable child result and parent
+      // reconciliation preserve the failure even when its observation row
+      // could not be stored.
+      try { this.critical(() => this.q("UPDATE leases SET completed=1 WHERE code=?", code)); } catch { /* original failure remains primary */ }
+      throw error;
+    }
     finally { this.drain(); }
   }
   completeReserved(date, code, value) {
@@ -301,5 +308,6 @@ export class ProductionDayState {
   }
   status() { return this.critical(() => ({ prepared: Boolean(this.read("prewarm")), finalInputReady: Boolean(this.read("final")),
     outbox: Boolean(this.read("outbox")), receipt: this.read("receipt"), meteredSql: { ...this.meter }, runtimeCursorSql: { ...this.cursorUsage }, usageUpdates: this.usageUpdates,
+    sqliteBytes: this.sql.databaseSize, retainedBytesLimit: PRODUCTION_BUDGET.retainedBytesPerDay,
     waitingInMemory: this.pending.size, rawPricesStored: false })); }
 }

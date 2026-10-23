@@ -82,7 +82,8 @@ const slotModule = `data:text/javascript;base64,${Buffer.from(slotSource).toStri
 const { KisSlotShard } = await import(slotModule);
 source = source.replace('"./slot-shard.mjs"', JSON.stringify(slotModule));
 source = source.replace('export { LiveDay, LiveBatch, CloudLive } from "./production.mjs";', '');
-source = source.replace('import { productionScheduled } from "./production.mjs";', 'const productionScheduled = () => ({ status: "DISABLED" });');
+source = source.replace('import { productionScheduled, assertIsolatedProductionFixture } from "./production.mjs";',
+  'const productionScheduled = () => ({ status: "DISABLED" }); const assertIsolatedProductionFixture = () => {};');
 source = source.replace('"../production-core.mjs"', JSON.stringify(new URL("./production-core.mjs", import.meta.url).href));
 source = source.replace('import { DurableObject, WorkflowEntrypoint } from "cloudflare:workers";', 'class DurableObject { constructor(ctx,env) { this.ctx=ctx; this.env=env; } } class WorkflowEntrypoint {}');
 for (const relative of ["../core.mjs", "../formula-manifest.mjs", "../site-fixture.mjs", "../swing-fixture.mjs", "../relay-budget.mjs", "../../../lib/kis-api-client-core.mjs", "../../../lib/kis-eod-private-store.mjs", "../../../lib/intraday-model-top-official-signal.mjs", "../../../lib/intraday-model-b-official-signal.mjs", "../../../lib/kis-quote-provider-core.mjs", "../../../lib/intraday-market-seed.mjs", "../../../lib/live-seed-policy.mjs", "../../../lib/kis-eod-provider.mjs"])

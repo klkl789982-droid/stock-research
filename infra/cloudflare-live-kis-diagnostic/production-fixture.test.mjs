@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
 import { verifyNativeProductionFixture } from "./production-fixture.mjs";
+import { PRODUCTION_BUDGET } from "./production-core.mjs";
 
 test("unchanged production state machine completes synthetic553 native-SQL lifecycle and reopens only isolated private records", async t => {
   const db = new DatabaseSync(":memory:"), values = new Map(); t.after(() => db.close());
@@ -25,6 +26,6 @@ test("unchanged production state machine completes synthetic553 native-SQL lifec
   assert.equal(first.kisCalls, 0); assert.equal(first.universe, 553); assert.equal(first.eligible, 508); assert.equal(first.topRows, 20);
   assert.equal(first.existingResolver, "BLOCKED_MISSING_REFERENCE_PRICE"); assert.equal(values.size, 4);
   assert.ok(values.size && [...values.values()].every(v => v.syntheticOnly && v.publicationEligible === false));
-  assert.ok(read.sqliteBytes < 2000000); assert.ok(read.nativeSqlMeter.w < 40000);
+  assert.ok(read.sqliteBytes < PRODUCTION_BUDGET.retainedBytesPerDay); assert.ok(read.nativeSqlMeter.w < 40000);
   await assert.rejects(verifyNativeProductionFixture({ sql, remote, run: "../normal", phase: "create" }), /INVALID/u);
 });

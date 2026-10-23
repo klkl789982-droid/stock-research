@@ -1,4 +1,4 @@
-import { normalDayBudget } from "./production-core.mjs";
+import { normalDayBudget, PRODUCTION_BUDGET } from "./production-core.mjs";
 
 // Admission is a conservative reservation, NOT an assertion of exact billing
 // or a fabricated zero analytics delay. Free platform caps remain authoritative.
@@ -33,11 +33,11 @@ export function admitFreeBudget({ before, latest, inventory, workersFree, noPaym
   // normalDayBudget reserves40MB for three retained LIVE days incl retry state.
   const workflowStorageGbMonthsUpperBound = (storage.positiveGrowthBytes * 2 + 10000000) / 1e9;
   const persistentSqlBytes = Math.max(100000000, latest.persistentSqlNamespacePeakBytes + 10000000);
-  if (workflowStorageGbMonthsUpperBound + 0.04 >= 1 || persistentSqlBytes + 2000000 >= 4000000000) throw new Error("FREE_STORAGE_BUDGET");
+  if (workflowStorageGbMonthsUpperBound + 0.04 >= 1 || persistentSqlBytes + PRODUCTION_BUDGET.retainedBytesPerDay >= 4000000000) throw new Error("FREE_STORAGE_BUDGET");
   return { schemaVersion: 1, utcDay: latest.utcDay, observedAt: latest.observedAt, workersFree: true, inventoryVerified: true, storageVerified: true,
     upperBound, headroomAfterAnotherWholeNormalDay: headroom, persistentSqlBytes, workflowStorageGbMonthsUpperBound,
     lagReserve: LAG_RESERVE, aggregationLagMs: null, exactBillingClaimed: false, boundType: "CONSERVATIVE_ADMISSION_RESERVATION",
     assumptions: "Complete fixed-resource inventory, no active collection or additional trials; re-admit before any extra collection or resource expansion. Free hard limits stop rather than charge.",
-    normalDay: normalDayBudget(), workflowRetentionDays: 3, sqlDailyCapBytes: 2000000, sqlGlobalReserveStopBytes: 4000000000,
+    normalDay: normalDayBudget(), workflowRetentionDays: 3, sqlDailyCapBytes: PRODUCTION_BUDGET.retainedBytesPerDay, sqlGlobalReserveStopBytes: 4000000000,
     storageDailyReset: false, paidFallback: false };
 }

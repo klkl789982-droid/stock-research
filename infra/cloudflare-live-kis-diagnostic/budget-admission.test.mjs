@@ -13,6 +13,7 @@ test("settled reported counters plus explicit unreported-work reservation, not e
   const v = admitFreeBudget(args(), Date.parse(latest.observedAt));
   assert.equal(v.upperBound.sqlRowsWritten, 42814); assert.equal(v.headroomAfterAnotherWholeNormalDay.sqlRowsWritten, 2186);
   assert.equal(v.workflowStorageGbMonthsUpperBound, 0.184424064); assert.equal(v.persistentSqlBytes, 100000000);
+  assert.equal(v.sqlDailyCapBytes, 8000000);
   assert.equal(v.aggregationLagMs, null); assert.equal(v.exactBillingClaimed, false); assert.equal(v.paidFallback, false);
 });
 test("unknown resources, active instances, stale metrics, sampling and excess budget block", () => {

@@ -20,7 +20,7 @@ workflowSource = workflowSource.replace('import { DurableObject, WorkflowEntrypo
 workflowSource = workflowSource.replace('import { KisSlotShard } from "./slot-shard.mjs";', 'class KisSlotShard {}');
 for (const relative of ["../production-state.mjs", "../production-core.mjs", "../production-fixture.mjs", "../core.mjs", "../relay-budget.mjs", "../../../lib/kis-eod-private-store.mjs", "../../../lib/private-live-execution-status.mjs"])
   workflowSource = workflowSource.replaceAll(JSON.stringify(relative), JSON.stringify(new URL(relative, new URL("./src/production.mjs", import.meta.url)).href));
-const { CloudLive, LiveDay, productionScheduled, batchResult } = await import(`data:text/javascript;base64,${Buffer.from(workflowSource).toString("base64")}`);
+const { CloudLive, LiveDay, productionScheduled, batchResult, assertIsolatedProductionFixture } = await import(`data:text/javascript;base64,${Buffer.from(workflowSource).toString("base64")}`);
 function inputFixture() {
   const records = Array.from({ length: 553 }, (_, i) => ({ code: String(100000 + i), name: `Synthetic${i}`, market: "KOSPI", eligible: i < 508,
     officialAsOfDate: seedDate, sourceHash: "b".repeat(64), rows: fixture(i).rows.map((row, index) => [new Date(Date.parse(`${seedDate}T00:00:00Z`) - index * 86400000).toISOString().slice(0, 10).replaceAll("-", ""), ...row.slice(1)]) }));
@@ -307,15 +307,30 @@ test("partial completion rollback preserves slots and immutable observation; fai
   assert.ok(f.state.meter.r >= before.r && f.state.meter.w >= before.w);
 });
 
-test("native synthetic harness cannot touch a normal day object or run while production is active", async t => {
+test("terminal observation storage failure releases one of eight leases for the next queued symbol", async t => {
+  const f = sandbox(t); await f.state.prepare(date, true); f.set(b.start);
+  const leases = [];
+  for (const record of f.seed.records.slice(0, 8)) leases.push(await f.state.acquire(date, record.code));
+  const queued = f.state.acquire(date, f.seed.records[8].code), code = f.seed.records[0].code, row = observations(f.seed).rows[0], lease = leases[0];
+  f.set(lease.minuteSlot.notBefore + 22);
+  const calls = [["quote", lease.quoteSlot], ["minute", lease.minuteSlot]].map(([kind, slot]) => ({ kind, slot: slot.slot,
+    started: slot.notBefore, completed: slot.notBefore + 22, status: 200 }));
+  const write = f.state.write.bind(f.state);
+  f.state.write = (id, value, mutable) => id === `observation:${code}` ? (() => { throw new Error("LIVE_CLOUD_STORAGE_BUDGET"); })() : write(id, value, mutable);
+  assert.throws(() => f.state.complete(date, code, { metadata: row, calls }), /STORAGE_BUDGET/u);
+  assert.equal(f.db.prepare("SELECT completed FROM leases WHERE code=?").get(code).completed, 1);
+  assert.ok(await queued);
+});
+
+test("native synthetic harness is isolated, production-compatible off-window and blocked during observation", async t => {
   t.mock.method(Date, "now", () => Date.parse("2026-10-19T09:00:00Z"));
   const object = Object.create(LiveDay.prototype);
   object.ctx = { id: { toString: () => "normal-operational-day-id" } };
-  object.env = { LIVE_ENABLED: "false", DIAGNOSTIC_ONLY: "true", LIVE_PRODUCTION_ENABLED: "false",
+  object.env = { ...env, LIVE_ENABLED: "false", DIAGNOSTIC_ONLY: "true",
     LIVE_DAYS: { idFromName: name => ({ toString: () => name }) } };
   await assert.rejects(object.isolatedFixture("fixture-only", "create"), /FIXTURE_IDENTITY/u);
-  object.env.LIVE_PRODUCTION_ENABLED = "true";
-  await assert.rejects(object.isolatedFixture("fixture-only", "create"), /DISABLED_DURING_PRODUCTION/u);
+  assert.doesNotThrow(() => assertIsolatedProductionFixture(object.env, Date.parse("2026-10-19T05:11:00Z")));
+  assert.throws(() => assertIsolatedProductionFixture(object.env, Date.parse("2026-10-19T05:00:00Z")), /WINDOW_EXCLUDED/u);
 });
 
 test("frozen stage metadata is price-free, immutable across restarts and leaves result pointers alone",async t=>{
