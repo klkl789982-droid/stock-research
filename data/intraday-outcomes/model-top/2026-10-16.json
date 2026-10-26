@@ -33,7 +33,7 @@
     }
   },
   "generatedAt": "2026-10-19T03:19:49.333Z",
-  "updatedAt": "2026-10-20T02:01:43.196Z",
+  "updatedAt": "2026-10-26T04:18:15.447Z",
   "source": {
     "signalDataset": "intradayModelTopOfficialSignal",
     "signalHash": "61ef2b00a208f2a36655578fc4b8fbacdccb5a06d2cf1f2912c6d55daac91e2e",
@@ -70,12 +70,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 69700,
+          "returnPercent": -2.244039,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -124,12 +124,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 78400,
+          "returnPercent": -9.573241,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -178,12 +178,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 24450,
+          "returnPercent": -2.97619,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -232,12 +232,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 85000,
+          "returnPercent": 4.551046,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -286,12 +286,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 67500,
+          "returnPercent": -7.28022,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -339,12 +339,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 6200,
+          "returnPercent": -6.766917,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -392,12 +392,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 72100,
+          "returnPercent": -12.817412,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -445,12 +445,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 12330,
+          "returnPercent": -4.046693,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -498,12 +498,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 11800,
+          "returnPercent": -6.793049,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -551,12 +551,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 27000,
+          "returnPercent": -10.743802,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -603,12 +603,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 96000,
+          "returnPercent": -1.030928,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -655,12 +655,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 34950,
+          "returnPercent": -4.377565,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -707,12 +707,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 33850,
+          "returnPercent": -10.331126,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -759,12 +759,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 96000,
+          "returnPercent": -3.030303,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -811,12 +811,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 101400,
+          "returnPercent": -6.371191,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -863,12 +863,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 11550,
+          "returnPercent": 12.463486,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -915,12 +915,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 11300,
+          "returnPercent": -3.418803,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -967,12 +967,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 22650,
+          "returnPercent": -3.411514,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -1019,12 +1019,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 15180,
+          "returnPercent": -8.992806,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -1071,12 +1071,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 40550,
+          "returnPercent": 1.122195,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -1125,12 +1125,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 69700,
+          "returnPercent": -2.244039,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -1179,12 +1179,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 78400,
+          "returnPercent": -9.573241,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -1233,12 +1233,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 12700,
+          "returnPercent": -4.006047,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -1287,12 +1287,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 9210,
+          "returnPercent": 4.540295,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -1341,12 +1341,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 94600,
+          "returnPercent": -7.254902,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -1394,12 +1394,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 51300,
+          "returnPercent": 4.268293,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -1447,12 +1447,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 24450,
+          "returnPercent": -2.97619,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -1500,12 +1500,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 96000,
+          "returnPercent": -1.030928,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -1553,12 +1553,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 34950,
+          "returnPercent": -4.377565,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -1606,12 +1606,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 33850,
+          "returnPercent": -10.331126,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -1658,12 +1658,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 25000,
+          "returnPercent": -10.071942,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -1710,12 +1710,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 173300,
+          "returnPercent": -10.439276,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -1762,12 +1762,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 69900,
+          "returnPercent": 44.123711,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -1814,12 +1814,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 56100,
+          "returnPercent": 5.849057,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -1866,12 +1866,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 15180,
+          "returnPercent": -8.992806,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -1918,12 +1918,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 12330,
+          "returnPercent": -4.046693,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -1970,12 +1970,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 27000,
+          "returnPercent": -10.743802,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -2022,12 +2022,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 37350,
+          "returnPercent": -3.11284,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -2074,12 +2074,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 85000,
+          "returnPercent": 4.551046,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -2126,12 +2126,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 101400,
+          "returnPercent": -6.371191,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -2180,12 +2180,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 36850,
+          "returnPercent": -4.780362,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -2234,12 +2234,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 69500,
+          "returnPercent": -4.924761,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -2288,12 +2288,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 9600,
+          "returnPercent": -1.639344,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -2342,12 +2342,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 85000,
+          "returnPercent": 4.551046,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -2396,12 +2396,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 69700,
+          "returnPercent": -2.244039,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -2449,12 +2449,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 11180,
+          "returnPercent": -5.812974,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -2502,12 +2502,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 14580,
+          "returnPercent": -1.553005,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -2555,12 +2555,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 40750,
+          "returnPercent": -2.160864,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -2608,12 +2608,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 84700,
+          "returnPercent": 5.217391,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -2661,12 +2661,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 89900,
+          "returnPercent": -0.772627,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -2713,12 +2713,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 17960,
+          "returnPercent": -14.881517,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -2765,12 +2765,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 176500,
+          "returnPercent": -0.113186,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -2817,12 +2817,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 2470,
+          "returnPercent": -9.689214,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -2869,12 +2869,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 11550,
+          "returnPercent": 12.463486,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -2921,12 +2921,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 82900,
+          "returnPercent": -2.355713,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -2973,12 +2973,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 38000,
+          "returnPercent": -3.061224,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -3025,12 +3025,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 128800,
+          "returnPercent": -7.471264,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -3077,12 +3077,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 402500,
+          "returnPercent": -1.948843,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -3129,12 +3129,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 1225000,
+          "returnPercent": 1.323408,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -3181,12 +3181,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 34600,
+          "returnPercent": 3.903904,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -3235,12 +3235,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 69700,
+          "returnPercent": -2.244039,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -3289,12 +3289,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 85000,
+          "returnPercent": 4.551046,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -3343,12 +3343,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 33850,
+          "returnPercent": -10.331126,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -3397,12 +3397,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 12700,
+          "returnPercent": -4.006047,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -3451,12 +3451,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 25000,
+          "returnPercent": -10.071942,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -3504,12 +3504,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 78400,
+          "returnPercent": -9.573241,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -3557,12 +3557,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 56100,
+          "returnPercent": 5.849057,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -3610,12 +3610,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 11300,
+          "returnPercent": -3.418803,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -3663,12 +3663,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 24450,
+          "returnPercent": -2.97619,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -3716,12 +3716,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 106000,
+          "returnPercent": -0.749064,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -3768,12 +3768,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 173300,
+          "returnPercent": -10.439276,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -3820,12 +3820,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 189400,
+          "returnPercent": -1.354167,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -3872,12 +3872,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 11180,
+          "returnPercent": -5.812974,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -3924,12 +3924,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 51300,
+          "returnPercent": 4.268293,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -3976,12 +3976,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 27000,
+          "returnPercent": -10.743802,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -4028,12 +4028,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 2470,
+          "returnPercent": -9.689214,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -4080,12 +4080,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 15180,
+          "returnPercent": -8.992806,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -4132,12 +4132,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 22650,
+          "returnPercent": -3.411514,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -4184,12 +4184,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 34950,
+          "returnPercent": -4.377565,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -4236,12 +4236,12 @@
           "resolvedAt": "2026-10-20T02:01:43.196Z"
         },
         "5DAY": {
-          "status": "PENDING",
-          "targetTradingDate": null,
-          "closePrice": null,
-          "returnPercent": null,
-          "reason": "pendingFutureTradingDay",
-          "resolvedAt": null
+          "status": "MATURE",
+          "targetTradingDate": "2026-10-23",
+          "closePrice": 11800,
+          "returnPercent": -6.793049,
+          "reason": null,
+          "resolvedAt": "2026-10-26T04:18:15.447Z"
         },
         "20DAY": {
           "status": "PENDING",
@@ -4272,10 +4272,10 @@
       }
     },
     "5DAY": {
-      "sampleCount": 0,
+      "sampleCount": 80,
       "maturity": {
-        "PENDING": 80,
-        "MATURE": 0,
+        "PENDING": 0,
+        "MATURE": 80,
         "DATA_MISSING": 0
       }
     },
@@ -4296,5 +4296,5 @@
       }
     }
   },
-  "contentHash": "05ef87de759971b6cb3f24e351518ff2142c96e98b9480c9199dd54abc69c5db"
+  "contentHash": "9acb4ab35203606beb5dfe0b925d6b38abd7355ef5aaa48c85614c460429198f"
 }
