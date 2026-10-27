@@ -18,7 +18,7 @@ const env = { LIVE_PRODUCTION_ENABLED: "true", LIVE_PRODUCER: "cloud", LIVE_CUTO
 let workflowSource = await fs.readFile(new URL("./src/production.mjs", import.meta.url), "utf8");
 workflowSource = workflowSource.replace('import { DurableObject, WorkflowEntrypoint } from "cloudflare:workers";', 'class DurableObject { constructor(ctx,env){this.ctx=ctx;this.env=env;} } class WorkflowEntrypoint {constructor(env){this.env=env;}}');
 workflowSource = workflowSource.replace('import { KisSlotShard } from "./slot-shard.mjs";', 'class KisSlotShard {}');
-for (const relative of ["../production-state.mjs", "../production-core.mjs", "../production-fixture.mjs", "../core.mjs", "../relay-budget.mjs", "../../../lib/kis-eod-private-store.mjs", "../../../lib/private-live-execution-status.mjs"])
+for (const relative of ["../production-state.mjs", "../production-core.mjs", "../production-fixture.mjs", "../core.mjs", "../relay-budget.mjs", "../batch-creation.mjs", "../../../lib/kis-eod-private-store.mjs", "../../../lib/private-live-execution-status.mjs"])
   workflowSource = workflowSource.replaceAll(JSON.stringify(relative), JSON.stringify(new URL(relative, new URL("./src/production.mjs", import.meta.url)).href));
 const { CloudLive, LiveDay, productionScheduled, batchResult, assertIsolatedProductionFixture } = await import(`data:text/javascript;base64,${Buffer.from(workflowSource).toString("base64")}`);
 function inputFixture() {

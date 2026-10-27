@@ -7,6 +7,7 @@ import { createKisEodPrivateStore } from "../../../lib/kis-eod-private-store.mjs
 import { privateRequestBudget } from "../relay-budget.mjs";
 import { verifyNativeProductionFixture } from "../production-fixture.mjs";
 import { executionRecordKey } from "../../../lib/private-live-execution-status.mjs";
+import { createFixedBatchGroup } from "../batch-creation.mjs";
 const options = { retries: { limit: 0, delay: "1 second" }, timeout: "6 minutes" };
 const runOf = run => { const m = /^live-(\d{4}-\d{2}-\d{2})(?:-(recovery-[A-Za-z0-9_-]{1,24}))?$/u.exec(run ?? ""); if (!m) throw new Error("LIVE_CLOUD_DATE_INVALID"); return { date: m[1], dayName: m[2] ? `${m[1]}-${m[2]}` : m[1] }; };
 const dateOf = run => runOf(run).date;
@@ -214,24 +215,10 @@ export class CloudLive extends WorkflowEntrypoint {
       for(let offset=0;offset<definitions.length;offset+=50){
         if(offset)await step.sleep(`pace fixed batch creation ${offset/50}`,"2 seconds");
         const group=definitions.slice(offset,offset+50);
-        await step.do(`precreate fixed batch ids ${offset/50}`, options, async () => {
-        try {
-          const result=await this.env.LIVE.createBatch({instances:group});
-          if(!Array.isArray(result?.created)||!Array.isArray(result?.errors))throw new Error("LIVE_CLOUD_BATCH_CREATE_UNCONFIRMED");
-          const known=new Set(result.created.map(row=>row.id));
-          for(const error of result.errors){if(error.code!==10405||!group.some(d=>d.id===error.id))throw new Error("LIVE_CLOUD_BATCH_CREATE_UNCONFIRMED");known.add(error.id);}
-          if(group.some(d=>!known.has(d.id)))throw new Error("LIVE_CLOUD_BATCH_CREATE_UNCONFIRMED");
-        }
-        catch {
-          // Never create replacement IDs after an unknown create response.
-          // Recovery uses the same immutable IDs, not another observation.
-          // A lost response cannot justify another collector or a70+ status
-          // fan-in in a Free invocation. Existing fixed children keep running;
-          // their durable journals are the only completion authority.
-          throw new Error("LIVE_CLOUD_BATCH_CREATE_UNCONFIRMED");
-        }
-        return { batches:group.length, symbols:group.reduce((n,d)=>n+d.params.codes.length,0) };
-      });}
+        await step.do(`precreate fixed batch ids ${offset/50}`,
+          {...options,retries:{limit:2,delay:"5 seconds",backoff:"exponential"}},
+          ()=>createFixedBatchGroup(this.env.LIVE,group));
+      }
       // All collectors are already precreated; this read/write does not hold
       // their broker slots or delay their absolute14:00 wake-up.
       if (!recovery) await report("READY");
