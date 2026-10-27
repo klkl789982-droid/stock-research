@@ -281,6 +281,22 @@ test("late relay waits without collecting; approved1531 cron is delivery-only",a
  assert.equal(created[0].params.mode,"relay");assert.equal(created[0].params.relaySlot,"31");
 });
 
+test("three exhausted early relay attempts cannot consume the approved close-time retry budget",async t=>{
+ const f=sandbox(t);await f.state.prepare(date,true);
+ // Already frozen synthetic result: only attempt bookkeeping and immutable
+ // transfer are exercised here; never manufacture operational observations.
+ const rows=observations(f.seed).rows,value=aggregateProduction(prepared(f.seed),rows,`${date}T05:06:00.000Z`);
+ f.state.write("outbox",value);f.state.write("relay-attempt",{count:3,next:0},true);
+ f.set(b.start+600000);await assert.rejects(f.state.relay(date),/RELAY_BACKOFF/);
+ f.set(b.end+60000);f.remote.failNext();await assert.rejects(f.state.relay(date),/NETWORK_FAILED/);
+ assert.equal(f.state.read("relay-late-attempt").count,1);assert.equal(f.state.read("relay-attempt").count,3);
+ f.set(b.end+180000);const reopened=new ProductionDayState(f.options),delivered=await reopened.relay(date);
+ assert.equal(delivered.status,"PRIVATE_RELAY_VERIFIED");assert.equal(delivered.deliveryHash,value.delivery.deliveryHash);
+ assert.equal(reopened.read("relay-late-attempt").count,2);assert.equal(reopened.read("outbox").delivery.exportedAt,value.delivery.exportedAt);
+ const blocked=sandbox(t);await blocked.state.prepare(date,true);blocked.state.write("outbox",value);blocked.set(b.end+300000);
+ blocked.state.write("relay-late-attempt",{count:4,next:0},true);await assert.rejects(blocked.state.relay(date),/RELAY_BACKOFF/);
+});
+
 test("duplicate cron shares same parent ID; weekend/disabled state never schedules collection", async () => {
   const ids = [], bindings = { ...env, LIVE: { async create(d) { ids.push(d.id); if (ids.length > 1) throw new Error("duplicate"); }, async get() { return { async status() { return { status: "running" }; } }; } } };
   const event = { scheduledTime: b.start - 1200000 };

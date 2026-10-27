@@ -233,9 +233,13 @@ export class ProductionDayState {
     this.critical(() => this.check(date));
     const outbox = this.critical(() => this.read("outbox")); if (!outbox) throw new Error("LIVE_CLOUD_NO_OUTBOX");
     const receipt = this.critical(() => this.read("receipt")); if (receipt) return receipt;
-    const attempt = this.critical(() => this.read("relay-attempt")) ?? { count: 0, next: 0 };
-    if (attempt.count >= 3 || attempt.next > this.now()) throw new Error("LIVE_CLOUD_RELAY_BACKOFF");
-    this.critical(() => this.write("relay-attempt", { count: attempt.count + 1, next: this.now() + 60000 }, true));
+    // Early network failures must not consume the approved close-time relay
+    // slots. Preserve the original early counter; at most four late attempts
+    // cover the closing parent plus15:31/33/35. Both counters survive restart.
+    const late=this.now()>bounds(date).end,key=late?"relay-late-attempt":"relay-attempt",limit=late?4:3;
+    const attempt = this.critical(() => this.read(key)) ?? { count: 0, next: 0 };
+    if (attempt.count >= limit || attempt.next > this.now()) throw new Error("LIVE_CLOUD_RELAY_BACKOFF");
+    this.critical(() => this.write(key, { count: attempt.count + 1, next: this.now() + 60000 }, true));
     await remote.writeImmutable(`cloud-live-score-evidence-v1/${date}/${outbox.evidence.contentHash}.json`, outbox.evidence);
     // Freeze selections/first issuance before delivery. Restart or relay retry
     // cannot regenerate the five-session record with a later creation time.
