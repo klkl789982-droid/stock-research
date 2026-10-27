@@ -3,11 +3,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 const target = process.argv[2]; if (!target || !path.isAbsolute(target)) throw new Error("PRIVATE_OUTPUT_REQUIRED");
 const addLateRelay = process.argv[3] === "--approved-late-relay";
-if (process.argv.length > (addLateRelay ? 4 : 3)) throw new Error("DEPLOY_ARGUMENT_INVALID");
+const addWatch = process.argv[3] === "--approved-watchdog";
+if (process.argv.length > (addLateRelay||addWatch ? 4 : 3)) throw new Error("DEPLOY_ARGUMENT_INVALID");
 const token = /^oauth_token\s*=\s*"([^"]+)"/mu.exec(await fs.readFile(path.join(process.env.APPDATA, "xdg.config/.wrangler/config/default.toml"), "utf8"))?.[1];
 const base = "https://api.cloudflare.com/client/v4/accounts/a270e8d00736b9adbeaab41945266c99/workers/scripts/tight-budget-live-kis-diagnostic";
-async function read(suffix) {
-  const r = await fetch(base + suffix, { headers: { Authorization: `Bearer ${token}` }, redirect: "error", signal: AbortSignal.timeout(15000) });
+async function read(suffix,scriptBase=base) {
+  const r = await fetch(scriptBase + suffix, { headers: { Authorization: `Bearer ${token}` }, redirect: "error", signal: AbortSignal.timeout(15000) });
   if (!r.ok) throw new Error(`DEPLOY_READ_${r.status}`); const j = await r.json(); if (!j.success) throw new Error("DEPLOY_READ_FAILED"); return j.result;
 }
 try {
@@ -20,10 +21,19 @@ try {
   const previousCrons = schedules.schedules.map(s => s.cron).sort();
   const originalCrons = ["40,50 4 * * MON-FRI", "6,8,10 5 * * MON-FRI"].sort();
   const approvedCrons = [...originalCrons, "31,33,35 6 * * MON-FRI"].sort();
-  if (![originalCrons, approvedCrons].some(value => JSON.stringify(previousCrons) === JSON.stringify(value))) throw new Error("DEPLOY_CRON_CHANGED");
+  const watchedCrons=[...approvedCrons,"0,5,15,25,30,35,40,45,59 4-6 * * MON-FRI"].sort();
+  if (![originalCrons, approvedCrons,watchedCrons].some(value => JSON.stringify(previousCrons) === JSON.stringify(value))) throw new Error("DEPLOY_CRON_CHANGED");
   // Only the explicit approved flag may ADD the delivery-only trigger. Never
   // remove an existing trigger or inherit the checked-in disabled safe default.
-  const crons = addLateRelay ? approvedCrons : previousCrons;
+  const crons = addWatch?watchedCrons:addLateRelay?[...new Set([...previousCrons,...approvedCrons])].sort():previousCrons;
+  let accountCronCount=null;
+  if(addWatch){let other=0;
+    const scripts=await read("",base.replace(/\/tight-budget-live-kis-diagnostic$/u,""));
+    if(JSON.stringify(scripts.map(s=>s.id).sort())!==JSON.stringify(["tight-budget-eod-scheduler","tight-budget-live-free-probe","tight-budget-live-prewarm","tight-budget-live-sql-replay","tight-budget-live-kis-diagnostic"].sort()))throw new Error("DEPLOY_RESOURCE_INVENTORY_CHANGED");
+    for(const name of ["tight-budget-eod-scheduler","tight-budget-live-free-probe","tight-budget-live-prewarm","tight-budget-live-sql-replay"]){const result=await read("/schedules",base.replace(/tight-budget-live-kis-diagnostic$/u,name));other+=result.schedules.length;}
+    accountCronCount=other+crons.length;
+    if(accountCronCount>5)throw new Error("DEPLOY_FREE_CRON_LIMIT");
+  }
   for (const binding of config.durable_objects.bindings) if (!settings.bindings.some(b => b.name === binding.name && b.class_name === binding.class_name && b.namespace_id)) throw new Error("DEPLOY_NAMESPACE_CHANGED");
   const secrets = settings.bindings.filter(b => b.type === "secret_text").map(b => b.name).sort();
   if (JSON.stringify(secrets) !== JSON.stringify(["KIS_APP_KEY", "KIS_APP_SECRET", "PRIVATE_LIVE_DELIVERY_WRITE_TOKEN"].sort())) throw new Error("DEPLOY_SECRET_BINDINGS_CHANGED");
@@ -33,5 +43,5 @@ try {
   await fs.mkdir(path.dirname(target), { recursive: true });
   await fs.writeFile(target, JSON.stringify(result, null, 2), { flag: "wx" });
   console.log(JSON.stringify({ status: "CURRENT_PRODUCTION_CONFIG_PRESERVED", target, producer: vars.LIVE_PRODUCER,
-    enabled: vars.LIVE_PRODUCTION_ENABLED, previousCrons, crons, secretNames: secrets, secretsRead: false }));
+    enabled: vars.LIVE_PRODUCTION_ENABLED, previousCrons, crons, accountCronCount,secretNames: secrets, secretsRead: false }));
 } catch (e) { console.error(JSON.stringify({ status: "BLOCKED", code: /^DEPLOY_[A-Z_0-9]+$/u.test(e.message) ? e.message : "DEPLOY_CONFIG_FAILED" })); process.exitCode = 1; }

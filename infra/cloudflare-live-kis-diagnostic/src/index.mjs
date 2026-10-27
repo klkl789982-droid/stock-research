@@ -670,6 +670,12 @@ export class KisDiagnostic extends WorkflowEntrypoint {
   async run(event, step) {
     const p = event.payload ?? {};
     if (!runIdOk(p.runId)) throw new Error("DIAG_RUN_ID_INVALID");
+    if(p.mode==="production-watch-fixture"){
+      assertIsolatedProductionFixture(this.env);
+      if(p.runId.length>24)throw new Error("DIAG_PRODUCTION_FIXTURE_INVALID");
+      const isolated=this.env.LIVE_DAYS.get(this.env.LIVE_DAYS.idFromName(`isolated-fixture-${p.runId}`));
+      return step.do("watch existing isolated result without collecting",config,()=>isolated.isolatedFixture(p.runId,"watch"));
+    }
     if (p.mode === "production-fixture") {
       assertIsolatedProductionFixture(this.env);
       if (p.runId.length > 24) throw new Error("DIAG_PRODUCTION_FIXTURE_INVALID");

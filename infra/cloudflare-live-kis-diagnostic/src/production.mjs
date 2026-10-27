@@ -1,13 +1,14 @@
 import { DurableObject, WorkflowEntrypoint } from "cloudflare:workers";
 import { KisSlotShard } from "./slot-shard.mjs";
 import { ProductionDayState } from "../production-state.mjs";
-import { assertProduction, assertWindow, bounds, kst, productionObservation } from "../production-core.mjs";
+import { assertProduction, assertWindow, bounds, kst, productionObservation, WATCH_CRON } from "../production-core.mjs";
 import { safeCode, edgeFetch, transportReason } from "../core.mjs";
 import { createKisEodPrivateStore } from "../../../lib/kis-eod-private-store.mjs";
 import { privateRequestBudget } from "../relay-budget.mjs";
 import { verifyNativeProductionFixture } from "../production-fixture.mjs";
 import { executionRecordKey } from "../../../lib/private-live-execution-status.mjs";
 import { createFixedBatchGroup } from "../batch-creation.mjs";
+import { runCloudWatchdog,watchSlot,WATCH_SLOTS } from "../watchdog.mjs";
 const options = { retries: { limit: 0, delay: "1 second" }, timeout: "6 minutes" };
 const runOf = run => { const m = /^live-(\d{4}-\d{2}-\d{2})(?:-(recovery-[A-Za-z0-9_-]{1,24}))?$/u.exec(run ?? ""); if (!m) throw new Error("LIVE_CLOUD_DATE_INVALID"); return { date: m[1], dayName: m[2] ? `${m[1]}-${m[2]}` : m[1] }; };
 const dateOf = run => runOf(run).date;
@@ -64,6 +65,13 @@ export class LiveDay extends DurableObject {
   reconcileBatches(date, value) { return this.state.reconcileBatches(date, value); }
   recordBatchResult(date,runId,codes,result) { return this.state.recordBatchResult(date,runId,codes,result); }
   reconcileJournal(date,runId,deadline) { return this.state.reconcileJournal(date,runId,deadline); }
+  async watch(date,slot,scheduledAt){
+    const io=privateRequestBudget(edgeFetch);
+    const remote=createKisEodPrivateStore({repository:"klkl789982-droid/tight-budget-private-data",token:this.env.PRIVATE_LIVE_DELIVERY_WRITE_TOKEN,fetchImpl:io.fetch});
+    return runCloudWatchdog({state:this.state,workflow:this.env.LIVE,remote,fetchImpl:io.fetch,date,slot,scheduledAt,
+      publishExecution:(...args)=>this.publishExecution(...args)});
+  }
+  watchStatus(){const last=this.state.read("watch-latest");return last?this.state.read(`watch-snapshot:${last.slot}`):null;}
   async publishExecution(date,event,workflowState,error) {
     const record=this.state.freezeExecution(date,event,workflowState,error);
     const io=privateRequestBudget(edgeFetch,12);
@@ -76,7 +84,7 @@ export class LiveDay extends DurableObject {
     if (!/^[A-Za-z0-9_-]{1,24}$/u.test(run ?? "") || this.ctx.id.toString() !== this.env.LIVE_DAYS.idFromName(`isolated-fixture-${run}`).toString()) throw new Error("DIAG_PRODUCTION_FIXTURE_IDENTITY");
     const io = privateRequestBudget(edgeFetch);
     const remote = createKisEodPrivateStore({ repository: "klkl789982-droid/tight-budget-private-data", token: this.env.PRIVATE_LIVE_DELIVERY_WRITE_TOKEN, fetchImpl: io.fetch });
-    return verifyNativeProductionFixture({ sql: this.ctx.storage.sql, remote, run, phase });
+    return verifyNativeProductionFixture({ sql: this.ctx.storage.sql, remote, run, phase,probeFetch:io.fetch });
   }
   async fetch(request) {
     try {
@@ -109,6 +117,7 @@ export class CloudLive extends WorkflowEntrypoint {
     const target = day(this.env, p.mode === "batch" ? runOf(runId).dayName : recovery ? `${date}-recovery-${p.attempt}` : date);
     if (p.mode === "status") return step.do("read only production readiness", options, () => target.status());
     if (p.mode === "incident-status") return step.do("bounded score-only incident inventory", options, () => target.incidentStatus());
+    if (p.mode === "watch-status") return step.do("read existing rule-based watch record",options,()=>target.watchStatus());
     assertProduction(this.env);
     // Management-only metadata reconciliation; never prepare/collect/finish/relay.
     if(p.mode==="publish-execution-status")return step.do("publish existing execution metadata only",options,async()=>{
@@ -264,6 +273,9 @@ export async function productionScheduled(event, env) {
   assertProduction(env);
   const t = kst(event.scheduledTime), weekday = new Date(`${t.date}T00:00:00Z`).getUTCDay();
   if ([0, 6].includes(weekday)) return { status: "WEEKEND" };
+  if(String(event.cron??"").trim().replace(/\s+/gu," ").toUpperCase()===WATCH_CRON){const slot=watchSlot(t.time);if(!WATCH_SLOTS.includes(slot))return{status:"WATCH_UNUSED_MINUTE"};
+    return day(env,t.date).watch(t.date,slot,event.scheduledTime);
+  }
   const mode = t.time < "14:00:00" ? "day" : "relay", id = mode === "day" ? `live-${t.date}` : `live-${t.date}-relay${t.time.slice(3, 5)}`;
   try { await env.LIVE.create({ id, params: { mode, date: t.date, ...(mode==="relay"?{relaySlot:t.time.slice(3,5)}:{}) } }); }
   catch { const existing = await env.LIVE.get(id); await existing.status(); }

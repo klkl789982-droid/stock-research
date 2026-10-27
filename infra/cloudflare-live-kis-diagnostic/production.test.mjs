@@ -18,7 +18,7 @@ const env = { LIVE_PRODUCTION_ENABLED: "true", LIVE_PRODUCER: "cloud", LIVE_CUTO
 let workflowSource = await fs.readFile(new URL("./src/production.mjs", import.meta.url), "utf8");
 workflowSource = workflowSource.replace('import { DurableObject, WorkflowEntrypoint } from "cloudflare:workers";', 'class DurableObject { constructor(ctx,env){this.ctx=ctx;this.env=env;} } class WorkflowEntrypoint {constructor(env){this.env=env;}}');
 workflowSource = workflowSource.replace('import { KisSlotShard } from "./slot-shard.mjs";', 'class KisSlotShard {}');
-for (const relative of ["../production-state.mjs", "../production-core.mjs", "../production-fixture.mjs", "../core.mjs", "../relay-budget.mjs", "../batch-creation.mjs", "../../../lib/kis-eod-private-store.mjs", "../../../lib/private-live-execution-status.mjs"])
+for (const relative of ["../production-state.mjs", "../production-core.mjs", "../production-fixture.mjs", "../core.mjs", "../relay-budget.mjs", "../batch-creation.mjs", "../watchdog.mjs", "../../../lib/kis-eod-private-store.mjs", "../../../lib/private-live-execution-status.mjs"])
   workflowSource = workflowSource.replaceAll(JSON.stringify(relative), JSON.stringify(new URL(relative, new URL("./src/production.mjs", import.meta.url)).href));
 const { CloudLive, LiveDay, productionScheduled, batchResult, assertIsolatedProductionFixture } = await import(`data:text/javascript;base64,${Buffer.from(workflowSource).toString("base64")}`);
 function inputFixture() {
@@ -128,10 +128,10 @@ test("adjacent production slots maintain the220ms grid,200ms worst-case spacing 
 
 test("normal-day allocations fit Free; current experimental accumulation is not a per-day requirement", () => {
   const budget = normalDayBudget(); assert.ok(Object.values(budget).every(v => v.total < v.limit));
-  assert.equal(budget.workflowSteps.total, 620); assert.equal(budget.sqlRowsRead.total, 1500000); assert.equal(budget.sqlRowsWritten.total, 55000);
+  assert.equal(budget.workflowSteps.total, 620); assert.equal(budget.sqlRowsRead.total, 1520000); assert.equal(budget.sqlRowsWritten.total, 57000);
   assert.ok(PRODUCTION_BUDGET.workflowStorageGbMonths >= 140 * 65536 * 3 * 2 / 1e9, "retention reserve must include measured per-instance state, not only step outputs");
   assert.ok(PRODUCTION_BUDGET.workflowStorageGbMonths >= 5341184 * 3 * 2 / 1e9, "reserve the measured full-run footprint and three-day retention with headroom");
-  assert.deepEqual(LIVE_CRONS, ["40,50 4 * * MON-FRI", "6,8,10 5 * * MON-FRI", "31,33,35 6 * * MON-FRI"]);
+  assert.deepEqual(LIVE_CRONS, ["40,50 4 * * MON-FRI", "6,8,10 5 * * MON-FRI", "31,33,35 6 * * MON-FRI","0,5,15,25,30,35,40,45,59 4-6 * * MON-FRI"]);
   assert.throws(() => assertProduction({ ...env, LIVE_PRODUCTION_ENABLED: "false" }), /DISABLED/u);
   assert.throws(() => checkCutover({}, b.start), /CUTOVER_BLOCKED/u);
   assert.throws(() => activationConfig({}, {}, b.start), /CUTOVER_BLOCKED/u);
@@ -279,6 +279,13 @@ test("late relay waits without collecting; approved1531 cron is delivery-only",a
  assert.equal(result.status,"WAITING_FOR_BATCHES");assert.equal(observations,0);
  const created=[];await productionScheduled({scheduledTime:Date.parse(`${date}T06:31:00Z`)},{...env,LIVE:{create:async d=>created.push(d)}});
  assert.equal(created[0].params.mode,"relay");assert.equal(created[0].params.relaySlot,"31");
+});
+
+test("shared watch cron dispatches only fixed watch slots, not the day or collection workflow",async()=>{
+ const calls=[],bindings={...env,LIVE_DAYS:{idFromName:x=>x,get:()=>({watch:async(...args)=>calls.push(args)})},LIVE:{create:async()=>assert.fail("watch dispatch cannot create a collector")}};
+ const cron="0,5,15,25,30,35,40,45,59 4-6 * * MON-FRI";
+ await productionScheduled({cron,scheduledTime:Date.parse(`${date}T05:15:00Z`)},bindings);assert.equal(calls[0][1],"1415");
+ assert.equal((await productionScheduled({cron,scheduledTime:Date.parse(`${date}T04:05:00Z`)},bindings)).status,"WATCH_UNUSED_MINUTE");assert.equal(calls.length,1);
 });
 
 test("three exhausted early relay attempts cannot consume the approved close-time retry budget",async t=>{

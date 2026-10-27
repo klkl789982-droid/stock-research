@@ -10,8 +10,12 @@ const inventory = { checkedAt: latest.observedAt, workerCount: 5, workflowCount:
   zeroMonthOpeningWorkflowState: true, onlyDailyCronActive: true, noAdditionalCollectionSinceLastReceipt: true };
 const args = () => structuredClone({ before, latest, inventory, workersFree: true, noPaymentMethod: true });
 test("settled reported counters plus explicit unreported-work reservation, not exact-zero delay", () => {
-  const v = admitFreeBudget(args(), Date.parse(latest.observedAt));
-  assert.equal(v.upperBound.sqlRowsWritten, 42814); assert.equal(v.headroomAfterAnotherWholeNormalDay.sqlRowsWritten, 2186);
+  // These old settled counters no longer admit ANOTHER full run on the same
+  // day after adding a pessimistic native-watch duration reservation.
+  assert.throws(()=>admitFreeBudget(args(),Date.parse(latest.observedAt)),/FREE_DAILY_BUDGET_durationGbSeconds/);
+  const fresh=args();fresh.before.doDurationRawMetric=fresh.latest.doDurationRawMetric=500;
+  const v = admitFreeBudget(fresh, Date.parse(latest.observedAt));
+  assert.equal(v.upperBound.sqlRowsWritten, 42814); assert.equal(v.headroomAfterAnotherWholeNormalDay.sqlRowsWritten, 186);
   assert.equal(v.workflowStorageGbMonthsUpperBound, 0.184424064); assert.equal(v.persistentSqlBytes, 100000000);
   assert.equal(v.sqlDailyCapBytes, 8000000);
   assert.equal(v.aggregationLagMs, null); assert.equal(v.exactBillingClaimed, false); assert.equal(v.paidFallback, false);

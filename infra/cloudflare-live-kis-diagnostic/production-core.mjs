@@ -5,7 +5,8 @@ import { kst } from "./core.mjs";
 import { buildCloudSwingIntent } from "./cloud-swing.mjs";
 export { kst } from "./core.mjs";
 
-export const LIVE_CRONS = Object.freeze(["40,50 4 * * MON-FRI", "6,8,10 5 * * MON-FRI", "31,33,35 6 * * MON-FRI"]);
+export const WATCH_CRON="0,5,15,25,30,35,40,45,59 4-6 * * MON-FRI";
+export const LIVE_CRONS = Object.freeze(["40,50 4 * * MON-FRI", "6,8,10 5 * * MON-FRI", "31,33,35 6 * * MON-FRI",WATCH_CRON]);
 export const LIVE_BATCH_SIZE = 4;
 export const PRODUCTION_BUDGET = Object.freeze({ workflowSteps: 520, workerRequests: 2000, doRequests: 14000,
   durationGbSeconds: 8500, sqlRowsRead: 1000000, sqlRowsWritten: 40000, retainedBytesPerDay: 8000000,
@@ -15,6 +16,10 @@ export const PRODUCTION_BUDGET = Object.freeze({ workflowSteps: 520, workerReque
   workflowStorageGbMonths: 0.08, marketCalls: 1400 });
 export const OTHER_DAILY_RESERVE = Object.freeze({ workflowSteps: 100, workerRequests: 2000, doRequests: 1000,
   durationGbSeconds: 1000, sqlRowsRead: 500000, sqlRowsWritten: 15000 });
+//27 filtered Cron invocations,12 actual watches, two bounded frozen relays.
+// Duration pessimistically reserves12 whole15-minute scheduled events at128MB.
+// No new Workflow instances/state except ensuring a missing canonical day ID.
+export const WATCH_DAILY_RESERVE=Object.freeze({workflowSteps:0,workerRequests:500,doRequests:200,durationGbSeconds:1500,sqlRowsRead:20000,sqlRowsWritten:2000});
 export const versions = Object.freeze(["A-v1", "B-v1", "C-v1", "D-v1"]);
 // 14:00 remains the signal anchor. A delayed recovery may observe until the
 // Korean cash-market close, while every actual request/response timestamp is
@@ -112,5 +117,5 @@ export function nextPairSlots({ now, head = 0, date, count = 0, leadMs = 200 }) 
 export function normalDayBudget() {
   const limits = { workflowSteps: 3000, workerRequests: 100000, doRequests: 100000, durationGbSeconds: 13000, sqlRowsRead: 5000000, sqlRowsWritten: 100000 };
   return Object.fromEntries(Object.entries(limits).map(([k, limit]) => [k, { limit, liveIncludingRetry: PRODUCTION_BUDGET[k],
-    otherIncludingEod: OTHER_DAILY_RESERVE[k], total: PRODUCTION_BUDGET[k] + OTHER_DAILY_RESERVE[k], headroom: limit - PRODUCTION_BUDGET[k] - OTHER_DAILY_RESERVE[k] }]));
+    otherIncludingEod: OTHER_DAILY_RESERVE[k],watchIncludingRetry:WATCH_DAILY_RESERVE[k],total: PRODUCTION_BUDGET[k] + OTHER_DAILY_RESERVE[k]+WATCH_DAILY_RESERVE[k], headroom: limit - PRODUCTION_BUDGET[k] - OTHER_DAILY_RESERVE[k]-WATCH_DAILY_RESERVE[k] }]));
 }

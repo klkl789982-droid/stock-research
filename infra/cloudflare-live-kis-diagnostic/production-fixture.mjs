@@ -3,20 +3,21 @@ import { syntheticProductionInputs } from "./swing-fixture.mjs";
 import { bounds } from "./production-core.mjs";
 import { readLatestPrivateLive } from "../../lib/private-live-delivery.mjs";
 import { resolveSwingOutcome } from "../../lib/forecast-swing-contract.mjs";
+import { runCloudWatchdog } from "./watchdog.mjs";
 
 /** Native Cloudflare SQL + the unchanged production state machine, but only
  * synthetic metadata, a private test-key mapper and an injected local clock.
  * No market API, actual price, normal head, system clock or production flag is
  * changed. Caller must verify its DO identity before exposing this harness.
  */
-export async function verifyNativeProductionFixture({ sql, remote, run, phase }) {
-  if (!/^[A-Za-z0-9_-]{1,24}$/u.test(run ?? "") || !["create", "read"].includes(phase)) throw new Error("DIAG_PRODUCTION_FIXTURE_INVALID");
+export async function verifyNativeProductionFixture({ sql, remote, run, phase,probeFetch=fetch }) {
+  if (!/^[A-Za-z0-9_-]{1,24}$/u.test(run ?? "") || !["create", "read","watch"].includes(phase)) throw new Error("DIAG_PRODUCTION_FIXTURE_INVALID");
   // The existing head reader uses13-digit epoch milliseconds (post-Sep2001).
   // Keep the already preserved2000 swing-only fixture byte-for-byte unchanged.
   const { date, prepared, rows } = syntheticProductionInputs({ date: "2002-01-03", seedDate: "2001-12-28" }), b = bounds(date);
   const prefix = `cloud-isolated-tests/pf/${run}`;
   const keyOf = key => {
-    if (!/^(?:cloud-live-score-evidence-v1|cloud-live-swing-intent-v1|live-site-delivery-v1)\//u.test(key) || key.includes("..")) throw new Error("DIAG_PRODUCTION_TEST_PATH_ONLY");
+    if (!/^(?:cloud-live-score-evidence-v1|cloud-live-swing-intent-v1|live-site-delivery-v1|cloud-live-watchdog-v1)\//u.test(key) || key.includes("..")) throw new Error("DIAG_PRODUCTION_TEST_PATH_ONLY");
     return `${prefix}/${key}`;
   };
   const isolated = {
@@ -61,6 +62,11 @@ export async function verifyNativeProductionFixture({ sql, remote, run, phase })
     state.write("fixture-complete", { syntheticOnly: true });
   }
   if (!state.read("fixture-complete")) throw new Error("DIAG_PRODUCTION_FIXTURE_NOT_READY");
+  if(phase==="watch"){
+    now=b.end+300000;
+    return runCloudWatchdog({state,remote:isolated,fetchImpl:probeFetch,date,slot:"1535",scheduledAt:now,now,
+      workflow:{get:async()=>({status:async()=>({status:"complete"})})},publishExecution:async()=>({isolatedOnly:true})});
+  }
   now = b.end + 1000;
   const frozen = state.read("outbox"), receipt = await state.relay(date);
   const latest = await readLatestPrivateLive(isolated, { now: new Date(now).toISOString() });
