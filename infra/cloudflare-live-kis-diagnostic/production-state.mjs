@@ -229,7 +229,7 @@ export class ProductionDayState {
     const result = aggregateProduction(prepared, observations, new Date(this.now()).toISOString());
     this.write("outbox", result); return result.delivery;
   }
-  async relay(date, remote = this.remote, {watchdog=false}={}) {
+  async relay(date, remote = this.remote, {watchdog=false,watchSlot=null}={}) {
     this.critical(() => this.check(date));
     const outbox = this.critical(() => this.read("outbox")); if (!outbox) throw new Error("LIVE_CLOUD_NO_OUTBOX");
     const receipt = this.critical(() => this.read("receipt")); if (receipt) return receipt;
@@ -237,7 +237,9 @@ export class ProductionDayState {
     // slots. Preserve the original early counter; at most four late attempts
     // cover the closing parent plus15:31/33/35. Both counters survive restart.
     const late=this.now()>bounds(date).end;
-    if(watchdog&&!["14:15","15:15"].includes(new Date(this.now()+9*3600000).toISOString().slice(11,16)))throw Error("LIVE_CLOUD_WATCH_RELAY_SLOT_INVALID");
+    if(watchdog){const scheduled=Date.parse(`${date}T${watchSlot?.slice(0,2)}:${watchSlot?.slice(2)}:00+09:00`);
+      if(!["1415","1515"].includes(watchSlot)||!Number.isFinite(scheduled)||this.now()<scheduled||this.now()>scheduled+120000)throw Error("LIVE_CLOUD_WATCH_RELAY_SLOT_INVALID");
+    }
     const key=watchdog?"relay-watch-attempt":late?"relay-late-attempt":"relay-attempt",limit=watchdog?2:late?4:3;
     const attempt = this.critical(() => this.read(key)) ?? { count: 0, next: 0 };
     if (attempt.count >= limit || attempt.next > this.now()) throw new Error("LIVE_CLOUD_RELAY_BACKOFF");

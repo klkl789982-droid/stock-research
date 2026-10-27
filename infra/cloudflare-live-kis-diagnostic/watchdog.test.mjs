@@ -49,6 +49,13 @@ test("late or wrong-slot invocations do not perform recovery or write audit",asy
  assert.equal(r.status,"WATCH_SKIPPED_TIME");assert.equal(f.state.read("watch-claimed:1415"),null);
  await assert.rejects(f.state.relay(date,f.store,{watchdog:true}),/NO_OUTBOX/);
 });
+test("a bounded late Cron may relay the same bytes but cannot extend its retry window",async t=>{
+ const f=await fixture(t,{frozen:true}),at=Date.parse(`${date}T14:15:00+09:00`);
+ f.set(at+60000);f.failNext();await assert.rejects(f.state.relay(date,f.store,{watchdog:true,watchSlot:"1415"}),/NETWORK_FAILED/);
+ assert.equal(f.state.read("relay-watch-attempt").count,1);
+ f.set(at+120001);await assert.rejects(f.state.relay(date,f.store,{watchdog:true,watchSlot:"1415"}),/SLOT_INVALID/);
+ assert.equal(f.state.read("relay-watch-attempt").count,1);
+});
 test("anonymous site probes are not reported as authenticated UI proof",async t=>{
  const f=await fixture(t,{frozen:true});await f.run("1415");const r=await f.run("1525",{fetchImpl:async()=>new Response(null,{status:403})});
  assert.equal(r.status,"DELIVERY_VERIFIED_WITH_WARNINGS");assert.equal(r.site.authenticatedUi,"NOT_CHECKED_NO_ADMIN_SESSION");assert.ok(r.problems.some(p=>p.stage==="SITE_ACCESS_BOUNDARY"));

@@ -44,7 +44,7 @@ export async function runCloudWatchdog({state,workflow,remote,fetchImpl,date,slo
   status=state.status();
   // Two extra score-only recovery slots, not another market run. Counts are
   // prepaid durably and independent of the early/closing scheduled counters.
-  if(status.outbox&&!status.receipt&&["1415","1515"].includes(slot))await attempt("FROZEN_RELAY",async()=>{await state.relay(date,remote,{watchdog:true});actions.push("RETRY_SAME_FROZEN_DELIVERY");});
+  if(status.outbox&&!status.receipt&&["1415","1515"].includes(slot))await attempt("FROZEN_RELAY",async()=>{await state.relay(date,remote,{watchdog:true,watchSlot:slot});actions.push("RETRY_SAME_FROZEN_DELIVERY");});
   status=state.status();
   let privateReadback={status:"NO_VERIFIED_DELIVERY",date:null,deliveryHash:null,topRows:0};
   if(status.outbox&&status.receipt)await attempt("PRIVATE_READBACK",async()=>{
