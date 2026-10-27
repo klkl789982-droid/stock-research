@@ -44,11 +44,11 @@ function observations(seed) {
 function prepared(seed) { return { targetDate: date, seedReferenceDate: seedDate, readiness: "READY", universe: 553, eligible: 508,
   codes: seed.records.map(r => r.code), eligibleCodes: seed.records.filter(r => r.eligible).map(r => r.code),
   inputCommit: "a".repeat(40), seedHash: seed.contentHash, remoteCheckedAt: `${date}T04:59:02.000Z`, readyAt: `${date}T04:59:03.000Z` }; }
-function reconciliation(seed, changes = new Map()) {
+function reconciliation(seed, changes = new Map(),size=4) {
   const batches = [];
-  for (let i = 0; i < seed.records.length; i += 8) {
-    const codes = seed.records.slice(i, i + 8).map(row => row.code), failures = codes.flatMap(code => changes.has(code) ? [{ code, reason: changes.get(code), failureStage: "LEASE_ACQUIRE" }] : []);
-    batches.push({ id: `live-${date}-batch${i / 8}`, codes, workflowStatus: "complete", attempted: codes.length,
+  for (let i = 0; i < seed.records.length; i += size) {
+    const codes = seed.records.slice(i, i + size).map(row => row.code), failures = codes.flatMap(code => changes.has(code) ? [{ code, reason: changes.get(code), failureStage: "LEASE_ACQUIRE" }] : []);
+    batches.push({ id: `live-${date}-batch${i / size}`, codes, workflowStatus: "complete", attempted: codes.length,
       successful: codes.length - failures.length, failures });
   }
   const firstFailure = batches.flatMap(batch => batch.failures.map(row => ({ ...row, batchId: batch.id })))[0] ?? null;
@@ -128,10 +128,10 @@ test("adjacent production slots maintain the220ms grid,200ms worst-case spacing 
 
 test("normal-day allocations fit Free; current experimental accumulation is not a per-day requirement", () => {
   const budget = normalDayBudget(); assert.ok(Object.values(budget).every(v => v.total < v.limit));
-  assert.equal(budget.workflowSteps.total, 320); assert.equal(budget.sqlRowsRead.total, 1500000); assert.equal(budget.sqlRowsWritten.total, 55000);
-  assert.ok(PRODUCTION_BUDGET.workflowStorageGbMonths >= 71 * 65536 * 3 * 2 / 1e9, "retention reserve must include measured per-instance state, not only step outputs");
+  assert.equal(budget.workflowSteps.total, 620); assert.equal(budget.sqlRowsRead.total, 1500000); assert.equal(budget.sqlRowsWritten.total, 55000);
+  assert.ok(PRODUCTION_BUDGET.workflowStorageGbMonths >= 140 * 65536 * 3 * 2 / 1e9, "retention reserve must include measured per-instance state, not only step outputs");
   assert.ok(PRODUCTION_BUDGET.workflowStorageGbMonths >= 5341184 * 3 * 2 / 1e9, "reserve the measured full-run footprint and three-day retention with headroom");
-  assert.deepEqual(LIVE_CRONS, ["40,50 4 * * MON-FRI", "6,8,10 5 * * MON-FRI"]);
+  assert.deepEqual(LIVE_CRONS, ["40,50 4 * * MON-FRI", "6,8,10 5 * * MON-FRI", "31,33,35 6 * * MON-FRI"]);
   assert.throws(() => assertProduction({ ...env, LIVE_PRODUCTION_ENABLED: "false" }), /DISABLED/u);
   assert.throws(() => checkCutover({}, b.start), /CUTOVER_BLOCKED/u);
   assert.throws(() => activationConfig({}, {}, b.start), /CUTOVER_BLOCKED/u);
@@ -227,21 +227,58 @@ test("553-symbol eight-lease synthetic replay measures allocator span and SQL bu
     realKisCalls: 0, billedCloudflareRowsMeasured: false }));
 });
 
-test("actual Workflow survives missing13:40 EOD and precreates70 fixed children after fresh13:59 readiness", async t => {
+test("actual Workflow precreates139 paced fixed children and uses durable outcomes without status fan-in", async t => {
   let now = b.start - 1200000; t.mock.method(Date, "now", () => now);
   const batches = [], events = [], metadata = [], target = { async publishExecution(_date,event) { metadata.push(event); }, async prepare(_date, final) {
     events.push(final ? "FINAL_INPUT" : "PREWARM"); if (!final) throw new Error("LIVE_CLOUD_INPUT_NOT_READY");
-    assert.equal(now, b.start - 60000); return { codes: Array.from({ length: 553 }, (_, i) => String(100000 + i)) };
-  }, async reconcileBatches(_date,value) { assert.equal(value.batches.length,70); events.push("RECONCILE"); },
-  async finish() { assert.ok(now > b.end); events.push("FINISH"); }, async relay() { events.push("RELAY"); return { status: "PRIVATE_RELAY_VERIFIED" }; }, async failure() { assert.fail("Unexpected workflow failure"); } };
-  const bindings = { ...env, LIVE_DAYS: { idFromName: x => x, get: () => target }, LIVE: { async createBatch(defs) { assert.ok(now < b.start); batches.push(...defs); },
-    async get(id) { const definition=batches.find(row=>row.id===id);return{async status(){return{status:"complete",output:{attempted:definition.params.codes.length,successful:definition.params.codes.length,failed:[]}};}}; } } };
+    assert.equal(now, b.start - 60000); return { codes: Array.from({ length: 553 }, (_, i) => String(100000 + i)),batchSize:4 };
+  }, async reconcileJournal(){events.push("RECONCILE");return{ready:true,firstFailure:null};},
+  async finish() { assert.ok(now >= b.start+360000); events.push("FINISH"); }, async relay() { events.push("RELAY"); return { status: "PRIVATE_RELAY_VERIFIED" }; }, async failure() { assert.fail("Unexpected workflow failure"); } };
+  const bindings = { ...env, LIVE_DAYS: { idFromName: x => x, get: () => target }, LIVE: { async createBatch({instances:defs}) { assert.ok(now < b.start);assert.ok(defs.length<=50); batches.push(...defs);return{created:defs.map(d=>({id:d.id})),errors:[]}; },
+    async get() { assert.fail("parent must never fan in Workflow status lookups"); } } };
   const step = { async do(_name, _options, fn) { return fn(); }, async sleepUntil(_name, at) { now = Math.max(now, at.getTime()); }, async sleep() { now += 10000; } };
   const result = await new CloudLive(bindings).run({ payload: { mode: "day", date } }, step);
-  assert.equal(result.status, "PRIVATE_RELAY_VERIFIED"); assert.equal(batches.length, 70);
-  assert.equal(new Set(batches.map(d => d.id)).size, 70); assert.deepEqual(events, ["PREWARM", "FINAL_INPUT", "RECONCILE", "FINISH", "RELAY"]);
+  assert.equal(result.status, "PRIVATE_RELAY_VERIFIED"); assert.equal(batches.length, 139);
+  assert.equal(new Set(batches.map(d => d.id)).size, 139); assert.deepEqual(events, ["PREWARM", "FINAL_INPUT", "RECONCILE", "FINISH", "RELAY"]);
   assert.deepEqual(metadata,["PREPARATION","READY","VALIDATED","DELIVERED"]);
   assert.equal(batches.filter(d=>d.params.reportStatus).length,1,"only one batch may publish progress metadata");
+});
+
+test("four-symbol journals survive restart, reject conflict/missing inputs and preserve old eight-symbol receipts",async t=>{
+ const f=sandbox(t);await f.state.prepare(date,true);const run=`live-${date}`,codes=f.seed.records.map(r=>r.code);
+ assert.equal(f.state.read("final").batchSize,4);assert.equal(f.state.reconcileJournal(date,run).pendingBatches,139);
+ for(let i=0;i<codes.length;i+=4){const group=codes.slice(i,i+4);f.state.recordBatchResult(date,run,group,{status:"complete",output:{attempted:group.length,successful:group.length,failed:[]}});}
+ const reopened=new ProductionDayState(f.options),ready=reopened.reconcileJournal(date,run);assert.equal(ready.ready,true);assert.equal(ready.totalBatches,139);assert.equal(ready.firstFailure,null);
+ reopened.recordBatchResult(date,run,codes.slice(0,4),{status:"complete",output:{attempted:4,successful:4,failed:[]}});
+ assert.throws(()=>reopened.recordBatchResult(date,run,codes.slice(0,4),{status:"errored",reason:"KIS_HTTP_500"}),/IMMUTABLE_CONFLICT/);
+ assert.throws(()=>reopened.finish(date),/COMPLETION_MISMATCH/);
+ const old=sandbox(t);old.state.write("final",prepared(old.seed));
+ for(let i=0;i<codes.length;i+=8){const group=codes.slice(i,i+8);old.state.recordBatchResult(date,run,group,{status:"complete",output:{attempted:group.length,successful:group.length,failed:[]}});}
+ assert.equal(old.state.reconcileJournal(date,run).totalBatches,70);
+});
+
+test("final deadline records absent journals as failures without pretending the children completed",async t=>{
+ const f=sandbox(t);await f.state.prepare(date,true);const run=`live-${date}`;
+ assert.equal(f.state.reconcileJournal(date,run).ready,false);f.set(b.end+1);
+ const result=f.state.reconcileJournal(date,run,true);assert.equal(result.ready,true);assert.equal(result.pendingBatches,139);
+ assert.equal(result.firstFailure.reason,"LIVE_CLOUD_CHILD_RESULT_MISSING");assert.throws(()=>f.state.finish(date),/CHILD_RESULT_MISSING/);
+ const record=f.state.freezeExecution(date,"FAILURE_DAY","ERRORED",{code:"LIVE_CLOUD_CHILD_RESULT_MISSING",stage:"BATCH_COLLECTION"});
+ assert.equal(record.collection.failed,553);assert.equal(record.collection.missing,0);assert.equal(record.delivery.verified,false);
+});
+
+test("rate rejection keeps exact non-secret cause and never accepts an over20ms request",async t=>{
+ const f=sandbox(t);await f.state.prepare(date,true);f.set(b.start);const code=f.seed.records[0].code,lease=await f.state.acquire(date,code);
+ f.set(lease.minuteSlot.notBefore+1000);const started=lease.quoteSlot.notBefore+21;
+ assert.throws(()=>f.state.complete(date,code,{metadata:{code,rawPricesStored:false,reason:"DIAG_COLLECTION_DEADLINE"},calls:[{slot:lease.quoteSlot.slot,kind:"quote",started,completed:started+1,status:200}]}),/RATE_EVIDENCE_INVALID/);
+ assert.equal(f.state.read(`rate-rejection:${code}`).issue,"START_AFTER_SLOT");assert.equal(f.state.read(`observation:${code}`),null);
+});
+
+test("late relay waits without collecting; approved1531 cron is delivery-only",async()=>{
+ let observations=0;const target={status:async()=>({outbox:false}),reconcileJournal:async()=>({ready:false}),finish:async()=>{observations++;},relay:async()=>{observations++;},publishExecution:async()=>{observations++;}};
+ const result=await new CloudLive({...env,LIVE_DAYS:{idFromName:x=>x,get:()=>target}}).run({payload:{mode:"relay",date,relaySlot:"31"}},{do:(_n,_o,fn)=>fn()});
+ assert.equal(result.status,"WAITING_FOR_BATCHES");assert.equal(observations,0);
+ const created=[];await productionScheduled({scheduledTime:Date.parse(`${date}T06:31:00Z`)},{...env,LIVE:{create:async d=>created.push(d)}});
+ assert.equal(created[0].params.mode,"relay");assert.equal(created[0].params.relaySlot,"31");
 });
 
 test("duplicate cron shares same parent ID; weekend/disabled state never schedules collection", async () => {
@@ -256,7 +293,7 @@ test("duplicate cron shares same parent ID; weekend/disabled state never schedul
 test("async relay rejection reaches catch and failure-record error never masks first cause", async t => {
   const logs = []; t.mock.method(console, "error", value => logs.push(JSON.parse(value)));
   let recorded = null;
-  const target = { async publishExecution() {}, async finish() {}, async relay() { throw new Error("PRIVATE_STORE_NETWORK_FAILED"); },
+  const target = { async publishExecution() {}, async status(){return{outbox:true};},async finish() {}, async relay() { throw new Error("PRIVATE_STORE_NETWORK_FAILED"); },
     async failure(code, stage) { recorded = { code, stage }; throw new Error("LIVE_CLOUD_SQL_BUDGET"); } };
   const bindings = { ...env, LIVE_DAYS: { idFromName: x => x, get: () => target } };
   const step = { async do(_name, _options, fn) { return fn(); } };
@@ -325,7 +362,7 @@ test("final EOD failure retains the exact input cause instead of a generic wrapp
 
 test("a recovery batch cannot publish progress into the regular execution metadata", async t => {
   t.mock.method(Date,"now",()=>b.start+1000);let publications=0;
-  const target={publishExecution:async()=>{publications++;}};
+  const target={publishExecution:async()=>{publications++;},recordBatchResult:async()=>{}};
   const bindings={...env,LIVE_DAYS:{idFromName:x=>x,get:()=>target},LIVE_BATCHES:{idFromName:x=>x,get:()=>({fetch:async()=>Response.json({records:[{code:"100000",status:"AVAILABLE"}]})})}};
   const result=await new CloudLive(bindings).run({payload:{mode:"batch",date,runId:`live-${date}-recovery-test`,codes:["100000"],reportStatus:true}},{do:(_n,_o,fn)=>fn()});
   assert.equal(result.successful,1);assert.equal(publications,0);
@@ -383,7 +420,7 @@ test("native synthetic harness is isolated, production-compatible off-window and
   object.env = { ...env, LIVE_ENABLED: "false", DIAGNOSTIC_ONLY: "true",
     LIVE_DAYS: { idFromName: name => ({ toString: () => name }) } };
   await assert.rejects(object.isolatedFixture("fixture-only", "create"), /FIXTURE_IDENTITY/u);
-  assert.doesNotThrow(() => assertIsolatedProductionFixture(object.env, Date.parse("2026-10-19T05:11:00Z")));
+  assert.doesNotThrow(() => assertIsolatedProductionFixture(object.env, Date.parse("2026-10-19T06:36:00Z")));
   assert.throws(() => assertIsolatedProductionFixture(object.env, Date.parse("2026-10-19T05:00:00Z")), /WINDOW_EXCLUDED/u);
 });
 
@@ -398,6 +435,20 @@ test("frozen stage metadata is price-free, immutable across restarts and leaves 
   assert.ok(!/"(?:price|rows|open|high|low|close|volume|accessToken)"/u.test(JSON.stringify(r)));
   f.set(b.end+90000);assert.deepEqual(new ProductionDayState(f.options).freezeExecution(date,"RECONCILE","ERRORED"),r);
   t.diagnostic(JSON.stringify({metadataOnly:true,nativeLocalCursorBefore:before,nativeLocalCursorAfter:f.state.cursorUsage}));
+});
+
+test("failed child inventory never double-counts already valid observations or prevents error publication",async t=>{
+  const f=sandbox(t);await f.state.prepare(date,true);f.set(b.end+1000);
+  const rows=observations(f.seed).rows;
+  for(const row of rows.slice(0,8))f.state.write(`observation:${row.code}`,row);
+  const inventory=reconciliation(f.seed);
+  inventory.batches=inventory.batches.map(batch=>({...batch,workflowStatus:"errored",attempted:0,successful:0,
+    failures:batch.codes.map(code=>({code,reason:"LIVE_CLOUD_CHILD_ERRORED",failureStage:"UNKNOWN"}))}));
+  inventory.firstFailure={...inventory.batches[0].failures[0],batchId:inventory.batches[0].id};
+  f.state.reconcileBatches(date,inventory);f.state.failure("LIVE_CLOUD_CHILD_ERRORED","BATCH_COLLECTION");
+  const result=f.state.freezeExecution(date,"FAILURE_DAY","ERRORED");
+  assert.equal(result.collection.available,8);assert.equal(result.collection.failed,545);assert.equal(result.collection.missing,0);
+  assert.equal(result.validation.outboxFrozen,false);assert.throws(()=>f.state.finish(date),/CHILD_ERRORED/);
 });
 
 test("COMPLETE child failures and queued restarts remain failures instead of disappearing behind finalize",()=>{
@@ -429,8 +480,8 @@ test("batch reconciliation accounts for unleased failures and preserves the firs
 test("day parent rejects COMPLETE children with failed output before finalize",async t=>{
   let now=b.start-1200000;t.mock.method(Date,"now",()=>now);const definitions=[];let finishCalled=false,recorded=null;
   const target={async publishExecution(){},async prepare(_date,final){if(!final)throw Error("LIVE_CLOUD_INPUT_NOT_READY");return{codes:Array.from({length:553},(_,i)=>String(100000+i))};},
-    async failure(code,stage){recorded??={code,stage};return recorded;},async reconcileBatches(){},async finish(){finishCalled=true;},async relay(){assert.fail("relay must not run");}};
-  const bindings={...env,LIVE_DAYS:{idFromName:x=>x,get:()=>target},LIVE:{async createBatch(rows){definitions.push(...rows);},async get(id){const d=definitions.find(row=>row.id===id);
+    async failure(code,stage){recorded??={code,stage};return recorded;},async reconcileJournal(){return{ready:true,firstFailure:{reason:"LIVE_CLOUD_SQL_BUDGET"}};},async finish(){finishCalled=true;},async relay(){assert.fail("relay must not run");}};
+  const bindings={...env,LIVE_DAYS:{idFromName:x=>x,get:()=>target},LIVE:{async createBatch({instances:rows}){definitions.push(...rows);return{created:rows.map(d=>({id:d.id})),errors:[]};},async get(id){const d=definitions.find(row=>row.id===id);
     return{async status(){const failed=id.endsWith("batch1")?[{code:d.params.codes[0],reason:"LIVE_CLOUD_SQL_BUDGET"}]:[];return{status:"complete",output:{attempted:d.params.codes.length,successful:d.params.codes.length-failed.length,failed}};}};}}};
   const step={do:(_n,_o,fn)=>fn(),sleepUntil:async(_n,at)=>{now=Math.max(now,at.getTime());},sleep:async()=>{now+=10000;}};
   await assert.rejects(new CloudLive(bindings).run({payload:{mode:"day",date}},step),/LIVE_CLOUD_SQL_BUDGET/u);

@@ -17,7 +17,7 @@ export async function runCongestion({ sql, State = ProductionDayState, delay = 2
   },
     env: { LIVE_PRODUCTION_ENABLED: "true", LIVE_PRODUCER: "cloud", LIVE_CUTOVER_RECEIPT_HASH: "f".repeat(64) },
     prepare: async () => ({ ...prepared, remoteCheckedAt: new Date(now).toISOString() }), bundle: async () => ({ syntheticOnly: true }) });
-  await state.prepare(date, true); now = b.start; if (budgetNear) state.meter.w = 33500;
+  const receipt=await state.prepare(date, true),batchSize=receipt.batchSize??8; now = b.start; if (budgetNear) state.meter.w = 33500;
   const collect = async row => {
     let entered = false, leased = false;
     try {
@@ -39,8 +39,8 @@ export async function runCongestion({ sql, State = ProductionDayState, delay = 2
   };
   let done = false;
   const batches = [];
-  for (let i = 0; i < rows.length; i += 8) {
-    const codes = rows.slice(i, i + 8); let next = 0;
+  for (let i = 0; i < rows.length; i += batchSize) {
+    const codes = rows.slice(i, i + batchSize); let next = 0;
     batches.push(Promise.all(Array.from({ length: Math.min(2, codes.length) }, async () => { while (next < codes.length) await collect(codes[next++]); })));
   }
   const all = Promise.all(batches).then(() => { done = true; });
@@ -56,14 +56,17 @@ export async function runCongestion({ sql, State = ProductionDayState, delay = 2
   await all; const collectionSpanMs = now - b.start; now = Math.max(now, b.end + 1000);
   if (typeof state.reconcileBatches === "function") {
     const reconciled = [];
-    for (let i = 0; i < rows.length; i += 8) {
-      const codes = rows.slice(i, i + 8).map(row => row.code);
+    for (let i = 0; i < rows.length; i += batchSize) {
+      const codes = rows.slice(i, i + batchSize).map(row => row.code);
       const failures = codes.flatMap(code => outcomes.get(code) ? [{ code, ...outcomes.get(code) }] : []);
-      reconciled.push({ id: `live-${date}-batch${i / 8}`, codes, workflowStatus: "complete", attempted: codes.length,
+      reconciled.push({ id: `live-${date}-batch${i / batchSize}`, codes, workflowStatus: "complete", attempted: codes.length,
         successful: codes.length - failures.length, failures });
     }
     const firstFailure = reconciled.flatMap(batch => batch.failures.map(row => ({ ...row, batchId: batch.id })))[0] ?? null;
-    state.reconcileBatches(date, { schemaVersion: 1, date, batches: reconciled, firstFailure });
+    if(typeof state.recordBatchResult === "function"){
+      for(const batch of reconciled)state.recordBatchResult(date,`live-${date}`,batch.codes,{status:"complete",output:{attempted:batch.attempted,successful:batch.successful,failed:batch.failures}});
+      state.reconcileJournal(date,`live-${date}`,true);
+    }else state.reconcileBatches(date, { schemaVersion: 1, date, batches: reconciled, firstFailure });
   }
   let outbox = false, finishError = null;
   try { state.finish(date); outbox = true; } catch (e) { finishError = e.message; }

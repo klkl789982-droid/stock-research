@@ -2,7 +2,7 @@ import { DurableObject, WorkflowEntrypoint } from "cloudflare:workers";
 import { KisSlotShard } from "./slot-shard.mjs";
 import { ProductionDayState } from "../production-state.mjs";
 import { assertProduction, assertWindow, bounds, kst, productionObservation } from "../production-core.mjs";
-import { safeCode, edgeFetch } from "../core.mjs";
+import { safeCode, edgeFetch, transportReason } from "../core.mjs";
 import { createKisEodPrivateStore } from "../../../lib/kis-eod-private-store.mjs";
 import { privateRequestBudget } from "../relay-budget.mjs";
 import { verifyNativeProductionFixture } from "../production-fixture.mjs";
@@ -16,7 +16,7 @@ export function assertIsolatedProductionFixture(env, now = Date.now()) {
   assertProduction(env);
   if (env.LIVE_ENABLED !== "false" || env.DIAGNOSTIC_ONLY !== "true") throw new Error("DIAG_PRODUCTION_FIXTURE_DISABLED");
   const t = kst(now), weekday = new Date(`${t.date}T00:00:00Z`).getUTCDay();
-  if (weekday > 0 && weekday < 6 && t.time >= "13:35:00" && t.time <= "14:10:00") throw new Error("DIAG_PRODUCTION_FIXTURE_WINDOW_EXCLUDED");
+  if (weekday > 0 && weekday < 6 && t.time >= "13:35:00" && t.time <= "15:35:00") throw new Error("DIAG_PRODUCTION_FIXTURE_WINDOW_EXCLUDED");
 }
 const childState = value => String(value ?? "unknown").toLowerCase();
 export function batchResult(definition, status) {
@@ -61,6 +61,8 @@ export class LiveDay extends DurableObject {
   incidentStatus() { return { ...this.state.incidentStatus(), productionEnabled: this.env.LIVE_PRODUCTION_ENABLED === "true", producer: this.env.LIVE_PRODUCER }; }
   failure(code, stage) { return this.state.failure(safeCode({ code }), stage); }
   reconcileBatches(date, value) { return this.state.reconcileBatches(date, value); }
+  recordBatchResult(date,runId,codes,result) { return this.state.recordBatchResult(date,runId,codes,result); }
+  reconcileJournal(date,runId,deadline) { return this.state.reconcileJournal(date,runId,deadline); }
   async publishExecution(date,event,workflowState,error) {
     const record=this.state.freezeExecution(date,event,workflowState,error);
     const io=privateRequestBudget(edgeFetch,12);
@@ -125,10 +127,20 @@ export class CloudLive extends WorkflowEntrypoint {
     };
     let stage = p.mode === "batch" ? "BATCH_COLLECTION" : p.mode === "relay" ? "RELAY" : "PREPARE";
     try {
-      if (p.mode === "relay") { const result=await step.do("retry frozen score-only outbox", options, async () => { await target.finish(date); return target.relay(date); });await report("DELIVERED");return result; }
+      if (p.mode === "relay") {
+        const result=await step.do("retry frozen score-only outbox", options, async () => {
+          const stored=await target.status();
+          if(!stored.outbox){const journal=await target.reconcileJournal(date,runId,Date.now()>bounds(date).end);
+            if(!journal.ready)return{status:"WAITING_FOR_BATCHES"};
+            if(journal.firstFailure)throw new Error(journal.firstFailure.reason);
+            await target.finish(date);}
+          return target.relay(date);
+        });
+        if(result.status!=="WAITING_FOR_BATCHES")await report("DELIVERED");return result;
+      }
       if (p.mode === "batch") {
         if (Date.now() < bounds(date).start) await step.sleepUntil("wait for absolute1400", new Date(bounds(date).start));
-        try { return await step.do("bounded eight-symbol LIVE invocation", options, async () => {
+        try { const result=await step.do("bounded eight-symbol LIVE invocation", options, async () => {
           assertWindow(date, Date.now());
           if (!Array.isArray(p.codes) || !p.codes.length || p.codes.length > 8) throw new Error("LIVE_CLOUD_CODES_INVALID");
           if (runOf(runId).date !== date) throw new Error("LIVE_CLOUD_DATE_INVALID");
@@ -146,7 +158,7 @@ export class CloudLive extends WorkflowEntrypoint {
           if(outcome.error){
             const diagnostic=String(outcome.error?.message??"").slice(0,160).replace(/[A-Za-z0-9+/=_-]{32,}/gu,"[redacted]");
             console.error(JSON.stringify({event:"LIVE_BATCH_FETCH_REJECTED",errorName:String(outcome.error?.name??"Error").slice(0,40),diagnostic}));
-            throw outcome.error;
+            throw new Error(transportReason(outcome.error));
           }
           const r=outcome.response;
           if (!r.ok) throw new Error("LIVE_CLOUD_BATCH_FAILED");
@@ -158,7 +170,10 @@ export class CloudLive extends WorkflowEntrypoint {
           if(result.failed.length)try{await target.failure(result.failed[0].reason,"BATCH_COLLECTION");}
           catch(error){console.error(JSON.stringify({event:"LIVE_CLOUD_BATCH_FAILURE_RECORD_FAILED",primaryCode:result.failed[0].reason,recordingCode:safeCode(error)}));}
           return result;
-        }); } catch (error) {
+        });
+          await step.do("persist immutable batch outcome",options,()=>target.recordBatchResult(date,runId,p.codes,{status:"complete",output:result}));
+          return result;
+        } catch (error) {
           const diagnostic=String(error?.message??"").slice(0,160).replace(/[A-Za-z0-9+/=_-]{32,}/gu,"[redacted]");
           console.error(JSON.stringify({event:"LIVE_BATCH_STEP_REJECTED",errorName:String(error?.name??"Error").slice(0,40),diagnostic}));
           throw error;
@@ -192,37 +207,49 @@ export class CloudLive extends WorkflowEntrypoint {
       // parent may start at13:40:58; it never waits for a14:00 cron invocation.
       stage = "CREATE_BATCHES";
       const definitions = [];
-      for (let i = 0; i < prepared.codes.length; i += 8) definitions.push({ id: `${runId}-batch${i / 8}`,
-        params: { mode: "batch", date, runId, codes: prepared.codes.slice(i, i + 8), ...(i===0&&!recovery?{reportStatus:true}:{}) } });
-      await step.do("precreate fixed batch ids", options, async () => {
-        try { await this.env.LIVE.createBatch(definitions); }
+      const batchSize=prepared.batchSize??8;
+      if(![4,8].includes(batchSize))throw new Error("LIVE_CLOUD_CODES_INVALID");
+      for (let i = 0; i < prepared.codes.length; i += batchSize) definitions.push({ id: `${runId}-batch${i / batchSize}`,
+        params: { mode: "batch", date, runId, codes: prepared.codes.slice(i, i + batchSize), ...(i===0&&!recovery?{reportStatus:true}:{}) } });
+      for(let offset=0;offset<definitions.length;offset+=50){
+        if(offset)await step.sleep(`pace fixed batch creation ${offset/50}`,"2 seconds");
+        const group=definitions.slice(offset,offset+50);
+        await step.do(`precreate fixed batch ids ${offset/50}`, options, async () => {
+        try {
+          const result=await this.env.LIVE.createBatch({instances:group});
+          if(!Array.isArray(result?.created)||!Array.isArray(result?.errors))throw new Error("LIVE_CLOUD_BATCH_CREATE_UNCONFIRMED");
+          const known=new Set(result.created.map(row=>row.id));
+          for(const error of result.errors){if(error.code!==10405||!group.some(d=>d.id===error.id))throw new Error("LIVE_CLOUD_BATCH_CREATE_UNCONFIRMED");known.add(error.id);}
+          if(group.some(d=>!known.has(d.id)))throw new Error("LIVE_CLOUD_BATCH_CREATE_UNCONFIRMED");
+        }
         catch {
           // Never create replacement IDs after an unknown create response.
           // Recovery uses the same immutable IDs, not another observation.
-          for (const d of definitions) { const prior = await this.env.LIVE.get(d.id); await prior.status(); }
+          // A lost response cannot justify another collector or a70+ status
+          // fan-in in a Free invocation. Existing fixed children keep running;
+          // their durable journals are the only completion authority.
+          throw new Error("LIVE_CLOUD_BATCH_CREATE_UNCONFIRMED");
         }
-        return { batches: definitions.length, symbols: prepared.codes.length };
-      });
+        return { batches:group.length, symbols:group.reduce((n,d)=>n+d.params.codes.length,0) };
+      });}
       // All collectors are already precreated; this read/write does not hold
       // their broker slots or delay their absolute14:00 wake-up.
       if (!recovery) await report("READY");
-      await step.sleepUntil("finalize after absolute collection cutoff", new Date(bounds(date).end + 1000));
       stage = "BATCH_COLLECTION";
-      const batches=[];
-      // Workflow status RPCs are split into bounded groups. A COMPLETE child
-      // is not success unless its output accounts for every assigned symbol.
-      for(let offset=0;offset<definitions.length;offset+=24){
-        const group=definitions.slice(offset,offset+24);
-        const values=await step.do(`reconcile child outputs ${offset/24}`,options,()=>Promise.all(group.map(async definition=>{
-          try{return batchResult(definition,await (await this.env.LIVE.get(definition.id)).status());}
-          catch(error){return batchResult(definition,{status:"unknown",error});}
-        })));
-        batches.push(...values);
+      let journal=null;
+      // At most19 bounded SQL-backed progress checks, never SQL polling or
+      // 70+ Workflow control API calls. Complete runs can publish at14:06;
+      // unfinished collectors retain their real timestamps until15:30.
+      for(let checkpoint=0;checkpoint<19;checkpoint++){
+        const at=Math.min(bounds(date).start+(6+checkpoint*5)*60000,bounds(date).end+1000);
+        if(Date.now()<at)await step.sleepUntil(`bounded completion checkpoint ${checkpoint}`,new Date(at));
+        journal=await step.do(`read durable batch completion ${checkpoint}`,options,()=>target.reconcileJournal(date,runId,Date.now()>bounds(date).end));
+        if(journal.ready)break;
       }
-      const firstFailure=batches.flatMap(batch=>batch.failures.map(row=>({...row,batchId:batch.id})))[0]??null;
+      if(!journal?.ready)throw new Error("LIVE_CLOUD_CHILD_RESULT_MISSING");
+      const firstFailure=journal.firstFailure;
       if(firstFailure)try{await step.do("preserve first child failure",options,()=>target.failure(firstFailure.reason,"BATCH_COLLECTION"));}
       catch(error){console.error(JSON.stringify({event:"LIVE_CLOUD_FAILURE_RECORD_FAILED",primaryCode:firstFailure.reason,stage:"BATCH_COLLECTION",recordingCode:safeCode(error)}));}
-      await step.do("persist child reconciliation",options,()=>target.reconcileBatches(date,{schemaVersion:1,date,runId,batches,firstFailure}));
       if(firstFailure)throw new Error(firstFailure.reason);
       stage = "FINALIZE";
       await step.do("validate all required inputs and freeze outbox", options, () => target.finish(date));
@@ -231,12 +258,15 @@ export class CloudLive extends WorkflowEntrypoint {
       const result=await step.do("publish private score-only delivery", options, () => target.relay(date));
       if (!recovery) await report("DELIVERED");return result;
     } catch (e) {
-      const primaryCode = safeCode(e);
+      const primaryCode = p.mode==="batch"?transportReason(e):safeCode(e);
+      if(p.mode==="batch")try{
+        await step.do("persist failed batch outcome",options,()=>target.recordBatchResult(date,runId,p.codes,{status:"errored",reason:primaryCode}));
+      }catch(recordError){console.error(JSON.stringify({event:"LIVE_CLOUD_BATCH_JOURNAL_FAILED",primaryCode,recordingCode:safeCode(recordError)}));}
       try { await step.do("record fixed failure code", options, () => target.failure(primaryCode, stage)); }
       catch (recordError) { console.error(JSON.stringify({ event: "LIVE_CLOUD_FAILURE_RECORD_FAILED", primaryCode, stage, recordingCode: safeCode(recordError) })); }
       // Batch failures remain in per-symbol/day evidence. Do not fan out70
       // telemetry writes; the day/three relay parents publish bounded failures.
-      if(p.mode!=="batch"&&!recovery)await report(p.mode==="relay"&&["06","08","10"].includes(p.relaySlot)?`FAILURE_RELAY${p.relaySlot}`:"FAILURE_DAY",{code:primaryCode,stage});
+      if(p.mode!=="batch"&&!recovery)await report(p.mode==="relay"&&["06","08","10","31","33","35"].includes(p.relaySlot)?`FAILURE_RELAY${p.relaySlot}`:"FAILURE_DAY",{code:primaryCode,stage});
       throw new Error(primaryCode);
     }
   }

@@ -5,7 +5,7 @@ import ts from "typescript";
 import * as jsx from "react/jsx-runtime";
 import { renderToStaticMarkup } from "react-dom/server";
 import * as dates from "../lib/home-presentation.mjs";
-import { EXECUTION_PREFIX, sealExecutionRecord, validateExecutionRecord, executionStatusDto, executionRecordKey, readTodayExecution, privateLiveExecutionResponse } from "../lib/private-live-execution-status.mjs";
+import { EXECUTION_PREFIX, EXECUTION_EVENTS, sealExecutionRecord, validateExecutionRecord, executionStatusDto, executionRecordKey, readTodayExecution, privateLiveExecutionResponse } from "../lib/private-live-execution-status.mjs";
 
 const now="2026-10-20T10:00:00.000Z",date="2026-10-20";
 const fixture=()=>({schemaVersion:1,namespace:EXECUTION_PREFIX,source:"CLOUDFLARE_DURABLE_STATE",signalDate:date,runId:`live-${date}`,recordedAt:now,event:"RECONCILE",workflowState:"ERRORED",
@@ -44,7 +44,7 @@ test("only current KST date is inventoried, immutable filename/hash match, no ye
  const result=await readTodayExecution(store,{now});assert.equal(result.record.status,"FAILED");assert.deepEqual(paths,[`${EXECUTION_PREFIX}/${date}`]);
  assert.equal((await readTodayExecution({...store,listKeys:async()=>[]},{now})).status,"NO_EXECUTION_RECORD");
  await assert.rejects(readTodayExecution({...store,listKeys:async()=>[{name:name.replace(r.recordHash,"b".repeat(64)),type:"file"}]},{now}));
- await assert.rejects(readTodayExecution({...store,listKeys:async()=>Array(11).fill({name,type:"file"})},{now}));
+ await assert.rejects(readTodayExecution({...store,listKeys:async()=>Array(EXECUTION_EVENTS.length+1).fill({name,type:"file"})},{now}));
 });
 test("read-only API fixed path, private repository, sanitized errors and fixture separation",async()=>{
  const r=record(),key=executionRecordKey(r),calls=[];const bytes=JSON.stringify(r);
@@ -65,6 +65,13 @@ test("late progress never hides a terminal regular-run failure retained in the s
  const result=await readTodayExecution({verifyPrivateRepository:async()=>{},listKeys:async()=>[...values.keys()].map(key=>({name:key.split("/").at(-1),type:"file"})),read:async key=>({value:values.get(key)})},{now:"2026-10-20T10:02:00.000Z"});
  assert.equal(result.record.event,"RECONCILE");assert.equal(result.record.error.code,"LIVE_CLOUD_SQL_BUDGET");
  assert.equal(result.record.recordHash,terminal.recordHash,"select existing evidence, never rewrite an immutable record");
+});
+
+test("presentation uses the existing1530 observation policy, not a stale1405 display cutoff",()=>{
+ const value=fixture();value.recordedAt=`${date}T05:15:00.000Z`;value.event="COLLECTION";value.workflowState="RUNNING";value.error=null;
+ const active=executionStatusDto(sealExecutionRecord(value),`${date}T05:20:00.000Z`);
+ assert.equal(active.status,"IN_PROGRESS");assert.equal(active.stages.collection,"RUNNING");
+ assert.equal(executionStatusDto(sealExecutionRecord(value),`${date}T06:31:00.000Z`).status,"STALE");
 });
 test("actual component renders failure, no-record, unavailable and complete without claiming liveness",async()=>{
  const exports={};new Function("require","exports",ts.transpileModule(await fs.readFile(new URL("../components/HomeCloudExecutionStatus.tsx",import.meta.url),"utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText)(n=>n==="react/jsx-runtime"?jsx:dates,exports);

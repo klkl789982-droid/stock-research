@@ -17,7 +17,8 @@ const reasons: Record<string, string> = { LIVE_CLOUD_SQL_BUDGET: "저장 처리 
   PRIVATE_STORE_NETWORK_FAILED: "비공개 저장소 연결 실패", PRIVATE_STORE_AUTHORIZATION_FAILED: "비공개 저장소 권한 확인 필요", LIVE_CLOUD_WINDOW_EXPIRED: "관측 시간 종료",
   DIAG_EOD_STATUS_INCONSISTENT: "공식 EOD 게시 상태와 기준일 불일치", DIAG_EOD_SEED_INVALID: "EOD 모델 입력 검증 실패",
   LIVE_CLOUD_STORAGE_BUDGET: "실행 기록 저장 용량 상한 도달", LIVE_CLOUD_PIN_UNAVAILABLE: "고정한 모델 입력을 읽지 못함",
-  LIVE_CLOUD_CHILD_ERRORED: "종목별 수집 실행 실패", LIVE_CLOUD_CHILD_NOT_COMPLETE: "종목별 수집 완료 미확인" };
+  LIVE_CLOUD_CHILD_ERRORED: "종목별 수집 실행 실패", LIVE_CLOUD_CHILD_NOT_COMPLETE: "종목별 수집 완료 미확인",
+  LIVE_CLOUD_RATE_EVIDENCE_INVALID: "API 요청 시각 검증 실패", DIAG_REQUEST_FAILED: "수집 실행 오류 · 상세 원인 미확정" };
 export function cloudExecutionLabel(state: State) {
   if (state.error) return "실행 기록 조회 실패 · 마지막 정상 결과와 별도";
   if (!state.data) return "실행 기록 조회 중";

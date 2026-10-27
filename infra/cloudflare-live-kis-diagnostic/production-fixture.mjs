@@ -52,10 +52,11 @@ export async function verifyNativeProductionFixture({ sql, remote, run, phase })
       state.complete(date, row.code, { metadata, calls });
       if (next < rows.length) await enqueue();
     }
-    const batches=[];
-    for(let i=0;i<rows.length;i+=8){const codes=rows.slice(i,i+8).map(row=>row.code);batches.push({id:`live-${date}-batch${i/8}`,codes,
-      workflowStatus:"complete",attempted:codes.length,successful:codes.length,failures:[]});}
-    state.reconcileBatches(date,{schemaVersion:1,date,batches,firstFailure:null});
+    const size=state.read("final").batchSize??8;
+    for(let i=0;i<rows.length;i+=size){const codes=rows.slice(i,i+size).map(row=>row.code);
+      state.recordBatchResult(date,`live-${date}`,codes,{status:"complete",output:{attempted:codes.length,successful:codes.length,failed:[]}});}
+    const journal=state.reconcileJournal(date,`live-${date}`,true);
+    if(!journal.ready||journal.firstFailure)throw new Error("DIAG_PRODUCTION_FIXTURE_INCOMPLETE");
     now = b.end + 1000; state.finish(date); await state.relay(date);
     state.write("fixture-complete", { syntheticOnly: true });
   }
@@ -69,7 +70,8 @@ export async function verifyNativeProductionFixture({ sql, remote, run, phase })
     || swing.createdAt !== frozen.delivery.exportedAt || swing.selections.length !== 20) throw new Error("DIAG_PRODUCTION_FIXTURE_READBACK_FAILED");
   if (swing.records.some(forecast => resolveSwingOutcome({ forecast, resolvedAt: "2002-01-04T05:05:01.000Z" }).status !== "BLOCKED")) throw new Error("DIAG_PRODUCTION_FIXTURE_OUTCOME_CHANGED");
   return { status: "NATIVE_PRODUCTION_FIXTURE_VERIFIED", phase, syntheticOnly: true, kisCalls: 0,
-    universe: 553, eligible: 508, topRows: 20, deliveryHash: receipt.deliveryHash, swingHash: swing.intentHash,
+    universe: 553, eligible: 508, topRows: 20, batchSize:state.read("final").batchSize??8,
+    batches:Math.ceil(553/(state.read("final").batchSize??8)),deliveryHash: receipt.deliveryHash, swingHash: swing.intentHash,
     firstCreatedAt: swing.createdAt, existingResolver: "BLOCKED_MISSING_REFERENCE_PRICE", nativeSqlMeter: { ...state.meter },
     sqliteBytes: sql.databaseSize, remoteNormalReaderVerified: true, operationalPointerChanged: false, sourcePricesIncluded: false };
 }

@@ -13,7 +13,7 @@ export class KisSlotShard extends DurableObject {
   brokerFor() { return this.env.BROKER.get(this.env.BROKER.idFromName("single-approved-kis-credential-v1")); }
   minuteQueryTime() { return diagnosticMinuteTime(Date.now()); }
   projectResult(args) { return projectDiagnosticResult(args); }
-  async fetch(request, budget = { calls: 0 }) {
+  async fetch(request, budget = { calls: 0, controlCalls: 0 }) {
     this.assertInvocation();
     const u = new URL(request.url), run = u.searchParams.get("run"), code = u.searchParams.get("codes");
     if (u.pathname === "/collect-batch") {
@@ -38,6 +38,11 @@ export class KisSlotShard extends DurableObject {
     if (!/^[A-Za-z0-9_-]{1,48}$/u.test(run ?? "") || !/^[0-9A-Z]{6}$/u.test(code ?? "")) return new Response(null, { status: 400 });
     const broker = this.brokerFor(run);
     const control = async (path, body = null) => {
+      // Include control fetches in the per-invocation Free request envelope.
+      // Preserve eight final completion reports even for legacy8 batches.
+      const used=budget.calls+(budget.controlCalls??0);
+      if(used>=48||!path.startsWith("/slot-pair-complete")&&used>=40)throw new Error("DIAG_SHARD_EXTERNAL_BUDGET_EXHAUSTED");
+      budget.controlCalls=(budget.controlCalls??0)+1;
       const r = await broker.fetch(`https://isolated${path}${path.includes("?") ? "&" : "?"}run=${run}`, body ? { method: "POST", body: JSON.stringify(body) } : undefined), value = await r.json();
       if (!r.ok) { const e = new Error(safeCode({ code: value.reason })); if (value.transportFailure) e.sourceFailure = safeCode({ code: value.transportFailure }); throw e; }
       return value;
@@ -56,17 +61,20 @@ export class KisSlotShard extends DurableObject {
       const credentials = { appKey: this.env.KIS_APP_KEY, appSecret: this.env.KIS_APP_SECRET };
       let lastFailure = null;
       const transport = async (url, init) => {
-        if (calls.length >= 16 || budget.calls >= 40) throw new Error("DIAG_SHARD_EXTERNAL_BUDGET_EXHAUSTED");
+        if (calls.length >= 16 || budget.calls+(budget.controlCalls??0) >= 40) throw new Error("DIAG_SHARD_EXTERNAL_BUDGET_EXHAUSTED");
         const kind = String(url).includes("inquire-price?") ? "quote" : "minute";
-        let slot;
+        let slot,started;
         for (let attempts = 0; attempts < 3; attempts++) {
           slot = available[kind].shift() ?? await control(`/extra-slot?code=${code}&kind=${kind}`);
           while (Date.now() < slot.notBefore) await sleep(slot.notBefore - Date.now());
-          if (Date.now() <= slot.notBefore + 20) break;
+          if (Date.now() <= slot.notBefore + 20) {
+            started=Date.now();
+            // The actual start stamp, not an earlier guard sample, must fit.
+            if(started<=slot.notBefore+20)break;
+          }
           skipped.push({ slot: slot.slot, kind, reason: "MISSED_BEFORE_API_REQUEST" }); slot = null;
         }
         if (!slot) throw new Error("DIAG_RATE_SLOT_MISSED");
-        const started = Date.now();
         if (started >= lease.deadline) throw new Error("DIAG_COLLECTION_DEADLINE");
         budget.calls++;
         const call = { slot: slot.slot, kind, started, completed: started, status: 0, failure: null }; calls.push(call);

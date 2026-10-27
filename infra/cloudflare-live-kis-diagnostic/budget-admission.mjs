@@ -7,7 +7,9 @@ export const LAG_RESERVE = Object.freeze({ workflowSteps: 100, workerRequests: 5
 const fields = { workflowSteps: "workflowAllOperationsReported", workerRequests: "workersRequestsReported",
   doRequests: "doRequestsReported", durationGbSeconds: "doDurationRawMetric", sqlRowsRead: "sqlRowsReadReported", sqlRowsWritten: "sqlRowsWrittenReported" };
 export function admitFreeBudget({ before, latest, inventory, workersFree, noPaymentMethod }, now = Date.now()) {
-  if (workersFree !== true || noPaymentMethod !== true || inventory?.workerCount !== 4 || inventory?.workflowCount !== 3
+  // Fixed account inventory includes the already-existing isolated SQL replay
+  // resource (created Oct20); unknown additions must still fail closed.
+  if (workersFree !== true || noPaymentMethod !== true || inventory?.workerCount !== 5 || inventory?.workflowCount !== 4
     || inventory?.activeInstances !== 0 || inventory?.allPagesRead !== true || inventory?.zeroMonthOpeningWorkflowState !== true
     || inventory?.onlyDailyCronActive !== true || inventory?.noAdditionalCollectionSinceLastReceipt !== true) throw new Error("FREE_INVENTORY_UNVERIFIED");
   const start = Date.parse(before?.observedAt), end = Date.parse(latest?.observedAt), checked = Date.parse(inventory?.checkedAt);
@@ -30,10 +32,10 @@ export function admitFreeBudget({ before, latest, inventory, workersFree, noPaym
     || !Number.isFinite(latest.persistentSqlNamespacePeakBytes)) throw new Error("FREE_STORAGE_UNVERIFIED");
   // Double all observed positive month growth (ignoring releases), then add
   // 10MB for delayed events. Charge that whole peak for all30days. In addition,
-  // normalDayBudget reserves40MB for three retained LIVE days incl retry state.
+  // normalDayBudget reserves80MB for three retained LIVE days incl retry state.
   const workflowStorageGbMonthsUpperBound = (storage.positiveGrowthBytes * 2 + 10000000) / 1e9;
   const persistentSqlBytes = Math.max(100000000, latest.persistentSqlNamespacePeakBytes + 10000000);
-  if (workflowStorageGbMonthsUpperBound + 0.04 >= 1 || persistentSqlBytes + PRODUCTION_BUDGET.retainedBytesPerDay >= 4000000000) throw new Error("FREE_STORAGE_BUDGET");
+  if (workflowStorageGbMonthsUpperBound + PRODUCTION_BUDGET.workflowStorageGbMonths >= 1 || persistentSqlBytes + PRODUCTION_BUDGET.retainedBytesPerDay >= 4000000000) throw new Error("FREE_STORAGE_BUDGET");
   return { schemaVersion: 1, utcDay: latest.utcDay, observedAt: latest.observedAt, workersFree: true, inventoryVerified: true, storageVerified: true,
     upperBound, headroomAfterAnotherWholeNormalDay: headroom, persistentSqlBytes, workflowStorageGbMonthsUpperBound,
     lagReserve: LAG_RESERVE, aggregationLagMs: null, exactBillingClaimed: false, boundType: "CONSERVATIVE_ADMISSION_RESERVATION",

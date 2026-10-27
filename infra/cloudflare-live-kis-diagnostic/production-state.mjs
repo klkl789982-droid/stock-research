@@ -1,7 +1,7 @@
 import { hashIntradayModelTop as hash } from "../../lib/intraday-model-top-official-signal.mjs";
 import { assertPrivateKisEodPayload } from "../../lib/kis-eod-private-store.mjs";
 import { deliverPrivateLive } from "../../lib/private-live-delivery.mjs";
-import { assertProduction, assertWindow, bounds, aggregateProduction, nextPairSlots, PRODUCTION_BUDGET } from "./production-core.mjs";
+import { assertProduction, assertWindow, bounds, aggregateProduction, nextPairSlots, PRODUCTION_BUDGET, LIVE_BATCH_SIZE } from "./production-core.mjs";
 import { persistCloudSwingIntent } from "./cloud-swing.mjs";
 import { safeCode } from "./core.mjs";
 import { EXECUTION_PREFIX, EXECUTION_EVENTS, sealExecutionRecord } from "../../lib/private-live-execution-status.mjs";
@@ -83,7 +83,7 @@ export class ProductionDayState {
     if (this.now() >= bounds(date).start || value.readiness !== "READY" || value.targetDate !== date || value.universe !== 553
       || !Number.isFinite(Date.parse(value.remoteCheckedAt)) || Date.parse(value.remoteCheckedAt) >= bounds(date).start) throw new Error("LIVE_CLOUD_INPUT_NOT_READY");
     // Receipt is written only after all fresh input/auth/calendar checks finish.
-    return this.write(final ? "final" : "prewarm", { ...value, readyAt: new Date(this.now()).toISOString() });
+    return this.write(final ? "final" : "prewarm", { ...value, batchSize: LIVE_BATCH_SIZE, readyAt: new Date(this.now()).toISOString() });
   }
   recoverySource(date) {
     return this.critical(() => {
@@ -186,6 +186,8 @@ export class ProductionDayState {
         try { return this.completeReserved(date, code, value); } finally { this.inTransaction = false; }
       });
     }); } catch (error) {
+      if(error.rateIssue)try{this.critical(()=>this.write(`rate-rejection:${code}`,{code,issue:error.rateIssue,
+        startOffsetMs:error.startOffsetMs??null,completionAheadMs:error.completionAheadMs??null}));}catch{/* metadata cannot replace the primary failure */}
       // A terminal observation/storage error must not retain one of the eight
       // active leases until cutoff. The immutable child result and parent
       // reconciliation preserve the failure even when its observation row
@@ -201,8 +203,10 @@ export class ProductionDayState {
     if (!this.q("SELECT code FROM leases WHERE code=?", code).length) throw new Error("LIVE_CLOUD_LEASE_INVALID");
     for (const c of value.calls) {
       const s = this.q("SELECT code,kind,body FROM slots WHERE slot=?", c.slot)[0];
-      if (!s || s.code !== code || s.kind !== c.kind || !Number.isSafeInteger(c.started) || c.started < c.slot * 220 || c.started > c.slot * 220 + 20
-        || !Number.isSafeInteger(c.completed) || c.completed < c.started || c.completed > this.now()) throw new Error("LIVE_CLOUD_RATE_EVIDENCE_INVALID");
+      const issue=!s||s.code!==code||s.kind!==c.kind?"SLOT_IDENTITY":!Number.isSafeInteger(c.started)||!Number.isSafeInteger(c.completed)?"TIMESTAMP_INVALID"
+        :c.started<c.slot*220?"START_BEFORE_SLOT":c.started>c.slot*220+20?"START_AFTER_SLOT":c.completed<c.started?"RESPONSE_BEFORE_REQUEST":c.completed>this.now()?"RESPONSE_AFTER_RECEIVER_CLOCK":null;
+      if(issue)throw Object.assign(new Error("LIVE_CLOUD_RATE_EVIDENCE_INVALID"),{rateIssue:issue,
+        startOffsetMs:Number.isSafeInteger(c.started)?c.started-c.slot*220:null,completionAheadMs:Number.isSafeInteger(c.completed)?c.completed-this.now():null});
       const body = JSON.stringify(c); if (s.body && s.body !== body) throw new Error("LIVE_CLOUD_HTTP_CONFLICT");
       this.q("UPDATE slots SET body=? WHERE slot=?", body, c.slot);
     }
@@ -245,11 +249,12 @@ export class ProductionDayState {
       this.check(date);
       const prepared = this.read("final");
       const runId = value?.runId ?? `live-${date}`, runPattern = new RegExp(`^live-${date}(?:-recovery-[A-Za-z0-9_-]{1,24})?$`, "u");
-      if (!prepared || value?.schemaVersion !== 1 || value.date !== date || !runPattern.test(runId ?? "") || !Array.isArray(value.batches) || value.batches.length !== Math.ceil(prepared.codes.length / 8))
+      const size=prepared?.batchSize??8;
+      if (!prepared || ![4,8].includes(size) || value?.schemaVersion !== 1 || value.date !== date || !runPattern.test(runId ?? "") || !Array.isArray(value.batches) || value.batches.length !== Math.ceil(prepared.codes.length / size))
         throw new Error("LIVE_CLOUD_CHILD_RESULTS_INVALID");
       const flattened = [], failed = new Set();
       for (const [index, batch] of value.batches.entries()) {
-        const expected = prepared.codes.slice(index * 8, index * 8 + 8);
+        const expected = prepared.codes.slice(index * size, index * size + size);
         if (batch.id !== `${runId}-batch${index}` || !Array.isArray(batch.codes) || JSON.stringify(batch.codes) !== JSON.stringify(expected)
           || !["complete", "errored", "terminated", "queued", "running", "waiting", "paused", "unknown"].includes(batch.workflowStatus)
           || !Array.isArray(batch.failures) || new Set(batch.failures.map(row => row.code)).size !== batch.failures.length
@@ -274,6 +279,43 @@ export class ProductionDayState {
     const prior = this.read("last-failure");
     return prior ?? this.write("last-failure", { code, stage, at: new Date(this.now()).toISOString() });
   }); }
+  // Child invocations write one immutable price-free outcome. The parent reads
+  // these local SQL records instead of issuing70+ Workflow status API calls.
+  recordBatchResult(date, runId, codes, result) {
+    return this.critical(()=>{
+      this.check(date);const p=this.read("final"),size=p?.batchSize??8;
+      const at=Array.isArray(codes)?p?.codes.indexOf(codes[0]):-1;
+      if(!p||![4,8].includes(size)||!new RegExp(`^live-${date}(?:-recovery-[A-Za-z0-9_-]{1,24})?$`,"u").test(runId??"")
+        ||!Array.isArray(codes)||at<0||at%size||JSON.stringify(codes)!==JSON.stringify(p.codes.slice(at,at+size)))throw new Error("LIVE_CLOUD_CHILD_RESULTS_INVALID");
+      const owner=this.read("batch-journal-owner");if(owner&&owner.runId!==runId)throw new Error("LIVE_CLOUD_DATE_CONFLICT");
+      const index=at/size,output=result?.output;
+      if(!["complete","errored"].includes(result?.status)||result.status==="complete"&&(!output||output.attempted!==codes.length||!Number.isSafeInteger(output.successful)
+        ||output.successful<0||!Array.isArray(output.failed)||output.successful+output.failed.length!==codes.length
+        ||new Set(output.failed.map(r=>r.code)).size!==output.failed.length||output.failed.some(r=>!codes.includes(r.code)||safeCode({code:r.reason})!==r.reason))
+        ||result.status==="errored"&&safeCode({code:result.reason})!==result.reason)throw new Error("LIVE_CLOUD_CHILD_RESULTS_INVALID");
+      const failures=result.status==="complete"?output.failed.map(r=>({code:r.code,reason:r.reason,failureStage:["LEASE_ACQUIRE","LEASED_SETUP","COLLECTION"].includes(r.failureStage)?r.failureStage:"UNKNOWN"}))
+        :codes.map(code=>({code,reason:result.reason,failureStage:"UNKNOWN"}));
+      const value={id:`${runId}-batch${index}`,codes,workflowStatus:result.status,attempted:result.status==="complete"?codes.length:0,
+        successful:result.status==="complete"?output.successful:0,failures};
+      if(!owner)this.write("batch-journal-owner",{runId});
+      this.write(`batch-result:${index}`,value);return{status:"BATCH_RESULT_STORED",index};
+    });
+  }
+  reconcileJournal(date,runId,deadline=false) {
+    return this.critical(()=>{
+      this.check(date);const p=this.read("final"),size=p?.batchSize??8;
+      if(!p||![4,8].includes(size)||!new RegExp(`^live-${date}(?:-recovery-[A-Za-z0-9_-]{1,24})?$`,"u").test(runId??""))throw new Error("LIVE_CLOUD_NOT_PREPARED");
+      const owner=this.read("batch-journal-owner");if(owner&&owner.runId!==runId)throw new Error("LIVE_CLOUD_DATE_CONFLICT");
+      const batches=[];let missing=0;
+      for(let i=0;i<p.codes.length;i+=size){const index=i/size,codes=p.codes.slice(i,i+size),stored=this.read(`batch-result:${index}`);
+        if(stored)batches.push(stored);else{missing++;batches.push({id:`${runId}-batch${index}`,codes,workflowStatus:"unknown",attempted:0,successful:0,
+          failures:codes.map(code=>({code,reason:"LIVE_CLOUD_CHILD_RESULT_MISSING",failureStage:"UNKNOWN"}))});}}
+      if(missing&&!deadline)return{ready:false,pendingBatches:missing,totalBatches:batches.length};
+      const firstFailure=batches.flatMap(batch=>batch.failures.map(r=>({...r,batchId:batch.id})))[0]??null;
+      this.reconcileBatches(date,{schemaVersion:1,date,runId,batches,firstFailure});
+      return{ready:true,pendingBatches:missing,totalBatches:batches.length,firstFailure};
+    });
+  }
   freezeExecution(date, event, workflowState = "RUNNING", error = undefined) {
     return this.critical(() => {
       assertProduction(this.env);
@@ -293,7 +335,10 @@ export class ProductionDayState {
       const reconciliation=this.read("batch-reconciliation");
       const reconciledFailures=new Map((reconciliation?.batches??[]).flatMap(batch=>batch.failures).map(row=>[row.code,row]));
       const observedFailed=observations.filter(r=>!["AVAILABLE","EXCLUDED"].includes(r.status)).map(r=>r.code);
-      const failedCodes=new Set([...observedFailed,...reconciledFailures.keys()]);
+      // A failed batch can still contain valid durable per-symbol records.
+      // Count each symbol once in this diagnostic DTO. Reconciliation remains
+      // failed and the original quality/publication gates remain unchanged.
+      const failedCodes=new Set([...observedFailed,...reconciledFailures.keys()].filter(code=>!["AVAILABLE","EXCLUDED"].includes(byCode.get(code)?.status)));
       const allowedStages=["PREPARE","FINAL_INPUT","CREATE_BATCHES","BATCH_COLLECTION","FINALIZE","RELAY"];
       const value=sealExecutionRecord({schemaVersion:1,namespace:EXECUTION_PREFIX,source:"CLOUDFLARE_DURABLE_STATE",signalDate:date,runId:`live-${date}`,
         recordedAt:new Date(this.now()).toISOString(),event,workflowState,
@@ -319,7 +364,8 @@ export class ProductionDayState {
       const reconciledFailures = new Map((reconciliation?.batches ?? []).flatMap(batch => batch.failures).map(row => [row.code, row]));
       const failed = new Map(observations.filter(r => !["AVAILABLE", "EXCLUDED"].includes(r.status)).map(r => [r.code, { reason: r.reason, failureStage: r.failureStage ?? "UNKNOWN" }]));
       for (const [code, row] of reconciledFailures) if (!seen.has(code)) failed.set(code, row);
-      return { ...this.status(), lastFailure: this.read("last-failure"), universe: expected.length, eligible: prepared?.eligible ?? null,
+      const rateRejections=this.q("SELECT digest,body FROM docs WHERE id>='rate-rejection:' AND id<'rate-rejection;' ORDER BY id LIMIT 5").map(r=>{const v=JSON.parse(r.body);if(hash(v)!==r.digest)throw new Error("LIVE_CLOUD_HASH_MISMATCH");return v;});
+      return { ...this.status(), rateRejections, lastFailure: this.read("last-failure"), universe: expected.length, eligible: prepared?.eligible ?? null,
         seedReferenceDate: prepared?.seedReferenceDate ?? null, inputCommit: prepared?.inputCommit ?? null,
         completed: observations.filter(r => ["AVAILABLE", "EXCLUDED"].includes(r.status)).length,
         failed: [...failed].map(([code, row]) => ({ code, reason: row.reason, failureStage: row.failureStage })),

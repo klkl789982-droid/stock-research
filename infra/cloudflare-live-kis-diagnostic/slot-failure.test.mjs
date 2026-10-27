@@ -13,16 +13,19 @@ const { KisSlotShard } = await import(`data:text/javascript;base64,${Buffer.from
 const start = Date.parse("2026-10-19T05:00:00Z"), end = start + 300000;
 
 function harness(t, responses, initial = start, failures = {}) {
-  let now = initial, index = 0, slotHead = 0, complete = null;
+  let now = initial, index = 0, slotHead = 0, complete = null,firstQuoteAt=null,clockReads=0;
   const actualStarts = [];
-  t.mock.method(Date, "now", () => now);
+  t.mock.method(Date, "now", () => {
+    if(failures.finalClockSlip&&now===firstQuoteAt&&++clockReads===3)now+=21;
+    return now;
+  });
   Date.fixtureAdvance = ms => { now += ms; };
   t.after(() => { delete Date.fixtureAdvance; });
   const slot = () => { const n = Math.max(slotHead, Math.ceil((now + 220) / 220)); slotHead = n + 1; return { slot: n, notBefore: n * 220 }; };
   const broker = { async fetch(input, init) {
     const url = new URL(input);
     if (url.pathname === "/slot-pair-acquire" && failures.acquire) return Response.json({ reason: failures.acquire }, { status: 503 });
-    if (url.pathname === "/slot-pair-acquire") return Response.json({ record: { eligible: true }, authenticationRecord: { accessToken: "fixture-only-not-real", generation: 1, expiresAtMs: end + 86400000 }, quoteSlot: slot(), minuteSlot: slot(), deadline: end });
+    if (url.pathname === "/slot-pair-acquire") {const quoteSlot=slot();firstQuoteAt=quoteSlot.notBefore;return Response.json({ record: { eligible: true }, authenticationRecord: { accessToken: "fixture-only-not-real", generation: 1, expiresAtMs: end + 86400000 }, quoteSlot, minuteSlot: slot(), deadline: end });}
     if (url.pathname === "/extra-slot") return Response.json(slot());
     if (url.pathname === "/slot-pair-complete") { complete = JSON.parse(init.body); return failures.complete
       ? Response.json({ reason: failures.complete }, { status: 503 }) : Response.json({ stored: true }); }
@@ -99,4 +102,12 @@ test("failure before lease acquisition is retained in the batch output with its 
 test("successful collection followed by durable storage failure preserves the storage code", async t => {
   const h = harness(t, [success, success], start, { complete: "LIVE_CLOUD_STORAGE_BUDGET" });
   await assert.rejects(h.run(), /LIVE_CLOUD_STORAGE_BUDGET/u);
+});
+
+test("a21ms slip between guard and actual start consumes no market call in the missed slot",async t=>{
+ const r=await harness(t,[success,success],start,{finalClockSlip:true}).run();
+ assert.equal(r.value.status,"AVAILABLE");assert.ok(r.complete.skipped.some(v=>v.kind==="quote"));
+ assert.equal(r.complete.calls.length,2);
+ for(const c of r.complete.calls)assert.ok(c.started>=c.slot*220&&c.started<=c.slot*220+20);
+ assert.ok(r.actualStarts.every((v,i)=>!i||v-r.actualStarts[i-1]>=200));
 });

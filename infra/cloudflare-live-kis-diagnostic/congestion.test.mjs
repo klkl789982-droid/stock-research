@@ -6,7 +6,7 @@ import { ProductionDayState as Before } from "./incident-baseline.mjs";
 test("actual70 batch topology reproduces baseline SQL exhaustion and fixes all553 without relaxing cap", async t => {
   const before = await replayCongestion({ State: Before }), after = await replayCongestion();
   assert.equal(before.finishError, "LIVE_CLOUD_SQL_BUDGET"); assert.ok(before.completed < 553);
-  assert.equal(after.completed, 553); assert.equal(after.batches, 70); assert.equal(after.peakGlobalActive, 8);
+  assert.equal(before.batches,70);assert.equal(after.completed, 553); assert.equal(after.batches, 139); assert.equal(after.peakGlobalActive, 8);
   assert.equal(after.outbox, true); assert.deepEqual(after.errors, {});
   assert.ok(after.stats.usageUpdates < before.stats.usageUpdates / 100);
   assert.ok(after.meter.w < 15000); assert.ok(after.collectionSpanMs < 245000);

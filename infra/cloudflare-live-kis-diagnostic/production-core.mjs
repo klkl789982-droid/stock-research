@@ -5,13 +5,14 @@ import { kst } from "./core.mjs";
 import { buildCloudSwingIntent } from "./cloud-swing.mjs";
 export { kst } from "./core.mjs";
 
-export const LIVE_CRONS = Object.freeze(["40,50 4 * * MON-FRI", "6,8,10 5 * * MON-FRI"]);
-export const PRODUCTION_BUDGET = Object.freeze({ workflowSteps: 220, workerRequests: 2000, doRequests: 14000,
+export const LIVE_CRONS = Object.freeze(["40,50 4 * * MON-FRI", "6,8,10 5 * * MON-FRI", "31,33,35 6 * * MON-FRI"]);
+export const LIVE_BATCH_SIZE = 4;
+export const PRODUCTION_BUDGET = Object.freeze({ workflowSteps: 520, workerRequests: 2000, doRequests: 14000,
   durationGbSeconds: 8500, sqlRowsRead: 1000000, sqlRowsWritten: 40000, retainedBytesPerDay: 8000000,
-  // The measured full diagnostic added5,341,184bytes of Workflow state.
-  // Three retained daily runs *2 headroom project0.03205GB-month; round up.
+  // Scale the measured71-instance footprint to140 instances (139 children
+  // plus parent), three retained days and2x headroom: ~0.0632GB-month.
   // this is engineering headroom, NOT certification of a full run's billing.
-  workflowStorageGbMonths: 0.04, marketCalls: 1400 });
+  workflowStorageGbMonths: 0.08, marketCalls: 1400 });
 export const OTHER_DAILY_RESERVE = Object.freeze({ workflowSteps: 100, workerRequests: 2000, doRequests: 1000,
   durationGbSeconds: 1000, sqlRowsRead: 500000, sqlRowsWritten: 15000 });
 export const versions = Object.freeze(["A-v1", "B-v1", "C-v1", "D-v1"]);

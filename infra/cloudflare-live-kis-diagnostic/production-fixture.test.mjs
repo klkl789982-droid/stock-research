@@ -24,6 +24,7 @@ test("unchanged production state machine completes synthetic553 native-SQL lifec
   const read = await verifyNativeProductionFixture({ sql, remote, run: "fixture-only", phase: "read" });
   assert.equal(first.deliveryHash, read.deliveryHash); assert.equal(first.firstCreatedAt, read.firstCreatedAt);
   assert.equal(first.kisCalls, 0); assert.equal(first.universe, 553); assert.equal(first.eligible, 508); assert.equal(first.topRows, 20);
+  assert.equal(first.batchSize,4);assert.equal(first.batches,139);
   assert.equal(first.existingResolver, "BLOCKED_MISSING_REFERENCE_PRICE"); assert.equal(values.size, 4);
   assert.ok(values.size && [...values.values()].every(v => v.syntheticOnly && v.publicationEligible === false));
   assert.ok(read.sqliteBytes < PRODUCTION_BUDGET.retainedBytesPerDay); assert.ok(read.nativeSqlMeter.w < 40000);
