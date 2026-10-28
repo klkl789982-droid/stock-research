@@ -4,10 +4,12 @@ import { ProductionDayState as Before } from "./incident-baseline.mjs";
 import { ProductionDayState as After } from "./production-state.mjs";
 import { requestContextFixture,contextRequest } from "./request-context-fixture.mjs";
 import { createFixedBatchGroup } from "./batch-creation.mjs";
+import { verifyNativeReceiptClock } from "./receipt-clock-fixture.mjs";
 
 // Dedicated binding-only fixture: no secrets, KIS binding, Cron, public route
 // or operational object namespace. All dates/data are explicitly synthetic.
 export class SqlReplayDay extends DurableObject {
+  receiptClockProof(){return verifyNativeReceiptClock(this);}
   contextEcho(code){if(!/^9000(?:0[0-9]|1[01])$/u.test(code))throw Error("CONTEXT_FIXTURE_CODE_INVALID");return code;}
   async contextInitialize(){const f=requestContextFixture(this);await f.state.prepare(f.input.date,true);f.setClock(f.b.start);return{codes:f.input.prepared.codes.slice(0,12)};}
   async fanoutInitialize(){const f=requestContextFixture(this);await f.state.prepare(f.input.date,true);f.setClock(f.b.start);return{codes:f.input.prepared.codes,batchSize:4};}
@@ -58,6 +60,10 @@ export class SqlReplayDay extends DurableObject {
 export class SqlReplay extends WorkflowEntrypoint {
   async run(event, step) {
     const mode = event.payload?.mode;
+    if(mode==="receipt-clock"){
+      if(!/^sql-receipt-[a-z0-9-]{1,32}$/u.test(event.instanceId))throw Error("TEST_INSTANCE_INVALID");
+      return step.do("isolated native receipt-clock reproduction and fix",{retries:{limit:0,delay:"1 second"},timeout:"30 seconds"},()=>this.env.SQL_REPLAY_DAYS.get(this.env.SQL_REPLAY_DAYS.idFromName(event.instanceId)).receiptClockProof());
+    }
     if(mode==="fanout-child"){
       const p=event.payload;if(!/^sql-fanout-[a-z0-9-]{1,32}$/u.test(p.parent??"")||event.instanceId!==`${p.parent}-b${p.index}`)throw Error("TEST_INSTANCE_INVALID");
       return step.do("persist one synthetic fixed batch journal",{retries:{limit:0,delay:"1 second"},timeout:"30 seconds"},()=>this.env.SQL_REPLAY_DAYS.get(this.env.SQL_REPLAY_DAYS.idFromName(p.parent)).fanoutComplete(p.index,p.codes));

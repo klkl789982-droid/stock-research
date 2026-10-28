@@ -10,6 +10,7 @@ import { intradaySeedHash } from "../../lib/intraday-market-seed.mjs";
 import { readLatestPrivateLive, validateLiveDelivery } from "../../lib/private-live-delivery.mjs";
 import { validateForecastRecord } from "../../lib/forecast-swing-contract.mjs";
 import { buildCloudSwingIntent, persistCloudSwingIntent } from "./cloud-swing.mjs";
+import { completeWithReceiptClock } from "./receipt-clock.mjs";
 
 const date = "2026-10-19", seedDate = "2026-10-16", b = bounds(date);
 const env = { LIVE_PRODUCTION_ENABLED: "true", LIVE_PRODUCER: "cloud", LIVE_CUTOVER_RECEIPT_HASH: "a".repeat(64) };
@@ -18,7 +19,7 @@ const env = { LIVE_PRODUCTION_ENABLED: "true", LIVE_PRODUCER: "cloud", LIVE_CUTO
 let workflowSource = await fs.readFile(new URL("./src/production.mjs", import.meta.url), "utf8");
 workflowSource = workflowSource.replace('import { DurableObject, WorkflowEntrypoint } from "cloudflare:workers";', 'class DurableObject { constructor(ctx,env){this.ctx=ctx;this.env=env;} } class WorkflowEntrypoint {constructor(env){this.env=env;}}');
 workflowSource = workflowSource.replace('import { KisSlotShard } from "./slot-shard.mjs";', 'class KisSlotShard {}');
-for (const relative of ["../production-state.mjs", "../production-core.mjs", "../production-fixture.mjs", "../core.mjs", "../relay-budget.mjs", "../batch-creation.mjs", "../watchdog.mjs", "../../../lib/kis-eod-private-store.mjs", "../../../lib/private-live-execution-status.mjs"])
+for (const relative of ["../production-state.mjs", "../production-core.mjs", "../production-fixture.mjs", "../core.mjs", "../relay-budget.mjs", "../batch-creation.mjs", "../watchdog.mjs", "../receipt-clock.mjs", "../../../lib/kis-eod-private-store.mjs", "../../../lib/private-live-execution-status.mjs"])
   workflowSource = workflowSource.replaceAll(JSON.stringify(relative), JSON.stringify(new URL(relative, new URL("./src/production.mjs", import.meta.url)).href));
 const { CloudLive, LiveDay, productionScheduled, batchResult, assertIsolatedProductionFixture } = await import(`data:text/javascript;base64,${Buffer.from(workflowSource).toString("base64")}`);
 function inputFixture() {
@@ -225,6 +226,25 @@ test("553-symbol eight-lease synthetic replay measures allocator span and SQL bu
   t.diagnostic(JSON.stringify({ syntheticOnly: true, symbols: next, collectionSpanMs: last - b.start,
     fakeSqlRowsReadUpper: f.state.meter.r, fakeSqlRowsWrittenUpper: f.state.meter.w, sqliteBytes: f.sql.databaseSize,
     realKisCalls: 0, billedCloudflareRowsMeasured: false }));
+});
+test("all553 completions with a2ms receiver-clock lag preserve full TOP5/model/swing contracts", async t => {
+  const f=sandbox(t);await f.state.prepare(date,true);f.set(b.start);let waits=0;
+  f.state.wait=async ms=>{assert.equal(f.state.controlDepth,0);f.set(f.state.now()+ms);waits++;};
+  const readyRows=observations(f.seed).rows;
+  for(const row of readyRows){
+    const lease=await f.state.acquire(date,row.code),stamp=n=>new Date(n).toISOString();
+    f.set(lease.minuteSlot.notBefore);
+    const metadata={...row,observedTime:new Date(lease.quoteSlot.notBefore+9*3600000).toISOString().slice(11,19),
+      quoteRequestedAt:stamp(lease.quoteSlot.notBefore),quoteReceivedAt:stamp(lease.quoteSlot.notBefore+2),minuteRequestedAt:stamp(lease.minuteSlot.notBefore),minuteReceivedAt:stamp(lease.minuteSlot.notBefore+2)};
+    const calls=[["quote",lease.quoteSlot],["minute",lease.minuteSlot]].map(([kind,s])=>({kind,slot:s.slot,started:s.notBefore,completed:s.notBefore+2,status:200}));
+    await completeWithReceiptClock(f.state,date,row.code,{metadata,calls});
+    assert.equal(f.state.read(`observation:${row.code}`).minuteReceivedAt,metadata.minuteReceivedAt);
+  }
+  assert.equal(waits,553);f.state.reconcileBatches(date,reconciliation(f.seed,new Map(),4));
+  const delivery=f.state.finish(date);assert.equal(delivery.models.reduce((n,m)=>n+m.records.length,0),20);
+  for(const model of delivery.models){const expected=readyRows.filter(r=>r.status==="AVAILABLE").sort((a,b)=>b.scores[model.modelVersion]-a.scores[model.modelVersion]||a.code.localeCompare(b.code)).slice(0,5);
+    assert.deepEqual(model.records.map(r=>[r.ticker,r.score]),expected.map(r=>[r.code,r.scores[model.modelVersion]]));}
+  assert.equal(f.state.read("outbox").swing.selections.length,20);assert.ok(f.state.meter.w<40000);
 });
 
 test("actual Workflow precreates139 paced fixed children and uses durable outcomes without status fan-in", async t => {

@@ -62,12 +62,27 @@ test("non-JSON HTTP500 is retried once; the successful attempt retains its real 
   assert.ok(!/fixture-key|fixture-secret|fixture-only-not-real|upstream unavailable/u.test(JSON.stringify(r.value)));
 });
 
-test("persistent HTTP500 is bounded at two requests and remains a failed required input", async t => {
+test("persistent HTTP500 is bounded at three requests and remains a failed required input", async t => {
   const r = await harness(t, [html500]).run();
-  assert.equal(r.complete.calls.length, 2);
+  assert.equal(r.complete.calls.length, 3);
   assert.equal(r.value.reason, "KIS_HTTP_500");
   assert.equal(r.value.inputEligible, true);
   assert.equal(r.value.status, undefined);
+});
+test("two transient HTTP500 responses may recover on the third unique paced attempt",async t=>{
+ const r=await harness(t,[html500,html500,success,success]).run();
+ assert.equal(r.value.status,"AVAILABLE");assert.equal(r.complete.calls.length,4);assert.equal(r.value.retryEvidence.length,2);
+ assert.equal(Date.parse(r.value.quoteRequestedAt),r.complete.calls[2].started);
+ assert.equal(new Set(r.complete.calls.map(c=>c.slot)).size,4);
+ assert.ok(r.actualStarts.every((v,i)=>!i||v-r.actualStarts[i-1]>=200));
+});
+test("two transient network errors may recover on the third unique attempt",async t=>{
+ const broken={response:()=>{throw Error("synthetic network disconnect");}};
+ const r=await harness(t,[broken,broken,success,success]).run();assert.equal(r.value.status,"AVAILABLE");assert.equal(r.complete.calls.length,4);
+});
+test("non-transient HTTP400 is not retried",async t=>{
+ const r=await harness(t,[{response:()=>new Response(null,{status:400})}]).run();
+ assert.equal(r.value.reason,"KIS_HTTP_400");assert.equal(r.complete.calls.length,1);
 });
 
 test("HTTP500 near14:05 cannot start a retry outside the observation window", async t => {

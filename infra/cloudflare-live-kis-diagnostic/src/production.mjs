@@ -9,6 +9,7 @@ import { verifyNativeProductionFixture } from "../production-fixture.mjs";
 import { executionRecordKey } from "../../../lib/private-live-execution-status.mjs";
 import { createFixedBatchGroup } from "../batch-creation.mjs";
 import { runCloudWatchdog,watchSlot,WATCH_SLOTS } from "../watchdog.mjs";
+import { completeWithReceiptClock } from "../receipt-clock.mjs";
 const options = { retries: { limit: 0, delay: "1 second" }, timeout: "6 minutes" };
 const runOf = run => { const m = /^live-(\d{4}-\d{2}-\d{2})(?:-(recovery-[A-Za-z0-9_-]{1,24}))?$/u.exec(run ?? ""); if (!m) throw new Error("LIVE_CLOUD_DATE_INVALID"); return { date: m[1], dayName: m[2] ? `${m[1]}-${m[2]}` : m[1] }; };
 const dateOf = run => runOf(run).date;
@@ -91,7 +92,7 @@ export class LiveDay extends DurableObject {
       const u = new URL(request.url), date = dateOf(u.searchParams.get("run")), code = u.searchParams.get("code");
       if (u.pathname === "/slot-pair-acquire") return Response.json(await this.state.acquire(date, code));
       if (u.pathname === "/extra-slot") return Response.json(this.state.extra(date, code, u.searchParams.get("kind")));
-      if (u.pathname === "/slot-pair-complete") return Response.json(this.state.complete(date, code, await request.json()));
+      if (u.pathname === "/slot-pair-complete") return Response.json(await completeWithReceiptClock(this.state, date, code, await request.json()));
       // Tokens may NOT be refreshed inside the market window. The already
       // pinned credential must cover it; an actual401 fails the observation.
       if (["/shared-auth", "/shared-invalidate"].includes(u.pathname)) throw new Error("LIVE_CLOUD_AUTH_INVALIDATED");

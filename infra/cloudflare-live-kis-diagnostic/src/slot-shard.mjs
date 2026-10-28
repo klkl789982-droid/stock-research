@@ -89,11 +89,14 @@ export class KisSlotShard extends DurableObject {
       const client = createKisApiClient({ getCredentials: () => credentials, tokenManager: manager,
         fetchImpl: (url, init) => transport(url, init).catch(e => { lastFailure = safeCode(e); throw e; }) });
       const read = async (suffix, trId) => {
-        for (let attempt = 0; attempt < 2; attempt++) {
+        // At most two transient retries; all extra calls still need unique
+        // durable220ms slots and the unchanged global1400-call/Free caps.
+        const attempts = 3;
+        for (let attempt = 0; attempt < attempts; attempt++) {
           let response;
           try { response = await client.request(`${BASE}${suffix}`, { headers: { "Content-Type": "application/json", tr_id: trId } }); }
           catch (e) {
-            if (attempt === 0 && e.code === "KIS_BUSINESS_NETWORK_ERROR" && !lastFailure?.startsWith("DIAG_PLATFORM_") && !lastFailure?.includes("BUDGET") && !lastFailure?.includes("DEADLINE") && Date.now() + 1000 < lease.deadline) { await sleep(1000); continue; }
+            if (attempt < attempts-1 && e.code === "KIS_BUSINESS_NETWORK_ERROR" && !lastFailure?.startsWith("DIAG_PLATFORM_") && !lastFailure?.includes("BUDGET") && !lastFailure?.includes("DEADLINE") && Date.now() + 1000 < lease.deadline) { await sleep(1000); continue; }
             const error = new Error(lastFailure ?? safeCode(e)); if (e.sourceFailure) error.sourceFailure = e.sourceFailure; throw error;
           }
           // Upstream500/429 responses may be HTML or empty. Parsing them first
@@ -110,7 +113,7 @@ export class KisSlotShard extends DurableObject {
             if (Date.now() + 1000 >= lease.deadline) throw new Error("DIAG_COLLECTION_DEADLINE"); await sleep(1000); continue;
           }
           const retryable = response.status === 429 || response.status >= 500 || payload?.msg_cd === "EGW00201";
-          if (retryable && attempt === 0 && Date.now() + 1000 < lease.deadline) {
+          if (retryable && attempt < attempts-1 && Date.now() + 1000 < lease.deadline) {
             retries.push({ kind: trId === "FHKST01010100" ? "quote" : "minute", reason: response.ok ? "KIS_RATE_LIMITED" : `KIS_HTTP_${response.status}`,
               requestedAt: timing[`${calls.at(-1).kind}RequestedAt`], receivedAt: timing[`${calls.at(-1).kind}ReceivedAt`] });
             await sleep(1000); continue;

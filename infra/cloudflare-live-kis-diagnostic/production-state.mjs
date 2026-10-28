@@ -372,8 +372,11 @@ export class ProductionDayState {
       const reconciledFailures = new Map((reconciliation?.batches ?? []).flatMap(batch => batch.failures).map(row => [row.code, row]));
       const failed = new Map(observations.filter(r => !["AVAILABLE", "EXCLUDED"].includes(r.status)).map(r => [r.code, { reason: r.reason, failureStage: r.failureStage ?? "UNKNOWN" }]));
       for (const [code, row] of reconciledFailures) if (!seen.has(code)) failed.set(code, row);
-      const rateRejections=this.q("SELECT digest,body FROM docs WHERE id>='rate-rejection:' AND id<'rate-rejection;' ORDER BY id LIMIT 5").map(r=>{const v=JSON.parse(r.body);if(hash(v)!==r.digest)throw new Error("LIVE_CLOUD_HASH_MISMATCH");return v;});
-      return { ...this.status(), rateRejections, lastFailure: this.read("last-failure"), universe: expected.length, eligible: prepared?.eligible ?? null,
+      const rateRows=this.q("SELECT digest,body FROM docs WHERE id>='rate-rejection:' AND id<'rate-rejection;' ORDER BY id LIMIT 554").map(r=>{const v=JSON.parse(r.body);if(hash(v)!==r.digest)throw new Error("LIVE_CLOUD_HASH_MISMATCH");return v;});
+      const rateRejections=rateRows.slice(0,5),rateIssueCounts={};for(const row of rateRows)rateIssueCounts[row.issue]=(rateIssueCounts[row.issue]??0)+1;
+      const failedSamples=observations.filter(r=>!["AVAILABLE","EXCLUDED"].includes(r.status)).slice(0,5).map(r=>({code:r.code,reason:r.reason,
+        failureStage:r.failureStage??"UNKNOWN",failedEndpoint:r.failedEndpoint??null,httpStatus:r.httpStatus??null,providerFailureCode:r.providerFailureCode??null}));
+      return { ...this.status(), rateRejections, rateIssueCounts, failedSamples, lastFailure: this.read("last-failure"), universe: expected.length, eligible: prepared?.eligible ?? null,
         seedReferenceDate: prepared?.seedReferenceDate ?? null, inputCommit: prepared?.inputCommit ?? null,
         completed: observations.filter(r => ["AVAILABLE", "EXCLUDED"].includes(r.status)).length,
         failed: [...failed].map(([code, row]) => ({ code, reason: row.reason, failureStage: row.failureStage })),
