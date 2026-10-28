@@ -5,10 +5,12 @@ import { ProductionDayState as After } from "./production-state.mjs";
 import { requestContextFixture,contextRequest } from "./request-context-fixture.mjs";
 import { createFixedBatchGroup } from "./batch-creation.mjs";
 import { verifyNativeReceiptClock } from "./receipt-clock-fixture.mjs";
+import { verifyNativeSlotPolicy } from "./slot-policy-fixture.mjs";
 
 // Dedicated binding-only fixture: no secrets, KIS binding, Cron, public route
 // or operational object namespace. All dates/data are explicitly synthetic.
 export class SqlReplayDay extends DurableObject {
+  slotPolicyProof(){return verifyNativeSlotPolicy(this);}
   receiptClockProof(){return verifyNativeReceiptClock(this);}
   contextEcho(code){if(!/^9000(?:0[0-9]|1[01])$/u.test(code))throw Error("CONTEXT_FIXTURE_CODE_INVALID");return code;}
   async contextInitialize(){const f=requestContextFixture(this);await f.state.prepare(f.input.date,true);f.setClock(f.b.start);return{codes:f.input.prepared.codes.slice(0,12)};}
@@ -60,6 +62,10 @@ export class SqlReplayDay extends DurableObject {
 export class SqlReplay extends WorkflowEntrypoint {
   async run(event, step) {
     const mode = event.payload?.mode;
+    if(mode==="slot-policy"){
+      if(!/^sql-preflight-[a-z0-9-]{1,32}$/u.test(event.instanceId))throw Error("TEST_INSTANCE_INVALID");
+      return step.do("isolated12symbol slot retirement and deferred-minute proof",{retries:{limit:0,delay:"1 second"},timeout:"30 seconds"},()=>this.env.SQL_REPLAY_DAYS.get(this.env.SQL_REPLAY_DAYS.idFromName(event.instanceId)).slotPolicyProof());
+    }
     if(mode==="receipt-clock"){
       if(!/^sql-receipt-[a-z0-9-]{1,32}$/u.test(event.instanceId))throw Error("TEST_INSTANCE_INVALID");
       return step.do("isolated native receipt-clock reproduction and fix",{retries:{limit:0,delay:"1 second"},timeout:"30 seconds"},()=>this.env.SQL_REPLAY_DAYS.get(this.env.SQL_REPLAY_DAYS.idFromName(event.instanceId)).receiptClockProof());

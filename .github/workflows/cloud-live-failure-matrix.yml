@@ -1,0 +1,39 @@
+name: Cloud LIVE failure matrix (synthetic only)
+
+on:
+  push:
+    paths:
+      - 'infra/cloudflare-live-kis-diagnostic/**'
+      - 'infra/cloudflare-live-free-probe/**'
+      - 'lib/**'
+      - '.github/workflows/cloud-live-failure-matrix.yml'
+  pull_request:
+    paths:
+      - 'infra/cloudflare-live-kis-diagnostic/**'
+      - 'infra/cloudflare-live-free-probe/**'
+      - 'lib/**'
+      - '.github/workflows/cloud-live-failure-matrix.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloud-fault-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  synthetic-failure-matrix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      # No secret, deployment, schedule, dispatch, real collection or artifacts.
+      # LIVE remains Cloud-only. GitHub tests pure synthetic failures, not prices.
+      - name: Congestion, clocks, retries, budget, immutable relay and model guards
+        run: node --test --test-concurrency=1 infra/cloudflare-live-kis-diagnostic/*.test.mjs
+      - run: git diff --check

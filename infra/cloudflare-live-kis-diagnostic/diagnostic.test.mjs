@@ -47,6 +47,10 @@ test("platform failures are classified without exporting original error text", (
   assert.equal(transportReason(new Error("Too many subrequests; sensitive fixture must not be echoed")), "DIAG_PLATFORM_SUBREQUEST_LIMIT");
   assert.equal(transportReason(new Error("Cannot perform I/O on behalf of a different request")), "DIAG_PLATFORM_IO_CONTEXT");
   assert.equal(transportReason(new Error("arbitrary-secret-fixture")), "DIAG_UNKNOWN_TRANSPORT_FAILURE");
+  assert.equal(transportReason(Object.assign(new Error("secret URL"), { cause: { code: "ECONNRESET", message: "secret bearer" } })), "DIAG_TRANSPORT_CONNECTION_RESET");
+  assert.equal(transportReason({ code: "ENOTFOUND" }), "DIAG_TRANSPORT_DNS");
+  assert.equal(transportReason({ cause: { code: "UND_ERR_BODY_TIMEOUT" } }), "DIAG_TRANSPORT_TIMEOUT");
+  assert.equal(transportReason({ code: "SECRET_VALUE_NOT_A_CODE" }), "DIAG_UNKNOWN_TRANSPORT_FAILURE");
 });
 test("public Git input resolution pins exactly one main commit, never guessed latest files", () => {
   const sha = "a".repeat(40);

@@ -43,7 +43,18 @@ export class KisSlotShard extends DurableObject {
       const used=budget.calls+(budget.controlCalls??0);
       if(used>=48||!path.startsWith("/slot-pair-complete")&&used>=40)throw new Error("DIAG_SHARD_EXTERNAL_BUDGET_EXHAUSTED");
       budget.controlCalls=(budget.controlCalls??0)+1;
-      const r = await broker.fetch(`https://isolated${path}${path.includes("?") ? "&" : "?"}run=${run}`, body ? { method: "POST", body: JSON.stringify(body) } : undefined), value = await r.json();
+      let r, value;
+      try {
+        r = await broker.fetch(`https://isolated${path}${path.includes("?") ? "&" : "?"}run=${run}`, body ? { method: "POST", body: JSON.stringify(body) } : undefined);
+        value = await r.json();
+      } catch (cause) {
+        const code = transportReason(cause), error = new Error(code);
+        // Only the immutable completion ACK is safely replayable. A lost lease
+        // or extra-slot reply must NEVER trigger another market reservation.
+        error.retryableCompletion = path.startsWith("/slot-pair-complete") && ![401, 403].includes(r?.status)
+          && !code.startsWith("DIAG_PLATFORM_") && !code.includes("BUDGET");
+        throw error;
+      }
       if (!r.ok) { const e = new Error(safeCode({ code: value.reason })); if (value.transportFailure) e.sourceFailure = safeCode({ code: value.transportFailure }); throw e; }
       return value;
     };
@@ -53,7 +64,8 @@ export class KisSlotShard extends DurableObject {
       lease = await control(`/slot-pair-acquire?code=${code}`);
       if (lease.existing) return Response.json({ records: [lease.existing], rawPricesStored: false, eligibleForLive: false });
       bearer = lease.authenticationRecord;
-      const available = { quote: [lease.quoteSlot], minute: [lease.minuteSlot] };
+      const available = { quote: [lease.quoteSlot], minute: lease.minuteSlot ? [lease.minuteSlot] : [] };
+      const unreportedSkips = { quote: [], minute: [] };
       const manager = {
         async getToken() { await invalidating; if (bearer && bearer.expiresAtMs > lease.deadline + 5000) return bearer; bearer = await control("/shared-auth"); return bearer; },
         invalidateIfCurrent(record) { bearer = null; invalidating = control("/shared-invalidate", record).then(() => {}); },
@@ -65,14 +77,19 @@ export class KisSlotShard extends DurableObject {
         const kind = String(url).includes("inquire-price?") ? "quote" : "minute";
         let slot,started;
         for (let attempts = 0; attempts < 3; attempts++) {
-          slot = available[kind].shift() ?? await control(`/extra-slot?code=${code}&kind=${kind}`);
+          slot = available[kind].shift();
+          if (!slot) {
+            slot = await control(`/extra-slot?code=${code}&kind=${kind}`, { skipped: unreportedSkips[kind] });
+            unreportedSkips[kind] = [];
+          }
           while (Date.now() < slot.notBefore) await sleep(slot.notBefore - Date.now());
           if (Date.now() <= slot.notBefore + 20) {
             started=Date.now();
             // The actual start stamp, not an earlier guard sample, must fit.
             if(started<=slot.notBefore+20)break;
           }
-          skipped.push({ slot: slot.slot, kind, reason: "MISSED_BEFORE_API_REQUEST" }); slot = null;
+          skipped.push({ slot: slot.slot, kind, reason: "MISSED_BEFORE_API_REQUEST" });
+          unreportedSkips[kind].push(slot.slot); slot = null;
         }
         if (!slot) throw new Error("DIAG_RATE_SLOT_MISSED");
         if (started >= lease.deadline) throw new Error("DIAG_COLLECTION_DEADLINE");
@@ -133,7 +150,17 @@ export class KisSlotShard extends DurableObject {
       ...(calls.length ? { failedEndpoint: calls.at(-1).kind, httpStatus: calls.at(-1).status,
         providerFailureCode: calls.at(-1).failure, inputEligible: lease?.record?.eligible === true } : {}), rawPricesStored: false, eligibleForLive: false }; }
     if (lease && !lease.existing) {
-      try { await control(`/slot-pair-complete?code=${code}`, { metadata: result, calls, skipped, authHint: bearer }); }
+      try {
+        const frozen = { metadata: result, calls, skipped, authHint: bearer };
+        try { await control(`/slot-pair-complete?code=${code}`, frozen); }
+        catch (error) {
+          if (!error.retryableCompletion) throw error;
+          // One same-content ACK retry, not another quote/minute request. The
+          // durable validator rejects conflicts and retains first timestamps.
+          await sleep(100);
+          await control(`/slot-pair-complete?code=${code}`, frozen);
+        }
+      }
       catch (error) {
         console.error(JSON.stringify({ event: "LIVE_COMPLETION_RECORD_FAILED", code, primaryCode: result.reason ?? "OBSERVATION_READY", recordingCode: safeCode(error) }));
         // A collection error remains primary. If collection succeeded but its

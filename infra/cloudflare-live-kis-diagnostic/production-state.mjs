@@ -104,20 +104,24 @@ export class ProductionDayState {
       this.write("prewarm", prepared); return this.write("final", prepared);
     });
   }
-  slots(date, code) {
+  slots(date, code, deferMinute = false) {
     const counter = this.read("allocator") ?? { head: 0, count: 0 };
-    const s = nextPairSlots({ now: this.now(), head: counter.head, count: counter.count, date });
-    for (const [kind, slot] of [["quote", s.quoteSlot], ["minute", s.minuteSlot]]) this.q("INSERT INTO slots VALUES (?,?,?,NULL)", slot.slot, code, kind);
-    this.write("allocator", { head: s.head, count: counter.count + 2 }, true); return s;
+    const s = nextPairSlots({ now: this.now(), head: counter.head, count: counter.count - (counter.retiredUnused ?? 0), date });
+    // New production invocations reserve the minute only AFTER quote success.
+    // Existing paired leases/diagnostics remain readable and immutable. Both
+    // modes use the same durable220ms grid and same1400 sent/reserved-call cap.
+    if (deferMinute) { s.minuteSlot = null; s.head = s.quoteSlot.slot + 1; }
+    for (const [kind, slot] of [["quote", s.quoteSlot], ["minute", s.minuteSlot]]) if (slot) this.q("INSERT INTO slots VALUES (?,?,?,NULL)", slot.slot, code, kind);
+    this.write("allocator", { head: s.head, count: counter.count + (deferMinute ? 1 : 2), retiredUnused: counter.retiredUnused ?? 0 }, true); return s;
   }
-  async acquire(date, code) {
+  async acquire(date, code, { deferMinute = false } = {}) {
     this.check(date, true);
     const previous = this.read(`observation:${code}`); if (previous) return { existing: previous };
     const original = this.finalReceipt ?? this.read("final"); if (!original?.codes.includes(code)) throw new Error("LIVE_CLOUD_NOT_PREPARED");
     this.finalReceipt = original;
     if (this.pending.has(code)) throw new Error("LIVE_CLOUD_ATTEMPT_ALREADY_RESERVED");
     return new Promise((resolve, reject) => {
-      const job = { date, code, original, resolve, reject }; this.pending.set(code, job);
+      const job = { date, code, original, resolve, reject, deferMinute }; this.pending.set(code, job);
       // One absolute deadline notification, never repeated SQL polling.
       job.cancel = this.scheduleDeadline(Math.max(0, bounds(date).end - this.now() + 1), () => {
         if (this.pending.get(code) !== job) return;
@@ -142,7 +146,7 @@ export class ProductionDayState {
           const deadline = bounds(job.date).end;
           const slots = this.transaction(() => {
             this.inTransaction = true;
-            try { const s = this.slots(job.date, job.code); this.q("INSERT INTO leases VALUES (?,?,0)", job.code, deadline); return s; }
+            try { const s = this.slots(job.date, job.code, job.deferMinute); this.q("INSERT INTO leases VALUES (?,?,0)", job.code, deadline); return s; }
             finally { this.inTransaction = false; }
           });
           this.pending.delete(job.code); job.cancel();
@@ -170,13 +174,32 @@ export class ProductionDayState {
       }
     } finally { this.draining = false; }
   }
-  extra(date, code, kind) {
+  extra(date, code, kind, skipped = []) {
     this.check(date, true);
     if (!["quote", "minute"].includes(kind) || !this.q("SELECT code FROM leases WHERE code=? AND completed=0", code).length) throw new Error("LIVE_CLOUD_LEASE_INVALID");
-    const state = this.read("allocator"), first = Math.max(state.head, Math.ceil((this.now() + 200) / 220));
-    if (state.count >= PRODUCTION_BUDGET.marketCalls || first * 220 + 20 >= bounds(date).end) throw new Error("LIVE_CLOUD_RETRY_BUDGET");
-    this.q("INSERT INTO slots VALUES (?,?,?,NULL)", first, code, kind);
-    this.write("allocator", { head: first + 1, count: state.count + 1 }, true); return { slot: first, notBefore: first * 220 };
+    if (!Array.isArray(skipped) || skipped.length > 3 || new Set(skipped).size !== skipped.length || skipped.some(s => !Number.isSafeInteger(s))) throw new Error("LIVE_CLOUD_SKIP_INVALID");
+    // A slow quote may miss its preallocated minute slot without making an
+    // API request. Retire ONLY expired, unused cells owned by this exact lane.
+    // Keep their tombstones + gross allocation count forever; never reuse IDs
+    // or refund a sent/failed HTTP call. Replacement and credit are atomic.
+    this.reserve(1024, 256);
+    return this.transaction(() => {
+      this.inTransaction = true;
+      try {
+        const state = this.read("allocator"); let retiredUnused = state.retiredUnused ?? 0;
+        for (const slot of skipped) {
+          const row = this.q("SELECT code,kind,body FROM slots WHERE slot=?", slot)[0];
+          if (!row || row.code !== code || row.kind !== kind || this.now() <= slot * 220 + 20) throw new Error("LIVE_CLOUD_SKIP_INVALID");
+          if (row.body) { if (JSON.parse(row.body).retiredUnused === true) continue; throw new Error("LIVE_CLOUD_SKIP_INVALID"); }
+          this.q("UPDATE slots SET body=? WHERE slot=?", JSON.stringify({ retiredUnused: true, recordedAt: this.now() }), slot); retiredUnused++;
+        }
+        const first = Math.max(state.head, Math.ceil((this.now() + 200) / 220));
+        if (state.count - retiredUnused >= PRODUCTION_BUDGET.marketCalls || first * 220 + 20 >= bounds(date).end) throw new Error("LIVE_CLOUD_RETRY_BUDGET");
+        this.q("INSERT INTO slots VALUES (?,?,?,NULL)", first, code, kind);
+        this.write("allocator", { head: first + 1, count: state.count + 1, retiredUnused }, true);
+        return { slot: first, notBefore: first * 220 };
+      } finally { this.inTransaction = false; }
+    });
   }
   complete(date, code, value) {
     try { return this.critical(() => {
@@ -207,6 +230,7 @@ export class ProductionDayState {
         :c.started<c.slot*220?"START_BEFORE_SLOT":c.started>c.slot*220+20?"START_AFTER_SLOT":c.completed<c.started?"RESPONSE_BEFORE_REQUEST":c.completed>this.now()?"RESPONSE_AFTER_RECEIVER_CLOCK":null;
       if(issue)throw Object.assign(new Error("LIVE_CLOUD_RATE_EVIDENCE_INVALID"),{rateIssue:issue,
         startOffsetMs:Number.isSafeInteger(c.started)?c.started-c.slot*220:null,completionAheadMs:Number.isSafeInteger(c.completed)?c.completed-this.now():null});
+      if (s.body && JSON.parse(s.body).retiredUnused === true) throw new Error("LIVE_CLOUD_RETIRED_SLOT_USED");
       const body = JSON.stringify(c); if (s.body && s.body !== body) throw new Error("LIVE_CLOUD_HTTP_CONFLICT");
       this.q("UPDATE slots SET body=? WHERE slot=?", body, c.slot);
     }

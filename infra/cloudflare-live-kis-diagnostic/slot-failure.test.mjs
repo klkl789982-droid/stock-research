@@ -13,7 +13,8 @@ const { KisSlotShard } = await import(`data:text/javascript;base64,${Buffer.from
 const start = Date.parse("2026-10-19T05:00:00Z"), end = start + 300000;
 
 function harness(t, responses, initial = start, failures = {}) {
-  let now = initial, index = 0, slotHead = 0, complete = null,firstQuoteAt=null,clockReads=0;
+  let now = initial, index = 0, slotHead = 0, complete = null,firstQuoteAt=null,clockReads=0,completionAttempts=0;
+  const completionBodies=[];
   const actualStarts = [];
   t.mock.method(Date, "now", () => {
     if(failures.finalClockSlip&&now===firstQuoteAt&&++clockReads===3)now+=21;
@@ -27,7 +28,9 @@ function harness(t, responses, initial = start, failures = {}) {
     if (url.pathname === "/slot-pair-acquire" && failures.acquire) return Response.json({ reason: failures.acquire }, { status: 503 });
     if (url.pathname === "/slot-pair-acquire") {const quoteSlot=slot();firstQuoteAt=quoteSlot.notBefore;return Response.json({ record: { eligible: true }, authenticationRecord: { accessToken: "fixture-only-not-real", generation: 1, expiresAtMs: end + 86400000 }, quoteSlot, minuteSlot: slot(), deadline: end });}
     if (url.pathname === "/extra-slot") return Response.json(slot());
-    if (url.pathname === "/slot-pair-complete") { complete = JSON.parse(init.body); return failures.complete
+    if (url.pathname === "/slot-pair-complete") { complete = JSON.parse(init.body);completionBodies.push(init.body);completionAttempts++;
+      if(completionAttempts <= (failures.completeNetwork??0))throw Error("synthetic lost completion acknowledgement");
+      return failures.complete
       ? Response.json({ reason: failures.complete }, { status: 503 }) : Response.json({ stored: true }); }
     return Response.json({ reason: "LIVE_CLOUD_AUTH_INVALIDATED" }, { status: 503 });
   } };
@@ -44,7 +47,7 @@ function harness(t, responses, initial = start, failures = {}) {
     projectResult({ code, timing }) { return { code, ...timing, status: "AVAILABLE", rawPricesStored: false }; }
   }
   const shard = new FixtureShard({}, { KIS_APP_KEY: "fixture-key", KIS_APP_SECRET: "fixture-secret" });
-  return { async run() { const r = await shard.fetch(new Request("https://isolated/collect?run=failure-fixture&codes=203650")); return { value: (await r.json()).records[0], complete, actualStarts }; } };
+  return { completionAttempts:()=>completionAttempts, async run() { const r = await shard.fetch(new Request("https://isolated/collect?run=failure-fixture&codes=203650")); return { value: (await r.json()).records[0], complete, actualStarts,completionAttempts,completionBodies }; } };
 }
 const success = { response: () => Response.json({ rt_cd: "0" }) };
 const html500 = { response: () => new Response("upstream unavailable, not JSON", { status: 500 }) };
@@ -117,6 +120,7 @@ test("failure before lease acquisition is retained in the batch output with its 
 test("successful collection followed by durable storage failure preserves the storage code", async t => {
   const h = harness(t, [success, success], start, { complete: "LIVE_CLOUD_STORAGE_BUDGET" });
   await assert.rejects(h.run(), /LIVE_CLOUD_STORAGE_BUDGET/u);
+  assert.equal(h.completionAttempts(), 1, "explicit durable rejection must not be retried as an ambiguous ACK");
 });
 
 test("a21ms slip between guard and actual start consumes no market call in the missed slot",async t=>{
@@ -125,4 +129,15 @@ test("a21ms slip between guard and actual start consumes no market call in the m
  assert.equal(r.complete.calls.length,2);
  for(const c of r.complete.calls)assert.ok(c.started>=c.slot*220&&c.started<=c.slot*220+20);
  assert.ok(r.actualStarts.every((v,i)=>!i||v-r.actualStarts[i-1]>=200));
+});
+
+test("lost immutable completion acknowledgement is retried once with identical bytes and no recollection",async t=>{
+  const r=await harness(t,[success,success],start,{completeNetwork:1}).run();
+  assert.equal(r.value.status,"AVAILABLE");assert.equal(r.actualStarts.length,2);assert.equal(r.completionAttempts,2);
+  assert.equal(r.completionBodies[0],r.completionBodies[1]);
+});
+
+test("persistent completion transport loss stops after2; explicit durable rejection is not retried",async t=>{
+  const h= harness(t,[success,success],start,{completeNetwork:2});
+  await assert.rejects(h.run(),/DIAG_UNKNOWN_TRANSPORT_FAILURE/u);assert.equal(h.completionAttempts(),2);
 });

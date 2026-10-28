@@ -4,7 +4,7 @@ import { DatabaseSync } from "node:sqlite";
 import { ProductionDayState } from "./production-state.mjs";
 import { syntheticProductionInputs } from "./swing-fixture.mjs";
 import { bounds } from "./production-core.mjs";
-import { completeWithReceiptClock } from "./receipt-clock.mjs";
+import { completeWithReceiptClock, extraWithReceiptClock } from "./receipt-clock.mjs";
 
 async function fixture(t, ahead = 2, { frozen = false } = {}) {
   const db = new DatabaseSync(":memory:"); t.after(() => db.close());
@@ -80,4 +80,53 @@ test("timer failure still runs the strict validator and releases the terminal le
   await assert.rejects(completeWithReceiptClock(f.state,f.date,f.code,f.value),/RATE_EVIDENCE_INVALID/u);
   assert.equal(f.state.q("SELECT completed FROM leases WHERE code=?",f.code)[0].completed,1);
   assert.equal(f.state.read(`observation:${f.code}`),null);
+});
+
+test("expired unused slot replacement preserves gross counts and tombstones across restart", async t => {
+  const f = await fixture(t, 2), old = f.value.calls[1]; f.set(old.started + 30);
+  const next = f.state.extra(f.date, f.code, "minute", [old.slot]);
+  assert.ok(next.slot > old.slot);
+  assert.deepEqual(f.state.read("allocator"), { head: next.slot + 1, count: 3, retiredUnused: 1 });
+  const replay = f.state.extra(f.date, f.code, "minute", [old.slot]);
+  assert.equal(f.state.read("allocator").retiredUnused, 1, "repeated tombstone cannot refund twice");
+  assert.equal(f.state.read("allocator").count, 4);
+  const reopened = new ProductionDayState({ sql: f.state.sql, env: f.state.env, now: f.state.now, transaction: f.state.transaction });
+  assert.deepEqual(reopened.read("allocator"), f.state.read("allocator"));
+  await assert.rejects(reopened.acquire(f.date, f.code, { deferMinute: true }), /ALREADY_RESERVED/u);
+  f.set(replay.notBefore + 10);
+  assert.throws(() => f.state.complete(f.date, f.code, f.value), /RETIRED_SLOT_USED/u);
+  assert.equal(f.state.read(`observation:${f.code}`), null);
+});
+
+test("failed replacement rolls back unused-slot credit and keeps the original reservation", async t => {
+  const f = await fixture(t, 2), old = f.value.calls[1]; f.set(old.started + 30);
+  f.state.write("allocator", { head: Math.ceil(f.b.end / 220), count: 2, retiredUnused: 0 }, true);
+  const prior = f.state.read("allocator");
+  assert.throws(() => f.state.extra(f.date, f.code, "minute", [old.slot]), /RETRY_BUDGET/u);
+  assert.deepEqual(f.state.read("allocator"), prior);
+  assert.equal(f.state.q("SELECT body FROM slots WHERE slot=?", old.slot)[0].body, null);
+});
+
+test("unused-slot retirement rejects early, foreign, wrong-kind, duplicate and sent cells atomically", async t => {
+  for (const mode of ["early", "foreign", "kind", "duplicate", "sent"]) {
+    const f = await fixture(t, 2), old = f.value.calls[1]; f.set(old.started + (mode === "early" ? 20 : 30));
+    if (mode === "sent") f.state.q("UPDATE slots SET body=? WHERE slot=?", JSON.stringify(old), old.slot);
+    const before = f.state.read("allocator"), slots = mode === "duplicate" ? [old.slot, old.slot] : [mode === "foreign" ? old.slot + 10000 : old.slot];
+    assert.throws(() => f.state.extra(f.date, f.code, mode === "kind" ? "quote" : "minute", slots), /SKIP_INVALID/u);
+    assert.deepEqual(f.state.read("allocator"), before);
+    const row = f.state.q("SELECT body FROM slots WHERE slot=?", old.slot)[0];
+    assert.equal(row.body === null, mode !== "sent");
+  }
+});
+
+test("the same cross-isolate clock boundary is handled for missed slots without allowing early cancellation", async t => {
+  const f = await fixture(t, 2), missed = f.value.calls[1].slot;
+  f.set(missed * 220 + 19);
+  assert.throws(() => f.state.extra(f.date, f.code, "minute", [missed]), /SKIP_INVALID/u);
+  const next = await extraWithReceiptClock(f.state, f.date, f.code, "minute", [missed]);
+  assert.ok(f.now() >= missed * 220 + 21); assert.ok(next.slot > missed); assert.equal(f.waitingUnderLock(), false);
+  assert.equal(f.state.read("allocator").retiredUnused, 1);
+  const future = await fixture(t, 2); future.set(future.value.calls[1].started - 100);
+  await assert.rejects(extraWithReceiptClock(future.state, future.date, future.code, "minute", [future.value.calls[1].slot]), /SKIP_INVALID/u);
+  assert.equal(future.waits(), 0);
 });

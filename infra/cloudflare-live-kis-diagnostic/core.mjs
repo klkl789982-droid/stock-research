@@ -56,6 +56,17 @@ export function transportReason(error) {
   if (/different request|request context|I\/O.*context/iu.test(message)) return "DIAG_PLATFORM_IO_CONTEXT";
   if (/CPU time|exceeded.*CPU/iu.test(message)) return "DIAG_PLATFORM_CPU_LIMIT";
   if (error?.name === "TimeoutError" || error?.name === "AbortError") return "DIAG_TRANSPORT_TIMEOUT";
+  // Whitelist known network causes only. Never persist provider error text,
+  // URLs, headers or arbitrary cause fields while diagnosing unknown failures.
+  const network = {
+    ECONNRESET: "DIAG_TRANSPORT_CONNECTION_RESET", EPIPE: "DIAG_TRANSPORT_CONNECTION_RESET",
+    ENOTFOUND: "DIAG_TRANSPORT_DNS", EAI_AGAIN: "DIAG_TRANSPORT_DNS",
+    ETIMEDOUT: "DIAG_TRANSPORT_TIMEOUT", UND_ERR_CONNECT_TIMEOUT: "DIAG_TRANSPORT_TIMEOUT",
+    UND_ERR_HEADERS_TIMEOUT: "DIAG_TRANSPORT_TIMEOUT", UND_ERR_BODY_TIMEOUT: "DIAG_TRANSPORT_TIMEOUT",
+    UND_ERR_SOCKET: "DIAG_TRANSPORT_SOCKET", ECONNREFUSED: "DIAG_TRANSPORT_CONNECTION_REFUSED",
+  };
+  const known = network[error?.code] ?? network[error?.cause?.code];
+  if (typeof known === "string") return known;
   if (message === "PROBE_HTTP_STATUS_UNVERIFIED") return "DIAG_HTTP_STATUS_UNVERIFIED";
   if (message === "PROBE_REDIRECT_REJECTED") return "DIAG_REDIRECT_REJECTED";
   return safeCode(error) === "DIAG_REQUEST_FAILED" ? "DIAG_UNKNOWN_TRANSPORT_FAILURE" : safeCode(error);
