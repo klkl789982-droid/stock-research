@@ -1,0 +1,582 @@
+{
+  "schemaVersion": 1,
+  "referenceDate": "2026-10-27",
+  "runId": "daily-20261028022212",
+  "status": "PROMOTED",
+  "startedAt": "2026-10-28T02:22:12.578Z",
+  "completedAt": "2026-10-28T02:29:53.572Z",
+  "source": {
+    "provider": "공공데이터포털",
+    "operation": "getStockPriceInfo"
+  },
+  "sourceEvidence": [
+    {
+      "source": "공공데이터포털",
+      "operation": "getStockPriceInfo",
+      "referenceDate": "2026-10-27",
+      "requestedAt": "2026-10-28T02:22:16.668Z",
+      "observedAt": "2026-10-28T02:29:40.106Z",
+      "sourceTimestamp": "20261027",
+      "sourceTimestampSemantics": "marketDateBasDt",
+      "minObservedBasDt": "20261027",
+      "maxObservedBasDt": "20261027",
+      "sourcePublishedAt": null,
+      "availabilityEvidence": "SYSTEM_OBSERVED_BATCH_COLLECTION",
+      "availabilityStatus": "OBSERVED",
+      "recordCount": 142452,
+      "normalizedInputHash": "c832a22ed3c5971f44c3dfcd1d0087c6c79465e81739ed1966e278e26681ef71",
+      "requestId": "5890502ae58adf88ff398ad5f1a401d9c0083e9ecbd5231295cc5d8399648644",
+      "outcome": "success"
+    },
+    {
+      "source": "KIS",
+      "operation": "securityMaster",
+      "referenceDate": "2026-10-27",
+      "requestedAt": null,
+      "observedAt": null,
+      "sourceTimestamp": null,
+      "sourceTimestampSemantics": "securityMasterAsOfDate",
+      "minObservedBasDt": null,
+      "maxObservedBasDt": null,
+      "sourcePublishedAt": null,
+      "availabilityEvidence": "NOT_RECORDED",
+      "availabilityStatus": "UNKNOWN",
+      "recordCount": null,
+      "normalizedInputHash": null,
+      "requestId": null,
+      "outcome": "notRecorded"
+    }
+  ],
+  "provenance": {
+    "schemaVersion": 2,
+    "requestedDate": "2026-10-27",
+    "generatedAt": "2026-10-28T02:29:42.109Z",
+    "sources": {
+      "securityMaster": {
+        "provider": "KIS",
+        "asOfDate": null,
+        "pointInTimeCertified": false,
+        "contentHash": null,
+        "availability": {
+          "source": "KIS",
+          "operation": "securityMaster",
+          "referenceDate": "2026-10-27",
+          "requestedAt": null,
+          "observedAt": null,
+          "sourceTimestamp": null,
+          "sourceTimestampSemantics": "securityMasterAsOfDate",
+          "minObservedBasDt": null,
+          "maxObservedBasDt": null,
+          "sourcePublishedAt": null,
+          "availabilityEvidence": "NOT_RECORDED",
+          "availabilityStatus": "UNKNOWN",
+          "recordCount": null,
+          "normalizedInputHash": null,
+          "requestId": null,
+          "outcome": "notRecorded"
+        }
+      },
+      "officialDailyPrice": {
+        "provider": "공공데이터포털",
+        "service": "getStockPriceInfo",
+        "requestedDate": "2026-10-27",
+        "minimumLatestBasDt": "20261027",
+        "maximumLatestBasDt": "20261027",
+        "rawResponseStored": false,
+        "normalizedInputHash": "c832a22ed3c5971f44c3dfcd1d0087c6c79465e81739ed1966e278e26681ef71",
+        "availability": {
+          "source": "공공데이터포털",
+          "operation": "getStockPriceInfo",
+          "referenceDate": "2026-10-27",
+          "requestedAt": "2026-10-28T02:22:16.668Z",
+          "observedAt": "2026-10-28T02:29:40.106Z",
+          "sourceTimestamp": "20261027",
+          "sourceTimestampSemantics": "marketDateBasDt",
+          "minObservedBasDt": "20261027",
+          "maxObservedBasDt": "20261027",
+          "sourcePublishedAt": null,
+          "availabilityEvidence": "SYSTEM_OBSERVED_BATCH_COLLECTION",
+          "availabilityStatus": "OBSERVED",
+          "recordCount": 142452,
+          "normalizedInputHash": "c832a22ed3c5971f44c3dfcd1d0087c6c79465e81739ed1966e278e26681ef71",
+          "requestId": "5890502ae58adf88ff398ad5f1a401d9c0083e9ecbd5231295cc5d8399648644",
+          "outcome": "success"
+        }
+      }
+    },
+    "universe": {
+      "filterVersion": "v1",
+      "contentHash": "032857c64b3d087a7aaf67c1eb182eaabc7fab4b38a7eed8f7bcd3e3b54261d4",
+      "artifact": {
+        "referenceDate": "2026-10-27",
+        "artifactPath": "data/universe.json",
+        "effectiveAt": "2026-08-16T12:21:09.588Z",
+        "count": 553,
+        "codesHash": "3672e61b8593b2dbebb3e36babd5e0f333a7a33992ea30f9c2f15655e30b3d68",
+        "verificationStatus": "UNVERIFIED",
+        "selectionReason": "CURRENT_UNIVERSE_LEGACY_FALLBACK"
+      }
+    },
+    "modelFormulaHashes": {
+      "A-v1": "43efe2d499ccb05b183056f8e8f82bf91190e863ba86fb326c398f16006fcb4c",
+      "A-v2": "e334ec0275dcca3483db936cd6442294bace8e607f034db8869f4f02071ee697",
+      "B-v1": "b9a45d38d0398617133ce8c9ce9dd05393ba787c3ad8e032efc8cb5cea6052d0",
+      "C-v1": "86f255711483ae949ec913750048461ac3a41b98dc28b2c0e21ca10522b16b8b",
+      "D-v1": "033a5f3e40adba3c74360e646b622b95683b1a83805baeb079227226658e732f"
+    },
+    "marketDataNormalizationVersion": "v2",
+    "dataContractPreflight": {
+      "version": 1,
+      "status": "PASS_WITH_QUARANTINE",
+      "referenceDate": "2026-10-27",
+      "universe": {
+        "count": 553,
+        "codesHash": "3672e61b8593b2dbebb3e36babd5e0f333a7a33992ea30f9c2f15655e30b3d68",
+        "generatedAt": "2026-08-16T12:21:09.588Z",
+        "filterVersion": "v1",
+        "pointInTimeStatus": "UNVERIFIED",
+        "artifact": {
+          "referenceDate": "2026-10-27",
+          "artifactPath": "data/universe.json",
+          "effectiveAt": "2026-08-16T12:21:09.588Z",
+          "count": 553,
+          "codesHash": "3672e61b8593b2dbebb3e36babd5e0f333a7a33992ea30f9c2f15655e30b3d68",
+          "verificationStatus": "UNVERIFIED",
+          "selectionReason": "CURRENT_UNIVERSE_LEGACY_FALLBACK"
+        }
+      },
+      "source": {
+        "provider": "공공데이터포털",
+        "operation": "getStockPriceInfo",
+        "requestedDate": "2026-10-27",
+        "collectedAt": "2026-10-28T02:29:40.106Z",
+        "requestContractHash": "5890502ae58adf88ff398ad5f1a401d9c0083e9ecbd5231295cc5d8399648644",
+        "normalizedInputHash": "c832a22ed3c5971f44c3dfcd1d0087c6c79465e81739ed1966e278e26681ef71",
+        "minimumObservedBasDt": "20261027",
+        "maximumObservedBasDt": "20261027",
+        "availability": "OBSERVED_AT_COLLECTION",
+        "freshness": {
+          "exactDateCount": 553,
+          "staleCount": 0,
+          "futureCount": 0
+        }
+      },
+      "coverage": {
+        "valid": 524,
+        "quarantined": 29,
+        "rankingEligibleByModel": {
+          "A-v1": {
+            "count": 509,
+            "codesHash": "0677d12b4278da20916e55a30530998467fc4dc00db98e2a637d7ab1895a6d9e"
+          },
+          "A-v2": {
+            "count": 509,
+            "codesHash": "0677d12b4278da20916e55a30530998467fc4dc00db98e2a637d7ab1895a6d9e"
+          },
+          "B-v1": {
+            "count": 509,
+            "codesHash": "0677d12b4278da20916e55a30530998467fc4dc00db98e2a637d7ab1895a6d9e"
+          },
+          "C-v1": {
+            "count": 524,
+            "codesHash": "f0948ac295f5bbb9dc37ddc44a1cfeb11b5c5a30204dd36334f79ac9c762fc37"
+          },
+          "D-v1": {
+            "count": 509,
+            "codesHash": "0677d12b4278da20916e55a30530998467fc4dc00db98e2a637d7ab1895a6d9e"
+          }
+        },
+        "categories": {
+          "missing": {
+            "count": 0,
+            "codes": []
+          },
+          "duplicateCode": {
+            "count": 0,
+            "codes": []
+          },
+          "invalidCode": {
+            "count": 0,
+            "codes": []
+          },
+          "duplicateDate": {
+            "count": 0,
+            "codes": []
+          },
+          "stale": {
+            "count": 0,
+            "codes": []
+          },
+          "future": {
+            "count": 0,
+            "codes": []
+          },
+          "invalidOhlcv": {
+            "count": 0,
+            "codes": []
+          },
+          "zeroVolume": {
+            "count": 29,
+            "codes": [
+              "000500",
+              "000880",
+              "001290",
+              "001510",
+              "002990",
+              "003350",
+              "010120",
+              "011930",
+              "017900",
+              "024840",
+              "024850",
+              "025560",
+              "030530",
+              "032580",
+              "038500",
+              "046970",
+              "069540",
+              "079650",
+              "090710",
+              "138360",
+              "183300",
+              "187660",
+              "207940",
+              "298000",
+              "319400",
+              "347700",
+              "348340",
+              "388790",
+              "440110"
+            ]
+          },
+          "insufficientHistory": {
+            "count": 15,
+            "codes": [
+              "0009K0",
+              "0015N0",
+              "0039P0",
+              "0126Z0",
+              "153890",
+              "217590",
+              "279570",
+              "388210",
+              "439960",
+              "475040",
+              "476830",
+              "477850",
+              "486990",
+              "490470",
+              "491000"
+            ]
+          }
+        },
+        "categoryCounts": {
+          "missing": 0,
+          "duplicateCode": 0,
+          "invalidCode": 0,
+          "duplicateDate": 0,
+          "stale": 0,
+          "future": 0,
+          "invalidOhlcv": 0,
+          "zeroVolume": 29,
+          "insufficientHistory": 15
+        }
+      },
+      "quarantine": {
+        "codes": [
+          "000500",
+          "000880",
+          "001290",
+          "001510",
+          "002990",
+          "003350",
+          "010120",
+          "011930",
+          "017900",
+          "024840",
+          "024850",
+          "025560",
+          "030530",
+          "032580",
+          "038500",
+          "046970",
+          "069540",
+          "079650",
+          "090710",
+          "138360",
+          "183300",
+          "187660",
+          "207940",
+          "298000",
+          "319400",
+          "347700",
+          "348340",
+          "388790",
+          "440110"
+        ],
+        "issues": [
+          {
+            "code": "000500",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260507",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "000500",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260511",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "000880",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260824",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "001290",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260908",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "001510",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260424",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "002990",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260708",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "003350",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260417",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "010120",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260410",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "011930",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260514",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "017900",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260410",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "017900",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260414",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "024840",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260508",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "024850",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260430",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "025560",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260724",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "030530",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20251028",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "032580",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260526",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "038500",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260205",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "046970",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260326",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "046970",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260331",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "046970",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260416",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "069540",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260413",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "069540",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260415",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "079650",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260619",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "079650",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260624",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "090710",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260120",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "090710",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260122",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "138360",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260123",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "183300",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260820",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "187660",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260225",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "187660",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260312",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "207940",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20251121",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "298000",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260612",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "319400",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260122",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "347700",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260106",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "348340",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260120",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "348340",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260123",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "388790",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260416",
+            "disposition": "quarantine"
+          },
+          {
+            "code": "440110",
+            "type": "postNonTradingPriceDiscontinuity",
+            "date": "20260202",
+            "disposition": "quarantine"
+          }
+        ]
+      },
+      "structuralFatalCount": 0,
+      "verification": {
+        "status": "UNVERIFIED",
+        "reasons": [
+          "pointInTimeMasterNotCertified"
+        ]
+      },
+      "productionAction": "PROCEED_WITH_EXISTING_QUALITY_POLICY",
+      "contentHash": "55f2522c87fb745c5647a3ce2129a154c031570813aa688c85c1619e44367557"
+    }
+  },
+  "sourceGitSha": "8effcaabff5ab9a5971e2ad3d4532a2c6612f39e",
+  "promotionGitSha": null,
+  "promotionCommitBasis": "manifestContainedInPromotionCommit",
+  "previousProductionReferenceDate": "2026-10-26",
+  "snapshotHash": "ecf837b458f1ceb612d47b53fa495bfb1536874a1fe31cfc642a17933e8858ee",
+  "universeHash": "3672e61b8593b2dbebb3e36babd5e0f333a7a33992ea30f9c2f15655e30b3d68",
+  "priceLedgerHash": "bf3bcfcf68cc3cf8d10664b60ff9bc542ab86d83b15a279903387c14753a6b81",
+  "originalCount": 553,
+  "eligibleCount": 524,
+  "quarantineCount": 29,
+  "rankingUniverseSizeByModel": {
+    "A-v1": 509,
+    "A-v2": 509,
+    "B-v1": 509,
+    "C-v1": 524,
+    "D-v1": 509
+  },
+  "issueManifestHash": null,
+  "compactHistoryHash": "c60825b084ad50fe053f649f96d340233e1ad1cf056782d6d897952d2d96be03",
+  "promoted": true,
+  "promotedAt": "2026-10-28T02:29:54.166Z",
+  "reason": null,
+  "contentHash": "d1820225bf094c3868148c51a0ec060c92cb56fc99d004995efc217c1f36830b"
+}
