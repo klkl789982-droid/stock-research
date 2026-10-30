@@ -118,6 +118,27 @@ test("one missing required input, duplicates, altered dates and future receipts 
   }
 });
 
+test("pinned exclusions need no live quote while eligible quote validation and complete Universe remain strict", async t => {
+  const f = sandbox(t), seed = f.seed, input = seed.records.at(-1);
+  const excluded = productionObservation({ code: input.code, input, seedContext: seed, signalDate: date });
+  assert.equal(excluded.status, "EXCLUDED"); assert.equal(excluded.scores, null);
+  assert.equal(excluded.observedDate, undefined); assert.equal(excluded.exclusionBasis, "PINNED_EOD_INELIGIBLE");
+  const timing = { quoteRequestedAt: `${date}T05:00:01.000Z`, quoteReceivedAt: `${date}T05:00:01.010Z`, minuteRequestedAt: `${date}T05:00:01.200Z`, minuteReceivedAt: `${date}T05:00:01.210Z` };
+  assert.throws(() => productionObservation({ code: seed.records[0].code, input: seed.records[0], seedContext: seed, signalDate: date, timing,
+    quote: { rt_cd: "0", output: { stck_prpr: "0" } } }), /KIS_INVALID_QUOTE/u);
+  await f.state.prepare(date, true);
+  const rows = observations(seed).rows;
+  for (const row of rows) f.state.write(`observation:${row.code}`, row);
+  f.state.reconcileBatches(date, reconciliation(seed)); f.set(b.start + 360000);
+  const delivery = f.state.finish(date);
+  assert.equal(delivery.models.length, 4);
+  assert.ok(delivery.models.every(model => model.records.length === 5 && model.records.every(row => seed.records.find(r => r.code === row.ticker).eligible)));
+  const evidence = f.state.read("outbox").evidence;
+  assert.equal(evidence.observations.length, 553);
+  assert.equal(evidence.observations.filter(row => row.status === "EXCLUDED").length, 45);
+  assert.equal(evidence.observations.filter(row => row.status === "AVAILABLE").length, 508);
+});
+
 test("adjacent production slots maintain the220ms grid,200ms worst-case spacing and strict cutoff", () => {
   let head = 0, count = 0; const slots = [];
   for (let i = 0; i < 553; i++) { const s = nextPairSlots({ now: b.start, head, count, date }); slots.push(s.quoteSlot.notBefore, s.minuteSlot.notBefore); head = s.head; count += 2; }

@@ -12,6 +12,8 @@ export class KisSlotShard extends DurableObject {
   assertInvocation() { assertDiagnostic(this.env); }
   brokerFor() { return this.env.BROKER.get(this.env.BROKER.idFromName("single-approved-kis-credential-v1")); }
   minuteQueryTime() { return diagnosticMinuteTime(Date.now()); }
+  projectPinnedExclusion() { return null; }
+  acquisitionId() { return null; }
   projectResult(args) { return projectDiagnosticResult(args); }
   async fetch(request, budget = { calls: 0, controlCalls: 0 }) {
     this.assertInvocation();
@@ -49,8 +51,10 @@ export class KisSlotShard extends DurableObject {
         value = await r.json();
       } catch (cause) {
         const code = transportReason(cause), error = new Error(code);
-        // Only the immutable completion ACK is safely replayable. A lost lease
-        // or extra-slot reply must NEVER trigger another market reservation.
+        // Matching invocation IDs recover the same durable lease grant only.
+        // Extra-slot reservations remain non-retryable.
+        error.retryableAcquisition = path.startsWith("/slot-pair-acquire") && !r
+          && !code.startsWith("DIAG_PLATFORM_") && !code.includes("BUDGET");
         error.retryableCompletion = path.startsWith("/slot-pair-complete") && ![401, 403].includes(r?.status)
           && !code.startsWith("DIAG_PLATFORM_") && !code.includes("BUDGET");
         throw error;
@@ -61,8 +65,19 @@ export class KisSlotShard extends DurableObject {
     let lease = null, bearer = null, invalidating = Promise.resolve(), result;
     const calls = [], skipped = [], retries = [], timing = {};
     try {
-      lease = await control(`/slot-pair-acquire?code=${code}`);
+      const acquisitionId = this.acquisitionId();
+      const acquisitionPath = `/slot-pair-acquire?code=${code}${acquisitionId ? `&acquisitionId=${acquisitionId}` : ""}`;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try { lease = await control(acquisitionPath); break; }
+        catch (error) {
+          if (!acquisitionId || !error.retryableAcquisition || attempt === 2) throw error;
+          retries.push({ kind: "lease", reason: safeCode(error), attempt: attempt + 1 });
+          await sleep(100 * (attempt + 1));
+        }
+      }
       if (lease.existing) return Response.json({ records: [lease.existing], rawPricesStored: false, eligibleForLive: false });
+      result = this.projectPinnedExclusion({ code, input: lease.record, seedReferenceDate: lease.seedReferenceDate, seedContext: lease.seedContext, signalDate: lease.signalDate });
+      if (!result) {
       bearer = lease.authenticationRecord;
       const available = { quote: [lease.quoteSlot], minute: lease.minuteSlot ? [lease.minuteSlot] : [] };
       const unreportedSkips = { quote: [], minute: [] };
@@ -144,11 +159,12 @@ export class KisSlotShard extends DurableObject {
       timing.minuteRequestedExchangeTime = this.minuteQueryTime(timing);
       const minute = await read(`/uapi/domestic-stock/v1/quotations/inquire-time-itemchartprice?FID_ETC_CLS_CODE=&FID_COND_MRKT_DIV_CODE=J&FID_INPUT_ISCD=${code}&FID_INPUT_HOUR_1=${timing.minuteRequestedExchangeTime.replaceAll(":", "")}&FID_PW_DATA_INCU_YN=N`, "FHKST03010200");
       result = this.projectResult({ quote, minute, code, timing, input: lease.record, seedReferenceDate: lease.seedReferenceDate, seedContext: lease.seedContext, signalDate: lease.signalDate });
-      if (retries.length) result.retryEvidence = retries;
+      }
     } catch (e) { result = { code, reason: safeCode(e), failureStage: lease ? calls.length ? "COLLECTION" : "LEASED_SETUP" : "LEASE_ACQUIRE",
       ...(e.sourceFailure ? { sourceFailure: e.sourceFailure } : {}),
       ...(calls.length ? { failedEndpoint: calls.at(-1).kind, httpStatus: calls.at(-1).status,
         providerFailureCode: calls.at(-1).failure, inputEligible: lease?.record?.eligible === true } : {}), rawPricesStored: false, eligibleForLive: false }; }
+    if (retries.length) result.retryEvidence = retries;
     if (lease && !lease.existing) {
       try {
         const frozen = { metadata: result, calls, skipped, authHint: bearer };

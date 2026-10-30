@@ -50,14 +50,24 @@ export function checkCutover(proof, now = Date.now()) {
 
 // Existing full signal builder + validator applied to one original seed record
 // in RAM. No alternative formula, rounding, quote quality rule or raw storage.
+export function productionPinnedExclusion({ code, input, seedReferenceDate, seedContext, signalDate }) {
+  if (input?.code !== code || typeof input.eligible !== "boolean") throw new Error("LIVE_CLOUD_INPUT_REJECTED");
+  if (input.eligible) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/u.test(seedReferenceDate ?? "") || seedContext?.requestedDate !== seedReferenceDate
+    || seedReferenceDate >= signalDate || !/^[a-f0-9]{64}$/u.test(seedContext?.contentHash ?? "")) throw new Error("LIVE_CLOUD_PIN_INVALID");
+  // Eligibility was fixed before collection. An excluded row needs no quote,
+  // minute timestamp or fabricated observation; preserve its pinned identity.
+  return { code, companyName: input.name, status: "EXCLUDED", scores: null, exclusionBasis: "PINNED_EOD_INELIGIBLE",
+    seedReferenceDate, seedHash: seedContext.contentHash, inputHash: hash(input), rawPricesStored: false, modelFormulaUnchanged: true };
+}
 export function productionObservation({ quote, minute, code, timing, input, seedContext, signalDate }) {
+  const excluded = productionPinnedExclusion({ code, input, seedReferenceDate: seedContext?.requestedDate, seedContext, signalDate });
+  if (excluded) return excluded;
   const b = bounds(signalDate), stamps = [timing.quoteRequestedAt, timing.quoteReceivedAt, timing.minuteRequestedAt, timing.minuteReceivedAt].map(Date.parse);
   if (stamps.some(x => !Number.isFinite(x) || x < b.start || x > b.end) || stamps[0] > stamps[1] || stamps[1] > stamps[2] || stamps[2] > stamps[3]) throw new Error("LIVE_CLOUD_OBSERVATION_WINDOW");
   let q = parseKisQuote(quote, code, timing.quoteReceivedAt);
   if (q.asOfDate && q.asOfDate !== signalDate) throw new Error("LIVE_CLOUD_QUOTE_DATE");
   q = attachKisMinuteObservation(q, minute, { requestedDate: signalDate, requestedTime: kst(stamps[0]).time });
-  if (!input.eligible) return { code, companyName: input.name, status: "EXCLUDED", scores: null, ...timing,
-    observedDate: q.asOfDate, observedTime: q.asOfTime, responseHash: hash({ quote, minute }), rawPricesStored: false, modelFormulaUnchanged: true };
   const signal = buildIntradayModelTopSignal({ seed: { ...seedContext, records: [input] }, quotesByCode: new Map([[code, q]]), signalDate,
     collectionStartedAt: timing.quoteRequestedAt, collectionCompletedAt: timing.minuteReceivedAt });
   if (validateIntradayModelTopSignal(signal).length || signal.status !== "READY") throw new Error("LIVE_CLOUD_INPUT_REJECTED");

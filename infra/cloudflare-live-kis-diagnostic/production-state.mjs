@@ -9,7 +9,7 @@ import { EXECUTION_PREFIX, EXECUTION_EVENTS, sealExecutionRecord } from "../../l
 export class ProductionDayState {
   constructor({ sql, env, prepare, bundle, remote, now = Date.now, wait = ms => new Promise(r => setTimeout(r, ms)), transaction = fn => fn(), scheduleDeadline = (ms, fn) => { const timer = setTimeout(fn, ms); timer.unref?.(); return () => clearTimeout(timer); } }) {
     this.sql = sql; this.env = env; this.prepareInput = prepare; this.bundle = bundle; this.remote = remote; this.now = now; this.wait = wait;
-    this.transaction = transaction; this.scheduleDeadline = scheduleDeadline; this.pending = new Map(); this.draining = false; this.controlDepth = 0;
+    this.transaction = transaction; this.scheduleDeadline = scheduleDeadline; this.pending = new Map(); this.acquiring = new Map(); this.draining = false; this.controlDepth = 0;
     this.credit = { r: 0, w: 0 }; this.cursorUsage = { r: 0, w: 0 }; this.usageUpdates = 0;
     sql.exec("CREATE TABLE IF NOT EXISTS docs (id TEXT PRIMARY KEY,digest TEXT NOT NULL,body TEXT NOT NULL)").toArray();
     sql.exec("CREATE TABLE IF NOT EXISTS leases (code TEXT PRIMARY KEY,expires INTEGER NOT NULL,completed INTEGER NOT NULL)").toArray();
@@ -114,21 +114,65 @@ export class ProductionDayState {
     for (const [kind, slot] of [["quote", s.quoteSlot], ["minute", s.minuteSlot]]) if (slot) this.q("INSERT INTO slots VALUES (?,?,?,NULL)", slot.slot, code, kind);
     this.write("allocator", { head: s.head, count: counter.count + (deferMinute ? 1 : 2), retiredUnused: counter.retiredUnused ?? 0 }, true); return s;
   }
-  async acquire(date, code, { deferMinute = false } = {}) {
+  async acquire(date, code, { deferMinute = false, acquisitionId = null } = {}) {
     this.check(date, true);
+    if (acquisitionId !== null && !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/u.test(acquisitionId)) throw new Error("LIVE_CLOUD_ACQUISITION_ID_INVALID");
     const previous = this.read(`observation:${code}`); if (previous) return { existing: previous };
     const original = this.finalReceipt ?? this.read("final"); if (!original?.codes.includes(code)) throw new Error("LIVE_CLOUD_NOT_PREPARED");
     this.finalReceipt = original;
+    // Only the SAME live caller, still awaiting its first lease response, may
+    // reconnect. A new invocation gets a new ID and cannot reclaim this work.
+    const intent = this.read(`acquisition:${code}`);
+    if (intent && (intent.acquisitionId !== acquisitionId || intent.deferMinute !== deferMinute)) throw new Error("LIVE_CLOUD_ATTEMPT_ALREADY_RESERVED");
+    const acquiring = this.acquiring.get(code);
+    if (acquiring) {
+      if (!acquisitionId || acquiring.acquisitionId !== acquisitionId) throw new Error("LIVE_CLOUD_ATTEMPT_ALREADY_RESERVED");
+      return acquiring.promise;
+    }
+    const grant = this.read(`lease-grant:${code}`);
+    if (grant) {
+      const lease = this.q("SELECT expires,completed FROM leases WHERE code=?", code)[0];
+      if (!acquisitionId || grant.acquisitionId !== acquisitionId || grant.deferMinute !== deferMinute || grant.date !== date
+        || !intent || !lease || lease.completed !== 0 || lease.expires !== grant.deadline
+        || this.read(`lease-expanded:${code}`)) throw new Error("LIVE_CLOUD_ATTEMPT_ALREADY_RESERVED");
+      for (const [kind, slot] of [["quote", grant.slots.quoteSlot], ["minute", grant.slots.minuteSlot]]) if (slot) {
+        const reserved = this.q("SELECT code,kind,body FROM slots WHERE slot=?", slot.slot)[0];
+        if (!reserved || reserved.code !== code || reserved.kind !== kind || reserved.body !== null) throw new Error("LIVE_CLOUD_ATTEMPT_ALREADY_RESERVED");
+      }
+      // Replay the exact original reservations, never allocate replacements or
+      // infer that their timestamps are current. The caller's existing missed
+      // slot path must still retire unused slots through the rate allocator.
+      return this.loadLeaseBundle(date, original, code, grant.slots, grant.deadline);
+    }
     if (this.pending.has(code)) throw new Error("LIVE_CLOUD_ATTEMPT_ALREADY_RESERVED");
-    return new Promise((resolve, reject) => {
-      const job = { date, code, original, resolve, reject, deferMinute }; this.pending.set(code, job);
+    if (this.q("SELECT code FROM leases WHERE code=?", code).length) throw new Error("LIVE_CLOUD_ATTEMPT_ALREADY_RESERVED");
+    if (acquisitionId && !intent) this.write(`acquisition:${code}`, { acquisitionId, deferMinute });
+    let job;
+    const promise = new Promise((resolve, reject) => {
+      job = { date, code, original, resolve, reject, deferMinute, acquisitionId }; this.pending.set(code, job);
       // One absolute deadline notification, never repeated SQL polling.
       job.cancel = this.scheduleDeadline(Math.max(0, bounds(date).end - this.now() + 1), () => {
         if (this.pending.get(code) !== job) return;
         this.pending.delete(code); reject(new Error("LIVE_CLOUD_WINDOW_EXPIRED"));
       });
-      this.drain();
     });
+    this.acquiring.set(code, { acquisitionId, promise });
+    this.drain();
+    try { return await promise; }
+    finally { if (this.acquiring.get(code)?.promise === promise) this.acquiring.delete(code); }
+  }
+  async loadLeaseBundle(date, original, code, slots, deadline) {
+    try {
+      const data = await this.bundle(date, original, code);
+      this.check(date, true);
+      return { ...data, ...slots, deadline, signalDate: date, seedReferenceDate: original.seedReferenceDate };
+    } catch (error) {
+      try { this.critical(() => this.write(`observation:${code}`, { code, reason: safeCode(error), rawPricesStored: false })); }
+      catch (recordError) { console.error(JSON.stringify({ event: "LIVE_BUNDLE_FAILURE_RECORD_FAILED", primaryCode: safeCode(error), recordingCode: safeCode(recordError) })); }
+      try { this.critical(() => this.q("UPDATE leases SET completed=1 WHERE code=?", code)); }
+      catch (releaseError) { console.error(JSON.stringify({ event: "LIVE_BUNDLE_LEASE_RELEASE_FAILED", primaryCode: safeCode(error), recordingCode: safeCode(releaseError) })); }
+      this.drain(); throw error;
+    }
   }
   drain() {
     if (this.draining) return; this.draining = true;
@@ -146,22 +190,16 @@ export class ProductionDayState {
           const deadline = bounds(job.date).end;
           const slots = this.transaction(() => {
             this.inTransaction = true;
-            try { const s = this.slots(job.date, job.code, job.deferMinute); this.q("INSERT INTO leases VALUES (?,?,0)", job.code, deadline); return s; }
+            try {
+              const s = this.slots(job.date, job.code, job.deferMinute); this.q("INSERT INTO leases VALUES (?,?,0)", job.code, deadline);
+              if (job.acquisitionId) this.write(`lease-grant:${job.code}`, { date: job.date, acquisitionId: job.acquisitionId, deferMinute: job.deferMinute, slots: s, deadline });
+              return s;
+            }
             finally { this.inTransaction = false; }
           });
           this.pending.delete(job.code); job.cancel();
           // Never hold the queue/transaction across broker network I/O.
-          Promise.resolve().then(() => this.bundle(job.date, job.original, job.code)).then(data => job.resolve({ ...data, ...slots, deadline,
-            signalDate: job.date, seedReferenceDate: job.original.seedReferenceDate }), error => {
-            try { this.critical(() => this.write(`observation:${job.code}`, { code: job.code, reason: safeCode(error), rawPricesStored: false })); }
-            catch (recordError) { console.error(JSON.stringify({ event: "LIVE_BUNDLE_FAILURE_RECORD_FAILED", primaryCode: safeCode(error), recordingCode: safeCode(recordError) })); }
-            // Releasing an already attempted symbol is independent of its
-            // diagnostic write. Keep the durable lease row as a duplicate
-            // fence; never delete/reclaim it or turn missing input into success.
-            try { this.critical(() => this.q("UPDATE leases SET completed=1 WHERE code=?", job.code)); }
-            catch (releaseError) { console.error(JSON.stringify({ event: "LIVE_BUNDLE_LEASE_RELEASE_FAILED", primaryCode: safeCode(error), recordingCode: safeCode(releaseError) })); }
-            job.reject(error); this.drain();
-          });
+          Promise.resolve().then(() => this.loadLeaseBundle(job.date, job.original, job.code, slots, deadline)).then(job.resolve, job.reject);
         } catch (error) {
           this.pending.delete(job.code); job.cancel(); job.reject(error);
           // Fail all waiting calls on owner/window/budget failure without a
@@ -196,6 +234,9 @@ export class ProductionDayState {
         const first = Math.max(state.head, Math.ceil((this.now() + 200) / 220));
         if (state.count - retiredUnused >= PRODUCTION_BUDGET.marketCalls || first * 220 + 20 >= bounds(date).end) throw new Error("LIVE_CLOUD_RETRY_BUDGET");
         this.q("INSERT INTO slots VALUES (?,?,?,NULL)", first, code, kind);
+        // Reconnection is for an unreceived initial grant only. Once the owner
+        // advances to minute/retry reservation, never replay that grant again.
+        if (this.read(`acquisition:${code}`) && !this.read(`lease-expanded:${code}`)) this.write(`lease-expanded:${code}`, { slot: first, kind });
         this.write("allocator", { head: first + 1, count: state.count + 1, retiredUnused }, true);
         return { slot: first, notBefore: first * 220 };
       } finally { this.inTransaction = false; }
@@ -345,7 +386,11 @@ export class ProductionDayState {
       if(missing&&!deadline)return{ready:false,pendingBatches:missing,totalBatches:batches.length};
       const firstFailure=batches.flatMap(batch=>batch.failures.map(r=>({...r,batchId:batch.id})))[0]??null;
       this.reconcileBatches(date,{schemaVersion:1,date,runId,batches,firstFailure});
-      return{ready:true,pendingBatches:missing,totalBatches:batches.length,firstFailure};
+      // Workflow step output retains every failure separately from the first
+      // durable error. A nonrequired quote error must not hide lease failures.
+      const failureSummary=batches.flatMap(batch=>batch.failures.map(row=>({code:row.code,reason:row.reason,
+        failureStage:row.failureStage,required:p.eligibleCodes.includes(row.code)})));
+      return{ready:true,pendingBatches:missing,totalBatches:batches.length,firstFailure,failureSummary};
     });
   }
   freezeExecution(date, event, workflowState = "RUNNING", error = undefined) {

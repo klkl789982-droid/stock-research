@@ -1,7 +1,7 @@
 import { DurableObject, WorkflowEntrypoint } from "cloudflare:workers";
 import { KisSlotShard } from "./slot-shard.mjs";
 import { ProductionDayState } from "../production-state.mjs";
-import { assertProduction, assertWindow, bounds, kst, productionObservation, WATCH_CRON } from "../production-core.mjs";
+import { assertProduction, assertWindow, bounds, kst, productionObservation, productionPinnedExclusion, WATCH_CRON } from "../production-core.mjs";
 import { safeCode, edgeFetch, transportReason } from "../core.mjs";
 import { createKisEodPrivateStore } from "../../../lib/kis-eod-private-store.mjs";
 import { privateRequestBudget } from "../relay-budget.mjs";
@@ -90,7 +90,7 @@ export class LiveDay extends DurableObject {
   async fetch(request) {
     try {
       const u = new URL(request.url), date = dateOf(u.searchParams.get("run")), code = u.searchParams.get("code");
-      if (u.pathname === "/slot-pair-acquire") return Response.json(await this.state.acquire(date, code, { deferMinute: true }));
+      if (u.pathname === "/slot-pair-acquire") return Response.json(await this.state.acquire(date, code, { deferMinute: true, acquisitionId: u.searchParams.get("acquisitionId") }));
       if (u.pathname === "/extra-slot") return Response.json(await extraWithReceiptClock(this.state, date, code, u.searchParams.get("kind"), request.method === "POST" ? (await request.json()).skipped : []));
       if (u.pathname === "/slot-pair-complete") return Response.json(await completeWithReceiptClock(this.state, date, code, await request.json()));
       // Tokens may NOT be refreshed inside the market window. The already
@@ -102,9 +102,11 @@ export class LiveDay extends DurableObject {
 }
 
 export class LiveBatch extends KisSlotShard {
+  acquisitionId() { return crypto.randomUUID(); }
   assertInvocation() { assertProduction(this.env); }
   brokerFor(run) { return day(this.env, runOf(run).dayName); }
   minuteQueryTime(timing) { return kst(Date.parse(timing.quoteRequestedAt)).time; }
+  projectPinnedExclusion(args) { return productionPinnedExclusion(args); }
   projectResult(args) { return productionObservation(args); }
 }
 
