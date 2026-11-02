@@ -52,7 +52,7 @@ export class KisDiagnosticBroker extends DurableObject {
     assertProduction(this.env);
     if (kst(Date.now()).date !== date || Date.now() >= bounds(date).start) throw new Error("LIVE_CLOUD_INPUT_LATE");
     this.currentRun = `live-${date}`; this.deadline = null;
-    const token = await this.sharedAuth(this.currentRun);
+    const token = await this.sharedAuth(this.currentRun, bounds(date).end + 60000);
     if (token.expiresAtMs <= bounds(date).end + 60000) throw new Error("LIVE_CLOUD_AUTH_TTL");
     const response = await this.client.request(`${BASE}/uapi/domestic-stock/v1/quotations/chk-holiday?BASS_DT=${date.replaceAll("-", "")}&CTX_AREA_FK=&CTX_AREA_NK=`, { headers: { "Content-Type": "application/json", tr_id: "CTCA0903R" } });
     if (!response.ok || parseKisHolidayResponse(await response.json(), date, new Date().toISOString()).isTradingDay !== true) throw new Error("LIVE_CLOUD_NOT_TRADING_DAY");
@@ -87,19 +87,36 @@ export class KisDiagnosticBroker extends DurableObject {
     return { record, authenticationRecord, seedContext: { requestedDate: this.seed.requestedDate, generatedAt: this.seed.generatedAt,
       contentHash: this.seed.contentHash, sourceManifest: this.seed.sourceManifest } };
   }
-  async sharedAuth(run) {
+  async sharedAuth(run, requiredUntil = null) {
     this.currentRun = run;
     const deadline = this.state(`run:${run}`) ? this.state(`run:${run}`) + 300000 : Date.now() + 360000;
+    if (requiredUntil !== null && !Number.isSafeInteger(requiredUntil)) throw new Error("LIVE_CLOUD_AUTH_HORIZON_INVALID");
+    const minimumExpiry = Math.max(deadline + 5000, requiredUntil ?? 0);
     const pinned = this.pinnedAuth.get(run);
-    if (pinned && pinned.expiresAtMs > deadline + 5000) return pinned;
+    if (pinned && pinned.expiresAtMs > minimumExpiry) return pinned;
     const sealed = this.ctx.storage.sql.exec("SELECT value FROM control WHERE id='sealedAuth'").toArray()[0]?.value;
+    let restored = null;
     if (sealed) {
-      const restored = openAuthentication(sealed, this.credentials);
-      if (restored.expiresAtMs > deadline + 5000) { this.set("knownAuthExpiry", restored.expiresAtMs); this.pinnedAuth.set(run, restored); return restored; }
+      restored = openAuthentication(sealed, this.credentials);
+      if (restored.expiresAtMs > minimumExpiry) { this.set("knownAuthExpiry", restored.expiresAtMs); this.pinnedAuth.set(run, restored); return restored; }
+    }
+    if (requiredUntil !== null) {
+      // A still-valid short token cannot support the whole LIVE session. The
+      // diagnostic six-minute cache policy must not override that contract.
+      // Refresh only during livePrepare (before14), at most once per minute,
+      // including after eviction/failure. Preserve old ciphertext until a
+      // replacement meets the SAME horizon; never refresh inside collection.
+      if (this.state("liveAuthRetryAfter") > Date.now()) throw new Error("LIVE_CLOUD_AUTH_RETRY_BACKOFF");
+      this.set("liveAuthRetryAfter", Date.now() + 60000);
+      if (pinned) this.manager.invalidateIfCurrent(pinned);
+      if (restored) this.manager.invalidateIfCurrent(restored);
     }
     const record = await this.manager.getToken();
     this.set("knownAuthExpiry", record.expiresAtMs);
-    if (record.expiresAtMs <= deadline + 5000) throw new Error("DIAG_AUTH_TTL_TOO_SHORT");
+    if (record.expiresAtMs <= minimumExpiry) {
+      if (requiredUntil !== null) this.manager.invalidateIfCurrent(record);
+      throw new Error(requiredUntil === null ? "DIAG_AUTH_TTL_TOO_SHORT" : "LIVE_CLOUD_AUTH_TTL");
+    }
     this.ctx.storage.sql.exec("INSERT OR REPLACE INTO control VALUES ('sealedAuth',?)", sealAuthentication(record, this.credentials));
     this.pinnedAuth.set(run, record);
     return record;

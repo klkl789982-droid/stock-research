@@ -1,10 +1,11 @@
 {
   "schemaVersion": 1,
-  "reviewDateKst": "2026-10-30",
+  "reviewDateKst": "2026-11-02",
   "scope": "Failure-mode coverage, not a prediction of supplier uptime or next-run success probability",
   "offlineCommand": "npm run live:preflight-test",
   "constraints": { "universe": 553, "globalConcurrency": 8, "minimumActualStartSpacingMs": 200, "reservedGridMs": 220, "maximumMarketRequests": 1400, "invocationTimeoutMs": 300000, "paidFallback": false, "recollectionInTests": false },
   "risks": [
+    { "id": "AUTH_HORIZON_MISMATCH", "scenario": "Credential cache accepts expiry beyond six minutes but LIVE requires expiry beyond15:31, repeatedly rejecting the same short-lived token", "coverage": "pre-fix failure reproduced; full-horizon replacement, healthy reuse, strict TTL rejection, durable one-minute refresh backoff and no post14 preparation tests", "mitigation": "apply the same required expiry to memory/ciphertext cache and replacement; renew only before14 without changing credentials or issuing repeatedly", "residual": "not proven to have caused prior incidents; provider authentication failure or insufficient issued TTL still blocks" },
     { "id": "PINNED_INELIGIBLE_QUOTE", "scenario": "An already excluded ticker has an invalid quote and blocks a complete required Universe", "coverage": "pinned exclusion before API, no synthetic time, failed exclusion storage still blocks, full553 accounting and unchanged eligible rankings", "mitigation": "exclude only explicit false eligibility from the immutable pre-signal input", "residual": "unknown eligibility, wrong identity and required quote failures remain blocking" },
     { "id": "LEASE_RESPONSE_LOSS", "scenario": "Acquisition transport response is lost while queued or after a durable grant; October30 five eligible failures", "coverage": "same-invocation ID reconnect before/after grant and restart, bounded3 serial attempts before market access, no duplicate slot allocation, persistent failure stops", "mitigation": "replay only the identical unused grant to the original caller; never reclaim for a new invocation", "residual": "precise original platform exception unavailable; persistent transport outage and response lost after market access remain fail-closed" },
     { "id": "CLOCK_RECEIPT", "scenario": "Cross-isolate response timestamp1/2ms ahead of receiver", "coverage": "full139-batch compound + strict native timer test", "mitigation": "bounded I/O clock refresh; unchanged timestamps and zero future tolerance", "residual": "large/frozen clocks fail closed" },

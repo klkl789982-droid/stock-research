@@ -132,6 +132,56 @@ test("actual broker stops at durable daily cap before touching network", async t
   await assert.rejects(() => f.broker.transport("https://example.invalid", {}), /BUDGET_EXHAUSTED/u);
   assert.equal(f.db.prepare("SELECT COUNT(*) AS n FROM calls").get().n, 0);
 });
+
+test("LIVE auth must cover full collection horizon, not only the next six minutes", async t => {
+  const f = sandbox(t), now = Date.parse("2026-11-02T13:59:00+09:00"), until = Date.parse("2026-11-02T15:31:00+09:00");
+  t.mock.method(Date, "now", () => now);
+  const old = { accessToken: "synthetic-short-lived", expiresAtMs: now + 11 * 60000, generation: 1 };
+  f.db.prepare("INSERT INTO control VALUES ('sealedAuth',?)").run(sealAuthentication(old, { appKey: env.KIS_APP_KEY, appSecret: env.KIS_APP_SECRET }));
+  f.broker.pinnedAuth.set("live-2026-11-02", old);
+  let issued = 0;
+  t.mock.method(f.broker.manager, "getToken", async () => { issued++; return { accessToken: "synthetic-long-lived", expiresAtMs: until + 3600000, generation: 2 }; });
+  const result = await f.broker.sharedAuth("live-2026-11-02", until);
+  assert.ok(result.expiresAtMs > until); assert.equal(issued, 1);
+  assert.deepEqual(await f.broker.sharedAuth("live-2026-11-02", until), result); assert.equal(issued, 1);
+});
+
+test("healthy persisted full-session auth is reused without issuing or invalidating", async t => {
+  const f = sandbox(t), now = Date.parse("2026-11-02T13:40:00+09:00"), until = Date.parse("2026-11-02T15:31:00+09:00");
+  t.mock.method(Date, "now", () => now);
+  const good = { accessToken: "synthetic-full-session", expiresAtMs: until + 1, generation: 1 };
+  f.db.prepare("INSERT INTO control VALUES ('sealedAuth',?)").run(sealAuthentication(good, { appKey: env.KIS_APP_KEY, appSecret: env.KIS_APP_SECRET }));
+  t.mock.method(f.broker.manager, "getToken", async () => { throw Error("UNEXPECTED_ISSUANCE"); });
+  assert.deepEqual(await f.broker.sharedAuth("live-2026-11-02", until), good);
+  assert.equal(f.broker.state("liveAuthRetryAfter"), 0);
+});
+
+test("insufficient provider TTL remains blocked and refresh cooldown survives restart", async t => {
+  const f = sandbox(t); let now = Date.parse("2026-11-02T13:40:00+09:00");
+  const until = Date.parse("2026-11-02T15:31:00+09:00"); t.mock.method(Date, "now", () => now);
+  const old = { accessToken: "synthetic-insufficient", expiresAtMs: until, generation: 1 };
+  const sealed = sealAuthentication(old, { appKey: env.KIS_APP_KEY, appSecret: env.KIS_APP_SECRET });
+  f.db.prepare("INSERT INTO control VALUES ('sealedAuth',?)").run(sealed);
+  let attempts = 0;
+  t.mock.method(f.broker.manager, "getToken", async () => { attempts++; return old; });
+  await assert.rejects(f.broker.sharedAuth("live-2026-11-02", until), /LIVE_CLOUD_AUTH_TTL/);
+  await assert.rejects(f.broker.sharedAuth("live-2026-11-02", until), /AUTH_RETRY_BACKOFF/);
+  assert.equal(attempts, 1);
+  assert.equal(f.db.prepare("SELECT value FROM control WHERE id='sealedAuth'").get().value, sealed);
+  const reopened = new KisDiagnosticBroker(f.ctx, env);
+  t.mock.method(reopened.manager, "getToken", async () => { attempts++; return { ...old, expiresAtMs: until + 3600000 }; });
+  await assert.rejects(reopened.sharedAuth("live-2026-11-02", until), /AUTH_RETRY_BACKOFF/);
+  now += 60000;
+  assert.ok((await reopened.sharedAuth("live-2026-11-02", until)).expiresAtMs > until);
+  assert.equal(attempts, 2);
+});
+
+test("full-horizon preparation never renews auth after the observation window starts", async t => {
+  const f = sandbox(t); f.broker.env = { ...env, LIVE_PRODUCTION_ENABLED: "true", LIVE_PRODUCER: "cloud", LIVE_CUTOVER_RECEIPT_HASH: "a".repeat(64) };
+  t.mock.method(Date, "now", () => Date.parse("2026-11-02T14:00:00+09:00"));
+  t.mock.method(f.broker, "sharedAuth", async () => { throw Error("UNEXPECTED_ISSUANCE"); });
+  await assert.rejects(f.broker.livePrepare("2026-11-02"), /LIVE_CLOUD_INPUT_LATE/);
+});
 test("deployed formula manifest exactly matches current production source files", async () => {
   for (const [file, expected] of Object.entries(FORMULA_HASHES)) {
     const text = (await fs.readFile(new URL(`../../${file}`, import.meta.url), "utf8")).replaceAll("\r\n", "\n");
