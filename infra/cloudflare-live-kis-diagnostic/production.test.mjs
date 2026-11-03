@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { productionObservation, aggregateProduction, nextPairSlots, bounds, normalDayBudget, assertProduction, checkCutover, activationConfig, LIVE_CRONS, PRODUCTION_BUDGET } from "./production-core.mjs";
 import { ProductionDayState } from "./production-state.mjs";
@@ -11,6 +12,7 @@ import { readLatestPrivateLive, validateLiveDelivery } from "../../lib/private-l
 import { validateForecastRecord } from "../../lib/forecast-swing-contract.mjs";
 import { buildCloudSwingIntent, persistCloudSwingIntent } from "./cloud-swing.mjs";
 import { completeWithReceiptClock } from "./receipt-clock.mjs";
+import { assertTransitionReplay, verifyTransitionReplay, transitionReplayKey, TRANSITION_REPLAY_POLICY } from "../../lib/live-transition-replay.mjs";
 
 const date = "2026-10-19", seedDate = "2026-10-16", b = bounds(date);
 const env = { LIVE_PRODUCTION_ENABLED: "true", LIVE_PRODUCER: "cloud", LIVE_CUTOVER_RECEIPT_HASH: "a".repeat(64) };
@@ -31,14 +33,15 @@ function inputFixture() {
         availabilityEvidence: "SYSTEM_OBSERVED_BATCH_COLLECTION", outcome: "success", requestedAt: `${date}T03:00:00.000Z`, observedAt: `${date}T03:00:30.000Z`, normalizedInputHash: "b".repeat(64) } } } }, records };
   return { ...base, contentHash: intradaySeedHash(base) };
 }
-function observations(seed) {
+function observations(seed, onPrice) {
   const quotes = new Map(), rows = seed.records.map((input, i) => {
     const q = { ...fixture(i).quote, asOfDate: date, asOfTime: "14:00:01", receivedAt: `${date}T05:00:01.010Z` };
     quotes.set(input.code, q);
     const quote = { rt_cd: "0", output: { stck_shrn_iscd: input.code, stck_prpr: String(q.price), stck_oprc: String(q.open), stck_hgpr: String(q.high), stck_lwpr: String(q.low), acml_vol: String(q.volume), prdy_vrss: String(q.change), prdy_ctrt: String(q.rate) } };
     const minute = { rt_cd: "0", output2: [{ stck_bsop_date: "20261019", stck_cntg_hour: "140001" }] };
     const timing = { quoteRequestedAt: `${date}T05:00:01.000Z`, quoteReceivedAt: q.receivedAt, minuteRequestedAt: `${date}T05:00:01.200Z`, minuteReceivedAt: `${date}T05:00:01.210Z` };
-    return productionObservation({ quote, minute, timing, code: input.code, input, seedContext: seed, signalDate: date });
+    return productionObservation({ quote, minute, timing, code: input.code, input, seedContext: seed, signalDate: date },
+      price => onPrice?.(input.code, price));
   });
   return { quotes, rows };
 }
@@ -75,6 +78,67 @@ function sandbox(t, seed = inputFixture()) {
   const options = { sql, env, transaction, remote: remote.store, now: () => ms, prepare: async () => prepared(seed), bundle: async () => ({ authenticationRecord: { accessToken: "fixture-only", expiresAtMs: b.end + 100000 } }) };
   return { seed, db, sql, remote, options, state: new ProductionDayState(options), set: value => { ms = value; } };
 }
+
+test("private replay freezes verified prices atomically, reads back the sidecar and never leaks it through the relay", async t => {
+  const f = sandbox(t), prices = new Map(), {rows, quotes} = observations(f.seed, (code, price) => prices.set(code, price));
+  const settings = {...f.options, prepare: async () => ({...prepared(f.seed), transitionReplayVersion: 1})};
+  const state = new ProductionDayState(settings);
+  await state.prepare(date, true); f.set(b.start + 1500);
+  const accepted = rows.filter(r => r.status === "AVAILABLE");
+  const first = accepted[0], lease = await state.acquire(date, first.code);
+  assert.equal(lease.transitionReplayVersion, 1);
+  assert.equal(prices.size, accepted.length);
+  const complete = {metadata:first, calls:[], transitionPrice:prices.get(first.code)};
+  assert.deepEqual(state.complete(date, first.code, complete), {stored:true});
+  assert.deepEqual(state.complete(date, first.code, complete), {stored:true});
+  assert.throws(() => state.complete(date, first.code, {...complete, transitionPrice:complete.transitionPrice + 1}), /IMMUTABLE_CONFLICT/u);
+  for (const row of rows.slice(1)) {
+    state.write(`observation:${row.code}`, row);
+    if (row.status === "AVAILABLE") state.write(`transition-price:${row.originalRecordHash}`, prices.get(row.code));
+  }
+  const restarted = new ProductionDayState(settings);
+  restarted.reconcileBatches(date, reconciliation(f.seed));
+  f.set(b.end + 1000);
+  const publication = restarted.refreshPublication(date, `live-${date}`);
+  assert.equal(publication.publication.status, "COMPLETE");
+  const outbox = restarted.currentOutbox(), replay = outbox.transitionReplay;
+  assert.equal(Buffer.byteLength(JSON.stringify(replay, null, 2)+"\n") < 900_000, true);
+  assert.equal(restarted.status().rawPricesStored, true);
+  assert.throws(() => restarted.write("debug", replay), /RAW_STORAGE_REJECTED/u);
+  assert.throws(() => restarted.write("transition-price:bad", 100), /REPLAY_INVALID/u);
+  assert.throws(() => restarted.write("outbox-revision:2", {...outbox, price: 100}), /RAW_STORAGE_REJECTED/u);
+  assert.throws(() => restarted.write("outbox-revision:2", {...outbox, transitionReplay:{...replay, debug:100}}), /REPLAY_INVALID/u);
+  const receipt = await restarted.relay(date);
+  assert.equal(receipt.deliveryHash, outbox.delivery.deliveryHash);
+  const key = transitionReplayKey(date, outbox.evidence.transitionReplayHash), stored = f.remote.values.get(key);
+  assert.deepEqual(stored, replay);
+  assert.equal(replay.observations[0].price, quotes.get(first.code).price);
+  assert.equal(outbox.evidence.sourcePricesIncluded, false);
+  const decisions = verifyTransitionReplay(stored, outbox.evidence, f.seed);
+  assert.equal(decisions.size, 508);
+  for (const r of accepted) assert.deepEqual(decisions.get(r.code), r.transitionV1);
+  for (const [k, value] of f.remote.values) if (k !== key) {
+    assert.doesNotMatch(JSON.stringify(value), /"(?:price|transitionPrice|transitionReplay|open|high|low|close|volume|rows)":/u);
+  }
+  for (const value of [first, publication, receipt, restarted.status()]) assert.doesNotMatch(JSON.stringify(value), /"(?:price|transitionPrice|transitionReplay)":/u);
+  const tamperedPrice = structuredClone(stored); tamperedPrice.observations[0].price++;
+  assert.throws(() => assertTransitionReplay(tamperedPrice), /REPLAY_INVALID/u);
+  const mismatchedTime = structuredClone(outbox.evidence); mismatchedTime.observations[0].observedTime = "14:01:01";
+  assert.throws(() => verifyTransitionReplay(stored, mismatchedTime, f.seed), /REPLAY_INVALID/u);
+  const mismatchedSignal = structuredClone(outbox.evidence); mismatchedSignal.observations[0].transitionV1 = {};
+  assert.throws(() => verifyTransitionReplay(stored, mismatchedSignal, f.seed), /REPLAY_INVALID/u);
+  assert.throws(() => verifyTransitionReplay(stored, outbox.evidence, {...f.seed, requestedDate:date}), /REPLAY_INVALID/u);
+  assert.deepEqual(await restarted.relay(date), receipt);
+});
+
+test("the pinned replay algorithm and parameter files match the archived LF content digest", async () => {
+  const sha = createHash("sha256");
+  for (const path of TRANSITION_REPLAY_POLICY.algorithmFiles) {
+    const source = await fs.readFile(new URL("../../"+path, import.meta.url), "utf8");
+    sha.update(path+"\n"+source.replaceAll("\r\n", "\n")+"\n");
+  }
+  assert.equal(sha.digest("hex"), TRANSITION_REPLAY_POLICY.algorithmSha256);
+});
 
 test("all553 synthetic inputs preserve original A/B/C/D scores and TOP5 ranks with508 eligible", () => {
   const seed = inputFixture(), f = observations(seed), p = prepared(seed);

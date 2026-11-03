@@ -24,7 +24,15 @@ test("same-market calendar-aligned close changes, daily sample deviation and dat
   assert.equal(x.return5Pct, 3100);
   assert.equal(x.volatility20Pct, 0);
   assert.equal(x.priorDate, days.at(-2));
-  assert.equal(x.timing, "DATED_DAILY");
+  assert.equal(x.timing, "CURRENT_SOURCE_DAY");
+  assert.equal(x.closeConfirmed, null, "same date as the stock EOD cannot certify the index close");
+  assert.equal(x.exchangeAsOfTime, null);
+  assert.equal(x.sourceDateField, "output2.stck_bsop_date");
+  assert.equal(x.observedAt, now);
+  const older = summarizeMarketIndex("KOSPI", points.slice(0, -1), calendar, now, days.at(-1));
+  assert.equal(older.timing, "BEHIND_DAILY");
+  assert.equal(older.closeConfirmed, null);
+  assert.equal(older.date, days.at(-2));
   assert.equal(summarizeMarketIndex("KOSPI", points, calendar, now, days.at(-2)).timing, "CURRENT_SOURCE_DAY");
   assert.equal(summarizeMarketIndex("KOSDAQ", points, calendar, now, days.at(-1)).status, "UNAVAILABLE");
   const noPrior = summarizeMarketIndex("KOSPI", points.filter(row => row.date !== days.at(-2)), calendar, now, days.at(-1));
@@ -74,7 +82,7 @@ test("breadth denominator excludes prior/current quarantine, absent and nontradi
 test("private read-only endpoint, screen labels and no whole-universe quote polling", async () => {
   const file = name => readFile(new URL("../" + name,import.meta.url),"utf8");
   const [ui,route] = await Promise.all([file("components/MarketOverviewPanel.tsx"), file("app/api/market-overview/route.ts")]);
-  for (const label of ["20거래일 일간 변동성","분석 대상 종목의 등락","비교 가능","거래소 시각 미제공","최근 5거래일","당일 마감 확정 여부 미확인","직전 조회 결과"]) assert.ok(ui.includes(label));
+  for (const label of ["20거래일 일간 변동성","분석 대상 종목의 등락","비교 가능","거래소 기준시각 미확인","최근 5거래일","마감 확정 여부 미확인","시스템 수신","서로 다른 날짜의 자료","직전 조회 결과"]) assert.ok(ui.includes(label));
   assert.match(route,/GET = withAdminAccess/);
   assert.match(route,/private, no-store/);
   assert.match(ui,/\/api\/market-overview/); assert.doesNotMatch(ui,/api\/realtime|setInterval|PARTIAL|UNVERIFIED/);

@@ -1,0 +1,89 @@
+{
+  "protocolHash": "ccd14d8be0de294b3ad27ea34df67874a58fe91dfedac24c3332f7213a542274",
+  "sourceStudyHash": "3877975bfc35a6957768e3bb97aa371c379df47ac83552683caf0a456188b2e3",
+  "sellTaxBasis": "KR-2026-listed-domestic-common-nonexempt-v1",
+  "assumptions": {
+    "mode": "USER_INPUT",
+    "buyFeeBps": 2,
+    "sellFeeBps": 2,
+    "buySlippageBps": 5,
+    "sellSlippageBps": 5,
+    "sellTaxBps": 20,
+    "basisDate": "2026-11-03",
+    "basis": "Same fee/slippage scenario. Standard 2026 on-exchange sale of verified domestic common stock by a non-exempt investor."
+  },
+  "comparisons": [
+    {
+      "version": "A-v1",
+      "lineage": "07e581dbc881e9b775b9f29f5d8f489d7e6baee01f9b49c0283d0ca03de6ba04",
+      "dates": 5,
+      "unsupportedDates": 0,
+      "unsupportedMatureLegs": 0,
+      "immatureOrMissingDates": 0,
+      "meanExcluding": -2.79266912,
+      "meanIncluding": -2.98712268,
+      "totalIncluding": -2.669544,
+      "drawdownIncluding": -3.183092
+    },
+    {
+      "version": "A-v4-research",
+      "lineage": "07e581dbc881e9b775b9f29f5d8f489d7e6baee01f9b49c0283d0ca03de6ba04",
+      "dates": 0,
+      "unsupportedDates": 5,
+      "unsupportedMatureLegs": 5,
+      "immatureOrMissingDates": 0,
+      "meanExcluding": null,
+      "meanIncluding": null,
+      "totalIncluding": null,
+      "drawdownIncluding": null
+    },
+    {
+      "version": "C-v1",
+      "lineage": "710723a3731802301c677095dfc871b9ac5a6f3b5d2f3a6cdbb45ed34f2db39c",
+      "dates": 9,
+      "unsupportedDates": 0,
+      "unsupportedMatureLegs": 0,
+      "immatureOrMissingDates": 0,
+      "meanExcluding": 0.005639422222222221,
+      "meanIncluding": -0.19441179999999994,
+      "totalIncluding": -1.833968,
+      "drawdownIncluding": -4.202052
+    },
+    {
+      "version": "C-v3-research",
+      "lineage": "710723a3731802301c677095dfc871b9ac5a6f3b5d2f3a6cdbb45ed34f2db39c",
+      "dates": 9,
+      "unsupportedDates": 0,
+      "unsupportedMatureLegs": 0,
+      "immatureOrMissingDates": 0,
+      "meanExcluding": 0.005639422222222221,
+      "meanIncluding": -0.19441179999999994,
+      "totalIncluding": -1.833968,
+      "drawdownIncluding": -4.202052
+    },
+    {
+      "version": "D-v1",
+      "lineage": "dc6276bd396ba84f7f5835989c2b52fe6a3a8f961d236939d2d965ad578c8467",
+      "dates": 5,
+      "unsupportedDates": 0,
+      "unsupportedMatureLegs": 0,
+      "immatureOrMissingDates": 0,
+      "meanExcluding": -0.6777348000000002,
+      "meanIncluding": -0.8764190200000005,
+      "totalIncluding": -0.590851,
+      "drawdownIncluding": -3.844066
+    },
+    {
+      "version": "D-v3-research",
+      "lineage": "dc6276bd396ba84f7f5835989c2b52fe6a3a8f961d236939d2d965ad578c8467",
+      "dates": 5,
+      "unsupportedDates": 0,
+      "unsupportedMatureLegs": 0,
+      "immatureOrMissingDates": 0,
+      "meanExcluding": 1.60043748,
+      "meanIncluding": 1.3971959600000001,
+      "totalIncluding": 0.925604,
+      "drawdownIncluding": -2.864532
+    }
+  ]
+}

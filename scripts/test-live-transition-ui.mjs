@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import ts from "typescript";
 import * as React from "react";
 import * as jsx from "react/jsx-runtime";
@@ -10,6 +10,8 @@ import { DatabaseSync } from "node:sqlite";
 import { getArchivedLiveTransitionData } from "../lib/live-transition-store.mjs";
 import * as liveScreen from "../lib/live-transition-screener.mjs";
 import * as liveVerdict from "../lib/live-transition-verdict.mjs";
+import { buildTransitionReplay, verifyTransitionReplay } from "../lib/live-transition-replay.mjs";
+import { hashIntradayModelTop } from "../lib/intraday-model-top-official-signal.mjs";
 
 const read = (file) => readFile(new URL(`../components/${file}.tsx`, import.meta.url), "utf8");
 const [detailsSource, liveSource, wrapperSource, researchSource] = await Promise.all(["LiveTransitionDetails", "LiveTransitionScreenerPanel", "TransitionScreenerPanel", "StockResearchPanel"].map(read));
@@ -273,15 +275,44 @@ console.log("LIVE transition UI: defaults, EOD comparison, dates, boundaries, er
 // No KIS call, new signal, remote write, or invented transport timestamp is needed.
 const archive = await getArchivedLiveTransitionData();
 assert.equal(archive.snapshotTime, "14:30:00");
+assert.equal(archive.referenceDate, "2026-10-16");
+const sourceSignal = JSON.parse(await readFile(new URL("../" + archive.source.signalPath, import.meta.url)));
+const seedUrl = new URL("../data/analysis/market-seeds/" + archive.previousOfficialDate + ".json", import.meta.url);
+const prepared = { targetDate: archive.referenceDate, seedReferenceDate: archive.previousOfficialDate, seedHash: archive.source.seedContentHash,
+  inputCommit: "b685921ffe2af09adbd2dcad4d473c84ecfd702d" }; // 10/15 seed committed on 10/16 at 13:56 KST.
+const sourceByCode = new Map(sourceSignal.records.map(r => [r.ticker, r]));
+const eligibleRows = archive.rows.filter(r => !r.missingReasons.length);
+const observations = eligibleRows.map(r => ({ code: r.code, status:"AVAILABLE", observedDate: r.quoteAsOfDate, observedTime: r.quoteAsOfTime,
+  quoteReceivedAt: r.receivedAt, originalRecordHash: hashIntradayModelTop(sourceByCode.get(r.code)),
+  transitionV1: liveVerdict.freezeTransitionVerdicts(r.closedRows, r.observedPrice) }));
+const readPrice = r => sourceByCode.get(r.code).provisionalOhlcv.close;
+const inputs = buildTransitionReplay(prepared, observations, readPrice);
+const sourceEvidence = { signalDate: prepared.targetDate, prepared, observations, transitionReplayHash: inputs.contentHash };
 const db = new DatabaseSync(":memory:");
 try {
+  db.exec("CREATE TABLE inputs (digest TEXT PRIMARY KEY, payload TEXT NOT NULL)");
+  db.prepare("INSERT INTO inputs VALUES (?, ?)").run(inputs.contentHash, JSON.stringify(inputs));
   db.exec("CREATE TABLE projection (code TEXT PRIMARY KEY, value TEXT NOT NULL)");
   const insert = db.prepare("INSERT INTO projection VALUES (?, ?)");
   for (const { closedRows, observedPrice, ...row } of archive.rows) {
     const transitionV1 = row.missingReasons.length ? null : liveVerdict.freezeTransitionVerdicts(closedRows, observedPrice);
     insert.run(row.code, JSON.stringify({ ...row, transitionV1, observedPrice: null }));
   }
-  const restored = { ...archive, rows: db.prepare("SELECT value FROM projection ORDER BY code").all().map(row => JSON.parse(row.value)) };
+  const persisted = JSON.parse(db.prepare("SELECT payload FROM inputs WHERE digest = ?").get(sourceEvidence.transitionReplayHash).payload);
+  const reloadedSeed = JSON.parse(await readFile(seedUrl));
+  assert.equal(reloadedSeed.contentHash, sourceSignal.source.seedHash);
+  const verified = verifyTransitionReplay(persisted, sourceEvidence, reloadedSeed);
+  assert.equal(verified.size, eligibleRows.length);
+  const restored = { ...archive, transitionReplayedCount: verified.size,
+    rows: db.prepare("SELECT value FROM projection ORDER BY code").all().map(row => {
+      const stored = JSON.parse(row.value);
+      if (!stored.missingReasons.length) {
+        assert.deepEqual(verified.get(stored.code), stored.transitionV1);
+        stored.transitionV1 = verified.get(stored.code);
+        stored.transitionReplayed = true;
+      }
+      return stored;
+    }) };
   const source = await readFile(new URL("../app/api/screener/route.ts", import.meta.url), "utf8");
   const modules = { "next/server": { NextResponse: Response }, "@/lib/admin-access": { withAdminAccess: handler => handler },
     "@/lib/live-transition-store.mjs": { getArchivedLiveTransitionData: () => restored },
@@ -306,10 +337,50 @@ try {
       const html = renderLive([body, null, 0]);
       assert.ok(html.includes(body.results[0].code), `first rendered ticker ${body.results[0].code}: ${html.slice(0,450)}`);
       assert.ok(html.includes(archive.referenceDate));
+      assert.ok(html.includes(`${verified.size}종목의 전환 판정을 재계산해 확인`));
       positives += body.resultCount;
     }
   }
   assert.ok(positives > 0);
+  // Optional, local-only bridge for an explicitly isolated private-store readback.
+  // This is one retained 14:30 observation, never a new ranking or 14:00 signal.
+  const option = process.argv[2];
+  if (option) {
+    assert.ok(["--export-isolated-input", "--verify-isolated-readback"].includes(option));
+    const selected = liveScreen.screenLiveTransitions(archive.rows, { pair:"5-20",state:"candidates",nearPercent:1,market:"all" }).results[0];
+    const obs = observations.filter(r => r.code === selected.code);
+    assert.equal(obs.length, 1);
+    const single = buildTransitionReplay(prepared, obs, readPrice);
+    const isolated = { fixtureOnly: true, publicationEligible: false, archiveTime: archive.snapshotTime,
+      archiveSignalHash: sourceSignal.contentHash, bundle: single };
+    const folder = new URL("../.runtime/kis-eod/private-transition-readback/", import.meta.url);
+    if (option === "--export-isolated-input") {
+      await mkdir(folder, { recursive:true });
+      const file = new URL("isolated-" + single.contentHash + ".json", folder);
+      try { await writeFile(file, JSON.stringify(isolated) + "\n", {flag:"wx"}); }
+      catch (error) { if (error.code !== "EEXIST") throw error; assert.deepEqual(JSON.parse(await readFile(file)), isolated); }
+    } else {
+      const readback = JSON.parse(await readFile(new URL("readback.json", folder)));
+      assert.deepEqual(readback, isolated);
+      const verifiedOne = verifyTransitionReplay(readback.bundle, { ...sourceEvidence, observations:obs, transitionReplayHash:single.contentHash }, reloadedSeed);
+      const checkedRow = restored.rows.find(r => r.code === selected.code);
+      checkedRow.transitionV1 = verifiedOne.get(selected.code);
+      assert.equal(liveVerdict.readTransitionVerdict(checkedRow.transitionV1["5-20"], 1), selected.status);
+      const nextUrl = new URL("https://fixture.invalid/api/screener?tab=transition&mode=LIVE&profile=1430&state=candidates&pair=5-20&code="+selected.code);
+      const response = await route.GET({nextUrl});
+      assert.equal(response.status, 200);
+      const body = await response.json();
+      assert.equal(body.resultCount, 1);
+      assert.equal(body.results[0].status, selected.status);
+      assert.equal(body.results[0].quoteAsOfTime, obs[0].observedTime);
+      assert.ok(!JSON.stringify(body).includes("originalRecordHash"));
+      assert.equal(body.results[0].observedPrice,null);
+      const html = renderLive([body,null,0]);
+      assert.ok(html.includes(selected.code) && html.includes(details.liveStatusLabel(selected.status)));
+    }
+    console.log("Isolated calibration", {date:archive.referenceDate, time:obs[0].observedTime, code:obs[0].code, status:selected.status,
+      digest:single.contentHash, publicationEligible:false, mode:option});
+  }
   console.log("Retained archive replay:", archive.referenceDate, archive.snapshotTime, "eligible inputs", restored.rows.filter(r => !r.missingReasons.length).length,
     "candidate/pair matches", positives, "SQLite → actual GET → rendered results");
 } finally { db.close(); }

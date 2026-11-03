@@ -9,6 +9,7 @@ import { simulateFundedPortfolio } from "../lib/funded-research-portfolio.mjs";
 import { runStrategyStudy } from "../lib/daily-strategy-study.mjs";
 import { deriveMarketBenchmarkLegs } from "../lib/research-index-benchmarks.mjs";
 import { summarizeFrozenStudy } from "../lib/backtest-study-summary.mjs";
+import { taxEligibilityForStudy } from "../lib/research-sell-tax.mjs";
 
 const read = async (file) => JSON.parse(await fs.readFile(file,"utf8"));
 const plan = await read("config/daily-strategy-research-v1.json");
@@ -60,6 +61,23 @@ function benchmark(market, entryDate, exitDate) {
   if (!indexLegs.has(key)) indexLegs.set(key, deriveMarketBenchmarkLegs(series,[{entryDate,exitDate}]));
   return indexLegs.get(key).find((r) => r.market === market)?.returnPercent ?? null;
 }
-const study = runStrategyStudy({ snapshots, calendar, ledgerMap, ledgers, plan, simulate: simulateFundedPortfolio, benchmark });
+const compareTax = process.argv.includes("--compare-sell-tax");
+const study = runStrategyStudy({ snapshots, calendar, ledgerMap, ledgers, plan, simulate: simulateFundedPortfolio, benchmark,
+  taxEligible: compareTax ? taxEligibilityForStudy(await read("data/universe.json"), snapshots) : null });
 const withInputs = { ...study, inputHashes };
-console.log(JSON.stringify(process.argv.includes("--summary") ? summarizeFrozenStudy(withInputs, plan) : withInputs,null,2));
+if (compareTax) {
+  const comparisons = [];
+  for (const cohort of study.cohorts) for (const [version, stats] of Object.entries(cohort.strategies)) {
+    if (!stats.taxComparison) continue;
+    comparisons.push({ version, lineage: cohort.lineage, ...stats.taxComparison });
+    delete stats.taxComparison;
+  }
+  const frozen = await read("data/model-validation/frozen-strategy-summary-20261103.json");
+  if (hashObject(withInputs) !== frozen.sourceStudyHash || study.protocolHash !== frozen.protocolHash) throw new Error("Frozen study inputs or results differ");
+  console.log(JSON.stringify({ protocolHash: study.protocolHash, sourceStudyHash: frozen.sourceStudyHash,
+    sellTaxBasis: "KR-2026-listed-domestic-common-nonexempt-v1", assumptions: { ...plan.cost, sellTaxBps: 20,
+      basis: "Same fee/slippage scenario. Standard 2026 on-exchange sale of verified domestic common stock by a non-exempt investor." },
+    comparisons }, null, 2));
+} else {
+  console.log(JSON.stringify(process.argv.includes("--summary") ? summarizeFrozenStudy(withInputs, plan) : withInputs,null,2));
+}

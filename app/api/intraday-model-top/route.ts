@@ -51,6 +51,7 @@ async function handleGet(request: NextRequest) {
         freshnessStatus: signal.signalDate < new Date(Date.now() + 9*3600000).toISOString().slice(0,10) ? "HISTORICAL" : "CURRENT_DATE",
         publishedAt: signal.publishedAt, revision: signal.revision, sourceHash: signal.sourceHash, deliveryHash: signal.deliveryHash,
         publicationStatus: signal.publicationStatus, coverage: signal.coverage, priceBasis: "notPubliclyRedistributed",
+        transitionInputsRetained: signal.transitionInputsRetained,
         rankingUniverse: { count: signal.coverage.validCount, tieBreak: "scoreDescThenTickerAsc" }, count: stocks.length, stocks }, { headers });
     } catch (error) {
       if (error instanceof Error && (error.message === "LIVE_GLOBAL_BLOCKED" || error.message === "LIVE_PUBLICATION_WITHHELD")) {

@@ -12,6 +12,7 @@ export type LiveTransitionRow = {
   missingReasons: string[];
   models: Record<string, { score: number | null; rank?: number | null }>;
   observedPrice: number | null;
+  transitionReplayed?: boolean;
   quoteAsOfDate: string;
   quoteAsOfTime: string;
   receivedAt: string;
@@ -39,6 +40,7 @@ export type LiveTransitionResponse = {
   nearPercent: number;
   totalUniverse: number;
   indicatorCoverage: number;
+  transitionReplayedCount?: number;
   quarantinedCount: number | null;
   sourceQualityGrade: string;
   isPartialRanking: boolean;
@@ -87,13 +89,14 @@ export function LiveTransitionMetadata({ data }: { data: LiveTransitionResponse 
     <p>관측 기준일 {liveDate(data.referenceDate)} · TOP LIVE {liveTime(data.snapshotTime)} KST 저장 스냅샷</p>
     <p>직전 확정 일봉 {liveDate(data.previousOfficialDate)} · 저장 모델 A~D 기준일 {liveDate(data.modelReferenceDate)}</p>
     {data.reasonCounts?.transitionVerdictNotStored > 0 && <p>이 게시본에는 {data.reasonCounts.transitionVerdictNotStored}종목의 전환 판정값이 보존되지 않았습니다.</p>}
+    {Number(data.transitionReplayedCount) > 0 && <p>당시 관측가와 직전 확정 일봉으로 {data.transitionReplayedCount}종목의 전환 판정을 재계산해 확인했습니다.</p>}
     <p>계산 가능 {data.indicatorCoverage}/{data.totalUniverse} · 격리 {data.quarantinedCount ?? "미확인"} · 원천 품질 {data.sourceQualityGrade} · {data.isPartialRanking ? "부분 집계" : "저장 집계"}</p>
     <details><summary className="tb-focus w-fit cursor-pointer rounded">수집 시각 · 규칙</summary><p className="mt-1">수집 시작 {collectionStamp(data.collectionStartedAt)}<br />수집 완료 {collectionStamp(data.collectionCompletedAt)}<br />규칙 {data.ruleVersion}</p></details>
   </div>;
 }
 
 export function LiveTransitionMetrics({ row }: { row: LiveTransitionRow }) {
-  if (row.observedPrice === null) return <p className="mt-2 text-xs text-slate-600">당시 검증한 전환 판정만 제공하며 관측가와 이평선 원값은 보존하지 않았습니다.</p>;
+  if (row.observedPrice === null) return <p className="mt-2 text-xs text-slate-600">{row.transitionReplayed ? "비공개로 보존한 당시 관측가와 직전 일봉으로 판정을 확인했습니다." : "당시 저장된 판정입니다. 재계산용 관측가는 보존되지 않았습니다."}</p>;
   return <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
     <div><dt className="text-slate-500">관측가</dt><dd className="mt-0.5 font-semibold tabular-nums text-slate-900">{livePrice(row.observedPrice)}</dd></div>
     <div><dt className="text-slate-500">필요 추가 상승률</dt><dd className="mt-0.5 font-semibold tabular-nums text-slate-900">{liveNumber(row.requiredAdditionalRisePercent, "%")}</dd></div>

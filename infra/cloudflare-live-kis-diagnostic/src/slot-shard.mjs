@@ -62,7 +62,7 @@ export class KisSlotShard extends DurableObject {
       if (!r.ok) { const e = new Error(safeCode({ code: value.reason })); if (value.transportFailure) e.sourceFailure = safeCode({ code: value.transportFailure }); throw e; }
       return value;
     };
-    let lease = null, bearer = null, invalidating = Promise.resolve(), result;
+    let lease = null, bearer = null, invalidating = Promise.resolve(), result, transitionPrice;
     const calls = [], skipped = [], retries = [], timing = {};
     try {
       const acquisitionId = this.acquisitionId();
@@ -158,7 +158,8 @@ export class KisSlotShard extends DurableObject {
       const quote = await read(`/uapi/domestic-stock/v1/quotations/inquire-price?FID_COND_MRKT_DIV_CODE=J&FID_INPUT_ISCD=${code}`, "FHKST01010100");
       timing.minuteRequestedExchangeTime = this.minuteQueryTime(timing);
       const minute = await read(`/uapi/domestic-stock/v1/quotations/inquire-time-itemchartprice?FID_ETC_CLS_CODE=&FID_COND_MRKT_DIV_CODE=J&FID_INPUT_ISCD=${code}&FID_INPUT_HOUR_1=${timing.minuteRequestedExchangeTime.replaceAll(":", "")}&FID_PW_DATA_INCU_YN=N`, "FHKST03010200");
-      result = this.projectResult({ quote, minute, code, timing, input: lease.record, seedReferenceDate: lease.seedReferenceDate, seedContext: lease.seedContext, signalDate: lease.signalDate });
+      result = this.projectResult({ quote, minute, code, timing, input: lease.record, seedReferenceDate: lease.seedReferenceDate, seedContext: lease.seedContext, signalDate: lease.signalDate },
+        lease.transitionReplayVersion === 1 ? price => { transitionPrice = price; } : undefined);
       }
     } catch (e) { result = { code, reason: safeCode(e), failureStage: lease ? calls.length ? "COLLECTION" : "LEASED_SETUP" : "LEASE_ACQUIRE",
       ...(e.sourceFailure ? { sourceFailure: e.sourceFailure } : {}),
@@ -167,7 +168,8 @@ export class KisSlotShard extends DurableObject {
     if (retries.length) result.retryEvidence = retries;
     if (lease && !lease.existing) {
       try {
-        const frozen = { metadata: result, calls, skipped, authHint: bearer };
+        const frozen = { metadata: result, calls, skipped, authHint: bearer,
+          ...(transitionPrice !== undefined && !result.reason ? { transitionPrice } : {}) };
         try { await control(`/slot-pair-complete?code=${code}`, frozen); }
         catch (error) {
           if (!error.retryableCompletion) throw error;

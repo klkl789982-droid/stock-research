@@ -17,6 +17,7 @@ function makeRoute(loader) {
   new Function("require", "exports", compiled(routeSource))((name) => {
     if (name === "@/lib/admin-access") return { withAdminAccess: handler => handler }; // Authorized data-contract fixture; auth independently tested.
     if (name === "@/data/model-validation/frozen-strategy-summary-20261103.json") return { default: { candidates: [] } };
+    if (name === "@/data/model-validation/sell-tax-comparison-20261103.json") return { default: { comparisons: [] } };
     if (name === "next/server") return { NextResponse: { json: (body, options) => ({ body, options }) } };
     if (name === "@/lib/model-performance-research.mjs") return researchEngine;
     if (name === "@/lib/kis-token-manager") return { kisRequest: () => { throw new Error("Network disabled in fixture"); } };
@@ -99,12 +100,17 @@ test("backtest reports count mature, pending and missing by actual ranks and hor
     },exports);
     return renderToStaticMarkup(React.createElement(exports.default));
   }
-  const inv = { choices: report.choices, study, confirmedDates: report.verifiedPublicationDates };
+  const tax = JSON.parse(await readFile(new URL("../data/model-validation/sell-tax-comparison-20261103.json",import.meta.url),"utf8"));
+  assert.equal(tax.sourceStudyHash,study.sourceStudyHash);
+  assert.equal(tax.protocolHash,study.protocolHash);
+  const inv = { choices: report.choices, study: {...study,sellTax:tax.comparisons}, confirmedDates: report.verifiedPublicationDates };
   const standard=render("published",inv), research=render("study",inv);
   assert.match(standard,/<option(?=[^>]*disabled="")(?=[^>]*value="20")[^>]*>20거래일 · 보유기간 미성숙/);
   assert.match(standard,/성숙 20건/); assert.doesNotMatch(standard,/D-v3-research/);
   assert.match(render("published",{...inv,choices:[]}),/조건을 충족한 게시 신호가 없습니다/);
   assert.match(render("published",null,true),/평가 가능 범위를 조회하지 못했습니다/);
   assert.match(research,/D-v3-research/); assert.match(research,/매도 세금은 제외/);
+  assert.match(research,/서로 다른 신규 신호일 60개/); assert.match(research,/미성숙 결과는 집계에서 제외/);
+  assert.match(research,/\+1\.40%/); assert.match(research,/세율 미확인 5건이 있는 5일/);
   assert.equal(study.candidates.find(c=>c.version==="D-v3-research").pairedDates,5);
 });

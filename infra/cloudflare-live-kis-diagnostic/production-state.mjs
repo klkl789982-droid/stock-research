@@ -4,6 +4,7 @@ import { deliverPrivateLive } from "../../lib/private-live-delivery.mjs";
 import { assertProduction, assertWindow, bounds, aggregateProduction, evaluateCollectionPolicy, isLiveMissingReason, observationFailureReasons, requiredRowIssues, productionPinnedExclusion, nextPairSlots, PRODUCTION_BUDGET, LIVE_BATCH_SIZE } from "./production-core.mjs";
 import { buildCloudSwingIntent, persistCloudSwingIntent } from "./cloud-swing.mjs";
 import { safeCode } from "./core.mjs";
+import { assertTransitionReplay, transitionReplayKey } from "../../lib/live-transition-replay.mjs";
 import { EXECUTION_PREFIX, validExecutionEvent, sealExecutionRecord } from "../../lib/private-live-execution-status.mjs";
 
 // A second, bounded lease has its own SQL identity. Its market symbol and frozen
@@ -65,7 +66,17 @@ export class ProductionDayState {
     assertPrivateKisEodPayload(value);
     const visit = node => { if (!node || typeof node !== "object") return; for (const [k, v] of Object.entries(node)) {
       if (["price", "volume", "open", "high", "low", "close", "rows", "output", "output2", "payload", "authenticationRecord", "accessToken"].includes(k)) throw new Error("LIVE_CLOUD_RAW_STORAGE_REJECTED"); visit(v);
-    } }; visit(value);
+    } };
+    // Only the immutable opt-in replay envelope may contain a source price.
+    // Everything else in the outbox (including the score evidence) remains price-free.
+    if (/^outbox(?:-revision:[2-5])?$/u.test(id) && value?.transitionReplay) {
+      const { transitionReplay, ...scoreOnly } = value;
+      assertTransitionReplay(transitionReplay);
+      if (mutable || transitionReplay.contentHash !== scoreOnly.evidence?.transitionReplayHash) throw new Error("LIVE_CLOUD_TRANSITION_REPLAY_INVALID");
+      visit(scoreOnly);
+    } else visit(value);
+    if (id.startsWith("transition-price:") && (!/^transition-price:[a-f0-9]{64}$/u.test(id) ||
+        !Number.isFinite(value) || value <= 0 || mutable)) throw new Error("LIVE_CLOUD_TRANSITION_REPLAY_INVALID");
     const body = JSON.stringify(value), digest = hash(value), prior = this.read(id);
     if (prior && !mutable) { if (hash(prior) !== digest) throw new Error("LIVE_CLOUD_IMMUTABLE_CONFLICT"); return prior; }
     if (this.sql.databaseSize + Buffer.byteLength(body) + 8192 > PRODUCTION_BUDGET.retainedBytesPerDay) throw new Error("LIVE_CLOUD_STORAGE_BUDGET");
@@ -178,7 +189,8 @@ export class ProductionDayState {
         const excluded = productionPinnedExclusion({ code, input: data.record, seedContext: data.seedContext, seedReferenceDate: original.seedReferenceDate, signalDate: date });
         this.write(`pinned-exclusion:${code}`, { digest: hash(excluded) });
       }
-      return { ...data, ...slots, deadline, signalDate: date, seedReferenceDate: original.seedReferenceDate };
+      return { ...data, ...slots, deadline, signalDate: date, seedReferenceDate: original.seedReferenceDate,
+        ...(original.transitionReplayVersion === 1 ? { transitionReplayVersion: 1 } : {}) };
     } catch (error) {
       try { this.critical(() => this.write(observationKey(code), { code:retryTicker(code)??code, reason: safeCode(error), rawPricesStored: false })); }
       catch (recordError) { console.error(JSON.stringify({ event: "LIVE_BUNDLE_FAILURE_RECORD_FAILED", primaryCode: safeCode(error), recordingCode: safeCode(recordError) })); }
@@ -292,6 +304,13 @@ export class ProductionDayState {
       this.q("UPDATE slots SET body=? WHERE slot=?", body, c.slot);
     }
     // Late/error attempts are retained, never accepted as valid observations.
+    const prepared = this.finalReceipt ?? this.read("final");
+    const retainPrice = prepared?.transitionReplayVersion === 1 && value.metadata.status === "AVAILABLE" && !value.metadata.reason;
+    if (retainPrice) {
+      if (!Number.isFinite(value.transitionPrice) || value.transitionPrice <= 0 || requiredRowIssues(value.metadata, date).length)
+        throw new Error("LIVE_CLOUD_TRANSITION_REPLAY_INVALID");
+      this.write(`transition-price:${value.metadata.originalRecordHash}`, value.transitionPrice);
+    } else if (value.transitionPrice !== undefined) throw new Error("LIVE_CLOUD_TRANSITION_REPLAY_INVALID");
     this.write(observationKey(code), value.metadata);
     if(retry)try{observationFailureReasons(value.metadata);}
     catch(error){this.failure(safeCode(error),"BATCH_COLLECTION");}
@@ -423,7 +442,8 @@ export class ProductionDayState {
       }
       if (coverage.status==="WITHHELD") return {status:"WITHHELD",coverage};
       const now=new Date(this.now()).toISOString(), revision=(previous?.revision??0)+1;
-      const result=aggregateProduction(prepared,observations,now,{...options,revision,previousDeliveryHash:existing?.delivery.deliveryHash??null,firstIssuedAt:previous?.firstIssuedAt??now});
+      const result=aggregateProduction(prepared,observations,now,{...options,revision,previousDeliveryHash:existing?.delivery.deliveryHash??null,firstIssuedAt:previous?.firstIssuedAt??now},
+        this.transitionPriceReader(prepared));
       // Keep every immutable outbox and change the selected revision in the same SQLite transaction.
       this.reserve(512,128);
       this.transaction(()=>{
@@ -436,6 +456,18 @@ export class ProductionDayState {
       return {status:"OUTBOX_FROZEN",publication:result.delivery.publication};
     });
   }
+  transitionPriceReader(prepared) {
+    if (prepared.transitionReplayVersion !== 1) return undefined;
+    // One indexed bounded scan; no remote requests or per-ticker SQL on relay.
+    const prices = new Map();
+    for (const {id, digest, body} of this.q("SELECT id,digest,body FROM docs WHERE id>='transition-price:' AND id<'transition-price;' LIMIT 554")) {
+      const price = JSON.parse(body);
+      if (hash(price) !== digest) throw new Error("LIVE_CLOUD_HASH_MISMATCH");
+      prices.set(id.slice("transition-price:".length), price);
+    }
+    if (prices.size > 553) throw new Error("LIVE_CLOUD_TRANSITION_REPLAY_INVALID");
+    return row => prices.get(row.originalRecordHash);
+  }
   finishReserved(date) {
     this.check(date);
     const existing = this.read("outbox"); if (existing) return existing.delivery;
@@ -445,7 +477,8 @@ export class ProductionDayState {
     if (reconciliation.firstFailure) throw new Error(reconciliation.firstFailure.reason);
     const observations = prepared.codes.map(code => this.read(`observation:${code}`));
     if (observations.some(r => !r)) throw new Error("LIVE_CLOUD_COMPLETION_MISMATCH");
-    const result = aggregateProduction(prepared, observations, new Date(this.now()).toISOString());
+    const result = aggregateProduction(prepared, observations, new Date(this.now()).toISOString(), undefined,
+      this.transitionPriceReader(prepared));
     this.write("outbox", result); return result.delivery;
   }
   async relay(date, remote = this.remote, {watchdog=false,watchSlot=null}={}) {
@@ -466,6 +499,11 @@ export class ProductionDayState {
     const attempt = this.critical(() => this.read(key)) ?? { count: 0, next: 0 };
     if (attempt.count >= limit || attempt.next > this.now()) throw new Error("LIVE_CLOUD_RELAY_BACKOFF");
     this.critical(() => this.write(key, { count: attempt.count + 1, next: this.now() + 60000 }, true));
+    if (outbox.evidence.transitionReplayHash || outbox.transitionReplay) {
+      assertTransitionReplay(outbox.transitionReplay);
+      if (outbox.transitionReplay.contentHash !== outbox.evidence.transitionReplayHash) throw new Error("LIVE_CLOUD_TRANSITION_REPLAY_INVALID");
+      await remote.writeImmutable(transitionReplayKey(date, outbox.transitionReplay.contentHash), outbox.transitionReplay);
+    }
     await remote.writeImmutable(`cloud-live-score-evidence-v1/${date}/${outbox.evidence.contentHash}.json`, outbox.evidence);
     // Freeze selections/first issuance before delivery. Restart or relay retry
     // cannot regenerate the five-session record with a later creation time.
@@ -678,5 +716,5 @@ export class ProductionDayState {
   status() { return this.critical(() => { const outbox=this.currentOutbox(); return { prepared: Boolean(this.read("prewarm")), finalInputReady: Boolean(this.read("final")),
     outbox: Boolean(outbox), publication:outbox?.delivery.publication??null,receipt: this.read(this.receiptKey(outbox)), meteredSql: { ...this.meter }, runtimeCursorSql: { ...this.cursorUsage }, usageUpdates: this.usageUpdates,
     sqliteBytes: this.sql.databaseSize, retainedBytesLimit: PRODUCTION_BUDGET.retainedBytesPerDay,
-    waitingInMemory: this.pending.size, rawPricesStored: false }; }); }
+    waitingInMemory: this.pending.size, rawPricesStored: this.q("SELECT 1 FROM docs WHERE id>='transition-price:' AND id<'transition-price;' LIMIT 1").length > 0 }; }); }
 }

@@ -5,6 +5,8 @@ import { createMarketPriceLedger } from "../lib/market-price-ledger.mjs";
 import { MODEL_VERSIONS } from "../lib/rank-backtest-engine.mjs";
 import { createCompactModelHistory, createDailyRunManifest } from "../lib/daily-production.mjs";
 import { identifyStoredResearchSignal, loadModelPerformanceResearch } from "../lib/model-performance-research-store.mjs";
+import { SELL_TAX_2026, taxEligibilityForStudy } from "../lib/research-sell-tax.mjs";
+import { sha256Canonical } from "../lib/snapshot-quality-pipeline.mjs";
 
 // Synthetic prices only: these fixtures are never persisted as research/production artifacts.
 function fixture() {
@@ -24,6 +26,44 @@ function fixture() {
   return { signals: [signal], calendar: { dates }, ledgers, asOf: "2026-03-15T00:00:00Z", options: { topN: 5 } };
 }
 const cohort = (r, model = "B-v1") => r.cohorts.find((c) => c.modelVersion === model);
+test("2026 ordinary-sale tax uses the matched master, same mature legs and sell proceeds in both account and basket", () => {
+  const f = fixture(), s = f.signals[0].snapshot;
+  const stocks = s.records.map(r => ({ code:r.code, market:r.market, securityGroupCode:"ST", isinCode:"KR7"+r.code+"001",
+    etpProductCode:"", preferredStockCode:"0", isSpac:false }));
+  const eligible = () => {
+    s.sourceManifest.universe.contentHash = sha256Canonical(stocks);
+    return taxEligibilityForStudy({ stocks },[s]);
+  };
+  const taxEligible = eligible(), first=stocks[0];
+  assert.deepEqual(SELL_TAX_2026,{KOSPI:{transactionBps:5,ruralBps:15},KOSDAQ:{transactionBps:20,ruralBps:0}});
+  for (const row of stocks) assert.equal(taxEligible(s.asOfDate,row,"2026-01-07"),true);
+  for (const [key,value] of [["etpProductCode","ETF"],["isSpac",true],["securityGroupCode","DR"],["preferredStockCode","1"],["isinCode","HK0000000001"]]) {
+    const stock={...first,[key]:value}, master={stocks:[stock]};
+    const bound=taxEligibilityForStudy(master,[{...s,sourceManifest:{universe:{contentHash:sha256Canonical(master.stocks)}}}]);
+    assert.equal(bound(s.asOfDate,first,"2026-01-07"),false);
+  }
+  assert.equal(taxEligible(s.asOfDate,first,"2027-01-05"),false);
+  assert.equal(taxEligible(s.asOfDate,{...first,market:"KOSDAQ"},"2026-01-07"),false);
+  assert.equal(taxEligibilityForStudy({stocks},[{...s,sourceManifest:{}}])(s.asOfDate,first,"2026-01-07"),false);
+  const cost={mode:"USER_INPUT",buyFeeBps:2,sellFeeBps:2,buySlippageBps:5,sellSlippageBps:5,sellTaxBps:0,basis:"fixture",basisDate:"2026-01-02"};
+  const options={models:["B-v1"],topN:5,cost};
+  const before=cohort(buildModelPerformanceResearch({...f,options}));
+  const result=cohort(buildModelPerformanceResearch({...f,options,taxEligible}));
+  const taxed=cohort(buildModelPerformanceResearch({...f,options:{...options,cost:{...cost,sellTaxBps:20}}}));
+  assert.deepEqual(before.fundedAccount,result.fundedAccount);
+  assert.equal(result.taxComparison.dates,1);
+  assert.ok(Math.abs(result.taxComparison.meanIncluding - taxed.netScenarioMetrics.meanReturn) < 0.000001);
+  const expected=(((1.04)*(1-0.0005)*(1-0.0002-0.002))/((1+0.0005)*(1+0.0002))-1)*100;
+  assert.ok(Math.abs(result.taxComparison.meanIncluding-expected)<0.000001);
+  assert.equal(result.taxComparison.totalIncluding,taxed.fundedAccount.totalReturn);
+  assert.equal(result.taxComparison.drawdownIncluding,taxed.fundedAccount.maxDrawdown);
+  assert.ok(result.taxComparison.totalIncluding<before.fundedAccount.totalReturn);
+  stocks[0].securityGroupCode="ET";
+  const unknown=cohort(buildModelPerformanceResearch({...f,options,taxEligible:eligible()})).taxComparison;
+  assert.deepEqual([unknown.dates,unknown.unsupportedDates,unknown.unsupportedMatureLegs,unknown.meanIncluding,unknown.totalIncluding],[0,1,1,null,null]);
+  const pending=cohort(buildModelPerformanceResearch({...f,options,taxEligible,asOf:"2026-01-07T15:29:00+09:00"})).taxComparison;
+  assert.equal(pending.immatureOrMissingDates,1); assert.equal(pending.dates,0); assert.equal(pending.meanIncluding,null);
+});
 test("existing T+2 contract / holidays / 1D 5D 20D / no mutation", () => {
   const f = fixture(), before = structuredClone(f);
   for (const [horizon, exitDate] of [["H1", "2026-01-07"], ["H5", "2026-01-13"], ["H20", "2026-02-03"]]) {

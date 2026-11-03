@@ -7,6 +7,7 @@ import { intradaySeedHash } from "../lib/intraday-market-seed.mjs";
 import { currentTransitionView } from "../lib/live-transition-store.mjs";
 import { screenLiveTransitions } from "../lib/live-transition-screener.mjs";
 import { observeLiveGoldenTransition, freezeTransitionVerdicts, readTransitionVerdict, LIVE_NEAR_THRESHOLDS } from "../lib/live-transition-verdict.mjs";
+import { transitionReplayKey } from "../lib/live-transition-replay.mjs";
 
 const seed = JSON.parse(await readFile(new URL("../data/analysis/market-seeds/2026-11-02.json", import.meta.url)));
 const date = "2026-11-03", issued = date + "T06:43:00.000Z";
@@ -109,3 +110,37 @@ for (let step = 0; step < successive.length; step++) {
   previousHash = top.deliveryHash;
 }
 console.log("14:00 whole-universe ranks, frozen model hashes, partial coverage, categorical transitions and cross-session expiry passed");
+
+// Same underlying immutable data but separate consumers: TOP can still read
+// scores when a private replay file is missing. Transitions may never silently
+// fall back to the categorical answer when evidence promises the real inputs.
+objects.clear();
+const seedRows = new Map(targets.map(input => [input.code, input.rows]));
+const observedPrice = r => seedRows.get(r.code)[0][4]; // isolated synthetic quote
+const withInputs = rows.map(r => ({ ...r, transitionV1: freezeTransitionVerdicts(seedRows.get(r.code), observedPrice(r)) }));
+const replayBundle = aggregateProduction({ ...prepared, transitionReplayVersion:1 }, withInputs, issued,
+  { firstIssuedAt:issued, revision:1, previousDeliveryHash:null }, observedPrice);
+const replayKey = transitionReplayKey(date,replayBundle.transitionReplay.contentHash);
+await store.writeImmutable(`cloud-live-score-evidence-v1/${date}/${replayBundle.evidence.contentHash}.json`, replayBundle.evidence);
+await deliverPrivateLive(store,replayBundle.delivery,{now:issued});
+const separate = createCurrentLiveReader({store, readSeed: async () => seed});
+const scores = await separate({now:issued});
+assert.equal(scores.transitionInputsRetained,true);
+assert.equal(scores.transitionReplayed,false);
+await assert.rejects(separate({now:issued,replayTransitions:true}),/LIVE_TRANSITION_REPLAY_UNAVAILABLE/);
+const corruptInputs = structuredClone(replayBundle.transitionReplay);
+corruptInputs.observations[0].price += 1;
+objects.set(replayKey,corruptInputs); // test corrupted storage read, never an actual write
+await assert.rejects(separate({now:issued,replayTransitions:true}),/LIVE_TRANSITION_REPLAY_INVALID/);
+objects.set(replayKey,replayBundle.transitionReplay);
+const verified = await separate({now:issued,replayTransitions:true});
+const projected = currentTransitionView(verified,{dates:{}},new Date(issued));
+assert.equal(verified.deliveryHash,scores.deliveryHash);
+assert.equal(projected.transitionReplayedCount,withInputs.length);
+assert.deepEqual(verified.records.map(r => r.models), scores.records.map(r => r.models));
+for (const r of projected.rows.filter(r=>!r.missingReasons.length)) {
+  assert.deepEqual(r.transitionV1, freezeTransitionVerdicts(seedRows.get(r.code), observedPrice(r)));
+  assert.equal(r.transitionReplayed,true);
+  assert.equal(r.observedPrice,null);
+  assert.equal(r.price,undefined);
+}

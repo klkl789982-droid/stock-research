@@ -54,7 +54,8 @@ export class LiveDay extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
     this.state = new ProductionDayState({ sql: ctx.storage.sql, env, transaction: fn => ctx.storage.transactionSync(fn),
-      prepare: date => vault(env).livePrepare(date), bundle: (date, prepared, code) => vault(env).liveBundle(date, prepared, code),
+      prepare: async date => ({ ...await vault(env).livePrepare(date), transitionReplayVersion: 1 }),
+      bundle: (date, prepared, code) => vault(env).liveBundle(date, prepared, code),
       remote: createKisEodPrivateStore({ repository: "klkl789982-droid/tight-budget-private-data", token: env.PRIVATE_LIVE_DELIVERY_WRITE_TOKEN, fetchImpl: edgeFetch }) });
   }
   prepare(date, final) { return this.state.prepare(date, final); }
@@ -151,7 +152,7 @@ export class LiveBatch extends KisSlotShard {
   brokerFor(run) { return day(this.env, runOf(run).dayName); }
   minuteQueryTime(timing) { return kst(Date.parse(timing.quoteRequestedAt)).time; }
   projectPinnedExclusion(args) { return productionPinnedExclusion(args); }
-  projectResult(args) { return productionObservation(args); }
+  projectResult(args, retainVerifiedPrice) { return productionObservation(args, retainVerifiedPrice); }
 }
 
 export class CloudLive extends WorkflowEntrypoint {

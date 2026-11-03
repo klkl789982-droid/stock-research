@@ -8,6 +8,7 @@ export { bounds, versions, requiredRowIssues };
 import { STOCK_CODE_PATTERN } from "../../lib/stock-code.mjs";
 import { isLiveMissingReason } from "../../lib/live-collection-reason.mjs";
 import { freezeTransitionVerdicts } from "../../lib/live-transition-verdict.mjs";
+import { buildTransitionReplay } from "../../lib/live-transition-replay.mjs";
 export { isLiveMissingReason };
 export { kst } from "./core.mjs";
 
@@ -64,7 +65,7 @@ export function productionPinnedExclusion({ code, input, seedReferenceDate, seed
   return { code, companyName: input.name, status: "EXCLUDED", scores: null, exclusionBasis: "PINNED_EOD_INELIGIBLE",
     seedReferenceDate, seedHash: seedContext.contentHash, inputHash: hash(input), rawPricesStored: false, modelFormulaUnchanged: true };
 }
-export function productionObservation({ quote, minute, code, timing, input, seedContext, signalDate }) {
+export function productionObservation({ quote, minute, code, timing, input, seedContext, signalDate }, retainVerifiedPrice) {
   const excluded = productionPinnedExclusion({ code, input, seedReferenceDate: seedContext?.requestedDate, seedContext, signalDate });
   if (excluded) return excluded;
   const b = bounds(signalDate), stamps = [timing.quoteRequestedAt, timing.quoteReceivedAt, timing.minuteRequestedAt, timing.minuteReceivedAt].map(Date.parse);
@@ -76,9 +77,11 @@ export function productionObservation({ quote, minute, code, timing, input, seed
     collectionStartedAt: timing.quoteRequestedAt, collectionCompletedAt: timing.minuteReceivedAt });
   if (validateIntradayModelTopSignal(signal).length || signal.status !== "READY") throw new Error("LIVE_CLOUD_INPUT_REJECTED");
   const row = signal.records[0];
+  const transitionV1 = freezeTransitionVerdicts(input.rows, row.provisionalOhlcv.close);
+  retainVerifiedPrice?.(row.provisionalOhlcv.close);
   return { code, companyName: input.name, status: input.eligible ? "AVAILABLE" : "EXCLUDED", scores: row.scores,
     ...timing, observedDate: q.asOfDate, observedTime: q.asOfTime, responseHash: hash({ quote, minute }),
-    originalRecordHash: hash(row), transitionV1: freezeTransitionVerdicts(input.rows, row.provisionalOhlcv.close),
+    originalRecordHash: hash(row), transitionV1,
     rawPricesStored: false, modelFormulaUnchanged: true };
 }
 
@@ -152,7 +155,7 @@ export function evaluateCollectionPolicy(prepared, observations, { failures = []
       codes: prepared.codes, eligibleCodes: prepared.eligibleCodes }) };
 }
 
-export function aggregateProduction(prepared, observations, exportedAt, issuance) {
+export function aggregateProduction(prepared, observations, exportedAt, issuance, readTransitionPrice) {
   const policy = issuance ? evaluateCollectionPolicy(prepared, observations, issuance) : null;
   if (policy && (policy.status === "WITHHELD" || policy.validCount < 5)) throw new Error("LIVE_CLOUD_REQUIRED_INPUT_MISSING");
   if (!policy) pinnedUniverse(prepared);
@@ -164,11 +167,12 @@ export function aggregateProduction(prepared, observations, exportedAt, issuance
   if (!policy && (required.length < 5 || required.some(r => requiredRowIssues(r, prepared.targetDate).length))) throw new Error("LIVE_CLOUD_REQUIRED_INPUT_MISSING");
   const collectionStartedAt = new Date(Math.min(...required.map(r => Date.parse(r.quoteRequestedAt)))).toISOString();
   const collectionCompletedAt = new Date(Math.max(...required.map(r => Date.parse(r.minuteReceivedAt)))).toISOString();
+  const replay = prepared.transitionReplayVersion === 1 ? buildTransitionReplay(prepared, required, readTransitionPrice) : null;
   // New explicit score-only evidence identity, NOT a forged hash of a complete
   // old raw-price artifact. Immutable lineage remains separate from outcomes.
   const evidence = { namespace: "cloud-live-score-evidence-v1", observationPolicyId: "intraday-1400-v1", observationType: "LIVE_OBSERVATION",
     signalDate: prepared.targetDate, prepared, observations: [...(policy ? required : present)].sort((a, b) => a.code.localeCompare(b.code)),
-    ...(policy ? { coverage: policy } : {}),
+    ...(policy ? { coverage: policy } : {}), ...(replay ? { transitionReplayHash: replay.contentHash } : {}),
     collectionStartedAt, collectionCompletedAt, sourcePricesIncluded: false };
   const contentHash = hash(evidence);
   const models = versions.map((modelVersion, i) => ({ schemaVersion: 2, mode: "live", observationPolicyId: "intraday-1400-v1", observationType: "LIVE_OBSERVATION",
@@ -181,7 +185,8 @@ export function aggregateProduction(prepared, observations, exportedAt, issuance
   const delivery = createLiveDelivery(models, { exportedAt, now: exportedAt, ...(publication ? { publication } : {}) });
   validateLiveDelivery(delivery, exportedAt);
   const storedEvidence = { ...evidence, contentHash };
-  return { evidence: storedEvidence, delivery, swing: policy ? null : buildCloudSwingIntent(storedEvidence, delivery) };
+  return { evidence: storedEvidence, delivery, swing: policy ? null : buildCloudSwingIntent(storedEvidence, delivery),
+    ...(replay ? { transitionReplay: replay } : {}) };
 }
 
 // SQL-independent allocator: adjacent quote/minute cells, unchanged220ms grid

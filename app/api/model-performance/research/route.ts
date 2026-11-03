@@ -7,12 +7,15 @@ import { loadPublicationEvidence } from "@/lib/daily-publication-status.mjs";
 import { loadPrivateBenchmarkLegs } from "@/lib/research-index-benchmarks.mjs";
 import { readResearchPublicationReceipts } from "@/lib/research-publication-receipts.mjs";
 import frozenStudy from "@/data/model-validation/frozen-strategy-summary-20261103.json";
+import taxStudy from "@/data/model-validation/sell-tax-comparison-20261103.json";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 const headers = { "Cache-Control": "no-store" };
 type ResearchResult = Awaited<ReturnType<typeof loadModelPerformanceResearch>>;
-const inventoryOf = (result: ResearchResult) => ({ choices: result.choices, asOf: result.asOf, confirmedDates: result.verifiedPublicationDates, study: frozenStudy });
+const inventoryOf = (result: ResearchResult) => ({ choices: result.choices, asOf: result.asOf, confirmedDates: result.verifiedPublicationDates, study: {
+  ...frozenStudy, sellTax: taxStudy.protocolHash === frozenStudy.protocolHash && taxStudy.sourceStudyHash === frozenStudy.sourceStudyHash ? taxStudy.comparisons : [],
+} });
 let cachedInventory: { expiresAt: number; body: ReturnType<typeof inventoryOf> } | null = null;
 let pendingInventory: Promise<ReturnType<typeof inventoryOf>> | null = null;
 
@@ -37,7 +40,7 @@ async function handleGet(request: Request) {
     return NextResponse.json({ status: "INVALID_RESEARCH_FILTER", message: "모델·기간·비용 입력을 확인하세요." }, { status: 400, headers });
   }
   try {
-    const load = () => loadModelPerformanceResearch({ options, includeChoices: inventory, indexRequest: kisRequest, archiveReader: loadPrivateBenchmarkLegs,
+    const load = () => loadModelPerformanceResearch({ options, includeChoices: inventory, compareTax: view === "backtest", indexRequest: kisRequest, archiveReader: loadPrivateBenchmarkLegs,
       receiptReader: readResearchPublicationReceipts, publicationEvidence: loadPublicationEvidence });
     if (inventory) {
       if (cachedInventory && cachedInventory.expiresAt > Date.now()) return NextResponse.json(cachedInventory.body, { headers });
@@ -53,7 +56,7 @@ async function handleGet(request: Request) {
         id: c.id, formulaHash: c.formulaHash, signalDates: c.signalDates, matureDates: c.matureSignalDateCount, universeCount: c.universeCount,
         mature: c.stockMetrics.observationCount, pending: c.pendingCount, missing: c.missingCount,
         distinctStocks: c.uniqueStockCount, repeats: c.repeatedObservationCount, stockMean: c.stockMetrics.meanReturn,
-        basketMean: c.portfolioMetrics.meanReturn, scenarioMean: c.netScenarioMetrics.meanReturn,
+        basketMean: c.portfolioMetrics.meanReturn, scenarioMean: c.netScenarioMetrics.meanReturn, taxComparison: c.taxComparison ?? null,
         benchmarkDates: c.excessMetrics.observationCount, grossExcess: c.excessMetrics.meanReturn,
         account: { status: c.fundedAccount.status, total: c.fundedAccount.totalReturn, maxDrawdown: c.fundedAccount.maxDrawdown,
           exposure: c.fundedAccount.averageExposurePct, buys: c.fundedAccount.tradeCount },
