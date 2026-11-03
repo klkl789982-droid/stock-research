@@ -1,0 +1,35 @@
+"use client";
+import {useEffect,useState} from "react";
+type Target="R"|"P";
+type Measure={candidate:string;days:number;topCompleteDays:number;ic:number|null;top10:number|null;top20:number|null;upper:number|null;middle:number|null;bottom:number|null;hit:number|null;netHit:number|null;base:number|null;large:number|null;brier:number|null;loss:number|null;missingLabels:number;regime:Record<string,{days:number;top10:number|null}>;calibration:{bin:number;pred:number;actual:number;dayWeight:number}[];account:{net:number|null;mdd:number|null;exposure:number|null;trades:number|null;reason:string|null;tickerPnlPct:number|null;monthPnlPct:number|null}};
+type View={version:string;date:string;generatedAt:string;h:number;target:Target;fittedThrough:string;chosen:string;overlap:number;correlation:number|null;matureDays:number;immatureDates:number;
+ rows:{rank:number;name:string;code:string;score:number;tied:number;reason:string;risk:string}[];excluded:{name:string;code:string;reason:string}[];
+ folds:{start:string;dates:number;trainingDays:number;results:Measure[];ablation:Measure[];factors:{ic:number|null;edge:number|null;hitEdge:number|null}[]}[];
+ comparisons:{reconstructed:Measure[];publishedTiming:Measure[]}};
+const fmt=(v:number|null|undefined,n=2)=>typeof v==="number"&&Number.isFinite(v)?v.toFixed(n):"—";
+const labels:Record<string,string>={R1:"R1 단기 수익률",R2:"R2 복합 수익률",P1:"P1 상승일 빈도",P2:"P2 복합 상승빈도",BASE:"기본 상승률 · 동률 코드순",MOM:"20일 모멘텀"};
+function Results({list}:{list:Measure[]}){return <div className="overflow-x-auto"><table className="tb-performance-table"><thead><tr>{["후보","순위 IC","TOP10 수익","TOP20 수익","상승 / 기본률","비용 후 이익률¹","Brier","로그손실","계좌 순수익 / 낙폭","노출","거래"].map(h=><th key={h}>{h}</th>)}</tr></thead><tbody>{list.map(r=><tr key={r.candidate}><th>{labels[r.candidate]??r.candidate+"-v1"}</th><td>{fmt(r.ic,3)}</td><td>{fmt(r.top10)}%</td><td>{fmt(r.top20)}%</td><td>{fmt(r.hit)} / {fmt(r.base)}%</td><td>{fmt(r.netHit)}%</td><td>{fmt(r.brier,5)}</td><td>{fmt(r.loss,4)}</td><td>{r.account.net===null?(r.account.reason??"자료 부족"):fmt(r.account.net)+" / "+fmt(r.account.mdd)+"%"}</td><td>{fmt(r.account.exposure)}%</td><td>{r.account.trades??"—"}</td></tr>)}</tbody></table><p className="text-xs">¹ TOP10 중 비용 차감 후 수익이 양수였던 비율. 수익 크기가 아닙니다. —는 계산 불가입니다.</p></div>}
+export default function DualTargetStudy(){
+ const [target,T]=useState<Target>("R"),[h,H]=useState(5),[limit,L]=useState("10"),[slice,S]=useState("2"),[attempt,A]=useState(0);
+ const [data,D]=useState<View|null>(null),[failure,F]=useState("");
+ const key=h+target+":"+attempt;
+ useEffect(()=>{const c=new AbortController();fetch("/api/screener?tab=dual-research&horizon="+h+"&target="+target,{cache:"no-store",signal:c.signal}).then(async r=>{if(!r.ok)throw Error();const v=await r.json();if(!c.signal.aborted){D(v);F("")}}).catch(()=>{if(!c.signal.aborted)F(key)});return ()=>c.abort()},[h,target,key]);
+ const v=data?.h===h&&data?.target===target?data:null;
+ const fold=v?.folds[Number(slice)],list=fold?.results??(slice==="daily"?v?.comparisons.reconstructed:v?.comparisons.publishedTiming)??[],chosen=list.find(r=>r.candidate===v?.chosen);
+ return <section aria-label="두 목적 연구 순위" className="mt-5 space-y-4"><div className="tb-segmented">{(["R","P"] as const).map(k=><button type="button" key={k} aria-pressed={target===k} onClick={()=>T(k)}>{k==="R"?"상승 여력":"상승 확률"}</button>)}</div>
+ <div className="flex flex-wrap gap-4"><label>목표 기간 <select value={h} onChange={e=>H(Number(e.target.value))}><option value={5}>5거래일 · 주평가</option><option value={20}>20거래일 · 보조</option></select></label><label>표시 범위 <select value={limit} onChange={e=>L(e.target.value)}><option value="10">TOP10</option><option value="20">TOP20</option><option value="all">전체</option></select></label></div>
+ {failure===key?<p role="alert">연구 입력 조회 실패 <button onClick={()=>A(x=>x+1)}>다시 조회</button></p>:!v?<p role="status">연구 순위 계산 중…</p>:<>
+ <h3 className="font-semibold">{target==="R"?"상승 여력":"상승 확률"} 연구 점수 · {h}거래일</h3>
+ <p>{target==="R"?"하락을 포함한 이후 수익의 크기":"종료가가 진입가보다 높았던 빈도"} 기준의 상대 순위입니다. 점수는 예상 수익률이나 실제 상승 확률(%)이 아닙니다.</p>
+ <p className="text-sm">공식 일봉 {v.date} · {v.rows.length}종목 · {v.chosen} · 두 TOP10 중복 {v.overlap}개 · 전체 순위 상관 {fmt(v.correlation,3)}</p>
+ <p className="rounded-lg bg-slate-50 p-2 text-sm">검증 상태: 운영 A~D 대비 일관된 개선은 확인되지 않았습니다. {target==="P"?"단순 기본 상승률보다 예측 오차가 안정적으로 낮지 않습니다.":"같은 후보도 평가 구간에 따라 순위와 이후 수익의 관계가 바뀌었습니다."}</p>
+ <div className="overflow-x-auto"><table className="tb-performance-table"><thead><tr><th>순위</th><th>종목</th><th>연구 점수</th><th>점수 구성 근거</th><th>위험·한계</th></tr></thead><tbody>{v.rows.slice(0,limit==="all"?undefined:Number(limit)).map(r=><tr key={r.code}><td>{r.rank}</td><th><a className="text-blue-700 underline" href={"/?stock="+r.code}>{r.name} · {r.code}</a></th><td>{fmt(r.score)}{r.tied>1&&<small className="block">공동 {r.tied}개</small>}</td><td>{r.reason}</td><td>{r.risk}</td></tr>)}</tbody></table></div>
+ <details><summary>제외 {v.excluded.length}종목 · 동일 점수는 코드순</summary>{v.excluded.map(r=><p key={r.code}>{r.code} {r.name} · {r.reason}</p>)}</details>
+ <details open><summary>검증 결과와 기존 모델 비교</summary><label>평가 구간 <select value={slice} onChange={e=>S(e.target.value)}><option value="0">5~6월 · 후보 선택</option><option value="1">7~8월 · 선택 후</option><option value="2">9~11월 · 선택 후</option><option value="daily">A~D 공통 일봉 재구성</option><option value="published">게시 시각 확인 기준 · 별도 비교</option></select></label>
+ <p className="text-sm">성숙 신호 {list[0]?.days??0}일 · TOP10 전 종목 결과 확인 {chosen?.topCompleteDays??0}일 · {v.version}</p>{list[0]?.days?<Results list={list}/>:<p>이 조건에서 성숙한 공통 신호일이 없습니다.</p>}</details>
+ {fold&&<details><summary>어떤 정보가 도움이 됐나</summary>{fold.factors.map((f,i)=><p key={i}>{["5일 수익률","20일 수익률","변동성","상승일 빈도","신규 골든크로스","거래량 배율"][i]} · 순위 IC {fmt(f.ic,3)} · 상위군과 나머지의 수익 차 {fmt(f.edge)}%p · 상승 비율 차 {fmt(f.hitEdge)}%p</p>)}<p>상위군은 상위 20%, 골든크로스는 당일 진입군입니다. 아래는 같은 복합 후보에서 교차 정보만 뺀 사후 진단으로, 후보 선정에 쓰지 않았습니다.</p><Results list={fold.ablation}/></details>}
+ {chosen&&<details><summary>선정력·집중도·확률 보정</summary><p>상·중·하위 20% 평균 수익 {fmt(chosen.upper)} / {fmt(chosen.middle)} / {fmt(chosen.bottom)}% · TOP10의 실제 상위 10% 포착 비중 {fmt(chosen.large)}%</p><p>종목·청산월별 최대 절대손익 비중 {fmt(chosen.account.tickerPnlPct)} / {fmt(chosen.account.monthPnlPct)}% · 평균 현금 {fmt(chosen.account.exposure==null?null:100-chosen.account.exposure)}%</p>
+ <p>표본 내 추세 양수 / 음수일 TOP10 평균 {fmt(chosen.regime.up.top10)} / {fmt(chosen.regime.down.top10)}%. 시장지수가 아닌 분석 종목의 평균 20일 추세 기준입니다.</p>
+ {chosen.calibration.map(c=><p key={c.bin}>내부 추정 {fmt(c.pred*100)}% → 실제 상승 {fmt(c.actual*100)}% (해당 구간, 날짜 동일 가중)</p>)}</details>}
+ <details><summary>자료 범위와 매매 가정</summary><p>학습 마감 {v.fittedThrough}. 일봉 재구성·현재 구성 생존 편향이 있으며 실제 매매나 LIVE 실적이 아닙니다. 미성숙 {v.immatureDates}일 제외. 기업등급·업종별 발표 이력은 검증되지 않아 사용하지 않았습니다.</p><p>다음 영업일 오후 자료 제공을 가정해 두 번째 거래일 시가 진입, 진입일 포함 만기 종가 청산. 게시 시각 비교는 확인 후 첫 시가부터입니다. 1억원·10자리·현금 제한, 편도 수수료 2bp·슬리피지 5bp·매도세 20bp. 중복 매수·만기 연장·배당 반영 없음. 운영 모델이나 D 후보 승격 기준과 무관합니다.</p></details></>}</section>;
+}

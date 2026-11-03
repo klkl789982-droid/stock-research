@@ -97,6 +97,7 @@ test("backtest reports count mature, pending and missing by actual ranks and hor
     let index = 0; const states = [tab,opts,0,error,"D-v1",10,1,"","",false,null,null,false], exports={};
     new Function("require","exports",compiled(view))((name)=>{
       if(name==="./TopCrossStudy") return {default:()=>React.createElement("section",null,"세 방식 비교")};
+      if(name==="./DualTargetStudy") return {default:()=>React.createElement("section",null,"두 목적 순위")};
       if(name==="react/jsx-runtime") return jsxRuntime;
       if(name==="react") return {...React,useState:()=>[states[index++],()=>{}],useEffect:()=>{}};
       throw new Error(name);
