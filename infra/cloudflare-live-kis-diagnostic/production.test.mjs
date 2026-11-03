@@ -44,7 +44,7 @@ function observations(seed) {
 }
 function prepared(seed) { return { targetDate: date, seedReferenceDate: seedDate, readiness: "READY", universe: 553, eligible: 508,
   codes: seed.records.map(r => r.code), eligibleCodes: seed.records.filter(r => r.eligible).map(r => r.code),
-  inputCommit: "a".repeat(40), seedHash: seed.contentHash, remoteCheckedAt: `${date}T04:59:02.000Z`, readyAt: `${date}T04:59:03.000Z` }; }
+  inputCommit: "a".repeat(40), seedHash: seed.contentHash, formulaHashesVerified:true, remoteCheckedAt: `${date}T04:59:02.000Z`, readyAt: `${date}T04:59:03.000Z` }; }
 function reconciliation(seed, changes = new Map(),size=4) {
   const batches = [];
   for (let i = 0; i < seed.records.length; i += size) {
@@ -455,6 +455,178 @@ test("a recovery batch cannot publish progress into the regular execution metada
   const bindings={...env,LIVE_DAYS:{idFromName:x=>x,get:()=>target},LIVE_BATCHES:{idFromName:x=>x,get:()=>({fetch:async()=>Response.json({records:[{code:"100000",status:"AVAILABLE"}]})})}};
   const result=await new CloudLive(bindings).run({payload:{mode:"batch",date,runId:`live-${date}-recovery-test`,codes:["100000"],reportStatus:true}},{do:(_n,_o,fn)=>fn()});
   assert.equal(result.successful,1);assert.equal(publications,0);
+});
+
+test("only an explicitly rejected fetch recovers its fixed batch of verified completed observations",async t=>{
+  const f=sandbox(t), run=`live-${date}`, p=await f.state.prepare(date,true);
+  const rows=observations(f.seed).rows.slice(0,4),codes=rows.map(row=>row.code),reason="DIAG_UNKNOWN_TRANSPORT_FAILURE";
+  f.set(b.start+60000); t.mock.method(Date,"now",()=>b.start+60000);
+  t.mock.method(console,"error",()=>{});
+  for(const row of rows){
+    f.state.write(`observation:${row.code}`,row);
+    f.db.prepare("INSERT INTO leases VALUES(?,?,1)").run(row.code,b.end);
+  }
+  let fetches=0,reads=0,mode="disconnect";
+  const target={recoverBatchAcknowledgement(...args){reads++;return f.state.recoverBatchAcknowledgement(...args);},
+    recordBatchResult:(...args)=>f.state.recordBatchResult(...args),failure:()=>{}};
+  const binding={...env,LIVE_DAYS:{idFromName:x=>x,get:()=>target},LIVE_BATCHES:{idFromName:x=>x,get:()=>({async fetch(){
+    fetches++;if(mode==="disconnect")throw Error("fixture disconnected");return new Response("{");
+  }})}};
+  const execute=()=>new CloudLive(binding).run({payload:{mode:"batch",date,codes}},{do:(_n,_o,fn)=>fn()});
+  assert.throws(()=>f.state.recoverBatchAcknowledgement(date,run,[...codes].reverse(),reason),/CHILD_RESULTS_INVALID/);
+  const code=codes[0],original=rows[0];
+  f.db.prepare("UPDATE leases SET completed=0 WHERE code=?").run(code);
+  assert.throws(()=>f.state.recoverBatchAcknowledgement(date,run,codes,reason),/ACK_UNVERIFIED/);
+  f.db.prepare("UPDATE leases SET completed=1 WHERE code=?").run(code);
+  const invalid={...original,scores:{...original.scores,"B-v1":-1}};
+  f.db.prepare("UPDATE docs SET body=?,digest=? WHERE id=?").run(JSON.stringify(invalid),hash(invalid),`observation:${code}`);
+  assert.throws(()=>f.state.recoverBatchAcknowledgement(date,run,codes,reason),/ACK_UNVERIFIED/);
+  f.db.prepare("UPDATE docs SET body=?,digest=? WHERE id=?").run(JSON.stringify(original),hash(original),`observation:${code}`);
+  const out=await execute();
+  assert.equal(out.recoveredFetchError,reason);assert.equal(out.successful,4);
+  const journal=f.state.read("batch-result:0");assert.equal(journal.recoveredFetchError,reason);assert.equal(journal.workflowStatus,"complete");
+  assert.equal(fetches,1);assert.equal(reads,1);
+  assert.throws(()=>f.state.recoverBatchAcknowledgement(date,run+"-recovery-foreign",codes,reason),/DATE_CONFLICT/);
+  f.state.write(`rate-rejection:${code}`,{code,issue:"RESPONSE_AFTER_RECEIVER_CLOCK"});
+  assert.throws(()=>f.state.recoverBatchAcknowledgement(date,run,codes,reason),/ACK_UNVERIFIED/);
+  mode="body";await assert.rejects(execute(),/UNKNOWN_TRANSPORT/);assert.equal(reads,1);
+  assert.deepEqual(f.state.read("batch-result:0"),journal);assert.deepEqual(f.state.read("final"),p);
+});
+
+test("an excluded batch can recover only the exact pinned exclusion produced when each lease was loaded",async t=>{
+  const f=sandbox(t), run=`live-${date}`, rows=observations(f.seed).rows.slice(508,512);
+  const records=new Map(f.seed.records.map(row=>[row.code,row]));
+  const state=new ProductionDayState({...f.options,bundle:async(_date,_p,code)=>({record:records.get(code),seedContext:f.seed})});
+  await state.prepare(date,true);f.set(b.start+1000);
+  for (const row of rows) {
+    await state.acquire(date,row.code);
+    state.complete(date,row.code,{metadata:row,calls:[]});
+  }
+  const codes=rows.map(row=>row.code),recover=()=>state.recoverBatchAcknowledgement(date,run,codes,"DIAG_UNKNOWN_TRANSPORT_FAILURE");
+  assert.equal(recover().successful,4);
+  const forged={...rows[0],inputHash:"c".repeat(64)};
+  f.db.prepare("UPDATE docs SET body=?,digest=? WHERE id=?").run(JSON.stringify(forged),hash(forged),`observation:${forged.code}`);
+  assert.throws(recover,/ACK_UNVERIFIED/);
+});
+
+test("preserved snapshots improve monotonically from withheld to partial to complete without collection or partial swing",async t=>{
+  const f=sandbox(t), run=`live-${date}`;await f.state.prepare(date,true);
+  const rows=observations(f.seed).rows,missing=rows.slice(0,5);
+  const failed=new Map(missing.map(row=>[row.code,"DIAG_UNKNOWN_TRANSPORT_FAILURE"]));
+  f.state.reconcileBatches(date,reconciliation(f.seed,failed));
+  for(const row of rows.slice(5))f.state.write(`observation:${row.code}`,row);
+  f.set(b.end+1000);
+  assert.equal(f.state.refreshPublication(date,run).status,"WITHHELD");assert.equal(f.state.read("outbox"),null);
+  assert.equal(f.state.freezeExecution(date,"POLICY_W5","ERRORED").coverage.missing.length,5);
+  f.state.write(`observation:${missing[0].code}`,missing[0]);
+  const partial=f.state.refreshPublication(date,run);assert.equal(partial.publication.status,"PARTIAL");assert.equal(partial.publication.revision,1);
+  const first=f.state.currentOutbox();assert.equal(first.swing,null);assert.equal(first.delivery.exportedAt,new Date(b.end+1000).toISOString());
+  const receipt=await f.state.relay(date);assert.equal(receipt.deliveryHash,first.delivery.deliveryHash);
+  assert.equal(f.state.freezeExecution(date,"POLICY_R1","COMPLETE").coverage.validCount,504);
+  assert.ok(![...f.remote.values.keys()].some(k=>k.startsWith("cloud-live-swing-intent-v1/")));
+  const reopened=new ProductionDayState(f.options);
+  assert.equal(reopened.refreshPublication(date,run).publication.revision,1);
+  f.set(b.end+121000);
+  for(const row of missing.slice(1))reopened.write(`observation:${row.code}`,row);
+  const complete=reopened.refreshPublication(date,run);assert.equal(complete.publication.status,"COMPLETE");assert.equal(complete.publication.revision,2);
+  assert.equal(complete.publication.previousDeliveryHash,first.delivery.deliveryHash);assert.equal(complete.publication.firstIssuedAt,first.delivery.exportedAt);
+  assert.deepEqual(reopened.read("outbox"),first);assert.equal(reopened.status().receipt,null);
+  const current=reopened.currentOutbox();
+  f.set(b.end+241000);
+  assert.equal((await reopened.relay(date)).deliveryHash,current.delivery.deliveryHash);
+  assert.equal(reopened.freezeExecution(date,"POLICY_R2","COMPLETE").coverage.missing.length,0);
+  assert.equal((await reopened.relay(date)).deliveryHash,current.delivery.deliveryHash);
+  assert.equal(f.db.prepare("SELECT COUNT(*) AS n FROM leases").get().n,0);
+  const swings=[...f.remote.values.entries()].filter(([k])=>k.startsWith("cloud-live-swing-intent-v1/"));
+  assert.equal(swings.length,1);assert.equal(swings[0][1].createdAt,new Date(b.end+241000).toISOString());
+  assert.equal(swings[0][1].createdAt,reopened.status().receipt.publishedAt);
+  assert.deepEqual(swings[0][1].selections,current.delivery.models.flatMap(model=>model.records.map(row=>({ticker:row.ticker,modelVersion:model.modelVersion,rank:row.rank,score:row.score}))));
+});
+
+test("a verified partial retries only proven transient missing symbols, preserves original rows and shares the slot budget",async t=>{
+  const f=sandbox(t),run=`live-${date}`,rows=observations(f.seed).rows;
+  const inputs=new Map(f.seed.records.map(r=>[r.code,r]));
+  const state=new ProductionDayState({...f.options,bundle:async(_d,_p,ticker)=>({record:inputs.get(ticker),seedContext:f.seed})});
+  await state.prepare(date,true);f.set(b.start+60000);
+  const codes=rows.slice(0,4).map(r=>r.code);
+  const reasons=["KIS_HTTP_503","LIVE_CLOUD_RATE_EVIDENCE_INVALID","KIS_INVALID_QUOTE","DIAG_UNKNOWN_TRANSPORT_FAILURE"];
+  state.reconcileBatches(date,reconciliation(f.seed,new Map(codes.map((code,i)=>[code,reasons[i]]))));
+  for(const row of rows.slice(4))state.write(`observation:${row.code}`,row);
+  for(const i of [0,1,2]){
+    await state.acquire(date,codes[i]);
+    if(i===1){state.write(`rate-rejection:${codes[i]}`,{code:codes[i],issue:"RESPONSE_AFTER_RECEIVER_CLOCK"});f.db.prepare("UPDATE leases SET completed=1 WHERE code=?").run(codes[i]);}
+    else state.complete(date,codes[i],{metadata:{code:codes[i],reason:reasons[i],rawPricesStored:false},calls:[]});
+  }
+  assert.equal(state.refreshPublication(date,run).publication.missing.length,4);assert.deepEqual(state.claimMissingRetries(date),[]);
+  await state.relay(date);f.set(b.end+1);assert.deepEqual(state.claimMissingRetries(date),[]);f.set(b.start+122000);
+  assert.deepEqual(state.claimMissingRetries(date),codes.slice(0,2));
+  const before=state.read("allocator"),original=state.read(`observation:${codes[0]}`);
+  assert.deepEqual(state.claimMissingRetries(date),[]);await assert.rejects(state.acquire(date,`retry:${codes[2]}`),/RECOVERY_NOT_ALLOWED/);
+  for(const [i,ticker] of codes.slice(0,2).entries()){
+    const key=`retry:${ticker}`,lease=await state.acquire(date,key),metadata={...rows[i]};
+    const calls=[["quote",lease.quoteSlot],["minute",lease.minuteSlot]].map(([kind,slot])=>{
+      const started=slot.notBefore,completed=started+10;
+      metadata[`${kind}RequestedAt`]=new Date(started).toISOString();metadata[`${kind}ReceivedAt`]=new Date(completed).toISOString();
+      return {kind,slot:slot.slot,started,completed,status:200,failure:null};
+    });
+    f.set(calls.at(-1).completed);state.complete(date,key,{metadata,calls});
+    assert.equal((await state.acquire(date,key)).existing.code,ticker);
+  }
+  assert.equal(state.read("allocator").count-before.count,4);
+  assert.deepEqual(state.read(`observation:${codes[0]}`),original);assert.equal(state.read(`observation:${codes[1]}`),null);
+  assert.equal(state.read(`rate-rejection:${codes[1]}`).issue,"RESPONSE_AFTER_RECEIVER_CLOCK");
+  const improved=state.refreshPublication(date,run);
+  assert.equal(improved.publication.revision,2);assert.deepEqual(improved.publication.missing.map(r=>r.ticker),codes.slice(2));
+  assert.deepEqual(state.incidentStatus(true).recoveredCodes,codes.slice(0,2));
+  assert.equal(state.freezeExecution(date,"VALIDATED","RUNNING").coverage.validCount,506);
+  assert.deepEqual(new ProductionDayState(f.options).claimMissingRetries(date),[]);
+});
+
+test("the preserved-only management workflow cannot dispatch a collector even during the retry window",async t=>{
+  t.mock.method(Date,"now",()=>b.start+600000);
+  let checked=0,relays=0;
+  const publication={status:"PARTIAL",revision:1},target={status:()=>({finalInputReady:true,outbox:true,publication}),
+    finish:()=>{checked++;return{status:"OUTBOX_FROZEN",publication};},relay:()=>{relays++;return{status:"PRIVATE_RELAY_VERIFIED",publication};},
+    publishExecution:()=>{},retryMissing:()=>assert.fail("preserved-only path tried to collect")};
+  const binding={...env,LIVE_DAYS:{idFromName:x=>x,get:()=>target}};
+  const result=await new CloudLive(binding).run({payload:{mode:"publish-preserved",date}},{do:(_n,_o,fn)=>fn()});
+  assert.equal(result.publication.status,"PARTIAL");assert.equal(checked,1);assert.equal(relays,1);
+});
+
+test("a global failure nested in one retry blocks a mixed-success revision and reports the prior issued partial",async t=>{
+  const f=sandbox(t),run=`live-${date}`,rows=observations(f.seed).rows;
+  let now=b.start+120000;t.mock.method(Date,"now",()=>now);
+  const inputs=new Map(f.seed.records.map(r=>[r.code,r]));
+  const state=new ProductionDayState({...f.options,bundle:async(_d,_p,code)=>({record:inputs.get(code),seedContext:f.seed})});
+  await state.prepare(date,true);f.set(now);
+  const codes=rows.slice(0,2).map(r=>r.code);
+  state.reconcileBatches(date,reconciliation(f.seed,new Map(codes.map(code=>[code,"KIS_HTTP_503"]))));
+  for(const row of rows.slice(2))state.write(`observation:${row.code}`,row);
+  for(const code of codes){await state.acquire(date,code);state.complete(date,code,{metadata:{code,reason:"KIS_HTTP_503",rawPricesStored:false},calls:[]});}
+  const previous=state.refreshPublication(date,run).publication, receipt=await state.relay(date);
+  const bad={code:codes[1],reason:"DIAG_UNKNOWN_TRANSPORT_FAILURE",httpStatus:403,rawPricesStored:false};
+  let warning;
+  const target={ctx:{id:date},state,env:{LIVE_DAYS:{idFromName:x=>x},LIVE_BATCHES:{idFromName:x=>x,get:()=>({async fetch(){
+    const key=`retry:${codes[0]}`,grant=await state.acquire(date,key),good={...rows[0]};
+    const calls=[["quote",grant.quoteSlot],["minute",grant.minuteSlot]].map(([kind,slot])=>{
+      const started=slot.notBefore,completed=started+10;
+      good[`${kind}RequestedAt`]=new Date(started).toISOString();good[`${kind}ReceivedAt`]=new Date(completed).toISOString();
+      return {kind,slot:slot.slot,started,completed,status:200,failure:null};
+    });
+    now=calls.at(-1).completed;f.set(now);state.complete(date,key,{metadata:good,calls});
+    await state.acquire(date,`retry:${bad.code}`);state.complete(date,`retry:${bad.code}`,{metadata:bad,calls:[]});
+    return Response.json({records:[good,bad]});
+  }})}},publishExecution:async(d,e,s)=>{warning=state.freezeExecution(d,e,s);}};
+  await assert.rejects(LiveDay.prototype.retryMissing.call(target,date),/KIS_HTTP_403/);
+  assert.equal(warning.event,"POLICY_GLOBAL_BLOCKED");assert.equal(warning.error.code,"KIS_HTTP_403");
+  assert.equal(warning.delivery.deliveryHash,receipt.deliveryHash);assert.deepEqual(state.status().publication,previous);
+  assert.throws(()=>state.refreshPublication(date,run),/KIS_HTTP_403/);assert.equal(state.read("outbox-revision:2"),null);
+  assert.equal(state.incidentStatus().globalFailure.code,"KIS_HTTP_403");
+  for(const [nested,cause] of [[{httpStatus:401},"KIS_HTTP_401"],[{sourceFailure:"LIVE_CLOUD_PIN_INVALID"},"LIVE_CLOUD_PIN_INVALID"],[{providerFailureCode:"PRIVATE_STORE_AUTHORIZATION_FAILED"},"PRIVATE_STORE_AUTHORIZATION_FAILED"]]){
+    const row={...bad,httpStatus:0,...nested};
+    f.db.prepare("UPDATE docs SET body=?,digest=? WHERE id=?").run(JSON.stringify(row),hash(row),`retry-observation:${bad.code}`);
+    assert.throws(()=>state.retainedObservations(date),new RegExp(cause));
+  }
 });
 
 test("partial completion rollback preserves slots and immutable observation; failed SQL retains pessimistic prepaid cost", async t => {

@@ -11,7 +11,7 @@ const recordKey=r=>`${WATCH_PREFIX}/${r.date}/${r.slot}-${r.recordHash}.json`;
 
 // No collection endpoint, token refresh, arbitrary URL, new observation ID or
 // code deployment is exposed here. This is a finite rule-based supervisor.
-export async function runCloudWatchdog({state,workflow,remote,fetchImpl,date,slot,scheduledAt,now=Date.now(),publishExecution=async()=>{}}){
+export async function runCloudWatchdog({state,workflow,remote,fetchImpl,date,slot,scheduledAt,now=Date.now(),publishExecution=async()=>{},retryMissing=null}){
   assertProduction(state.env);
   const at=Date.parse(`${date}T${slot?.slice(0,2)}:${slot?.slice(2)}:00+09:00`),b=bounds(date);
   if(!WATCH_SLOTS.includes(slot)||!Number.isFinite(at)||scheduledAt!==at||kst(now).date!==date||now<at||now>at+120000||[0,6].includes(new Date(`${date}T00:00:00Z`).getUTCDay()))return{status:"WATCH_SKIPPED_TIME",collectionStarted:false};
@@ -37,9 +37,13 @@ export async function runCloudWatchdog({state,workflow,remote,fetchImpl,date,slo
     actions.push("ENSURE_CANONICAL_DAY_ONLY");workflowState="QUEUED";
   });
   let status=state.status();
-  if(status.finalInputReady&&!status.outbox&&now>=b.start)await attempt("FINALIZE_EXISTING_OBSERVATIONS",async()=>{
-    const journal=state.reconcileJournal(date,`live-${date}`,now>b.end);
-    if(journal.ready&&!journal.firstFailure){state.finish(date);actions.push("FREEZE_ALREADY_VALID_COMPLETE_RESULT");}
+  let coverage=null;
+  if(status.finalInputReady&&(!status.outbox||status.publication?.status==="PARTIAL")&&now>=b.start)await attempt("FINALIZE_EXISTING_OBSERVATIONS",async()=>{
+    const current=state.refreshPublication(date,`live-${date}`);
+    if(current.status==="WITHHELD"){
+      coverage=current.coverage;
+      await publishExecution(date,`POLICY_W${coverage.missing.length}`,workflowState);
+    } else actions.push("VERIFY_PRESERVED_PUBLICATION");
   });
   status=state.status();
   // Two extra score-only recovery slots, not another market run. Counts are
@@ -48,10 +52,11 @@ export async function runCloudWatchdog({state,workflow,remote,fetchImpl,date,slo
   status=state.status();
   let privateReadback={status:"NO_VERIFIED_DELIVERY",date:null,deliveryHash:null,topRows:0};
   if(status.outbox&&status.receipt)await attempt("PRIVATE_READBACK",async()=>{
-    const value=await readLatestPrivateLive(remote,{now:new Date(now).toISOString()}),f=state.read("outbox");
+    const value=await readLatestPrivateLive(remote,{now:new Date(now).toISOString()}),f=state.currentOutbox();
     const topRows=value?.models.reduce((n,m)=>n+m.records.length,0)??0;
     const ok=value?.signalDate===date&&value.deliveryHash===f.delivery.deliveryHash&&status.receipt.status==="PRIVATE_RELAY_VERIFIED"&&status.receipt.deliveryHash===value.deliveryHash&&topRows===20;
     privateReadback={status:ok?"VERIFIED":"STALE_OR_HASH_MISMATCH",date:value?.signalDate??null,deliveryHash:value?.deliveryHash??null,topRows};
+    if(ok && value.publication)await publishExecution(date,`POLICY_R${value.publication.revision}`,"COMPLETE");
   });
   const site={loginHttp:null,anonymousApiHttp:null,authenticatedUi:"NOT_CHECKED_NO_ADMIN_SESSION"};
   if(["1400","1415","1525","1535"].includes(slot))await attempt("SITE_ACCESS_BOUNDARY",async()=>{
@@ -63,15 +68,26 @@ export async function runCloudWatchdog({state,workflow,remote,fetchImpl,date,slo
   });
   if(["1525","1535"].includes(slot))await attempt("EXECUTION_METADATA",()=>publishExecution(date,"RECONCILE",["RUNNING","COMPLETE","ERRORED","TERMINATED"].includes(workflowState)?workflowState:"UNKNOWN",
     workflowState==="MISSING"?{code:"LIVE_CLOUD_REGULAR_WORKFLOW_MISSING",stage:"PREPARE"}:undefined));
+  let recoveryStarted=false;
+  if(retryMissing && ["1415","1515"].includes(slot) && privateReadback.status==="VERIFIED" && status.publication?.status==="PARTIAL" && !state.read("missing-retry-plan")){
+    await attempt("MISSING_ONLY_RECOVERY",retryMissing);
+    recoveryStarted=Boolean(state.read("missing-retry-plan"));
+    if(recoveryStarted)actions.push("RETRY_ONLY_CONFIRMED_MISSING_SYMBOLS");
+  }
   const inventory=state.incidentStatus();
-  if(privateReadback.status==="VERIFIED"&&(!status.finalInputReady||inventory.universe!==553||inventory.completed!==553||inventory.failed.length||inventory.missing.length)){
+  const recoveryBlocked=Boolean(inventory.globalFailure&&state.read("missing-retry-plan"));
+  if(recoveryBlocked){
+    problems.push({stage:"MISSING_ONLY_RECOVERY",code:inventory.globalFailure.code});
+    await attempt("GLOBAL_BLOCK_STATUS",()=>publishExecution(date,"POLICY_GLOBAL_BLOCKED","ERRORED"));
+  }
+  if(privateReadback.status==="VERIFIED"&&(!status.finalInputReady||inventory.universe!==553||(!status.publication&&(inventory.completed!==553||inventory.failed.length||inventory.missing.length)))){
     privateReadback.status="LOCAL_INVENTORY_UNVERIFIED";problems.push({stage:"LOCAL_INVENTORY",code:"LIVE_CLOUD_INCOMPLETE"});
   }
   const body={schemaVersion:1,kind:"CLOUD_RULE_BASED_WATCHDOG",date,slot,scheduledAt:new Date(at).toISOString(),startedAt:new Date(now).toISOString(),checkedAt:new Date(state.now()).toISOString(),workflowState,
-    status:privateReadback.status==="VERIFIED"?(problems.length?"DELIVERY_VERIFIED_WITH_WARNINGS":"DELIVERY_VERIFIED"):["ERRORED","TERMINATED"].includes(workflowState)||workflowState==="MISSING"&&now>=b.start||inventory.lastFailure||problems.some(p=>p.stage==="FINALIZE_EXISTING_OBSERVATIONS")?"BLOCKED":problems.length?"UNVERIFIED":"WAITING",
+    status:recoveryBlocked?"BLOCKED":privateReadback.status==="VERIFIED"?(problems.length?"DELIVERY_VERIFIED_WITH_WARNINGS":"DELIVERY_VERIFIED"):coverage?.status==="WITHHELD"||["ERRORED","TERMINATED"].includes(workflowState)||workflowState==="MISSING"&&now>=b.start||inventory.lastFailure||problems.some(p=>p.stage==="FINALIZE_EXISTING_OBSERVATIONS")?"BLOCKED":problems.length?"UNVERIFIED":"WAITING",
     preparation:{initial:status.prepared,final:status.finalInputReady,seedReferenceDate:inventory.seedReferenceDate},
     collection:{expected:553,eligible:inventory.eligible,completed:inventory.completed,failed:inventory.failed.length,missing:inventory.universe===553?inventory.missing.length:null},
-    result:{frozen:status.outbox,deliveryVerified:status.receipt?.status==="PRIVATE_RELAY_VERIFIED"},privateReadback,site,actions:[...actions],problems:problems.map(p=>({...p})),sourcePricesIncluded:false,collectionStarted:false};
+    result:{frozen:status.outbox,deliveryVerified:status.receipt?.status==="PRIVATE_RELAY_VERIFIED",publication:status.publication},coverage,privateReadback,site,actions:[...actions],problems:problems.map(p=>({...p})),sourcePricesIncluded:false,collectionStarted:recoveryStarted};
   const record={...body,recordHash:hash(body)};
   state.write(`watch-snapshot:${slot}`,record);state.write("watch-latest",{slot,recordHash:record.recordHash},true);
   try{await remote.writeImmutable(recordKey(record),record);state.write(`watch-published:${slot}`,{recordHash:record.recordHash});}

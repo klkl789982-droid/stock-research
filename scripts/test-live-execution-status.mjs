@@ -67,6 +67,41 @@ test("late progress never hides a terminal regular-run failure retained in the s
  assert.equal(result.record.recordHash,terminal.recordHash,"select existing evidence, never rewrite an immutable record");
 });
 
+test("verified policy revisions override stale withholding; 5+ omitted reasons remain available without any ranking",async()=>{
+ const policy=(count,event)=>{
+  const v=fixture();v.schemaVersion=2;v.event=event;
+  v.coverage={status:count===0?"COMPLETE":count<5?"PARTIAL":"WITHHELD",targetCount:508,validCount:508-count,
+   missing:Array.from({length:count},(_,i)=>({ticker:String(100+i).padStart(6,"0"),reason:"LIVE_CLOUD_OBSERVATION_MISSING"})),universeHash:"b".repeat(64)};
+  v.collection={...v.collection,available:508-count,excluded:45,missing:count,requiredMissing:count};
+  if(count<5){v.validation={outboxFrozen:true,deliveryHash:"a".repeat(64),frozenAt:now};v.delivery={verified:true,deliveryHash:v.validation.deliveryHash};}
+  return sealExecutionRecord(v);
+ };
+ const store=values=>({verifyPrivateRepository:async()=>{},listKeys:async()=>values.map(v=>({name:executionRecordKey(v).split("/").at(-1),type:"file"})),read:async key=>({value:values.find(v=>executionRecordKey(v)===key)})});
+ const withheld=policy(5,"POLICY_W5"),partial=policy(1,"POLICY_R1");
+ const large=policy(6,"POLICY_W6");
+ assert.equal((await readTodayExecution(store([large,withheld]),{now})).record.coverage.missing.length,5);
+ assert.equal((await readTodayExecution(store([large,withheld]),{now})).record.status,"WITHHELD");
+ assert.equal((await readTodayExecution(store([withheld,partial,record()]),{now})).record.status,"PARTIAL");
+ assert.equal(executionStatusDto(partial,now).collectionComplete,false);
+ assert.equal(executionStatusDto(partial,now).stages.collection,"PARTIAL");
+ assert.equal(executionStatusDto(withheld,now).stages.validation,"BLOCKED");
+ assert.throws(()=>policy(5,"POLICY_W6"));assert.throws(()=>policy(5,"POLICY_R1"));
+ const after="2026-10-20T10:01:00.000Z", resumed="2026-10-20T10:02:00.000Z";
+ const {recordHash, ...prior}=partial;void recordHash;
+ const block=sealExecutionRecord({...prior,event:"POLICY_GLOBAL_BLOCKED",recordedAt:after,error:{code:"KIS_HTTP_401",stage:"BATCH_COLLECTION"}});
+ const current=(await readTodayExecution(store([withheld,partial,block]),{now:resumed})).record;
+ assert.equal(current.status,"GLOBAL_BLOCKED");assert.equal(current.error.code,"KIS_HTTP_401");assert.deepEqual(current.delivery,partial.delivery);
+ assert.deepEqual(current.stages,{preparation:"SUCCEEDED",collection:"BLOCKED",validation:"BLOCKED",delivery:"BLOCKED"});
+ assert.throws(()=>sealExecutionRecord({...prior,event:"POLICY_GLOBAL_BLOCKED",error:null}));
+ assert.throws(()=>sealExecutionRecord({...prior,event:"POLICY_GLOBAL_BLOCKED",error:{code:"DIAG_UNKNOWN_TRANSPORT_FAILURE",stage:"BATCH_COLLECTION"}}));
+ const late=sealExecutionRecord({...prior,recordedAt:resumed});
+ assert.equal((await readTodayExecution(store([late,block]),{now:resumed})).record.status,"GLOBAL_BLOCKED");
+ const recovered=sealExecutionRecord({...prior,event:"POLICY_R2",recordedAt:resumed,
+   validation:{...prior.validation,deliveryHash:"c".repeat(64),frozenAt:resumed},delivery:{verified:true,deliveryHash:"c".repeat(64)}});
+ assert.equal((await readTodayExecution(store([partial,block,recovered]),{now:resumed})).record.event,"POLICY_R2");
+ const bad=structuredClone(withheld);bad.coverage.missing[0].reason="private-path";assert.throws(()=>sealExecutionRecord(bad));
+});
+
 test("presentation uses the existing1530 observation policy, not a stale1405 display cutoff",()=>{
  const value=fixture();value.recordedAt=`${date}T05:15:00.000Z`;value.event="COLLECTION";value.workflowState="RUNNING";value.error=null;
  const active=executionStatusDto(sealExecutionRecord(value),`${date}T05:20:00.000Z`);

@@ -28,3 +28,12 @@ assert.match(panelExports.privateRelaySummary(waiting), /관측 대기/);
 assert.match(panelExports.privateRelaySummary({ ...waiting, failed: true }), /조회 실패/);
 assert.match(panelExports.privateRelaySummary({ ...waiting, data: { source: "privateRelayFixture", delivery: fixture } }), /합성.*실제 관측 아님/);
 assert.match(panelExports.privateRelaySummary({ ...waiting, data: { source: "privateLiveRelay", freshnessStatus: "HISTORICAL", delivery: { signalDate: "2026-10-16" } } }), /2026-10-16.*이전 날짜/);
+const revised=render({data:{source:"privateLiveRelay",status:"AVAILABLE",servedAt:"2026-11-03T07:30:00Z",publicationTimes:{firstPublishedAt:"2026-11-03T06:05:00Z",publishedAt:"2026-11-03T07:29:00Z"},delivery:{
+ signalDate:"2026-11-03",exportedAt:"2026-11-03T07:00:00Z",models:fixture.models,deliveryHash:"b".repeat(64),sourceHash:"c".repeat(64),
+ publication:{status:"PARTIAL",revision:2,firstIssuedAt:"2026-11-03T05:10:00Z",previousDeliveryHash:"a".repeat(64),
+ targetCount:508,validCount:507,universeHash:"d".repeat(64),missing:[{ticker:"009450",reason:"LIVE_CLOUD_RATE_EVIDENCE_INVALID"}]}}}});
+for(const label of ["잠정 순위 · PARTIAL","정상 507 · 대상 508 · 미반영 1","009450 · 요청·응답 시각 검증 실패 · LIVE_CLOUD_RATE_EVIDENCE_INVALID","발행 버전 r2","수정 게시 2026.11.03 16:29:00 KST","직전 발행 해시"])assert.ok(revised.includes(label),label);
+const completeCoverage=renderToStaticMarkup(React.createElement(panelExports.LiveCoverageSummary,{coverage:{status:"COMPLETE",validCount:508,targetCount:508,missing:[],universeHash:"a".repeat(64)}}));
+assert.match(completeCoverage,/확정 순위 · COMPLETE/);
+const integrity=render({data:{source:"privateLiveRelay",delivery:{deliveryHash:"b".repeat(64)}},integrityOnly:true});
+assert.match(integrity,/<details[^>]*\bopen=""/);assert.ok(integrity.includes("SHA256 "+"b".repeat(64)));

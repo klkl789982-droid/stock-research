@@ -11,7 +11,7 @@ async function fixture(t,{rows=553,frozen=false}={}){
   async listKeys(prefix){const entries=new Map();for(const k of values.keys())if(k.startsWith(`${prefix}/`)){const rest=k.slice(prefix.length+1),[name]=rest.split("/");entries.set(name,{name,type:rest.includes("/")?"dir":"file"});}return[...entries.values()];}};
  const sql={get databaseSize(){return db.prepare("PRAGMA page_count").get().page_count*4096;},exec(q,...args){const rows=db.prepare(q).all(...args);return{rowsRead:rows.length+1,rowsWritten:/^(INSERT|UPDATE)/u.test(q)?2:0,toArray:()=>rows};}};
  const input=syntheticProductionInputs({date,seedDate:"2001-12-28"});
- const state=new ProductionDayState({sql,env,now:()=>now,remote:store,transaction(fn){db.exec("BEGIN");try{const r=fn();db.exec("COMMIT");return r;}catch(e){db.exec("ROLLBACK");throw e;}},prepare:async()=>({...input.prepared,remoteCheckedAt:new Date(now).toISOString()})});
+ const state=new ProductionDayState({sql,env,now:()=>now,remote:store,transaction(fn){db.exec("BEGIN");try{const r=fn();db.exec("COMMIT");return r;}catch(e){db.exec("ROLLBACK");throw e;}},prepare:async()=>({...input.prepared,inputCommit:"b".repeat(40),formulaHashesVerified:true,remoteCheckedAt:new Date(now).toISOString()})});
  await state.prepare(date,true);
  for(const row of input.rows.slice(553-rows))state.write(`observation:${row.code}`,row);
  for(let i=0;i<553;i+=4){const codes=input.prepared.codes.slice(i,i+4);state.recordBatchResult(date,`live-${date}`,codes,{status:"complete",output:{attempted:codes.length,successful:codes.length,failed:[]}});}
@@ -29,9 +29,9 @@ test("all existing inputs can finalize without collection; frozen transfer recov
  assert.equal(f.state.read("relay-watch-attempt").count,2);await f.run("1515");assert.equal(f.state.read("relay-watch-attempt").count,2);
  assert.equal(f.calls.length,0);const {recordHash,...body}=success;assert.equal(hash(body),recordHash);
 });
-test("one missing required observation blocks result, not a partial ranking",async t=>{
- const f=await fixture(t,{rows:552}),r=await f.run("1405");assert.equal(r.status,"BLOCKED");assert.equal(f.state.read("outbox"),null);assert.equal(f.state.read("receipt"),null);
- assert.ok(r.problems.some(p=>p.code==="LIVE_CLOUD_COMPLETION_MISMATCH"));
+test("one missing required observation freezes a labeled partial and waits for its bounded relay",async t=>{
+ const f=await fixture(t,{rows:552}),r=await f.run("1405");assert.equal(r.result.frozen,true);
+ assert.equal(r.result.publication.status,"PARTIAL");assert.equal(r.result.publication.missing.length,1);assert.equal(f.state.read("receipt"),null);
 });
 test("a missing regular workflow is ensured once with the canonical ID, never restarted after14",async t=>{
  const f=await fixture(t);f.workflow.get=async()=>{throw Object.assign(Error("not found"),{code:10400});};

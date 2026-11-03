@@ -1,9 +1,12 @@
 import { buildIntradayModelTopSignal, validateIntradayModelTopSignal, hashIntradayModelTop as hash } from "../../lib/intraday-model-top-official-signal.mjs";
 import { parseKisQuote, attachKisMinuteObservation } from "../../lib/kis-quote-provider-core.mjs";
 import { createLiveDelivery, validateLiveDelivery } from "../../lib/private-live-delivery.mjs";
-import { kst } from "./core.mjs";
+import { kst, safeCode } from "./core.mjs";
 import { buildCloudSwingIntent } from "./cloud-swing.mjs";
 import { liveScoreBounds, validLiveScore } from "../../lib/live-model-score-contract.mjs";
+import { STOCK_CODE_PATTERN } from "../../lib/stock-code.mjs";
+import { isLiveMissingReason } from "../../lib/live-collection-reason.mjs";
+export { isLiveMissingReason };
 export { kst } from "./core.mjs";
 
 export const WATCH_CRON="0,5,15,25,30,35,40,45,59 4-6 * * MON-FRI";
@@ -98,21 +101,93 @@ export function requiredRowIssues(r, day) {
   for(const [k,want] of [["rawPricesStored",false],["modelFormulaUnchanged",true]])if(r[k]!==want)issue(k,r[k]??null,String(want));
   return issues;
 }
-export function aggregateProduction(prepared, observations, exportedAt) {
+function pinnedUniverse(prepared) {
   if (prepared?.readiness !== "READY" || prepared.universe !== 553 || !Array.isArray(prepared.codes)
     || prepared.codes.length !== 553 || new Set(prepared.codes).size !== 553 || !Array.isArray(prepared.eligibleCodes)
     || prepared.eligibleCodes.length !== prepared.eligible || new Set(prepared.eligibleCodes).size !== prepared.eligible
-    || prepared.eligibleCodes.some(c => !prepared.codes.includes(c)) || observations.length !== 553) throw new Error("LIVE_CLOUD_INCOMPLETE");
-  const map = new Map(observations.map(r => [r.code, r]));
-  if (map.size !== 553 || prepared.codes.some(c => !map.has(c))) throw new Error("LIVE_CLOUD_INCOMPLETE");
-  const required = prepared.eligibleCodes.map(c => map.get(c));
-  if (required.length < 5 || required.some(r => requiredRowIssues(r,prepared.targetDate).length)) throw new Error("LIVE_CLOUD_REQUIRED_INPUT_MISSING");
+    || prepared.eligibleCodes.some(c => !prepared.codes.includes(c))) throw new Error("LIVE_CLOUD_INCOMPLETE");
+  return new Set(prepared.codes);
+}
+
+function validDate(value) {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/u.test(value) && Number.isFinite(Date.parse(value))
+    && new Date(Date.parse(value)).toISOString().slice(0,10) === value;
+}
+
+export function observationFailureReasons(row) {
+  if ([401,403].includes(Number(row.httpStatus))) throw new Error(`KIS_HTTP_${Number(row.httpStatus)}`);
+  const reasons=[row.sourceFailure,row.providerFailureCode==="KIS_BUSINESS_EGW00201"?"KIS_RATE_LIMITED":row.providerFailureCode,row.reason].filter(Boolean);
+  for(const reason of reasons)if(!isLiveMissingReason(reason))throw new Error(safeCode({code:reason}));
+  return reasons;
+}
+export function evaluateCollectionPolicy(prepared, observations, { failures = [], globalFailure = null } = {}) {
+  const universe = pinnedUniverse(prepared), eligible = new Set(prepared.eligibleCodes);
+  const checked = Date.parse(prepared.remoteCheckedAt), ready = Date.parse(prepared.readyAt);
+  if (!validDate(prepared.targetDate) || !validDate(prepared.seedReferenceDate) || prepared.seedReferenceDate >= prepared.targetDate
+    || prepared.formulaHashesVerified !== true || !/^[a-f0-9]{64}$/u.test(prepared.seedHash ?? "") || !/^[a-f0-9]{40}$/u.test(prepared.inputCommit ?? "")
+    || !Number.isFinite(checked) || !Number.isFinite(ready) || new Date(checked).toISOString() !== prepared.remoteCheckedAt
+    || new Date(ready).toISOString() !== prepared.readyAt || checked > ready || ready >= bounds(prepared.targetDate).start || kst(checked).date !== prepared.targetDate
+    || prepared.codes.some(code => typeof code !== "string" || !STOCK_CODE_PATTERN.test(code)) || eligible.size < 5)
+    throw new Error("LIVE_CLOUD_PIN_INVALID");
+  if (!Array.isArray(observations) || observations.length > universe.size || !Array.isArray(failures) || failures.length > 2 * universe.size)
+    throw new Error("LIVE_CLOUD_CHILD_RESULTS_INVALID");
+  const byCode = new Map(), byFailure = new Map(), rejectedByReceipt = new Set(), scopedReasons = new Set();
+  function checkReason(reason) {
+    if (!isLiveMissingReason(reason)) throw new Error(safeCode({ code: reason }));
+    scopedReasons.add(reason);
+  }
+  for (const failure of failures) {
+    if (!universe.has(failure?.code)) throw new Error("LIVE_CLOUD_CHILD_RESULTS_INVALID");
+    checkReason(failure.reason);
+    byFailure.set(failure.code, failure.reason);
+    if (failure.evidenceSource === "RATE_REJECTION" && failure.reason === "LIVE_CLOUD_RATE_EVIDENCE_INVALID") rejectedByReceipt.add(failure.code);
+  }
+  for (const row of observations) {
+    if (row === null) continue;
+    if (!universe.has(row?.code) || byCode.has(row.code)) throw new Error("LIVE_CLOUD_COMPLETION_MISMATCH");
+    for(const reason of observationFailureReasons(row))scopedReasons.add(reason);
+    if (row.status === "EXCLUDED" && eligible.has(row.code) || row.status === "AVAILABLE" && !eligible.has(row.code))
+      throw new Error("LIVE_CLOUD_PIN_INVALID");
+    if (row.status !== "EXCLUDED" && row.status !== "AVAILABLE" && !row.reason) throw new Error("LIVE_CLOUD_METADATA_INVALID");
+    byCode.set(row.code, row);
+  }
+  if (globalFailure) {
+    const code = typeof globalFailure === "string" ? globalFailure : globalFailure.code;
+    if (!scopedReasons.has(code) || globalFailure.stage && globalFailure.stage !== "BATCH_COLLECTION") throw new Error(safeCode({ code }));
+  }
+  const missing = [];
+  for (const ticker of eligible) {
+    const row = byCode.get(ticker);
+    if (rejectedByReceipt.has(ticker)) { missing.push({ticker, reason:"LIVE_CLOUD_RATE_EVIDENCE_INVALID"}); continue; }
+    if (row?.status === "AVAILABLE" && !row.reason && !requiredRowIssues(row, prepared.targetDate).length) continue;
+    const reason = row ? row.reason ?? "LIVE_CLOUD_OBSERVATION_INVALID" : byFailure.get(ticker) ?? "LIVE_CLOUD_OBSERVATION_MISSING";
+    missing.push({ ticker, reason });
+  }
+  missing.sort((a, b) => a.ticker.localeCompare(b.ticker));
+  const validCount = eligible.size - missing.length;
+  return { status: missing.length === 0 ? "COMPLETE" : missing.length <= 4 ? "PARTIAL" : "WITHHELD",
+    targetCount: eligible.size, validCount, missing,
+    universeHash: hash({ targetDate: prepared.targetDate, seedReferenceDate: prepared.seedReferenceDate, seedHash: prepared.seedHash,
+      codes: prepared.codes, eligibleCodes: prepared.eligibleCodes }) };
+}
+
+export function aggregateProduction(prepared, observations, exportedAt, issuance) {
+  const policy = issuance ? evaluateCollectionPolicy(prepared, observations, issuance) : null;
+  if (policy && (policy.status === "WITHHELD" || policy.validCount < 5)) throw new Error("LIVE_CLOUD_REQUIRED_INPUT_MISSING");
+  if (!policy) pinnedUniverse(prepared);
+  const present = policy ? observations.filter(Boolean) : observations;
+  const map = new Map(present.map(r => [r.code, r]));
+  if (!policy && (present.length !== 553 || map.size !== 553 || prepared.codes.some(c => !map.has(c)))) throw new Error("LIVE_CLOUD_INCOMPLETE");
+  const unavailable = new Set(policy?.missing.map(row => row.ticker));
+  const required = prepared.eligibleCodes.filter(code => !unavailable.has(code)).map(code => map.get(code));
+  if (!policy && (required.length < 5 || required.some(r => requiredRowIssues(r, prepared.targetDate).length))) throw new Error("LIVE_CLOUD_REQUIRED_INPUT_MISSING");
   const collectionStartedAt = new Date(Math.min(...required.map(r => Date.parse(r.quoteRequestedAt)))).toISOString();
   const collectionCompletedAt = new Date(Math.max(...required.map(r => Date.parse(r.minuteReceivedAt)))).toISOString();
   // New explicit score-only evidence identity, NOT a forged hash of a complete
   // old raw-price artifact. Immutable lineage remains separate from outcomes.
   const evidence = { namespace: "cloud-live-score-evidence-v1", observationPolicyId: "intraday-1400-v1", observationType: "LIVE_OBSERVATION",
-    signalDate: prepared.targetDate, prepared, observations: [...observations].sort((a, b) => a.code.localeCompare(b.code)),
+    signalDate: prepared.targetDate, prepared, observations: [...(policy ? required : present)].sort((a, b) => a.code.localeCompare(b.code)),
+    ...(policy ? { coverage: policy } : {}),
     collectionStartedAt, collectionCompletedAt, sourcePricesIncluded: false };
   const contentHash = hash(evidence);
   const models = versions.map((modelVersion, i) => ({ schemaVersion: 2, mode: "live", observationPolicyId: "intraday-1400-v1", observationType: "LIVE_OBSERVATION",
@@ -120,9 +195,12 @@ export function aggregateProduction(prepared, observations, exportedAt) {
     contentHash, collectionStartedAt, collectionCompletedAt,
     records: [...required].sort((a, b) => b.scores[modelVersion] - a.scores[modelVersion] || a.code.localeCompare(b.code)).slice(0, 5)
       .map((r, rank) => ({ ticker: r.code, companyName: r.companyName, score: r.scores[modelVersion], rank: rank + 1 })) }));
-  const delivery = createLiveDelivery(models, { exportedAt, now: exportedAt }); validateLiveDelivery(delivery, exportedAt);
+  const publication = policy && { ...policy, revision: issuance.revision, previousDeliveryHash: issuance.previousDeliveryHash,
+    firstIssuedAt: issuance.firstIssuedAt };
+  const delivery = createLiveDelivery(models, { exportedAt, now: exportedAt, ...(publication ? { publication } : {}) });
+  validateLiveDelivery(delivery, exportedAt);
   const storedEvidence = { ...evidence, contentHash };
-  return { evidence: storedEvidence, delivery, swing: buildCloudSwingIntent(storedEvidence, delivery) };
+  return { evidence: storedEvidence, delivery, swing: policy ? null : buildCloudSwingIntent(storedEvidence, delivery) };
 }
 
 // SQL-independent allocator: adjacent quote/minute cells, unchanged220ms grid

@@ -18,6 +18,15 @@ const fixture = (date = "2026-10-16", end = "05:02:00.000Z") => ["A", "B", "C", 
   collectionStartedAt: `${date}T05:00:01.000Z`, collectionCompletedAt: `${date}T${end}`,
   records: Array.from({ length: 5 }, (_, i) => ({ ticker: String(i + 1).padStart(6, "0"), companyName: `TEST ONLY ${i}`, score: 90 - i, rank: i + 1 })) }));
 const exportFixture = (date, end) => createLiveDelivery(fixture(date, end), { exportedAt: "2026-10-16T05:06:00.000Z", now });
+const revision = (missing, previous = null, overrides = {}) => {
+  const raw = fixture(), n = (previous?.publication.revision ?? 0) + 1;
+  const exportedAt = `2026-10-16T05:1${n}:00.000Z`;
+  for (const model of raw) model.contentHash = String(n).repeat(64);
+  const publication = { status: missing.length ? "PARTIAL" : "COMPLETE", revision: n, previousDeliveryHash: previous?.deliveryHash ?? null,
+    firstIssuedAt: previous?.publication.firstIssuedAt ?? exportedAt, targetCount: 508, validCount: 508 - missing.length,
+    missing: missing.map(ticker => ({ ticker, reason: "LIVE_CLOUD_OBSERVATION_MISSING" })), universeHash: "b".repeat(64), ...overrides };
+  return createLiveDelivery(raw, { exportedAt, now, publication });
+};
 
 // Runs the existing real adapter against a deterministic fake GitHub HTTP API.
 // No network, actual credentials or source prices are used.
@@ -97,6 +106,87 @@ test("tampered, incomplete and future delivery fail closed without falling back"
   assert.throws(() => validateLiveDelivery(value, "2026-10-16T05:00:00.000Z"));
   const bad = structuredClone(value); bad.models[0].records[0].price = 1;
   assert.throws(() => validateLiveDelivery(bad, now));
+});
+
+test("partial revisions verify coverage, are create-only, and older retries cannot rewind the authenticated result", async () => {
+  const b = backend(), older = exportFixture("2026-10-15");
+  const first = revision(["000100","000101","000102","009450"]), second = revision(["009450"], first), complete = revision([], second);
+  await deliverPrivateLive(b.store, older, { now });
+  await deliverPrivateLive(b.store, first, { now });
+  const env = {PRIVATE_LIVE_DELIVERY_READ_ENABLED:"true",PRIVATE_LIVE_DELIVERY_REPOSITORY:"fixture/private",PRIVATE_LIVE_DELIVERY_READ_TOKEN:"FIXTURE_ONLY"};
+  const read = async () => (await privateLiveDeliveryResponse(new Request("https://fixture.invalid/api/private-live-delivery"), {env,now,fetchImpl:b.fetchImpl})).json();
+  assert.deepEqual((await read()).delivery, first);
+  await assert.rejects(deliverPrivateLive(b.store, complete, {now}), /DELIVERY_INVALID/);
+  for (const wrong of [revision(["000200"],first),revision(["000100"],first,{universeHash:"e".repeat(64)}),
+    revision(["000100"],first,{previousDeliveryHash:"f".repeat(64)}),revision(["000100"],first,{targetCount:510,validCount:509})]) {
+    await assert.rejects(deliverPrivateLive(b.store, wrong, {now}), /DELIVERY_INVALID/);
+  }
+  b.options.failHead=true;
+  await assert.rejects(deliverPrivateLive(b.store,second,{now}));
+  assert.equal((await read()).delivery.deliveryHash,first.deliveryHash);
+  b.options.failHead=false;
+  await deliverPrivateLive(b.store,second,{now});
+  await assert.rejects(deliverPrivateLive(b.store,revision(["000100"],first),{now}), /IMMUTABLE_CONFLICT/);
+  await deliverPrivateLive(b.store,complete,{now});
+  await deliverPrivateLive(b.store,first,{now});
+  await assert.rejects(deliverPrivateLive(b.store,exportFixture(),{now}),/DELIVERY_INVALID/);
+  assert.deepEqual((await read()).delivery,complete);
+  const ancestor=[...b.files.keys()].find(key=>key.includes("/heads/")&&key.endsWith("/r2.json"));
+  b.files.delete(ancestor);
+  assert.deepEqual(await read(),{error:"PRIVATE_LIVE_DELIVERY_UNAVAILABLE"});
+});
+
+test("strict 0/1–4/5+ thresholds, exact missing identities and closed reason fields", async () => {
+  assert.equal(revision([]).publication.status,"COMPLETE");
+  assert.equal(revision(["00945A"]).publication.validCount,507);
+  for (const bad of [
+    ()=>revision(["000100","000101","000102","000103","000104"]),
+    ()=>revision(["000100"],null,{status:"COMPLETE"}),()=>revision(["000100"],null,{validCount:506}),
+    ()=>revision(["000101","000100"]),()=>revision(["000100","000100"]),()=>revision(["000001"]),
+    ()=>revision(["000100"],null,{missing:[{ticker:"000100",reason:"free text"}]}),
+    ()=>revision(["000100"],null,{missing:[{ticker:"000100",reason:"LIVE_CLOUD_OBSERVATION_MISSING",price:1}]}),
+    ()=>revision([],null,{revision:2}),()=>revision([],null,{previousDeliveryHash:"c".repeat(64)}),
+  ]) assert.throws(bad,/DELIVERY_INVALID/);
+  const raw=fixture(),published=revision([]),options={exportedAt:published.exportedAt,now,publication:published.publication};
+  raw[0].records[1].score=raw[0].records[0].score+1;
+  assert.throws(()=>createLiveDelivery(raw,options),/DELIVERY_INVALID/);
+  const disjoint=fixture();
+  disjoint[0].records[0].ticker="00945A";
+  assert.throws(()=>createLiveDelivery(disjoint,{...options,publication:{...options.publication,targetCount:5,validCount:5}}),/DELIVERY_INVALID/);
+  const b=backend();
+  await deliverPrivateLive(b.store,exportFixture(),{now});
+  await assert.rejects(deliverPrivateLive(b.store,revision(["009450"]),{now}),/DELIVERY_INVALID/);
+});
+
+test("successful head creation timestamps survive delayed and competing retries independently of observation/issue times",async()=>{
+  const b=backend(), first=revision(["009450"]), second=revision([],first);
+  const env={PRIVATE_LIVE_DELIVERY_READ_ENABLED:"true",PRIVATE_LIVE_DELIVERY_REPOSITORY:"fixture/private",PRIVATE_LIVE_DELIVERY_READ_TOKEN:"FIXTURE_ONLY"};
+  const read=async()=>(await privateLiveDeliveryResponse(new Request("https://fixture.invalid/api/private-live-delivery"),{env,now,fetchImpl:b.fetchImpl})).json();
+  const earlier="2026-10-16T06:20:00.000Z",success="2026-10-16T06:35:00.000Z",updated="2026-10-16T07:00:00.000Z";
+  b.options.failHead=true;
+  await assert.rejects(deliverPrivateLive(b.store,first,{now:earlier}));
+  assert.equal((await read()).delivery,null);
+  b.options.failHead=false;
+  // Another relay wins the race between this relay's empty-key check and its PUT.
+  let competed=false;
+  const delayed={...b.store,async writeImmutable(key,data){
+    if(!competed&&key.endsWith("/r1.json")){
+      competed=true;await deliverPrivateLive(b.store,first,{now:success});
+    }
+    return b.store.writeImmutable(key,data);
+  }};
+  const firstReceipt=await deliverPrivateLive(delayed,first,{now:"2026-10-16T06:36:00.000Z"});
+  assert.equal(firstReceipt.publishedAt,success);
+  assert.deepEqual((await read()).publicationTimes,{firstPublishedAt:success,publishedAt:success});
+  assert.equal((await deliverPrivateLive(b.store,second,{now:updated})).publishedAt,updated);
+  assert.equal((await deliverPrivateLive(b.store,first,{now})).publishedAt,success);
+  const response=await read();
+  assert.deepEqual(response.publicationTimes,{firstPublishedAt:success,publishedAt:updated});
+  assert.equal(response.delivery.exportedAt,second.exportedAt);
+  assert.ok(response.delivery.models[0].collectionCompletedAt<first.exportedAt && first.exportedAt<success && second.exportedAt<updated);
+  const key=[...b.files.keys()].find(k=>k.endsWith("/r2.json")),head=JSON.parse(b.files.get(key));
+  b.files.set(key,JSON.stringify({...head,publishedAt:success}));
+  assert.deepEqual(await read(),{error:"PRIVATE_LIVE_DELIVERY_UNAVAILABLE"});
 });
 
 test("shadow, old policy, outside observation window, mixed sources and partial TOP are rejected", () => {
