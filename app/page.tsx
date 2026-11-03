@@ -17,7 +17,7 @@ import AdminLogout from "../components/AdminLogout";
 import WatchlistPanel from "../components/WatchlistPanel";
 import MarketOverviewPanel from "../components/MarketOverviewPanel";
 import BacktestPanel from "../components/BacktestPanel";
-import { searchApiErrorMessage, settleSearchRequest, selectVerifiedStock } from "../lib/search-request-isolation.mjs";
+import { searchApiErrorMessage, settleSearchRequest, selectVerifiedStock, stockChoices } from "../lib/search-request-isolation.mjs";
 import { buildSearchTechnicalStrength } from "../lib/search-technical-strength.mjs";
 import { buildSearchMarketAnalysis } from "../lib/search-market-analysis.mjs";
 import { analysisAvailabilityMessage } from "../lib/analysis-availability.mjs";
@@ -99,6 +99,7 @@ const [marketAnalysisError, setMarketAnalysisError] = useState<string | null>(nu
 const [intradayError, setIntradayError] = useState<string | null>(null);
 const [loading, setLoading] = useState(false);
   const [searchError, setSearchError] = useState<"notFound" | "request" | null>(null);
+  const [matches,setMatches]=useState<{code:string;name:string;market:string}[]>([]);
 const [realtimeError, setRealtimeError] = useState<string | null>(null);
 const [priceError, setPriceError] = useState<string | null>(null);
 const [priceRequestStatus, setPriceRequestStatus] = useState<"idle" | "loading" | "success" | "missing" | "error" | "unavailable">("idle");
@@ -234,6 +235,7 @@ useEffect(() => {
 const handleSearch = useCallback(async (selection?: { code: string; name: string; market?: string }, updateHistory = true) => {
   const searchTerm = selection?.code ?? query.trim();
   if (searchTerm === "") return;
+  setMatches([]);
   setSearchError(null);
   if (!explorerOriginRef.current) explorerOriginRef.current = { view: pageView, query, scrollY: window.scrollY };
   if (selection) setQuery(selection.name || selection.code);
@@ -269,6 +271,10 @@ setLoading(true);
     if (!response.ok) throw new Error(data?.error ?? "종목 검색에 실패했습니다.");
 
     if (data.items && data.items.length > 0) {
+if (!selection && !/^[0-9A-Z]{6}$/.test(searchTerm)) {
+  const choices=stockChoices(data.items);
+  if(choices.length>1){setMatches(choices);setLoading(false);setPriceRequestStatus("idle");return;}
+}
 const selectedItem = selectVerifiedStock(data.items, selection, searchTerm);
 if (!selectedItem) { setSearchError("notFound"); return; }
  setStockInfo(selectedItem);
@@ -355,6 +361,7 @@ const handleHome = useCallback((clearRoute = true) => {
   searchControllerRef.current = null;
   selectedCodeRef.current = null;
   setQuery("");
+  setMatches([]);
   setSearchError(null);
   setSearchedStock(null);
   setStockInfo(null);
@@ -488,6 +495,9 @@ return (
           </nav>
         </aside>
         <div id="research-content" tabIndex={-1} className="min-w-0 flex-1 px-4 py-5 sm:px-6 lg:px-7 lg:py-7 xl:px-9">
+        {matches.length>1&&<section aria-label="검색 결과 선택" className="tb-card mb-4 p-4"><h2 className="font-semibold">조회할 종목을 선택하세요</h2>
+          <ul>{matches.map(m=><li key={m.code}><button type="button" className="tb-focus min-h-11 text-left" onClick={()=>void handleSearch(m)}>{m.name} · {m.code} · {m.market}</button></li>)}</ul>
+          <button type="button" onClick={()=>setMatches([])}>닫기</button></section>}
         {searchError && <p role="alert" className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{searchError === "notFound" ? "해당 종목을 찾을 수 없습니다." : "검색 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요."}</p>}
         {pageView === "home" && <div hidden={Boolean(searchedStock)}><HomeDashboard
           onSelectStock={handleSearch}

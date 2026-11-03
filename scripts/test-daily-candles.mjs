@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import {candleDate,candleWindow} from "../lib/daily-candles.mjs";
 import {indexCandleReader} from "../lib/index-candles.mjs";
+import {stockChoices,selectVerifiedStock} from "../lib/search-request-isolation.mjs";
+const shares=[{srtnCd:"A005930",itmsNm:"삼성전자",mrktCtg:"KOSPI"},{srtnCd:"005935",itmsNm:"삼성전자우",mrktCtg:"KOSPI"}];
+const choices=stockChoices([...shares,...shares]);assert.equal(choices.length,2);
+assert.equal(selectVerifiedStock(shares,choices[1],"삼성전자").srtnCd,"005935");
 const row=(date)=>({date,open:"101",high:"103",low:"99",close:"102"});
 const opts={through:"2026-11-03",calendar:{dates:{"2026-11-02":{status:"tradingDay"},"2026-10-09":{status:"marketClosed"}}}};
 assert.equal(candleDate("20260230"),null);

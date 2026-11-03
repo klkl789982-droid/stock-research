@@ -18,7 +18,7 @@
 .index > span { display: block; font-size: .75rem; color: var(--tb-muted); font-weight: 650; }
 .index[aria-pressed=true] > span { color: var(--tb-blue); }
 .index strong { display: block; font-size: clamp(1.25rem,2vw,1.55rem); font-weight: 750; color: var(--tb-text); font-variant-numeric: tabular-nums; }
-.index small { font-size: .78rem; font-weight: 600; }
+.index small { display:block; font-size: .78rem; font-weight: 600; }
 .up { color: var(--tb-positive); }
 .down { color: var(--tb-negative); }
 .figure { min-width: 0; }
