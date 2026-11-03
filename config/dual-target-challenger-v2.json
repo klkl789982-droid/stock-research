@@ -1,0 +1,28 @@
+{
+  "version": "dual-target-challenger-v2",
+  "through": "2026-11-02",
+  "olderSeed": "2026-09-22",
+  "reference": "1979a21",
+  "fixedBeforeResults": true,
+  "development": "Use 2025 rows before Jan only as additional gross-label training. Add earlier seed only before first date of latest seed per code; reject duplicate dates or contradictory overlap at splice. 2025 sessions evidenced by >=300 distinct stocks; do not value 2025 accounts. Keep v1 2026 control, never drop losing dates.",
+  "features": [
+    "5d return percentile",
+    "20d excess return vs same-market equally weighted peers percentile",
+    "20d volatility percentile",
+    "positive-close frequency percentile",
+    "20d drawdown percentile",
+    "20d average traded-value proxy percentile",
+    "volume change percentile",
+    "new SMA5/20 cross",
+    "bounded same-market mean 20d return"
+  ],
+  "methods": "R3 ridge raw signed gross return; P3 L2 logistic binary close>entry open. Centered cross-sectional ranks; fixed penalty 0.02, unpenalized intercept. Calibration: intercept-only offset estimated from last 20 mature training signal days with purged earlier fit. Compare P3 before/after, same ordering. No parameter search.",
+  "folds": [
+    "2026-05-01",
+    "2026-07-01",
+    "2026-09-01"
+  ],
+  "design": "May-June development and suitability screen; July-August and September-November retrospective independent fits, previously inspected windows. Only realized exits strictly before train/calibration/evaluation boundary. Actual entry assumptions, costs and v1 portfolio preserved. Separate matched as-published timing from reconstructed.",
+  "gate": "Each of three blocks at 5d: R3 positive mean daily Spearman and higher than R1 by >=0.01, paired top10-minus-pool >0 and above R1; P3 calibrated positive paired top10 hit uplift >=1 percentage point and above P2, day AUC>0.5 and Brier >=0.001 better than both expanding base and P2. H20 secondary only. Miss -> keep frozen v1 default; challenger explicitly selectable. No A-D promotion even on pass.",
+  "prospective": "Lock fitted coefficients and calibration to this vintage. Forward review at 60 distinct new signals with matured H5 outcomes and unchanged costs, report H20 separately; no changes to D research."
+}
