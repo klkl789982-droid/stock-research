@@ -61,7 +61,7 @@ export class LiveDay extends DurableObject {
     catch (e) { if (io.exhausted) throw new Error("LIVE_CLOUD_RELAY_HTTP_BUDGET"); throw e; }
   }
   status() { return { ...this.state.status(), productionEnabled: this.env.LIVE_PRODUCTION_ENABLED === "true", producer: this.env.LIVE_PRODUCER }; }
-  incidentStatus() { return { ...this.state.incidentStatus(), productionEnabled: this.env.LIVE_PRODUCTION_ENABLED === "true", producer: this.env.LIVE_PRODUCER }; }
+  incidentStatus() { return { ...this.state.incidentStatus(true), productionEnabled: this.env.LIVE_PRODUCTION_ENABLED === "true", producer: this.env.LIVE_PRODUCER }; }
   failure(code, stage) { return this.state.failure(safeCode({ code }), stage); }
   reconcileBatches(date, value) { return this.state.reconcileBatches(date, value); }
   recordBatchResult(date,runId,codes,result) { return this.state.recordBatchResult(date,runId,codes,result); }

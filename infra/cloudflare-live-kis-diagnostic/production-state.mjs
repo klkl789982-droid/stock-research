@@ -1,7 +1,7 @@
 import { hashIntradayModelTop as hash } from "../../lib/intraday-model-top-official-signal.mjs";
 import { assertPrivateKisEodPayload } from "../../lib/kis-eod-private-store.mjs";
 import { deliverPrivateLive } from "../../lib/private-live-delivery.mjs";
-import { assertProduction, assertWindow, bounds, aggregateProduction, nextPairSlots, PRODUCTION_BUDGET, LIVE_BATCH_SIZE } from "./production-core.mjs";
+import { assertProduction, assertWindow, bounds, aggregateProduction, requiredRowIssues, nextPairSlots, PRODUCTION_BUDGET, LIVE_BATCH_SIZE } from "./production-core.mjs";
 import { persistCloudSwingIntent } from "./cloud-swing.mjs";
 import { safeCode } from "./core.mjs";
 import { EXECUTION_PREFIX, EXECUTION_EVENTS, sealExecutionRecord } from "../../lib/private-live-execution-status.mjs";
@@ -430,7 +430,7 @@ export class ProductionDayState {
       return this.write(`execution-status:${event}`,value);
     });
   }
-  incidentStatus() {
+  incidentStatus(qualityAudit=false) {
     return this.critical(() => {
       const prepared = this.read("final"), expected = prepared?.codes ?? [];
       const observations = this.q("SELECT digest,body FROM docs WHERE id>='observation:' AND id<'observation;' ORDER BY id LIMIT 554").map(r => {
@@ -445,7 +445,11 @@ export class ProductionDayState {
       const rateRejections=rateRows.slice(0,5),rateIssueCounts={};for(const row of rateRows)rateIssueCounts[row.issue]=(rateIssueCounts[row.issue]??0)+1;
       const failedSamples=observations.filter(r=>!["AVAILABLE","EXCLUDED"].includes(r.status)).slice(0,5).map(r=>({code:r.code,reason:r.reason,
         failureStage:r.failureStage??"UNKNOWN",failedEndpoint:r.failedEndpoint??null,httpStatus:r.httpStatus??null,providerFailureCode:r.providerFailureCode??null}));
-      return { ...this.status(), rateRejections, rateIssueCounts, failedSamples, lastFailure: this.read("last-failure"), universe: expected.length, eligible: prepared?.eligible ?? null,
+      let quality;
+      if(qualityAudit && prepared){const byCode=new Map(observations.map(row=>[row.code,row]));
+        const rejected=prepared.eligibleCodes.flatMap(code=>{const issues=requiredRowIssues(byCode.get(code),prepared.targetDate);return issues.length?[{code,issues}]:[];});
+        quality={targetDate:prepared.targetDate,checked:prepared.eligibleCodes.length,passed:prepared.eligibleCodes.length-rejected.length,rejected};}
+      return { ...this.status(), ...(quality?{quality}:{}), rateRejections, rateIssueCounts, failedSamples, lastFailure: this.read("last-failure"), universe: expected.length, eligible: prepared?.eligible ?? null,
         seedReferenceDate: prepared?.seedReferenceDate ?? null, inputCommit: prepared?.inputCommit ?? null,
         completed: observations.filter(r => ["AVAILABLE", "EXCLUDED"].includes(r.status)).length,
         failed: [...failed].map(([code, row]) => ({ code, reason: row.reason, failureStage: row.failureStage })),

@@ -93,6 +93,17 @@ test("all553 synthetic inputs preserve original A/B/C/D scores and TOP5 ranks wi
   assert.ok(!/"(?:price|rows|open|high|low|close|volume|accessToken)"/u.test(JSON.stringify(value)));
 });
 
+test("native A-v1 penalties and bonuses survive final validation and delivery without clamping", () => {
+  const seed=inputFixture(), {rows}=observations(seed), p=prepared(seed), issued=date+"T07:00:00.000Z";
+  rows[0].scores["A-v1"]=-1.34; rows[1].scores["A-v1"]=105;
+  const result=aggregateProduction(p,rows,issued);
+  assert.equal(result.evidence.observations.find(r=>r.code===rows[0].code).scores["A-v1"],-1.34);
+  assert.equal(validateLiveDelivery(result.delivery,issued).models[0].records[0].score,105);
+  for(const [v,bad] of [["A-v1",-30.01],["A-v1",110.01],["B-v1",-1.34],["C-v1",101],["D-v1",null]]) {
+    const scores=rows[0].scores, original=scores[v]; scores[v]=bad;
+    assert.throws(()=>aggregateProduction(p,rows,issued),/REQUIRED_INPUT_MISSING/u); scores[v]=original;
+  }
+});
 test("swing intent preserves TOP5 union and first issuance; invalid or missing price stays blocked", async () => {
   const seed = inputFixture(), f = observations(seed), remote = remoteFixture();
   const value = aggregateProduction(prepared(seed), f.rows, `${date}T05:05:01.000Z`);
@@ -118,6 +129,20 @@ test("one missing required input, duplicates, altered dates and future receipts 
   }
 });
 
+test("incident audit checks every pinned eligible observation and returns only rejected field evidence", async t=>{
+  const f=sandbox(t); await f.state.prepare(date,true);
+  const rows=observations(f.seed).rows;
+  rows[0].observedTime="13:59:00";rows[1].scores["B-v1"]=null;
+  rows[2].responseHash=null;rows[2].minuteRequestedAt=rows[2].quoteRequestedAt;
+  for(const row of rows)f.state.write("observation:"+row.code,row);
+  const q=f.state.incidentStatus(true).quality;
+  assert.equal(q.checked,508);assert.equal(q.passed,505);
+  assert.deepEqual(q.rejected.map(r=>r.issues.map(i=>i.field)),[["observedTime"],["scores.B-v1"],["minuteRequestedAt","responseHash"]]);
+  assert.equal(q.rejected[0].issues[0].value,"13:59:00");
+  assert.equal(f.state.incidentStatus().quality,undefined);
+  assert.throws(()=>aggregateProduction(prepared(f.seed),rows,new Date(b.end).toISOString()),/REQUIRED_INPUT_MISSING/u);
+  assert.equal(f.state.read("outbox"),null);assert.equal(f.remote.values.size,0);
+});
 test("pinned exclusions need no live quote while eligible quote validation and complete Universe remain strict", async t => {
   const f = sandbox(t), seed = f.seed, input = seed.records.at(-1);
   const excluded = productionObservation({ code: input.code, input, seedContext: seed, signalDate: date });

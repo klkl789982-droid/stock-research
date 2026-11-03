@@ -3,6 +3,7 @@ import { parseKisQuote, attachKisMinuteObservation } from "../../lib/kis-quote-p
 import { createLiveDelivery, validateLiveDelivery } from "../../lib/private-live-delivery.mjs";
 import { kst } from "./core.mjs";
 import { buildCloudSwingIntent } from "./cloud-swing.mjs";
+import { liveScoreBounds, validLiveScore } from "../../lib/live-model-score-contract.mjs";
 export { kst } from "./core.mjs";
 
 export const WATCH_CRON="0,5,15,25,30,35,40,45,59 4-6 * * MON-FRI";
@@ -77,6 +78,26 @@ export function productionObservation({ quote, minute, code, timing, input, seed
     originalRecordHash: hash(row), rawPricesStored: false, modelFormulaUnchanged: true };
 }
 
+// Same predicate for publishing and for the restricted, management-only quality audit.
+// Never copy a quote, price, candidate list, full observation or credentials into the report.
+export function requiredRowIssues(r, day) {
+  const issues=[], b=bounds(day);
+  const issue=(field, value, rule)=>issues.push({field, value, rule});
+  if(r?.status!=="AVAILABLE") issue("status",r?.status??null,"AVAILABLE");
+  if(!r)return issues;
+  if(r.observedDate!==day)issue("observedDate",r.observedDate??null,day);
+  for(const v of versions){const s=r.scores?.[v];if(!validLiveScore(v,s))issue("scores."+v,Number.isFinite(s)?s:null,"finite "+liveScoreBounds(v).join(".."));}
+  const keys=["quoteRequestedAt","quoteReceivedAt","minuteRequestedAt","minuteReceivedAt"];
+  keys.forEach((k,i)=>{const t=Date.parse(r[k]);if(!Number.isFinite(t)||t<b.start||t>b.end)issue(k,r[k]??null,"inside session");
+    if(i&&Date.parse(r[keys[i-1]])>t)issue(k,r[k],"not before "+r[keys[i-1]]);});
+  const local=Date.parse(r.observedDate+"T"+r.observedTime+"+09:00");
+  if(!/^\d{2}:\d{2}:\d{2}$/u.test(r.observedTime??"")||!Number.isFinite(local))issue("observedTime",r.observedTime??null,"valid KST HH:mm:ss");
+  else if(local<b.start)issue("observedTime",r.observedTime,"at or after 14:00:00 KST");
+  else if(local>Date.parse(r.quoteReceivedAt))issue("observedTime",r.observedTime,"not after "+r.quoteReceivedAt);
+  for(const k of ["originalRecordHash","responseHash"])if(!/^[a-f0-9]{64}$/u.test(r[k]??""))issue(k,r[k]==null?null:"invalid digest","SHA256");
+  for(const [k,want] of [["rawPricesStored",false],["modelFormulaUnchanged",true]])if(r[k]!==want)issue(k,r[k]??null,String(want));
+  return issues;
+}
 export function aggregateProduction(prepared, observations, exportedAt) {
   if (prepared?.readiness !== "READY" || prepared.universe !== 553 || !Array.isArray(prepared.codes)
     || prepared.codes.length !== 553 || new Set(prepared.codes).size !== 553 || !Array.isArray(prepared.eligibleCodes)
@@ -84,18 +105,8 @@ export function aggregateProduction(prepared, observations, exportedAt) {
     || prepared.eligibleCodes.some(c => !prepared.codes.includes(c)) || observations.length !== 553) throw new Error("LIVE_CLOUD_INCOMPLETE");
   const map = new Map(observations.map(r => [r.code, r]));
   if (map.size !== 553 || prepared.codes.some(c => !map.has(c))) throw new Error("LIVE_CLOUD_INCOMPLETE");
-  const required = prepared.eligibleCodes.map(c => map.get(c)), b = bounds(prepared.targetDate);
-  if (required.length < 5 || required.some(r => r.status !== "AVAILABLE" || r.observedDate !== prepared.targetDate
-    || !versions.every(v => Number.isFinite(r.scores?.[v]) && r.scores[v] >= 0 && r.scores[v] <= 100)
-    || [r.quoteRequestedAt, r.quoteReceivedAt, r.minuteRequestedAt, r.minuteReceivedAt].some(t => !Number.isFinite(Date.parse(t)) || Date.parse(t) < b.start || Date.parse(t) > b.end)
-    || Date.parse(r.quoteRequestedAt) > Date.parse(r.quoteReceivedAt) || Date.parse(r.quoteReceivedAt) > Date.parse(r.minuteRequestedAt)
-    || Date.parse(r.minuteRequestedAt) > Date.parse(r.minuteReceivedAt)
-    || !/^\d{2}:\d{2}:\d{2}$/u.test(r.observedTime ?? "")
-    || !Number.isFinite(Date.parse(`${r.observedDate}T${r.observedTime}+09:00`))
-    || Date.parse(`${r.observedDate}T${r.observedTime}+09:00`) < b.start
-    || Date.parse(`${r.observedDate}T${r.observedTime}+09:00`) > Date.parse(r.quoteReceivedAt)
-    || !/^[a-f0-9]{64}$/u.test(r.originalRecordHash ?? "") || !/^[a-f0-9]{64}$/u.test(r.responseHash ?? "")
-    || r.rawPricesStored !== false || r.modelFormulaUnchanged !== true)) throw new Error("LIVE_CLOUD_REQUIRED_INPUT_MISSING");
+  const required = prepared.eligibleCodes.map(c => map.get(c));
+  if (required.length < 5 || required.some(r => requiredRowIssues(r,prepared.targetDate).length)) throw new Error("LIVE_CLOUD_REQUIRED_INPUT_MISSING");
   const collectionStartedAt = new Date(Math.min(...required.map(r => Date.parse(r.quoteRequestedAt)))).toISOString();
   const collectionCompletedAt = new Date(Math.max(...required.map(r => Date.parse(r.minuteReceivedAt)))).toISOString();
   // New explicit score-only evidence identity, NOT a forged hash of a complete
