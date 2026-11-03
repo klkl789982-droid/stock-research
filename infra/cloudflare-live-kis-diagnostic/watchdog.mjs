@@ -11,7 +11,7 @@ const recordKey=r=>`${WATCH_PREFIX}/${r.date}/${r.slot}-${r.recordHash}.json`;
 
 // No collection endpoint, token refresh, arbitrary URL, new observation ID or
 // code deployment is exposed here. This is a finite rule-based supervisor.
-export async function runCloudWatchdog({state,workflow,remote,fetchImpl,date,slot,scheduledAt,now=Date.now(),publishExecution=async()=>{},retryMissing=null}){
+export async function runCloudWatchdog({state,workflow,remote,fetchImpl,date,slot,scheduledAt,now=Date.now(),publishExecution=async()=>{},retryMissing=null,auditProjection=null}){
   assertProduction(state.env);
   const at=Date.parse(`${date}T${slot?.slice(0,2)}:${slot?.slice(2)}:00+09:00`),b=bounds(date);
   if(!WATCH_SLOTS.includes(slot)||!Number.isFinite(at)||scheduledAt!==at||kst(now).date!==date||now<at||now>at+120000||[0,6].includes(new Date(`${date}T00:00:00Z`).getUTCDay()))return{status:"WATCH_SKIPPED_TIME",collectionStarted:false};
@@ -50,12 +50,15 @@ export async function runCloudWatchdog({state,workflow,remote,fetchImpl,date,slo
   // prepaid durably and independent of the early/closing scheduled counters.
   if(status.outbox&&!status.receipt&&["1415","1515"].includes(slot))await attempt("FROZEN_RELAY",async()=>{await state.relay(date,remote,{watchdog:true,watchSlot:slot});actions.push("RETRY_SAME_FROZEN_DELIVERY");});
   status=state.status();
-  let privateReadback={status:"NO_VERIFIED_DELIVERY",date:null,deliveryHash:null,topRows:0};
+  let auditHead=null,privateReadback={status:"NO_VERIFIED_DELIVERY",date:null,deliveryHash:null,topRows:0};
   if(status.outbox&&status.receipt)await attempt("PRIVATE_READBACK",async()=>{
     const value=await readLatestPrivateLive(remote,{now:new Date(now).toISOString()}),f=state.currentOutbox();
     const topRows=value?.models.reduce((n,m)=>n+m.records.length,0)??0;
     const ok=value?.signalDate===date&&value.deliveryHash===f.delivery.deliveryHash&&status.receipt.status==="PRIVATE_RELAY_VERIFIED"&&status.receipt.deliveryHash===value.deliveryHash&&topRows===20;
     privateReadback={status:ok?"VERIFIED":"STALE_OR_HASH_MISMATCH",date:value?.signalDate??null,deliveryHash:value?.deliveryHash??null,topRows};
+    // The existing last watch slot shares the existing capped network client.
+    // Do not make delivery, collection, retries or score publication depend on this audit.
+    if(ok && slot==="1535" && value.publication) auditHead=value;
     if(ok && value.publication)await publishExecution(date,`POLICY_R${value.publication.revision}`,"COMPLETE");
   });
   const site={loginHttp:null,anonymousApiHttp:null,authenticatedUi:"NOT_CHECKED_NO_ADMIN_SESSION"};
@@ -82,6 +85,9 @@ export async function runCloudWatchdog({state,workflow,remote,fetchImpl,date,slo
   }
   if(privateReadback.status==="VERIFIED"&&(!status.finalInputReady||inventory.universe!==553||(!status.publication&&(inventory.completed!==553||inventory.failed.length||inventory.missing.length)))){
     privateReadback.status="LOCAL_INVENTORY_UNVERIFIED";problems.push({stage:"LOCAL_INVENTORY",code:"LIVE_CLOUD_INCOMPLETE"});
+  }
+  if(auditHead && auditProjection){
+    privateReadback.replayAudit=await attempt("POST_CLOSE_REPLAY",()=>auditProjection(auditHead,new Date(now).toISOString()),{status:"UNVERIFIED"});
   }
   const body={schemaVersion:1,kind:"CLOUD_RULE_BASED_WATCHDOG",date,slot,scheduledAt:new Date(at).toISOString(),startedAt:new Date(now).toISOString(),checkedAt:new Date(state.now()).toISOString(),workflowState,
     status:recoveryBlocked?"BLOCKED":privateReadback.status==="VERIFIED"?(problems.length?"DELIVERY_VERIFIED_WITH_WARNINGS":"DELIVERY_VERIFIED"):coverage?.status==="WITHHELD"||["ERRORED","TERMINATED"].includes(workflowState)||workflowState==="MISSING"&&now>=b.start||inventory.lastFailure||problems.some(p=>p.stage==="FINALIZE_EXISTING_OBSERVATIONS")?"BLOCKED":problems.length?"UNVERIFIED":"WAITING",

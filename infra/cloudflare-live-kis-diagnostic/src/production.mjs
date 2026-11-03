@@ -5,6 +5,7 @@ import { assertProduction, assertWindow, bounds, kst, productionObservation, pro
 import { safeCode, edgeFetch, transportReason } from "../core.mjs";
 import { createKisEodPrivateStore } from "../../../lib/kis-eod-private-store.mjs";
 import { privateRequestBudget } from "../relay-budget.mjs";
+import {auditStoredPublication} from "../../../lib/live-postclose-audit.mjs";
 import { verifyNativeProductionFixture } from "../production-fixture.mjs";
 import { executionRecordKey } from "../../../lib/private-live-execution-status.mjs";
 import { createFixedBatchGroup } from "../batch-creation.mjs";
@@ -115,6 +116,14 @@ export class LiveDay extends DurableObject {
     const io=privateRequestBudget(edgeFetch);
     const remote=createKisEodPrivateStore({repository:"klkl789982-droid/tight-budget-private-data",token:this.env.PRIVATE_LIVE_DELIVERY_WRITE_TOKEN,fetchImpl:io.fetch});
     return runCloudWatchdog({state:this.state,workflow:this.env.LIVE,remote,fetchImpl:io.fetch,date,slot,scheduledAt,
+      auditProjection:async(delivery,now)=>{
+        // Sub-budget shares the parent's 40 calls and leaves at least six for the immutable watch receipt.
+        const remaining=Math.min(7,40-io.calls-6);
+        if(remaining<3)return {status:"UNVERIFIED_REQUEST_BUDGET"};
+        const auditIO=privateRequestBudget(io.fetch,remaining);
+        const store=createKisEodPrivateStore({repository:"klkl789982-droid/tight-budget-private-data",token:this.env.PRIVATE_LIVE_DELIVERY_WRITE_TOKEN,fetchImpl:auditIO.fetch});
+        return auditStoredPublication({store,delivery,now,fetchImpl:auditIO.fetch});
+      },
       publishExecution:(...args)=>publishExecutionRecord(this.state,remote,...args),retryMissing:()=>this.retryMissing(date)});
   }
   watchStatus(){const last=this.state.read("watch-latest");return last?this.state.read(`watch-snapshot:${last.slot}`):null;}

@@ -2,7 +2,7 @@
 import {useState} from "react";
 import styles from "./DailyCandles.module.css";
 export type Candle={date:string;open:number;high:number;low:number;close:number};
-export type CandleData={bars:Candle[];latest:string|null;missing:string[];invalid:string[];unknown:string[];receivedAt:string|null;failedPages:number;status:string;badDates?:number};
+export type CandleData={bars:Candle[];latest:string|null;missing:string[];invalid:string[];untraded?:string[];unknown:string[];receivedAt:string|null;failedPages:number;status:string;badDates?:number};
 const kst=new Intl.DateTimeFormat("ko-KR",{timeZone:"Asia/Seoul",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"});
 export default function DailyCandles({title,unit,data,source,retry,loading=false}:{title:string;unit:"원"|"pt";data?:CandleData|null;source:string;retry:()=>void;loading?:boolean}){
   const [selection,setSelection]=useState<string|null>(null);
@@ -34,9 +34,10 @@ export default function DailyCandles({title,unit,data,source,retry,loading=false
     <div className={styles.readout}><strong>{selected.date}</strong>{([["시가",selected.open],["고가",selected.high],["저가",selected.low],["종가",selected.close]] as const).map(([k,v])=><span key={k}>{k} <b>{num(v)}{unit}</b></span>)}</div>
     <details><summary>데이터 상세{data.unknown.length?" · 휴장 여부 미확인 "+data.unknown.length+"일":""}</summary>
       <p>{source} · {bars[0].date} ~ {latest.date} · 시스템 수신 {data.receivedAt?kst.format(new Date(data.receivedAt))+" KST":"미확인"}</p>
-      <p>{unit==="pt"?"원천 일봉 지수 단위(pt), 별도 배율 적용 없음. 카드 등락률은 전 거래일 종가 대비입니다.":"원천 공시 시가·고가·저가·종가(원)를 그대로 표시합니다. 자체 수정주가 보정 없음. 원천의 소급 조정 여부는 미확인으로, 분할·병합·증자 전후 가격이 불연속일 수 있습니다."}</p>
+      <p>{unit==="pt"?"원천 일봉 지수 단위(pt), 별도 배율 적용 없음. 카드 등락률은 전 거래일 종가 대비입니다.":"금융위 일봉은 통상 다음 영업일 13시 이후 제공됩니다. 네 가격 모두 같은 거래일 원천값(원)이며 수정주가 변환은 하지 않습니다. 분할 전 가격은 이어 붙이지 않으며, 다른 기업행사의 처리나 과거 정정 이력은 확인되지 않습니다."}</p>
       <p>빨강: 종가가 시가보다 높음 · 파랑: 낮음 · 회색: 보합. 마우스·터치 또는 좌우 화살표로 날짜를 선택합니다.</p>
       {data.missing.length>0&&<p>자료 없는 거래일: {data.missing.join(", ")}</p>}{data.invalid.length>0&&<p>무거래·값 오류·중복 충돌 제외: {data.invalid.join(", ")}</p>}
+      {!!data.untraded?.length&&<p>공급처 거래량 0 · 캔들 없음: {data.untraded.join(", ")}</p>}
       {!!data.badDates&&<p>날짜를 식별할 수 없는 원천 행 {data.badDates}개 제외</p>}
       {data.unknown.length>0&&<p>일봉·달력만으로 휴장과 결측을 구분하지 못한 평일: {data.unknown.join(", ")}. 빈 날짜는 보간하지 않았습니다.</p>}
     </details></figure>;

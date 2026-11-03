@@ -20,7 +20,7 @@ async function handleGet(request: NextRequest) {
       catch{failedPages++;break;}
     }
     const through=new Date(Date.parse(page.receivedAt)+9*3600000).toISOString().slice(0,10);
-    const candles=candleWindow(chartRows.map((r:Record<string,unknown>)=>({date:r.basDt,open:r.mkp,high:r.hipr,low:r.lopr,close:r.clpr,noTrade:r.trqu!=null&&Number(r.trqu)===0})),{through,calendar,receivedAt:page.receivedAt,failedPages});
+    const candles=candleWindow(chartRows.map((r:Record<string,unknown>)=>({date:r.basDt,open:r.mkp,high:r.hipr,low:r.lopr,close:r.clpr,noTrade:/^0+$/.test(String(r.trqu??"").trim())})),{through,calendar,receivedAt:page.receivedAt,failedPages});
     const items = page.rows
       .filter((item:Record<string,string>) => belongs(item))
       .filter((item:Record<string,string>) => /^\d{8}$/.test(String(item.basDt ?? "")) && Number.isFinite(Number(item.clpr)) && Number(item.clpr) > 0)
@@ -29,8 +29,10 @@ async function handleGet(request: NextRequest) {
     const latest = items[0];
     const asOfDate = `${latest.basDt.slice(0, 4)}-${latest.basDt.slice(4, 6)}-${latest.basDt.slice(6, 8)}`;
     return NextResponse.json({ code, candles, source: "officialDailyPrice", priceBasis: "officialDailyClose", asOfDate, closePrice: Number(latest.clpr), items }, { headers: { "Cache-Control": "no-store" } });
-  } catch {
-    return NextResponse.json({ error: "공식 일봉을 조회하지 못했습니다." }, {status:502});
+  } catch (e) {
+    const code=e instanceof Error && e.name==="TimeoutError"?"OFFICIAL_TIMEOUT":
+      e instanceof Error && ["OFFICIAL_HTTP_ERROR","OFFICIAL_RATE_LIMIT","OFFICIAL_RESPONSE_ERROR"].includes(e.message)?e.message:"OFFICIAL_UNAVAILABLE";
+    return NextResponse.json({ code,error:code==="OFFICIAL_TIMEOUT"?"공식 일봉 공급처 응답 시간 초과":code==="OFFICIAL_RATE_LIMIT"?"공식 일봉 공급처 호출 제한":"공식 일봉을 조회하지 못했습니다." }, {status:code==="OFFICIAL_TIMEOUT"?504:502,headers:{"Cache-Control":"private, no-store"}});
   }
 }
 

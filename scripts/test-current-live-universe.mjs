@@ -8,6 +8,7 @@ import { currentTransitionView } from "../lib/live-transition-store.mjs";
 import { screenLiveTransitions } from "../lib/live-transition-screener.mjs";
 import { observeLiveGoldenTransition, freezeTransitionVerdicts, readTransitionVerdict, LIVE_NEAR_THRESHOLDS } from "../lib/live-transition-verdict.mjs";
 import { transitionReplayKey } from "../lib/live-transition-replay.mjs";
+import { auditStoredPublication } from "../lib/live-postclose-audit.mjs";
 
 const seed = JSON.parse(await readFile(new URL("../data/analysis/market-seeds/2026-11-02.json", import.meta.url)));
 const date = "2026-11-03", issued = date + "T06:43:00.000Z";
@@ -88,7 +89,11 @@ const successive = [
   [...rows.slice(0,-1), recovered(targets.at(-2), 99)],
   [...rows.slice(0,-1), recovered(targets.at(-2), 99), recovered(targets.at(-1), 100)],
 ];
-let previousHash = null, firstDelivery;
+let previousHash = null, firstDelivery,lateRead,releaseOld,enteredOld,firstSeed=true;
+const waiting=new Promise(resolve=>{enteredOld=resolve});
+const racing=createCurrentLiveReader({store,readSeed:async()=>{
+  if(firstSeed){firstSeed=false;enteredOld();await new Promise(resolve=>{releaseOld=resolve});}return seed;
+}});
 for (let step = 0; step < successive.length; step++) {
   const revision = step + 1, now = new Date(Date.parse(issued) + step * 60_000).toISOString();
   const bundle = aggregateProduction(prepared, successive[step], now, { revision, firstIssuedAt:issued, previousDeliveryHash:previousHash });
@@ -96,6 +101,8 @@ for (let step = 0; step < successive.length; step++) {
   await deliverPrivateLive(store, bundle.delivery, {now});
   firstDelivery ??= bundle.delivery;
   await deliverPrivateLive(store, firstDelivery, {now}); // Delayed old relay cannot rewind either consumer.
+  if(step===0){lateRead=racing({now});await waiting;}
+  if(step===1){assert.equal((await racing({now})).revision,2);releaseOld();assert.equal((await lateRead).revision,2);}
   const [home, top] = await Promise.all([readLatestPublication(store, {now}), readTop({now})]);
   assert.deepEqual([top.signalDate, top.revision, top.deliveryHash, top.sourceHash, top.publishedAt],
     [home.delivery.signalDate, revision, home.delivery.deliveryHash, home.delivery.sourceHash, home.publicationTimes.publishedAt]);
@@ -131,9 +138,13 @@ await assert.rejects(separate({now:issued,replayTransitions:true}),/LIVE_TRANSIT
 const corruptInputs = structuredClone(replayBundle.transitionReplay);
 corruptInputs.observations[0].price += 1;
 objects.set(replayKey,corruptInputs); // test corrupted storage read, never an actual write
+const audit=()=>auditStoredPublication({store,delivery:replayBundle.delivery,now:issued,readSeed:async()=>seed});
+await assert.rejects(audit(),/LIVE_TRANSITION_REPLAY_INVALID/);
 await assert.rejects(separate({now:issued,replayTransitions:true}),/LIVE_TRANSITION_REPLAY_INVALID/);
 objects.set(replayKey,replayBundle.transitionReplay);
 const verified = await separate({now:issued,replayTransitions:true});
+const receipt=await audit();assert.deepEqual([receipt.status,receipt.replayed,receipt.topRows,receipt.revision,receipt.coverage],["VERIFIED",withInputs.length,20,1,"PARTIAL"]);
+assert.equal(receipt.authenticatedUi,"NOT_CHECKED");
 const projected = currentTransitionView(verified,{dates:{}},new Date(issued));
 assert.equal(verified.deliveryHash,scores.deliveryHash);
 assert.equal(projected.transitionReplayedCount,withInputs.length);

@@ -318,7 +318,9 @@ try {
     "@/lib/live-transition-store.mjs": { getArchivedLiveTransitionData: () => restored },
     "@/lib/live-transition-screener.mjs": liveScreen, "@/lib/live-transition-verdict.mjs": liveVerdict };
   for (const [, name] of source.matchAll(/from "([^"]+)"/gu)) {
-    if (!(name in modules)) modules[name] = name.startsWith("@/lib/") ? await import("../" + name.slice(2)) : await import(name);
+    if (!(name in modules)) modules[name] = name.startsWith("@/data/") && name.endsWith(".json")
+      ? JSON.parse(await readFile(new URL("../"+name.slice(2),import.meta.url),"utf8"))
+      : name.startsWith("@/lib/") ? await import("../" + name.slice(2)) : await import(name);
   }
   const route = compile(source, modules);
   let positives = 0;
