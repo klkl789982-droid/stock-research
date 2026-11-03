@@ -162,3 +162,29 @@
 @media (max-width: 639px) {
   .tb-segmented :is(button, [role="tab"]), .home-secondary-button, .home-source-tabs button { min-height: 42px; }
 }
+
+/* Analysis controls stay close to the values they describe; details reflow on mobile. */
+.tb-rank-context { display:flex; flex-wrap:wrap; align-items:baseline; gap: .35rem 1rem; margin-top:.8rem; font-size:.875rem }
+.tb-data-actions {display:flex;flex-wrap:wrap;gap:.25rem .9rem;align-items:baseline}
+.tb-data-actions:has(details[open]) {flex-basis:100%}
+.tb-data-actions details[open] {flex-basis:100%}
+.tb-data-actions details p,.tb-notes p,.tb-period-details details p {margin-top:.4rem}
+.tb-data-actions summary,.tb-secondary-link,.tb-research-link summary,.tb-period-details summary,.tb-notes summary {font-size:.8125rem;font-weight:600;color:#41536a;cursor:pointer;padding:.35rem 0}
+.tb-research-link {width:fit-content;margin-top:.25rem}
+.tb-ranking-table {max-width:76rem;font-variant-numeric:tabular-nums}
+.tb-ranking-table td {padding-block:.55rem}
+.tb-ranking-table tbody td:nth-child(2) button:first-child {font-size:1rem}
+.tb-ranking-table th:first-child {width:4rem}
+.tb-ranking-table th:nth-child(2) {width:32%}
+.tb-index-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr));max-width:54rem;gap:1.5rem;margin-top:1rem}
+.tb-breadth-bar {display:flex;height:.45rem;max-width:48rem;overflow:hidden;border-radius:1rem;margin-top:.8rem}
+.tb-breadth-bar i {flex-basis:0;background:var(--tb-positive)}
+.tb-breadth-bar i:nth-child(2){background:#a9b3bf}.tb-breadth-bar i:last-child{background:var(--tb-negative)}
+.tb-performance-table {width:100%;max-width:66rem;border-collapse:collapse;margin-top:.75rem;font-size: .9375rem;font-variant-numeric:tabular-nums}
+.tb-performance-table :is(td,th){padding:.65rem .55rem;text-align:right;border-bottom:1px solid var(--tb-border)}
+.tb-performance-table th:first-child{text-align:left}.tb-performance-table thead {background:#f4f6f9;color:#46556a;font-size:.8125rem}
+.tb-performance-table td span{display:inline-block;color:#526175;font-size:.8125rem}
+.tb-performance-table td.tb-performance-detail{text-align:left;padding:.1rem .55rem .4rem;color:#526175;font-size:.8125rem}.tb-performance-detail summary{width:fit-content;padding:.2rem 0}.tb-period-details{display:flex;flex-wrap:wrap;gap:.25rem 1rem;margin-block:.4rem}
+.tb-period-details details[open]{width:100%}
+.tb-screen-results{max-width:75rem;font-variant-numeric:tabular-nums}
+@media(max-width:639px){.tb-performance-table{font-size:.875rem}.tb-performance-table :is(td,th){padding:.6rem .2rem}.tb-performance-table td span{display:block;font-size:.75rem}.tb-data-actions{gap:.75rem}}

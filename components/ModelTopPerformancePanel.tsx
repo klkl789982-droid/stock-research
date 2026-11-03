@@ -147,30 +147,24 @@ export default function ModelTopPerformancePanel() {
         <div>
           <h2 id="model-performance-heading" className="tb-page-title">모델 성과</h2>
         </div>
-        {performanceLayer !== "RESEARCH" && <div className="grid grid-cols-2 gap-x-5 gap-y-1 text-xs text-slate-600 sm:grid-cols-4 lg:text-right">
-          <span>분석 기간</span><strong className="font-semibold text-slate-800">{metadata?.signalDateRange ? `${metadata.signalDateRange.from} ~ ${metadata.signalDateRange.to}` : "축적 중"}</strong>
-          <span>신호일</span><strong className="font-semibold tabular-nums text-slate-800">{metadata?.matureSignalDates.length ?? 0}일</strong>
-          {performanceLayer === "DAILY_EOD" && <><span>최신 EOD</span><strong className="font-semibold text-slate-800">{data?.latestEodReferenceDate ?? "—"}</strong></>}
-          <span>성과 결과 기준일</span><strong className="font-semibold text-slate-800">{metadata?.lastOutcomeDate ?? "—"}</strong>
-          <span>상태</span><strong className="font-semibold text-amber-700">표본 축적 중 · 참고용</strong>
-        </div>}
+
       </div>
 
       <div className="tb-segmented mt-4" role="tablist" aria-label="성과 계층 선택">
         <button type="button" role="tab" aria-selected={performanceLayer === "DAILY_EOD"} onClick={() => setPerformanceLayer("DAILY_EOD")} className="tb-focus">Daily EOD</button>
         <button type="button" role="tab" aria-selected={performanceLayer === "INTRADAY_1400_LIVE"} onClick={() => { setPerformanceLayer("INTRADAY_1400_LIVE"); setTopN(5); }} className="tb-focus">14:00 LIVE</button>
-        <button type="button" role="tab" aria-selected={performanceLayer === "INTRADAY_1430_LIVE"} onClick={() => setPerformanceLayer("INTRADAY_1430_LIVE")} className="tb-focus">과거 14:30 LIVE</button>
-        <button type="button" role="tab" aria-selected={performanceLayer === "RESEARCH"} onClick={() => setPerformanceLayer("RESEARCH")} className="tb-focus">실행 연구</button>
+
       </div>
+      <label className="tb-secondary-link ml-2">기타 성과 <select aria-label="과거 기록 및 실행 연구" value={performanceLayer === "RESEARCH" || performanceLayer === "INTRADAY_1430_LIVE" ? performanceLayer : ""} onChange={e => setPerformanceLayer(e.target.value === "RESEARCH" ? "RESEARCH" : "INTRADAY_1430_LIVE")}><option value="" disabled>선택</option><option value="INTRADAY_1430_LIVE">과거 14:30 LIVE</option><option value="RESEARCH">실행 연구</option></select></label>
       {performanceLayer === "RESEARCH" ? <ModelPerformanceResearchPanel /> : <>
       <p className="mt-2 text-xs text-slate-500">{performanceLayer === "DAILY_EOD" ? "확정 일봉 순위 · 신호일 종가에서 평가일 종가까지의 수익률" : performanceLayer === "INTRADAY_1400_LIVE" ? "14:00 확정 게시 후 다음 거래일 시가 진입 · 종가 청산 · 비용 차감 전" : "14:30 동결 신호 · 다음 거래일 공식 시가 진입 · 거래일 종가 성과"}</p>
 
       {performanceLayer === "INTRADAY_1400_LIVE" && <div className="mt-2 text-xs text-slate-600" aria-live="polite">
         {liveError ? "14:00 게시 기록을 조회하지 못했습니다." : !published ? "게시 기록 확인 중…" : <>
           {published.publications.length === 0 && <p>확인된 게시 기록이 없습니다.</p>}
-          {published.publications.filter(p => p.selectionDepth === 5).map(p => <p key={p.signalDate}>{p.signalDate} · 당시 공개가 확인된 TOP5만 보존 · TOP10·20 비교 제외</p>)}
+          <details><summary>게시 기록과 제외 사유</summary>{published.publications.filter(p => p.selectionDepth === 5).map(p => <p key={p.signalDate}>{p.signalDate} · 당시 공개가 확인된 TOP5만 보존 · TOP10·20 비교 제외</p>)}
           {published.publications.filter(p => p.evaluation !== "TRACKED").slice(-3).map(p =>
-            <p key={p.signalDate}>{p.signalDate} · {p.evaluation === "PARTIAL_EXCLUDED" ? "잠정 순위 · 확정 성과 제외" : "실제 게시 시각을 확인할 수 없어 실행 성과 제외"}</p>)}
+            <p key={p.signalDate}>{p.signalDate} · {p.evaluation === "PARTIAL_EXCLUDED" ? "잠정 순위 · 확정 성과 제외" : "실제 게시 시각을 확인할 수 없어 실행 성과 제외"}</p>)}</details>
         </>}
       </div>}
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-3">
@@ -182,37 +176,37 @@ export default function ModelTopPerformancePanel() {
         </div>
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-xl border border-[var(--tb-border)] bg-slate-50">
-        <div className="grid grid-cols-[0.9fr_1fr_1fr_1fr_0.75fr] gap-2 border-b border-slate-200 bg-slate-50/90 px-3 py-2.5 text-xs font-medium text-slate-500 sm:px-4">
-          <span>기간</span><span className="text-right">평균</span><span className="text-right">중앙값</span><span className="text-right">상승비율</span><span className="text-right">표본</span>
-        </div>
-        {selectedHorizons.map((metrics) => <div key={metrics.horizon} className="border-b border-slate-200/70 px-3 py-3 last:border-b-0 sm:px-4">
-          <div className="grid min-h-10 grid-cols-[0.9fr_1fr_1fr_1fr_0.75fr] items-center gap-2 text-xs sm:text-sm">
-          <span className="font-semibold text-slate-900">{metrics.horizon}</span>
+      <p className="mt-3 text-sm text-slate-600">{metadata?.signalDateRange ? `${metadata.signalDateRange.from} ~ ${metadata.signalDateRange.to}` : "분석 기간 확인 중"} · 종목별 관측 수익률 · 비용 차감 전 · 계좌 성과 아님 · 표본 축적 중</p>
+      <table className="tb-performance-table"><caption className="sr-only">거래일별 종목 성과 및 표본</caption>
+        <thead><tr>{["기간","평균","중앙값","상승 비율","표본"].map(h=><th scope="col" key={h}>{h}</th>)}</tr></thead>
+        {selectedHorizons.map(metrics=><tbody key={metrics.horizon}><tr>
+          <th scope="row">{parseInt(metrics.horizon)}거래일</th>
           {metrics.status === "DATA_AVAILABLE" ? <>
-            <span className={`text-right font-semibold tabular-nums ${returnTone(metrics.meanReturn)}`}>{formatReturn(metrics.meanReturn)}</span>
-            <span className={`text-right tabular-nums ${returnTone(metrics.medianReturn)}`}>{formatReturn(metrics.medianReturn)}</span>
-            <span className="text-right tabular-nums text-slate-700">{metrics.positiveRate?.toFixed(1)}%</span>
-            <span className="text-right tabular-nums text-slate-700">N={metrics.observationCount}<small className="block text-[10px] text-slate-400">{metrics.evaluatedSignalDates}/{metrics.signalDateCount ?? metrics.evaluatedSignalDates}일{metrics.coverageRate == null ? "" : ` · ${metrics.coverageRate.toFixed(0)}%`}</small></span>
-          </> : <span className="col-span-4 text-right text-sm text-slate-400">데이터 축적 중</span>}
-          </div>
-          {metrics.status === "DATA_AVAILABLE" && <>
-            <p className="mt-1 text-xs leading-relaxed text-slate-600">확정 종목 관측 {metrics.observationCount}건 · 서로 다른 신호일 {metrics.uniqueSignalDateCount}일 · 서로 다른 종목 {metrics.uniqueStockCount}개</p>
-            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          <td className={returnTone(metrics.meanReturn)}>{formatReturn(metrics.meanReturn)}</td>
+          <td className={returnTone(metrics.medianReturn)}>{formatReturn(metrics.medianReturn)}</td>
+          <td>{metrics.positiveRate == null ? "—" : metrics.positiveRate.toFixed(1) + "%"}</td>
+          <td>관측 {metrics.observationCount}건 <span>신호일 {metrics.uniqueSignalDateCount}일</span></td>
+          </> : <td colSpan={4}>데이터 축적 중</td>}
+        </tr>{metrics.status === "DATA_AVAILABLE" && <tr><td colSpan={5} className="tb-performance-detail"><details><summary>{parseInt(metrics.horizon)}거래일 표본·극단값</summary>
+        <p>서로 다른 종목 {metrics.uniqueStockCount}개 · 평가 신호일 {metrics.evaluatedSignalDates}/{metrics.signalDateCount ?? metrics.evaluatedSignalDates}일{metrics.coverageRate == null ? "" : ` · ${metrics.coverageRate.toFixed(0)}%`}</p>
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">
               <ExtremeReturn label="최소 수익률" value={metrics.minReturn} observation={metrics.minObservation} isDaily={performanceLayer === "DAILY_EOD"} />
               <ExtremeReturn label="최대 수익률" value={metrics.maxReturn} observation={metrics.maxObservation} isDaily={performanceLayer === "DAILY_EOD"} />
-            </div>
-          </>}
-        </div>)}
-      </div>
+            </div></details></td></tr>}</tbody>)}</table>
 
       {error && <p className="mt-3 text-sm text-red-700" role="alert">성과 데이터를 불러오지 못했습니다.</p>}
       {!error && !data && <p className="mt-3 text-sm text-slate-500">성과 데이터를 불러오는 중입니다.</p>}
-      <p className="mt-3 text-xs text-slate-500">수익률이 0%인 결과와 미확정 결과는 구분됩니다. 미확정 결과는 통계와 N에 포함하지 않습니다.</p>
+      <details className="tb-notes"><summary>분석 기간과 계산 기준</summary><div className="grid grid-cols-2 gap-x-5 gap-y-1 text-xs text-slate-600 sm:grid-cols-4 lg:text-right">
+          <span>분석 기간</span><strong className="font-semibold text-slate-800">{metadata?.signalDateRange ? `${metadata.signalDateRange.from} ~ ${metadata.signalDateRange.to}` : "축적 중"}</strong>
+          <span>신호일</span><strong className="font-semibold tabular-nums text-slate-800">{metadata ? `${metadata.matureSignalDates.length}일` : "미확인"}</strong>
+          {performanceLayer === "DAILY_EOD" && <><span>최신 EOD</span><strong className="font-semibold text-slate-800">{data?.latestEodReferenceDate ?? "—"}</strong></>}
+          <span>성과 결과 기준일</span><strong className="font-semibold text-slate-800">{metadata?.lastOutcomeDate ?? "—"}</strong>
+          <span>상태</span><strong className="font-semibold text-amber-700">표본 축적 중 · 참고용</strong>
+        </div><p className="mt-3 text-xs text-slate-500">수익률이 0%인 결과와 미확정 결과는 구분됩니다. 미확정 결과는 통계와 N에 포함하지 않습니다.</p>
       <p className="mt-1 text-xs text-slate-500">최소·최대는 확정된 개별 종목 관측의 극단값이며, TOP 포트폴리오 수익률이 아닙니다. 동률이면 신호일이 빠른 종목, 같은 날에는 종목코드 순으로 표시합니다.</p>
       <p className="mt-1 text-xs text-slate-500">평균·중앙값·상승비율은 개별 관측 기준입니다. 같은 종목의 반복 선정과 같은 날의 관측은 독립 표본이 아니며, N만으로 모델의 유효성을 판단할 수 없습니다.</p>
       <p className="mt-1 text-xs text-slate-500">{performanceLayer === "DAILY_EOD" ? "Daily 기준가격일은 신호일 공식 종가 기준이며 실제 매수 진입일을 뜻하지 않습니다." : "LIVE 진입일은 기존 계약의 다음 거래일 공식 시가 기준입니다. 실제 체결, 비용·슬리피지를 반영한 실현 수익률이 아닙니다."}</p>
-      {performanceLayer === "DAILY_EOD" && <p className="mt-1 text-xs text-slate-500">최신 EOD는 모델 입력의 최신 기준일이며, 성과 결과 기준일은 미래 수익률이 실제로 확정된 마지막 청산일입니다.</p>}
+      {performanceLayer === "DAILY_EOD" && <p className="mt-1 text-xs text-slate-500">최신 EOD는 모델 입력의 최신 기준일이며, 성과 결과 기준일은 미래 수익률이 실제로 확정된 마지막 청산일입니다.</p>}</details>
       </>}
     </section>
   );

@@ -14,7 +14,8 @@ for (const heading of ["목적", "중점 지표", "구성요소와 가중치", "
 assert.match(guide, /최종점수에는 최종 0~100 clamp가 없습니다/u);
 assert.match(guide, /최종점수 = clamp\(원점수, 0, 100\)/u);
 assert.match(guide, /\(B-v1 점수 × C-v1 점수\) ÷ 100/u);
-assert.match(page, /모델 설명/u);
+assert.match(topPanel, /전체 모델 설명/u);
+assert.ok(page.includes('onOpenGuide={() => setModelPageTab("guide")}'));
 assert.match(page, /<ModelExplanationPanel \/>/u);
 assert.match(topPanel, /이동평균선 구조·기울기·추세 지속성/u);
 assert.match(topPanel, /가격·거래량·단기 모멘텀·보조지표 전환/u);

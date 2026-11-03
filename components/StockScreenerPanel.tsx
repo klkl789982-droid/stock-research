@@ -51,11 +51,11 @@ export default function StockScreenerPanel({ onSelectStock, initialTab = "models
     <div role="tablist" aria-label="스크리닝 영역" className="tb-segmented">{([["models", "모델·기업 조건"], ["transition", "전환 신호"]] as const).map(([value, label]) => <button key={value} type="button" role="tab" aria-selected={tab === value} onClick={() => setTab(value)} className="tb-focus">{label}</button>)}</div>
     {tab === "transition" ? <TransitionScreenerPanel onSelectStock={onSelectStock} initialPair={initialPair} initialState={initialState} initialDirection={initialDirection} initialMode={initialMode} /> : <>
     <div className="tb-card p-4 sm:p-6">
-      <h2 className="text-lg font-semibold text-slate-950">공식 일봉 모델 순위 · 기업분석 등급</h2>
-      <form className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" onSubmit={(event) => { event.preventDefault(); search(filters); }}>
+      <h2 className="text-base font-semibold text-slate-950">검색 조건</h2>
+      <form className="mt-3 grid items-end gap-3 sm:grid-cols-2 xl:grid-cols-4" onSubmit={(event) => { event.preventDefault(); search(filters); }}>
         <label className="text-xs font-semibold text-slate-600">모델<select value={filters.model} onChange={(event) => setFilters({ ...filters, model: event.target.value })} className={`${field} mt-1 w-full`}>{Object.entries(MODEL_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-        <label className="text-xs font-semibold text-slate-600">최소 점수<input inputMode="decimal" value={filters.minScore} onChange={(event) => setFilters({ ...filters, minScore: event.target.value })} placeholder="예: 70" className={`${field} mt-1 w-full`} /></label>
-        <label className="text-xs font-semibold text-slate-600">최대 점수<input inputMode="decimal" value={filters.maxScore} onChange={(event) => setFilters({ ...filters, maxScore: event.target.value })} placeholder="예: 100" className={`${field} mt-1 w-full`} /></label>
+        <fieldset className="grid min-w-0 grid-cols-2 gap-x-2"><legend className="text-xs font-semibold text-slate-600">점수 범위</legend>        <label className="text-xs font-semibold text-slate-600">최소 점수<input inputMode="decimal" value={filters.minScore} onChange={(event) => setFilters({ ...filters, minScore: event.target.value })} placeholder="예: 70" className={`${field} mt-1 w-full`} /></label>
+        <label className="text-xs font-semibold text-slate-600">최대 점수<input inputMode="decimal" value={filters.maxScore} onChange={(event) => setFilters({ ...filters, maxScore: event.target.value })} placeholder="예: 100" className={`${field} mt-1 w-full`} /></label></fieldset>
         <label className="text-xs font-semibold text-slate-600">TOP 순위<input inputMode="numeric" value={filters.maxRank} onChange={(event) => setFilters({ ...filters, maxRank: event.target.value })} placeholder="예: 50위 이내" className={`${field} mt-1 w-full`} /></label>
         <label className="text-xs font-semibold text-slate-600">기업분석 등급<select value={filters.companyGrade} onChange={(event) => setFilters({ ...filters, companyGrade: event.target.value })} className={`${field} mt-1 w-full`}><option value="">전체 (결측 포함)</option>{["관심 종목", "양호", "중립", "주의", "위험"].map((grade) => <option key={grade}>{grade}</option>)}</select></label>
         <label className="text-xs font-semibold text-slate-600">정렬<select value={`${filters.sort}:${filters.direction}`} onChange={(event) => { const [sort, direction] = event.target.value.split(":"); setFilters({ ...filters, sort, direction }); }} className={`${field} mt-1 w-full`}><option value="rank:asc">모델 순위 높은 순</option><option value="score:desc">모델 점수 높은 순</option><option value="companyScore:desc">기업점수 높은 순</option><option value="name:asc">종목명 순</option></select></label>
@@ -64,9 +64,9 @@ export default function StockScreenerPanel({ onSelectStock, initialTab = "models
     </div>
     {error && <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{error}</p>}
     {data && <div className="tb-card overflow-hidden">
-      <div className="border-b border-slate-200 px-4 py-4 sm:px-6"><div className="flex flex-wrap items-end justify-between gap-2"><div><p className="text-sm font-bold text-slate-950">검색 결과 {data.resultCount.toLocaleString()}종목</p><p className="mt-1 text-xs text-slate-500">모델 기준일 {data.referenceDate} · {MODEL_LABELS[data.selectedModel]}</p></div><p className="text-xs text-slate-500">모델 데이터 {data.modelCoverage}/{data.totalUniverse} · 기업분석 {data.companyCoverage}/{data.totalUniverse}{data.companyReferenceDate ? ` (${data.companyReferenceDate})` : ""}</p></div>
-        <p className="mt-2 text-[11px] text-slate-500">격리 종목 {data.quarantinedCount ?? "확인 불가"} · 선택 모델 결측 {data.exclusions.missingModel} · 기업등급 조건 결측 {data.exclusions.missingCompany}</p></div>
-      <div className="overflow-x-auto"><table className="tb-table w-full text-left text-sm">
+      <div className="border-b border-slate-200 px-4 py-4 sm:px-6"><div className="flex flex-wrap items-end justify-between gap-2"><div><p className="text-sm font-bold text-slate-950">검색 결과 {data.resultCount.toLocaleString()}종목</p><p className="mt-1 text-xs text-slate-500">모델 기준일 {data.referenceDate} · {MODEL_LABELS[data.selectedModel]}</p></div></div><p className="mt-1 text-xs text-slate-600">{data.exclusions.missingModel || data.exclusions.missingCompany ? `조건 적용 시 자료 누락 · 모델 ${data.exclusions.missingModel} / 기업등급 ${data.exclusions.missingCompany}` : "조건 적용 시 결측 제외 없음"}</p><details className="tb-notes"><summary>자료 범위와 제외 사유</summary><p className="text-xs text-slate-500">공식 일봉 모델 순위 · 모델 데이터 {data.modelCoverage}/{data.totalUniverse} · 기업분석 {data.companyCoverage}/{data.totalUniverse}{data.companyReferenceDate ? ` (${data.companyReferenceDate})` : ""}</p>
+        <p className="mt-2 text-[11px] text-slate-500">격리 종목 {data.quarantinedCount ?? "확인 불가"} · 선택 모델 결측 {data.exclusions.missingModel} · 기업등급 조건 결측 {data.exclusions.missingCompany}</p></details></div>
+      <div className="overflow-x-auto"><table className="tb-table tb-screen-results w-full text-left text-sm">
         <thead className="bg-slate-50 text-xs text-slate-600"><tr>
           <th scope="col" className="px-2 py-3 sm:px-4">순위</th>
           <th scope="col" className="px-2 py-3 sm:px-4">종목</th>
@@ -81,9 +81,9 @@ export default function StockScreenerPanel({ onSelectStock, initialTab = "models
             <td className="px-2 py-3 font-semibold tabular-nums text-slate-700 sm:px-4">{row.rank}</td>
             <td className="px-2 py-3 sm:px-4"><button type="button" aria-label={`${row.name} 종목 분석`}
               onClick={() => void onSelectStock({ code: row.code, name: row.name, market: row.market })} className="tb-focus text-left font-semibold text-slate-950 hover:text-[var(--tb-blue)]">{row.name}</button>
-              <p className="text-xs text-slate-600">{row.code} · {row.market}</p>
+              <p className="text-xs text-slate-600">{row.code} · {row.market}</p><p className="text-xs text-slate-700 md:hidden">기업분석 {company}</p>
               <details className="mt-1 text-xs leading-5 text-slate-600 md:hidden"><summary className="tb-focus w-fit cursor-pointer">상세 정보</summary>
-                <p>기업분석 {company}</p><p>기준일 {row.referenceDate}</p>
+                <p>기업분석 기준일 {data.companyReferenceDate ?? "미확인"}</p><p>모델 기준일 {row.referenceDate}</p>
               </details></td>
             <td className="px-2 py-3 text-right font-bold tabular-nums text-[var(--tb-blue)] sm:px-4">{row.score.toFixed(2)}</td>
             <td className="hidden px-4 py-3 md:table-cell">{company}</td>

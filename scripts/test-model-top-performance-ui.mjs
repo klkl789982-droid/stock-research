@@ -31,7 +31,7 @@ assert.match(panel, /개별 종목 관측의 극단값/);
 assert.match(panel, /실제 매수 진입일을 뜻하지 않습니다/);
 assert.match(panel, /sm:grid-cols-2/, "극단값 상세는 모바일에서 한 열로 재배치해야 합니다.");
 assert.match(panel, /데이터 축적 중/);
-assert.match(panel, /N=\{metrics\.observationCount\}/);
+assert.match(panel, /관측 \{metrics\.observationCount\}건/);
 assert.match(panel, /coverageRate/, "LIVE 성과는 실제 MATURE observation coverage를 표시해야 합니다.");
 assert.match(route, /historical-outcomes/);
 assert.match(route, /intraday-outcomes/);
@@ -46,7 +46,7 @@ assert.match(route, /future60dReturn/);
 assert.match(route, /targetTradingDate: typeof targetTradingDate/);
 assert.match(route, /buildModelTopPerformance/);
 assert.doesNotMatch(topStocksPanel, /ModelTopPerformancePanel/, "TOP 목록은 성과 패널을 직접 mount하지 않아야 합니다.");
-assert.match(page, /modelPageTab === "top" \? <TopStocksPanel key=\{modelInitialTab\} initialTab=\{modelInitialTab\} onTabChange=\{setModelInitialTab\} initialProfile=\{modelProfile\} onProfileChange=\{setModelProfile\} onSelectStock=\{handleSearch\} \/> : modelPageTab === "performance" \? <ModelTopPerformancePanel \/> : <ModelExplanationPanel \/>/);
+assert.match(page, /modelPageTab === "top" \? <TopStocksPanel key=\{modelInitialTab\} initialTab=\{modelInitialTab\} onTabChange=\{setModelInitialTab\} initialProfile=\{modelProfile\} onProfileChange=\{setModelProfile\} onSelectStock=\{handleSearch\} onOpenGuide=\{\(\) => setModelPageTab\("guide"\)\} \/> : modelPageTab === "performance" \? <ModelTopPerformancePanel \/> : <ModelExplanationPanel \/>/);
 assert.doesNotMatch(page, /compact onSelectStock=\{handleSearch\}/, "HOME에는 compact TOP 목록을 mount하지 않아야 합니다.");
 
 // Render the actual panel with fixed hook state; fetch stays disabled and no API is called.
@@ -68,7 +68,7 @@ const renderLayer = (layer) => {
   return renderToStaticMarkup(React.createElement(exports.default));
 };
 const dailyHtml = renderLayer("DAILY_EOD");
-for (const text of ["-12.50%", "+5.25%", "검증종목", "000660", "최대종목", "005930", "2026-10-01", "2026-10-02", "관측 6건", "신호일 2일", "종목 3개", "0.00%", "60DAY"]) assert.ok(dailyHtml.includes(text), `실제 렌더링 누락: ${text}`);
+for (const text of ["-12.50%", "+5.25%", "검증종목", "000660", "최대종목", "005930", "2026-10-01", "2026-10-02", "관측 6건", "신호일 2일", "종목 3개", "0.00%", "60거래일", "1거래일 표본·극단값"]) assert.ok(dailyHtml.includes(text), `실제 렌더링 누락: ${text}`);
 assert.equal((dailyHtml.match(/데이터 축적 중/gu) ?? []).length, 3, "Daily 미확정 5/20/60D는 축적 중이어야 합니다.");
 const liveHtml = renderLayer("INTRADAY_1430_LIVE");
 assert.equal((liveHtml.match(/데이터 축적 중/gu) ?? []).length, 4);

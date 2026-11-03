@@ -54,7 +54,7 @@ type TopStocksResponse = {
 
 type StockSelection = { code: string; name: string; market?: string };
 type TopProfile = "1400" | "1430" | "daily";
-type TopStocksPanelProps = { onSelectStock?: (stock: StockSelection) => void | Promise<void>; compact?: boolean; onOpenFull?: () => void; initialTab?: string; onTabChange?: (tab: string) => void; initialProfile?: TopProfile; onProfileChange?: (profile: TopProfile) => void };
+type TopStocksPanelProps = { onSelectStock?: (stock: StockSelection) => void | Promise<void>; compact?: boolean; onOpenFull?: () => void; onOpenGuide?: () => void; initialTab?: string; onTabChange?: (tab: string) => void; initialProfile?: TopProfile; onProfileChange?: (profile: TopProfile) => void };
 type IntradayOverlay = { code: string; status: "available"; price: number; rate: number | null; asOfDate: string | null; asOfTime: string | null; receivedAt: string | null; source: "KIS" | null } | { code: string; status: "unavailable" };
 type IntradayModelTopResponse = NonNullable<TopStocksResponse["liveMeta"]> & { dataMode: "intradayOfficialSignal"; signalDate: string; officialSignalTime: string; model: ModelId; modelName: string | null; modelVersion: string; collectionStartedAt: string; collectionCompletedAt: string; rankingUniverse: { count: number }; count: number; stocks: Array<{ rank: number; code: string; name: string; market: string | null; score: number; observedPrice: number | null; quoteAsOfTime?: string }> };
 
@@ -86,7 +86,7 @@ const shortReferenceDate = (value: string) => {
   return parts.length === 3 ? `${Number(parts[1])}/${Number(parts[2])}` : value;
 };
 
-export default function TopStocksPanel({ onSelectStock, compact = false, onOpenFull, initialTab = "B", onTabChange, initialProfile = "1400", onProfileChange }: TopStocksPanelProps) {
+export default function TopStocksPanel({ onSelectStock, compact = false, onOpenFull, onOpenGuide, initialTab = "B", onTabChange, initialProfile = "1400", onProfileChange }: TopStocksPanelProps) {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [localProfile, setProfile] = useState(initialProfile);
   const profile = onProfileChange ? initialProfile : localProfile;
@@ -250,19 +250,27 @@ export default function TopStocksPanel({ onSelectStock, compact = false, onOpenF
         ))}
       </div>}
 
-      <p className={`${compact ? "mt-1 text-xs" : "mt-2 text-sm"} text-gray-600`}>{modelDescriptions[activeTab]}</p>
+
       {activeTab !== "A-v2" && <div className="tb-segmented mt-3" role="group" aria-label="순위 데이터 기준">
-        {([["1400", "14:00 LIVE"], ["daily", "일봉 순위"], ["1430", "과거 14:30 기록"]] as const).map(([id, label]) =>
+        {([["1400", "14:00 LIVE"], ["daily", "Daily EOD"]] as const).map(([id, label]) =>
           <button type="button" key={id} aria-pressed={profile === id} onClick={() => { setProfile(id); onProfileChange?.(id); }} className="tb-focus">{label}</button>)}
       </div>}
-      {data?.liveMeta && <div className="mt-3"><LiveCoverageSummary coverage={data.liveMeta.coverage}/>
+      {activeTab !== "A-v2" && <button type="button" aria-pressed={profile === "1430"} className="tb-secondary-link ml-2" onClick={() => { setProfile("1430"); onProfileChange?.("1430"); }}>과거 14:30 기록</button>}
+      <div className="tb-rank-context">
+        {data && <p role="status" className="font-semibold text-slate-700">{data.rankingAsOfDate} · {data.dataMode === "kisProvisionalEod" ? "KIS 잠정 EOD" : data.dataMode === "intradayOfficialSignal" ? `${data.officialSignalTime?.slice(0,5)} LIVE` : "Daily EOD"}{data.liveMeta && ` · ${({PARTIAL:"잠정",COMPLETE:"전체",WITHHELD:"게시 보류"})[data.liveMeta.coverage.status]} ${data.liveMeta.coverage.validCount}/${data.liveMeta.coverage.targetCount}종목`}{data.liveMeta?.freshnessStatus === "HISTORICAL" && " · 이전 거래일"}{!data.liveMeta && data.isPartialRanking && " · 부분 순위"}</p>}
+        <div className="tb-data-actions">
+          <details><summary>모델 설명</summary><p>{modelDescriptions[activeTab]}</p>{onOpenGuide && <button type="button" onClick={onOpenGuide} className="tb-secondary-link">전체 모델 설명</button>}</details>
+          {data && <details><summary>데이터 상세</summary>{data?.liveMeta && <div className="mt-3"><LiveCoverageSummary coverage={data.liveMeta.coverage}/>
         <p className="text-xs text-slate-600">{data.liveMeta.freshnessStatus === "HISTORICAL" ? "이전 거래일 저장 관측 · " : ""}{data.rankingAsOfDate} · 관측 기간 {new Date(data.collectionStartedAt!).toLocaleTimeString("ko-KR",{timeZone:"Asia/Seoul"})} ~ {new Date(data.collectionCompletedAt!).toLocaleTimeString("ko-KR",{timeZone:"Asia/Seoul"})} KST
         {data.liveMeta.publishedAt && " · 게시 " + new Date(data.liveMeta.publishedAt).toLocaleString("ko-KR",{timeZone:"Asia/Seoul"}) + " KST"}</p>
-        <details className="text-xs text-slate-600"><summary>버전 및 해시</summary><p className="break-all">{data.liveMeta.revision ? `r${data.liveMeta.revision} · ` : ""}{data.modelVersion} · 산식 {data.liveMeta.formulaHash} · 게시본 {data.liveMeta.deliveryHash}</p></details>
-      </div>}
-
-      {!compact && <details className="mt-3 rounded-xl border border-gray-200 bg-gray-50">
-        <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-gray-700">연구 모델 보기</summary>
+        <div className="text-xs text-slate-600"><p className="break-all">{data.liveMeta.revision ? `r${data.liveMeta.revision} · ` : ""}{data.modelVersion} · 산식 {data.liveMeta.formulaHash} · 게시본 {data.liveMeta.deliveryHash}</p></div>
+      </div>}<div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div>분석 대상: {data.rankingUniverseCount ?? data.stocks[0]?.rankingUniverseCount ?? "정보 없음"}종목</div><div>구조 검증: {data.structuralStatus === "passed" ? "통과" : "정보 없음"}</div><div>데이터 기준일: {data.rankingAsOfDate}</div><div>가격 기준일: {data.priceAsOfDate}</div><div>가격 기준: {data.dataMode === "kisProvisionalEod" ? "원천 시세 미공개 · 점수만 표시" : data.dataMode === "intradayOfficialSignal" ? "KIS 관측가" : "공식 일봉 종가"}</div><div>모델 버전: {data.modelVersion ?? "미등록"}</div><div>원래 종목: {data.originalUniverseCount ?? "정보 없음"}</div><div>품질 확인 종목: {data.qualityEligibleUniverseCount ?? "정보 없음"}</div><div>검토 제외 종목: {data.quarantinedCount ?? "정보 없음"}</div><div>부분 순위: {data.isPartialRanking ? "예" : "아니오"}</div><div>제외 정책: {data.exclusionPolicyVersion ?? "정보 없음"}</div><div>Manifest: {data.sourceManifestVersion ?? "도입 전"}</div>
+          </div></details>}
+        </div>
+      </div>
+      {!compact && <details className="tb-research-link">
+        <summary className="tb-secondary-link">연구 모델 보기</summary>
         <div className="tb-segmented m-3" role="tablist" aria-label="연구 모델">
           {researchTabs.map((tab) => <button key={tab.id} type="button" role="tab" aria-selected={activeTab === tab.id} onClick={() => { setActiveTab(tab.id); onTabChange?.(tab.id); }} className="tb-focus">{tab.label}</button>)}
         </div>
@@ -275,29 +283,19 @@ export default function TopStocksPanel({ onSelectStock, compact = false, onOpenF
         </div>
       )}
 
-      {data && !compact && (
-        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <div className="flex flex-wrap gap-x-4 gap-y-1"><span><strong>데이터 기준일</strong> {data.rankingAsOfDate}</span><span>{data.dataMode === "kisProvisionalEod" ? "KIS 당일 잠정 EOD · 입력 검증 완료" : data.dataMode === "intradayOfficialSignal" ? `${data.officialSignalTime?.slice(0, 5)} KIS 관측 신호` : "공식 일봉 데이터"}</span><span>분석 대상 {data.rankingUniverseCount ?? data.stocks[0]?.rankingUniverseCount ?? "정보 없음"}종목</span></div>
-          <details className="mt-2 text-xs text-amber-800"><summary className="cursor-pointer font-medium">데이터 기준 자세히 보기</summary>
-          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <div>구조 검증: {data.structuralStatus === "passed" ? "통과" : "정보 없음"}</div><div>순위 기준일: {data.rankingAsOfDate}</div><div>가격 기준일: {data.priceAsOfDate}</div><div>가격 기준: {data.dataMode === "kisProvisionalEod" ? "원천 시세 미공개 · 점수만 표시" : data.dataMode === "intradayOfficialSignal" ? "KIS 관측가" : "공식 일봉 종가"}</div><div>모델 버전: {data.modelVersion ?? "미등록"}</div><div>원래 종목: {data.originalUniverseCount ?? "정보 없음"}</div><div>품질 확인 종목: {data.qualityEligibleUniverseCount ?? "정보 없음"}</div><div>검토 제외 종목: {data.quarantinedCount ?? "정보 없음"}</div><div>부분 순위: {data.isPartialRanking ? "예" : "아니오"}</div><div>제외 정책: {data.exclusionPolicyVersion ?? "정보 없음"}</div><div>Manifest: {data.sourceManifestVersion ?? "도입 전"}</div>
-          </div></details>
-        </div>
-      )}
       {freshnessMessage && <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">{freshnessMessage}</p>}
       {kisEodMessage && !loading && <p className="mt-2 text-xs text-slate-600">{kisEodMessage}</p>}
       {data?.dataMode === "kisProvisionalEod" && <p className="mt-2 text-xs text-amber-900">{data.rankingAsOfDate} · KIS 당일 잠정 EOD · 공식 확정 EOD: {data.officialSnapshotReferenceDate ?? "확인 불가"}. 공식 성과·14:30 LIVE 성과에 포함하지 않습니다.</p>}
       {officialSignalMessage && <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">{officialSignalMessage}</p>}
-      {data && compact && <p className="mt-2 text-[10px] text-gray-500">{data.dataMode === "kisProvisionalEod" ? `데이터 기준일 ${data.rankingAsOfDate} · KIS 당일 잠정 EOD` : data.dataMode === "intradayOfficialSignal" ? `Official Signal · ${data.rankingAsOfDate} ${data.officialSignalTime?.slice(0, 5) ?? "14:30"} KST` : `데이터 기준일 ${data.rankingAsOfDate} · 공식 일봉`}</p>}
 
-      {loading && <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-12 text-center text-sm text-gray-500">TOP50 조회 중</div>}
+      {loading && <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-12 text-center text-sm text-gray-500">순위 조회 중</div>}
       {!loading && error && (
         <div className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-10 text-center">
           <p className="text-sm font-medium text-red-700">{error}</p>
           <button type="button" onClick={() => setRequestVersion((version) => version + 1)} className="mt-4 rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-700">다시 시도</button>
         </div>
       )}
-      {!loading && !error && data && data.stocks.length === 0 && <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-12 text-center text-sm text-gray-500">TOP50 데이터 없음 · 유효한 모델 스냅샷이 필요합니다.</div>}
+      {!loading && !error && data && data.stocks.length === 0 && <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-12 text-center text-sm text-gray-500">순위 데이터 없음 · 유효한 모델 스냅샷이 필요합니다.</div>}
       {!loading && !error && data && data.stocks.length > 0 && (
         <div className={`${compact ? "mt-3 rounded-xl" : "mt-5 rounded-2xl"} overflow-hidden border border-[var(--tb-border)] sm:overflow-x-auto`}>
           <div className="tb-mobile-ranking-surface divide-y divide-slate-200/80 sm:hidden" aria-label="모바일 모델 TOP 종목">
@@ -311,23 +309,23 @@ export default function TopStocksPanel({ onSelectStock, compact = false, onOpenF
                   <span className="text-sm font-semibold text-[var(--tb-blue)]">{stock.rank}</span>
                   <button type="button" disabled={selectingCode !== null} aria-label={`${stock.name} ${stock.code} 검색`} onClick={async () => { if (!onSelectStock || selectingCode) return; setSelectingCode(stock.code); try { await onSelectStock({ code: stock.code, name: stock.name, market: stock.market }); } finally { setSelectingCode(null); } }} className="tb-focus min-w-0 rounded-md py-0.5 text-left disabled:cursor-wait">
                     <span className="block break-words text-sm font-semibold text-slate-950">{stock.name}</span>
-                    <span className="block text-xs text-slate-600">{stock.code}</span>
+                    <span className="block text-xs text-slate-600">{stock.code} · {stock.market}</span>
                   </button>
                   <div className="flex items-center gap-1"><span className="rounded-md tb-score px-2 py-1 text-sm font-semibold tabular-nums text-[var(--tb-blue)]">{stock.score.toFixed(2)}</span><WatchlistStar code={stock.code} name={stock.name}/></div>
                   <p className="col-start-2 col-span-2 text-xs font-medium tabular-nums text-slate-700">KIS 최근 조회 · {quoteStatus}</p>
                   <details className="col-start-2 col-span-2 min-w-0 text-xs leading-5 text-slate-600"><summary className="tb-focus w-fit cursor-pointer">시세 상세</summary>
                     <p>시장 {stock.market} · 점수 기준일 {data.rankingAsOfDate}</p>
-                    {data.dataMode !== "kisProvisionalEod" && <p>{data.dataMode === "intradayOfficialSignal" ? `${data.officialSignalTime?.slice(0,5)} 관측` : "기준일 종가"} · {stock.closePrice === null ? (data.liveMeta?.transitionInputsRetained ? "원가격 비공개" : "가격 미확인") : `${stock.closePrice.toLocaleString("ko-KR")}원`}{stock.quoteAsOfTime && ` · ${stock.quoteAsOfTime} KST`}</p>}
+                    {data.dataMode !== "kisProvisionalEod" && <p>{data.dataMode === "intradayOfficialSignal" ? `${data.officialSignalTime?.slice(0,5)} 관측` : "기준일 종가"} · {stock.closePrice === null ? (data.liveMeta?.transitionInputsRetained ? "원가격 비공개" : "가격 미보존") : `${stock.closePrice.toLocaleString("ko-KR")}원`}{stock.quoteAsOfTime && ` · ${stock.quoteAsOfTime} KST`}</p>}
                     {overlay?.status === "available" && <p>최근 체결 기준 {overlay.asOfDate} {overlay.asOfTime} KST</p>}
                   </details>
                 </div>
               );
             })}
           </div>
-          <table className={`tb-table hidden w-full table-auto border-collapse text-sm sm:table ${compact ? "" : "min-w-[560px]"}`}>
-            <thead className="bg-slate-50 text-left text-xs text-slate-500"><tr><th className="whitespace-nowrap px-3 py-3 font-medium sm:px-4">순위</th><th className="px-3 py-3 font-medium sm:px-4">종목명</th><th className="hidden px-4 py-3 font-medium sm:table-cell">시장</th><th className="whitespace-nowrap px-3 py-3 text-right font-medium sm:px-4">{shortReferenceDate(data.rankingAsOfDate)} 기준 점수</th>{!compact && data.dataMode !== "kisProvisionalEod" && <th className="whitespace-nowrap px-3 py-3 text-right font-medium sm:px-4">{data.dataMode === "intradayOfficialSignal" ? `${data.officialSignalTime?.slice(0,5)} 관측` : "기준일 종가"}</th>}<th className="whitespace-nowrap px-3 py-3 text-right font-medium sm:px-4">KIS 최근 조회</th></tr></thead>
+          <table className={`tb-ranking-table tb-table hidden w-full table-auto border-collapse text-sm sm:table ${compact ? "" : "min-w-[560px]"}`}>
+            <thead className="bg-slate-50 text-left text-xs text-slate-500"><tr><th className="whitespace-nowrap px-3 py-3 font-medium sm:px-4">순위</th><th className="px-3 py-3 font-medium sm:px-4">종목명</th><th className="whitespace-nowrap px-3 py-3 text-right font-medium sm:px-4">{shortReferenceDate(data.rankingAsOfDate)} 기준 점수</th>{!compact && data.dataMode !== "kisProvisionalEod" && <th className="whitespace-nowrap px-3 py-3 text-right font-medium sm:px-4">{data.dataMode === "intradayOfficialSignal" ? `${data.officialSignalTime?.slice(0,5)} 관측` : "기준일 종가"}</th>}<th className="whitespace-nowrap px-3 py-3 text-right font-medium sm:px-4">KIS 최근 조회</th></tr></thead>
             <tbody className="divide-y divide-gray-100">
-              {data.stocks.map((stock) => { const overlay = intradayByCode[stock.code]; const overlayView = overlay?.status === "available" ? <><strong className="block text-sm text-slate-900">{overlay.price.toLocaleString("ko-KR")}원</strong><span className={overlay.rate != null && overlay.rate < 0 ? "text-[var(--tb-negative)]" : overlay.rate != null && overlay.rate > 0 ? "text-[var(--tb-positive)]" : "text-slate-500"}>{overlay.rate == null ? "KIS 최근 조회" : `${overlay.rate > 0 ? "+" : ""}${overlay.rate.toFixed(2)}%`}</span><span className="mt-0.5 block text-[11px] text-slate-400">{overlay.asOfTime ? `KIS ${overlay.asOfDate} ${overlay.asOfTime}` : "기준시각 미확인"}</span></> : <span className="text-slate-400">{stock.rank > 5 ? "종목 상세에서 조회" : "시세 확인 불가"}</span>; const rowPadding = compact ? "py-2.5" : "py-4"; return <tr key={stock.code} className="transition-colors hover:bg-blue-50/40"><td className={`whitespace-nowrap px-3 ${rowPadding} font-medium text-[var(--tb-blue)] sm:px-4`}>{stock.rank}</td><td className={`px-3 ${rowPadding} sm:px-4`}><div className="flex items-center gap-2"><button type="button" disabled={selectingCode !== null} aria-label={`${stock.name} ${stock.code} 검색`} onClick={async () => { if (!onSelectStock || selectingCode) return; setSelectingCode(stock.code); try { await onSelectStock({ code: stock.code, name: stock.name, market: stock.market }); } finally { setSelectingCode(null); } }} className="tb-focus cursor-pointer rounded text-left font-medium text-slate-900 hover:text-[var(--tb-blue)] hover:underline disabled:cursor-wait">{stock.name}<span className="block whitespace-nowrap text-xs font-normal text-slate-400 sm:ml-2 sm:inline">{stock.code}</span></button><WatchlistStar code={stock.code} name={stock.name}/></div>{compact && <div className="mt-1 text-xs sm:hidden"><span className="text-slate-400">KIS 최근 조회 · </span>{overlayView}</div>}</td><td className={`hidden px-4 ${rowPadding} text-slate-500 sm:table-cell`}>{stock.market}</td><td className={`whitespace-nowrap px-3 ${rowPadding} text-right font-medium text-slate-800 sm:px-4`}><span className="rounded-md tb-score px-2 py-0.5 text-[var(--tb-blue)]">{stock.score.toFixed(2)}</span></td>{!compact && data.dataMode !== "kisProvisionalEod" && <td className="whitespace-nowrap px-3 py-4 text-right text-slate-700 sm:px-4">{stock.closePrice === null && data.liveMeta ? `${stock.quoteAsOfTime ?? "시각 미확인"} · ${data.liveMeta.transitionInputsRetained ? "원가격 비공개" : "가격 미보존"}` : stock.closePrice === null ? "정보 없음" : `${stock.closePrice.toLocaleString("ko-KR")}원`}</td>}<td className={`${compact ? "hidden sm:table-cell" : ""} whitespace-nowrap px-3 ${rowPadding} text-right text-xs sm:px-4`}>{overlayView}</td></tr>; })}
+              {data.stocks.map((stock) => { const overlay = intradayByCode[stock.code]; const overlayView = overlay?.status === "available" ? <><strong className="block text-sm text-slate-900">{overlay.price.toLocaleString("ko-KR")}원</strong><span className={overlay.rate != null && overlay.rate < 0 ? "text-[var(--tb-negative)]" : overlay.rate != null && overlay.rate > 0 ? "text-[var(--tb-positive)]" : "text-slate-500"}>{overlay.rate == null ? "KIS 최근 조회" : `${overlay.rate > 0 ? "+" : ""}${overlay.rate.toFixed(2)}%`}</span><details className="text-xs text-slate-600"><summary>{overlay.asOfTime ?? "기준시각 미확인"}</summary>{overlay.asOfDate} · KIS 체결 기준 KST</details></> : <span className="text-slate-600">{stock.rank > 5 ? "종목 상세에서 조회" : "시세 확인 불가"}</span>; const rowPadding = "py-2.5"; return <tr key={stock.code} className="transition-colors hover:bg-blue-50/40"><td className={`whitespace-nowrap px-3 ${rowPadding} font-medium text-[var(--tb-blue)] sm:px-4`}>{stock.rank}</td><td className={`px-3 ${rowPadding} sm:px-4`}><div className="flex items-center justify-between gap-2"><button type="button" disabled={selectingCode !== null} aria-label={`${stock.name} ${stock.code} 검색`} onClick={async () => { if (!onSelectStock || selectingCode) return; setSelectingCode(stock.code); try { await onSelectStock({ code: stock.code, name: stock.name, market: stock.market }); } finally { setSelectingCode(null); } }} className="tb-focus cursor-pointer rounded text-left font-medium text-slate-900 hover:text-[var(--tb-blue)] hover:underline disabled:cursor-wait">{stock.name}<span className="block whitespace-nowrap text-xs font-normal text-slate-600">{stock.code} · {stock.market}</span></button><WatchlistStar code={stock.code} name={stock.name}/></div>{compact && <div className="mt-1 text-xs sm:hidden"><span className="text-slate-400">KIS 최근 조회 · </span>{overlayView}</div>}</td><td className={`whitespace-nowrap px-3 ${rowPadding} text-right font-medium text-slate-800 sm:px-4`}><span className="rounded-md tb-score px-2 py-0.5 text-[var(--tb-blue)]">{stock.score.toFixed(2)}</span></td>{!compact && data.dataMode !== "kisProvisionalEod" && <td className="whitespace-nowrap px-3 py-4 text-right text-slate-700 sm:px-4">{stock.closePrice === null && data.liveMeta ? `${stock.quoteAsOfTime ?? "시각 미확인"} · ${data.liveMeta.transitionInputsRetained ? "원가격 비공개" : "가격 미보존"}` : stock.closePrice === null ? "정보 없음" : `${stock.closePrice.toLocaleString("ko-KR")}원`}</td>}<td className={`${compact ? "hidden sm:table-cell" : ""} whitespace-nowrap px-3 ${rowPadding} text-right text-xs sm:px-4`}>{overlayView}</td></tr>; })}
             </tbody>
           </table>
         </div>

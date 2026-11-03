@@ -56,5 +56,5 @@ test("only diagnostic state changes; immutable create-only and quote window rema
   assert.match(topPanel, /실제 시도일/u);
   assert.match(home, /14:00 LIVE · 비공개 전달/u);
   assert.match(home, /과거 14:30 실행 기록 · 운영 종료/u);
-  assert.match(home, /마지막 유효 관측 완료/u);
+  assert.ok(home.includes("마지막 정상 관측 완료</dt><dd>{time(live.data?.collectionCompletedAt ?? data?.liveStatus?.lastSuccessAt)}"));
 });

@@ -496,16 +496,8 @@ return (
         /></div>}
 
         {!searchedStock && pageView === "models" && (
-          <section aria-labelledby="models-heading">
-            <div className="pb-3">
-              <h1 id="models-heading" className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">모델</h1>
-              <div className="mt-3 flex max-w-full gap-1 border-b border-slate-200/80" role="tablist" aria-label="모델 화면 탭">
-                <button type="button" role="tab" aria-selected={modelPageTab === "top"} onClick={() => setModelPageTab("top")} className={`tb-focus -mb-px border-b-2 px-4 py-2.5 text-sm font-semibold ${modelPageTab === "top" ? "border-[var(--tb-blue)] text-[var(--tb-blue)]" : "border-transparent text-slate-500 hover:text-slate-900"}`}>모델 TOP</button>
-                <button type="button" role="tab" aria-selected={modelPageTab === "performance"} onClick={() => setModelPageTab("performance")} className={`tb-focus -mb-px border-b-2 px-4 py-2.5 text-sm font-semibold ${modelPageTab === "performance" ? "border-[var(--tb-blue)] text-[var(--tb-blue)]" : "border-transparent text-slate-500 hover:text-slate-900"}`}>모델 성과</button>
-                <button type="button" role="tab" aria-selected={modelPageTab === "guide"} onClick={() => setModelPageTab("guide")} className={`tb-focus -mb-px border-b-2 px-4 py-2.5 text-sm font-semibold ${modelPageTab === "guide" ? "border-[var(--tb-blue)] text-[var(--tb-blue)]" : "border-transparent text-slate-500 hover:text-slate-900"}`}>모델 설명</button>
-              </div>
-            </div>
-            {modelPageTab === "top" ? <TopStocksPanel key={modelInitialTab} initialTab={modelInitialTab} onTabChange={setModelInitialTab} initialProfile={modelProfile} onProfileChange={setModelProfile} onSelectStock={handleSearch} /> : modelPageTab === "performance" ? <ModelTopPerformancePanel /> : <ModelExplanationPanel />}
+          <section aria-label="모델 분석">
+            {modelPageTab === "top" ? <TopStocksPanel key={modelInitialTab} initialTab={modelInitialTab} onTabChange={setModelInitialTab} initialProfile={modelProfile} onProfileChange={setModelProfile} onSelectStock={handleSearch} onOpenGuide={() => setModelPageTab("guide")} /> : modelPageTab === "performance" ? <ModelTopPerformancePanel /> : <ModelExplanationPanel />}
           </section>
         )}
 

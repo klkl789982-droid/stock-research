@@ -14,7 +14,7 @@ for (const text of ["공식 EOD", "14:30 LIVE", "원본 대기", "저장소 게�
   assert.ok(sources["components/HomeDashboard.tsx"].includes(text), text);
 for (const text of ["공식 일봉 모델 순위", "모델 기준일", "기업분석", "격리 종목", "선택 모델 결측", 'role="alert"', "조건 초기화"])
   assert.ok(sources["components/StockScreenerPanel.tsx"].includes(text), text);
-for (const text of ["데이터 기준일", "KIS 당일 잠정 EOD", "14:00 LIVE", "과거 14:30 기록", "최신 공식 일봉 기준일을 확인할 수 없습니다", "시세 확인 불가", "TOP50 데이터 없음", "다시 시도"])
+for (const text of ["데이터 기준일", "KIS 당일 잠정 EOD", "14:00 LIVE", "과거 14:30 기록", "최신 공식 일봉 기준일을 확인할 수 없습니다", "시세 확인 불가", "순위 데이터 없음", "다시 시도"])
   assert.ok(sources["components/TopStocksPanel.tsx"].includes(text), text);
 for (const text of ["Daily EOD", "14:30 LIVE", "실행 연구", "미확정 결과는 통계와 N에 포함하지 않습니다", "독립 표본이 아니며", "실제 매수 진입일을 뜻하지 않습니다", "비용·슬리피지를 반영한 실현 수익률이 아닙니다"])
   assert.ok(sources["components/ModelTopPerformancePanel.tsx"].includes(text), text);
