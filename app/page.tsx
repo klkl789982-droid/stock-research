@@ -39,6 +39,7 @@ const [realtimePrice, setRealtimePrice] = useState<{
   code: string;
   source: "KIS";
   priceBasis: "lastQuotedPrice";
+  lastTrade?: { code: string; price: number; asOfDate: string; asOfTime: string; source: string } | null;
   asOfDate: string | null;
   asOfTime: string | null;
   responseAt: string;
@@ -81,6 +82,7 @@ const [priceMeta, setPriceMeta] = useState<{
   asOfDate: string;
   closePrice: number;
 } | null>(null);
+const [modelProfile, setModelProfile] = useState<"1400" | "1430" | "daily">("1400");
 const searchRequestIdRef = useRef(0);
 const searchControllerRef = useRef<AbortController | null>(null);
 const selectedCodeRef = useRef<string | null>(null);
@@ -387,6 +389,7 @@ const openModelsFromNavigation = () => {
   handleHome();
   setModelPageTab("top");
   setModelInitialTab("B");
+  setModelProfile("1400");
   setPageView("models");
   setMobileNavOpen(false);
 };
@@ -442,7 +445,7 @@ return (
         {searchError && <p role="alert" className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{searchError === "notFound" ? "해당 종목을 찾을 수 없습니다." : "검색 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요."}</p>}
         {pageView === "home" && <div hidden={Boolean(searchedStock)}><HomeDashboard
           onSelectStock={handleSearch}
-          onOpenModel={(model) => { openModelsFromNavigation(); setModelInitialTab(model); }}
+          onOpenModel={(model, source) => { openModelsFromNavigation(); setModelInitialTab(model); setModelProfile(source === "EOD" ? "daily" : "1400"); }}
           onOpenPerformance={() => { openModelsFromNavigation(); setModelPageTab("performance"); }}
           onOpenTransition={(pair, state, direction, mode) => { openScreenerFromNavigation(); setScreenerEntry({ tab: "transition", pair, state, direction, mode }); }}
         /></div>}
@@ -457,7 +460,7 @@ return (
                 <button type="button" role="tab" aria-selected={modelPageTab === "guide"} onClick={() => setModelPageTab("guide")} className={`tb-focus -mb-px border-b-2 px-4 py-2.5 text-sm font-semibold ${modelPageTab === "guide" ? "border-[var(--tb-orange)] text-[var(--tb-orange)]" : "border-transparent text-slate-500 hover:text-slate-900"}`}>모델 설명</button>
               </div>
             </div>
-            {modelPageTab === "top" ? <TopStocksPanel key={modelInitialTab} initialTab={modelInitialTab} onTabChange={setModelInitialTab} onSelectStock={handleSearch} /> : modelPageTab === "performance" ? <ModelTopPerformancePanel /> : <ModelExplanationPanel />}
+            {modelPageTab === "top" ? <TopStocksPanel key={modelInitialTab} initialTab={modelInitialTab} onTabChange={setModelInitialTab} initialProfile={modelProfile} onProfileChange={setModelProfile} onSelectStock={handleSearch} /> : modelPageTab === "performance" ? <ModelTopPerformancePanel /> : <ModelExplanationPanel />}
           </section>
         )}
 
@@ -492,7 +495,8 @@ return (
 </strong>
 </div>
 {(verifiedRealtimePrice || priceInfo) && <div className="flex justify-between"><span>전일 대비</span><strong className={(verifiedRealtimePrice?.rate ?? Number(priceInfo?.fltRt ?? 0)) > 0 ? "text-[var(--tb-positive)]" : (verifiedRealtimePrice?.rate ?? Number(priceInfo?.fltRt ?? 0)) < 0 ? "text-[var(--tb-negative)]" : "text-slate-700"}>{(verifiedRealtimePrice?.change ?? (priceInfo?.vs ? Number(priceInfo.vs) : 0)).toLocaleString()}원 · {(verifiedRealtimePrice?.rate ?? (priceInfo?.fltRt ? Number(priceInfo.fltRt) : 0)).toFixed(2)}%</strong></div>}
-{realtimePrice && !verifiedRealtimePrice && priceMeta && <div className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800"><p className="font-semibold">실시간 시세 확인 불가</p><p>표시된 가격은 {priceMeta.asOfDate} 공식 종가 기준입니다.</p></div>}
+{!verifiedRealtimePrice && realtimePrice?.lastTrade?.source === "KIS_MINUTE_TRADE" && realtimePrice.lastTrade.code === realtimePrice.code && <p className="text-xs text-slate-700">KIS 최근 확인 체결가 <strong>{realtimePrice.lastTrade.price.toLocaleString()}원</strong> · {realtimePrice.lastTrade.asOfDate} {realtimePrice.lastTrade.asOfTime} KST</p>}
+{realtimePrice && !verifiedRealtimePrice && !realtimePrice.lastTrade && priceMeta && <div className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800"><p className="font-semibold">실시간 시세 확인 불가</p><p>표시된 가격은 {priceMeta.asOfDate} 공식 종가 기준입니다.</p></div>}
 {realtimeError && <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">실시간 시세를 확인할 수 없습니다.{priceMeta ? ` 표시된 가격은 ${priceMeta.asOfDate} 공식 종가 기준입니다.` : ""}</p>}
 {priceError && <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">{priceError}</p>}
 {(verifiedRealtimePrice || priceInfo) && (

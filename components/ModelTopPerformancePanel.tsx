@@ -84,8 +84,25 @@ export default function ModelTopPerformancePanel() {
   const [error, setError] = useState(false);
   const [modelVersion, setModelVersion] = useState("B-v1");
   const [topN, setTopN] = useState(10);
-  const [performanceLayer, setPerformanceLayer] = useState<"DAILY_EOD" | "INTRADAY_1430_LIVE" | "RESEARCH">("DAILY_EOD");
+  const [performanceLayer, setPerformanceLayer] = useState<"DAILY_EOD" | "INTRADAY_1400_LIVE" | "INTRADAY_1430_LIVE" | "RESEARCH">("DAILY_EOD");
 
+  const [published, setPublished] = useState<(Response["live"] & { publications: Array<{ signalDate: string; revision: number | null; evaluation: string; selectionDepth?: number; authenticatedReadAt?: string | null }> }) | null>(null);
+  const [liveError, setLiveError] = useState(false);
+  useEffect(() => {
+    if (performanceLayer !== "INTRADAY_1400_LIVE") return;
+    const controller = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch("/api/model-performance/live", { cache: "no-store", signal: controller.signal });
+        if (!res.ok) throw new Error("unavailable");
+        const value = await res.json();
+        if (!controller.signal.aborted) { setPublished(value); setLiveError(false); }
+      } catch {
+        if (!controller.signal.aborted) { setPublished(null); setLiveError(true); }
+      }
+    })();
+    return () => controller.abort();
+  }, [performanceLayer]);
   useEffect(() => {
     const controller = new AbortController();
     void fetch("/api/model-performance", { cache: "no-store", signal: controller.signal })
@@ -102,7 +119,7 @@ export default function ModelTopPerformancePanel() {
   }, []);
 
   const selectedHorizons = useMemo(() => {
-    const summary = performanceLayer === "DAILY_EOD" ? data?.summary : data?.live?.summary;
+    const summary = performanceLayer === "DAILY_EOD" ? data?.summary : performanceLayer === "INTRADAY_1400_LIVE" ? published?.summary : data?.live?.summary;
     const group = summary?.find((model) => model.modelVersion === modelVersion)?.groups.find((item) => item.topN === topN);
     const horizons = performanceLayer === "DAILY_EOD" ? DAILY_HORIZONS : LIVE_HORIZONS;
     return horizons.map((horizon) => group?.horizons.find((item) => item.horizon === horizon) ?? {
@@ -120,9 +137,9 @@ export default function ModelTopPerformancePanel() {
       minObservation: null,
       maxObservation: null,
     });
-  }, [data, modelVersion, performanceLayer, topN]);
+  }, [data, published, modelVersion, performanceLayer, topN]);
 
-  const metadata = performanceLayer === "DAILY_EOD" ? data : data?.live;
+  const metadata = performanceLayer === "DAILY_EOD" ? data : performanceLayer === "INTRADAY_1400_LIVE" ? published : data?.live;
 
   return (
     <section className="tb-card mt-6 p-4 sm:p-6" aria-labelledby="model-performance-heading">
@@ -141,12 +158,21 @@ export default function ModelTopPerformancePanel() {
 
       <div className="mt-4 inline-flex max-w-full flex-wrap rounded-lg bg-slate-100/90 p-1" role="tablist" aria-label="성과 계층 선택">
         <button type="button" role="tab" aria-selected={performanceLayer === "DAILY_EOD"} onClick={() => setPerformanceLayer("DAILY_EOD")} className={`rounded-md px-3 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tb-orange)] ${performanceLayer === "DAILY_EOD" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}>Daily EOD</button>
-        <button type="button" role="tab" aria-selected={performanceLayer === "INTRADAY_1430_LIVE"} onClick={() => setPerformanceLayer("INTRADAY_1430_LIVE")} className={`rounded-md px-3 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tb-orange)] ${performanceLayer === "INTRADAY_1430_LIVE" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}>14:30 LIVE</button>
+        <button type="button" role="tab" aria-selected={performanceLayer === "INTRADAY_1400_LIVE"} onClick={() => { setPerformanceLayer("INTRADAY_1400_LIVE"); setTopN(5); }} className={`rounded-md px-3 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tb-orange)] ${performanceLayer === "INTRADAY_1400_LIVE" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}>14:00 LIVE</button>
+        <button type="button" role="tab" aria-selected={performanceLayer === "INTRADAY_1430_LIVE"} onClick={() => setPerformanceLayer("INTRADAY_1430_LIVE")} className={`rounded-md px-3 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tb-orange)] ${performanceLayer === "INTRADAY_1430_LIVE" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}>과거 14:30 LIVE</button>
         <button type="button" role="tab" aria-selected={performanceLayer === "RESEARCH"} onClick={() => setPerformanceLayer("RESEARCH")} className={`rounded-md px-3 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tb-orange)] ${performanceLayer === "RESEARCH" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}>실행 연구</button>
       </div>
       {performanceLayer === "RESEARCH" ? <ModelPerformanceResearchPanel /> : <>
-      <p className="mt-2 text-xs text-slate-500">{performanceLayer === "DAILY_EOD" ? "동결된 EOD 순위와 공식 종가 결과" : "14:30 동결 신호 · 다음 거래일 공식 시가 진입 · 거래일 종가 성과"}</p>
+      <p className="mt-2 text-xs text-slate-500">{performanceLayer === "DAILY_EOD" ? "동결된 EOD 순위와 공식 종가 결과 · 누적 통계는 최신 공식 해시가 일치하는 관측 기준" : performanceLayer === "INTRADAY_1400_LIVE" ? "14:00 확정 게시 후 다음 거래일 시가 진입 · 종가 청산 · 비용 차감 전" : "14:30 동결 신호 · 다음 거래일 공식 시가 진입 · 거래일 종가 성과"}</p>
 
+      {performanceLayer === "INTRADAY_1400_LIVE" && <div className="mt-2 text-xs text-slate-600" aria-live="polite">
+        {liveError ? "14:00 게시 기록을 조회하지 못했습니다." : !published ? "게시 기록 확인 중…" : <>
+          {published.publications.length === 0 && <p>확인된 게시 기록이 없습니다.</p>}
+          {published.publications.filter(p => p.selectionDepth === 5).map(p => <p key={p.signalDate}>{p.signalDate} · 당시 공개가 확인된 TOP5만 보존 · TOP10·20 비교 제외</p>)}
+          {published.publications.filter(p => p.evaluation !== "TRACKED").slice(-3).map(p =>
+            <p key={p.signalDate}>{p.signalDate}{p.revision == null ? "" : ` r${p.revision}`} · {p.evaluation === "PARTIAL_EXCLUDED" ? "잠정 순위 · 확정 성과 제외" : "실제 게시 시각을 확인할 수 없어 실행 성과 제외"}</p>)}
+        </>}
+      </div>}
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-3">
         <div className="flex gap-1" role="tablist" aria-label="성과 모델 선택">
           {MODELS.map((model) => <button key={model.version} type="button" role="tab" aria-selected={modelVersion === model.version} onClick={() => setModelVersion(model.version)} className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tb-orange)] ${modelVersion === model.version ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"}`}>모델 {model.label}</button>)}

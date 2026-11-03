@@ -102,7 +102,8 @@ const pinned = {
   "lib/model-score-engine.mjs": "49d1ec5e3c4375bff3a430f2a8138fd7f3b3173f",
 };
 for (const [file, hash] of Object.entries(pinned)) {
-  const bytes = fs.readFileSync(file);
+  // Pins refer to LF-normalized Git blobs even on a core.autocrlf checkout.
+  const bytes = Buffer.from(fs.readFileSync(file, "utf8").replaceAll("\r\n", "\n"));
   assert.equal(createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex"), hash, `${file} legacy lineage unchanged`);
 }
 const registry = JSON.parse(fs.readFileSync("data/model-registry.json"));

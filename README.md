@@ -1,5 +1,11 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## 모델 순위 API
+
+관리자 로그인 후 `/api/top-stocks?model=B`를 조회하면 공식 Daily EOD 순위를 받습니다. A·C·D도 같은 기준을 사용합니다.
+`/api/intraday-model-top?model=B`는 14:00 LIVE의 최신 검증 게시본을 조회합니다. 응답의 관측일, 게시 시각, revision 및 PARTIAL 여부를 함께 확인하세요.
+과거 14:30 전체 모델 기록에는 `/api/intraday-model-top?model=B&profile=1430`, 예전 단독 B 기록에는 `/api/top-stocks?model=B&basis=archive1430`을 사용합니다.
+
 ## Getting Started
 
 First, run the development server:

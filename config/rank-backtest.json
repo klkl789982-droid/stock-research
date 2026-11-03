@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "engineVersion": "rank-backtest-v1",
+  "engineVersion": "rank-backtest-v2",
   "rankBuckets": [
     { "id": "TOP10", "type": "rank", "maxRank": 10 },
     { "id": "TOP20", "type": "rank", "maxRank": 20 },

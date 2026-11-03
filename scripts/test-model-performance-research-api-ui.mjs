@@ -18,6 +18,10 @@ function makeRoute(loader) {
     if (name === "@/lib/admin-access") return { withAdminAccess: handler => handler }; // Authorized data-contract fixture; auth independently tested.
     if (name === "next/server") return { NextResponse: { json: (body, options) => ({ body, options }) } };
     if (name === "@/lib/model-performance-research.mjs") return researchEngine;
+    if (name === "@/lib/kis-token-manager") return { kisRequest: () => { throw new Error("Network disabled in fixture"); } };
+    if (name === "@/lib/daily-publication-status.mjs") return { loadPublicationEvidence: async () => ({ evidence: [] }) };
+    if (name === "@/lib/research-index-benchmarks.mjs") return { loadPrivateBenchmarkLegs: async () => [] };
+    if (name === "@/lib/research-publication-receipts.mjs") return { readResearchPublicationReceipts: async () => [] };
     if (name === "@/lib/model-performance-research-store.mjs") return { loadModelPerformanceResearch: loader };
     throw new Error(`Unexpected dependency ${name}`);
   }, exports);
@@ -45,7 +49,7 @@ test("render real research panel with repository diagnostics; no fake zero / no 
     throw new Error(`Unexpected dependency ${name}`);
   }, exports);
   const html = renderToStaticMarkup(React.createElement(exports.default));
-  for (const text of ["실행 수익률 연구", "1D", "5D", "20D", "A-v2", "TOP20", "RETROSPECTIVE", `발행 근거 확인 ${data.coverage.selectedSignalCount}일`, "통계 산출 보류", "기존 백테스트 품질 인증 부적격", "서로 다른 종목", "비용 근거", "공식 지수 데이터 미연결", "독립 표본", data.coverage.latestStoredSignalDate]) assert.ok(html.includes(text), text);
+  for (const text of ["실행 수익률 연구", "1D", "5D", "20D", "A-v2", "TOP20", "RETROSPECTIVE", `발행 근거 확인 ${data.coverage.selectedSignalCount}일`, "통계 산출 보류", "기존 백테스트 품질 인증 부적격", "서로 다른 종목", "비용 근거", "공식 지수 일봉", "독립 표본", data.coverage.latestStoredSignalDate]) assert.ok(html.includes(text), text);
   if (data.cohorts.every((c) => c.stockMetrics.observationCount === 0)) assert.doesNotMatch(html, /0\.00%/, "excluded observations are not 0% performance");
   assert.match(existingPanel, /performanceLayer === "RESEARCH" \? <ModelPerformanceResearchPanel/);
   assert.match(panelSource, /AbortController/); assert.match(panelSource, /controller\.signal\.aborted/);

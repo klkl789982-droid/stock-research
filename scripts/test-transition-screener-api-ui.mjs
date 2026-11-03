@@ -11,6 +11,7 @@ import * as directional from "../lib/directional-transition.mjs";
 import * as evidence from "../lib/transition-evidence.mjs";
 import * as evidencePolicy from "../lib/transition-evidence-policy.mjs";
 import * as liveTransition from "../lib/live-transition-screener.mjs";
+import * as verdict from "../lib/live-transition-verdict.mjs";
 
 const row = { code: "000660", name: "검증종목", market: "KOSPI", referenceDate: "2026-10-07", qualityStatus: "PARTIAL_VALIDATED", missingReasons: [], models: Object.fromEntries(["A", "B", "C", "D"].map((m) => [`${m}-v1`, { score: 80, rank: 1 }])), indicators: { rsi: 55, volumeMultiple: 2, macdState: "rising", dailyChangePercent: 1.5 }, transitions: { "5-20": { status: "CROSS_OCCURRED", gapPercent: 0.5, crossDate: "2026-10-07", aboveTradingDays: 1, aboveDaysLowerBound: false }, "20-60": { status: "NONE", gapPercent: -1, crossDate: null, aboveTradingDays: 0, aboveDaysLowerBound: false } } };
 const store = { rows: [row], referenceDate: row.referenceDate, sourceQualityGrade: "REJECTED", isPartialRanking: true, quarantinedCount: 30 };
@@ -33,6 +34,7 @@ const require = (name) => {
   if (name === "node:path") return path;
   if (name === "@/lib/transition-screener.mjs") return transition;
   if (name === "@/lib/live-transition-screener.mjs") return liveTransition;
+  if (name === "@/lib/live-transition-verdict.mjs") return verdict;
   if (name === "@/lib/live-transition-store.mjs") return { getLiveTransitionData: async () => { liveStoreCalls++; if (liveFailure) throw new Error(liveFailure); return liveStore; } };
   if (name === "@/lib/stock-screener.mjs") return screener;
   if (name === "@/lib/directional-transition.mjs") return directional;

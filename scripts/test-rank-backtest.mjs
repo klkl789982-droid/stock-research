@@ -11,6 +11,12 @@ const makeSnapshot=(date,shift=0)=>({schemaVersion:5,asOfDate:date,modelDefiniti
 const snapshots=["2026-01-02","2026-01-05"].map((date,index)=>{const snapshot=makeSnapshot(date,index);return {date,hash:hashObject(snapshot),snapshot};});
 const options={snapshots,models:["A-v1","B-v1"],evaluations:["predictive","executable"],config,includeProvisional:true,generatedAt:"2026-08-17T00:00:00.000Z",executionPolicy:"legacy-t1-open-v1"};
 const result=buildRankBacktest(options);
+for (const row of [...result.metrics, ...result.commonComparisonMetrics]) {
+  assert.equal(row.cumulativeEqualWeightReturn, null);
+  assert.equal(row.annualizedReturn, null);
+  assert.equal(row.maxDrawdown, null);
+  assert.equal(row.accountMetricsStatus, "DAILY_FUNDED_NAV_REQUIRED");
+}
 const metric=(evaluation,bucket)=>result.metrics.find((item)=>item.modelVersion==="A-v1"&&item.evaluation===evaluation&&item.horizon==="T1"&&item.rankBucket===bucket);
 assert.equal(metric("predictive","TOP10").observationCount,20);
 assert.equal(metric("predictive","TOP20").observationCount,40);

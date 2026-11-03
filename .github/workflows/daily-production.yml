@@ -130,6 +130,14 @@ jobs:
           path: ${{ runner.temp }}/daily-deployment-verification.json
           if-no-files-found: warn
           retention-days: 30
+      - name: Preserve verified research publication receipt
+        if: success() && steps.verify.outputs.status == 'VERIFIED'
+        # Independent of production promotion. Subsequent verified no-op runs retry retention.
+        continue-on-error: true
+        env:
+          KIS_OBSERVATION_STORE_REPOSITORY: klkl789982-droid/tight-budget-private-data
+          KIS_OBSERVATION_STORE_TOKEN: ${{ secrets.KIS_OBSERVATION_STORE_TOKEN }}
+        run: node scripts/archive-research-publication.mjs
       - name: Upload safe run manifest on no-op or failure
         if: always() && steps.daily.outputs.status != 'CANDIDATE_VALIDATED' && steps.daily.outputs.manifest_path != ''
         uses: actions/upload-artifact@v4

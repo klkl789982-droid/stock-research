@@ -96,9 +96,31 @@ test("published selection verification never treats commit intent as completed p
   s.records.forEach((r) => { r.scores = { modelA: r.scoresByVersion["A-v1"], modelB: r.scoresByVersion["B-v1"], modelC: r.scoresByVersion["C-v1"], modelD: r.scoresByVersion["D-v1"] }; r.ranks = { modelA: r.ranksByVersion["A-v1"], modelB: r.ranksByVersion["B-v1"], modelC: r.ranksByVersion["C-v1"], modelD: r.ranksByVersion["D-v1"] }; });
   const compact = createCompactModelHistory(s), manifest = createDailyRunManifest({ runId: "synthetic", referenceDate: s.asOfDate, status: "PROMOTED", snapshotHash: compact.sourceSnapshotHash, compactHistoryHash: compact.contentHash, promotedAt: "2026-01-06T08:01:00+09:00" });
   let signal = identifyStoredResearchSignal(s, compact, [manifest]); assert.equal(signal.classification, "AS_PUBLISHED"); assert.notEqual(signal.availabilityEvidence, "VERIFIED");
+  const receipt = { status: "VERIFIED", referenceDate: s.asOfDate, snapshotHash: compact.sourceSnapshotHash, commitSha: "a".repeat(40), runId: 17, runAttempt: 1,
+    runUrl: "https://github.com/klkl789982-droid/stock-research/actions/runs/17/attempts/1", verifiedAt: "2026-01-06T08:03:00+09:00" };
+  assert.equal(identifyStoredResearchSignal(s, compact, [manifest], [receipt]).availableAt, receipt.verifiedAt);
+  assert.notEqual(identifyStoredResearchSignal(s, compact, [manifest], [{...receipt, snapshotHash:"wrong"}]).availabilityEvidence, "VERIFIED");
   s.publication = { status: "VERIFIED", completedAt: "2026-01-06T08:02:00+09:00", sourceSnapshotHash: compact.sourceSnapshotHash };
   signal = identifyStoredResearchSignal(s, compact, [manifest]); assert.equal(signal.availabilityEvidence, "VERIFIED");
   s.records[0].scoresByVersion["B-v1"] -= 1; assert.equal(identifyStoredResearchSignal(s, compact, [manifest]).classification, "UNVERIFIED");
+});
+test("observed posted list stays separate from certified backtest; requires site, structural and record evidence", () => {
+  const f = fixture();
+  f.options.classification = "PUBLISHED_PRICE_OBSERVATION";
+  const s = f.signals[0].snapshot;
+  s.dataQuality.structuralStatus = "passed"; s.dataQuality.certification = { eligibleForRanking: true, eligibleForRankBacktest: false };
+  s.sourceManifest.universe.artifact.verificationStatus = "UNVERIFIED";
+  s.modelVersionDefinitions = { "A-v2": { formulaHash: "specification" } };
+  for (const r of s.records) r.modelDetailsByVersion = { "A-v2": { formulaHash: "specification" } };
+  let result = buildModelPerformanceResearch(f);
+  const published = cohort(result, "A-v2");
+  assert.equal(published.stockMetrics.observationCount, 5); assert.equal(published.portfolios[0].universeReturn, 4);
+  assert.notEqual(published.formulaHash, published.implementationHash);
+  assert.equal(cohort(buildModelPerformanceResearch({...f,options:{...f.options,classification:"AS_PUBLISHED"}})).stockMetrics.observationCount, 0);
+  s.records[0].modelDetailsByVersion["A-v2"].formulaHash = "wrong spec";
+  assert.equal(cohort(buildModelPerformanceResearch(f), "A-v2").exclusionReasons.FORMULA_HASH_CONFLICT, 5);
+  f.signals[0].availabilityEvidence = "UNVERIFIED";
+  result = buildModelPerformanceResearch(f); assert.equal(result.cohorts.length, 0);
 });
 test("real repository read-only diagnostics honor existing certification; no fake winner", async () => {
   const result = await loadModelPerformanceResearch({ asOf: "2026-10-11T00:00:00Z" });

@@ -5,7 +5,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createScreeningRows, screenStocks, SCREENING_MODELS } from "@/lib/stock-screener.mjs";
 import { parseTransitionFilters, screenTransitions, TRANSITION_RULE_VERSION, TRANSITION_RESEARCH_PROPOSAL } from "@/lib/transition-screener.mjs";
 import { getTransitionData } from "@/lib/transition-screener-store.mjs";
-import { getLiveTransitionData } from "@/lib/live-transition-store.mjs";
+import { getLiveTransitionData, getArchivedLiveTransitionData } from "@/lib/live-transition-store.mjs";
+import { LIVE_NEAR_THRESHOLDS } from "@/lib/live-transition-verdict.mjs";
 import { parseLiveTransitionFilters, screenLiveTransitions, LIVE_TRANSITION_ERRORS } from "@/lib/live-transition-screener.mjs";
 import { DIRECTIONAL_RULE_VERSION, approachPolicy } from "@/lib/directional-transition.mjs";
 import { evidencePolicy } from "@/lib/transition-evidence-policy.mjs";
@@ -42,9 +43,13 @@ async function handleGet(request: NextRequest) {
       try { filters = parseLiveTransitionFilters(request.nextUrl.searchParams); }
       catch { return NextResponse.json({ error: { message: "LIVE 이평선 조합·상태·근접 기준(0~5%)을 확인해 주세요." } }, { status: 400 }); }
       try {
-        const data = await getLiveTransitionData();
+        const profile = request.nextUrl.searchParams.get("profile") ?? "1400";
+        if (!["1400","1430"].includes(profile) || profile === "1400" && !LIVE_NEAR_THRESHOLDS.includes(filters.nearPercent)) return NextResponse.json({ error: { message: "관측 기준과 저장된 근접 조건을 확인해 주세요." } }, { status: 400 });
+        const data = profile === "1430" ? await getArchivedLiveTransitionData() : await getLiveTransitionData();
         const screened = screenLiveTransitions(data.rows, filters);
+        const selected = filters.code && data.rows.find((row: {code: string}) => row.code === filters.code);
         return NextResponse.json({ ...data, rows: undefined, pair: filters.pair, nearPercent: filters.nearPercent,
+          ...(selected ? { stockObservation: { code: selected.code, models: selected.models, referenceDate: selected.modelReferenceDate, missingReasons: selected.missingReasons } } : {}),
           totalUniverse: data.rows.length, indicatorCoverage: data.rows.filter((row: { missingReasons: string[] }) => !row.missingReasons.length).length,
           resultCount: screened.results.length, ...screened,
         }, { headers: { "Cache-Control": "no-store" } });

@@ -23,7 +23,7 @@ assert.match(panel, /overflow-x-auto/u);
 assert.match(page, /모델 화면 탭/u);
 assert.match(page, /모델 TOP/u);
 assert.match(page, /모델 성과/u);
-assert.match(page, /<TopStocksPanel key=\{modelInitialTab\} initialTab=\{modelInitialTab\} onTabChange=\{setModelInitialTab\} onSelectStock=\{handleSearch\} \/>/u);
+assert.match(page, /<TopStocksPanel key=\{modelInitialTab\} initialTab=\{modelInitialTab\} onTabChange=\{setModelInitialTab\} initialProfile=\{modelProfile\} onProfileChange=\{setModelProfile\} onSelectStock=\{handleSearch\} \/>/u);
 assert.match(page, /<ModelTopPerformancePanel \/>/u);
 assert.doesNotMatch(page, /compact onSelectStock=\{handleSearch\}/u);
 assert.match(page, /selectVerifiedStock\(data\.items, selection, searchTerm\)/u);

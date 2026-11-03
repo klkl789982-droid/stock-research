@@ -99,7 +99,7 @@ const definitions = [
   { route: "api/top-stocks", allowed: /^(?:data\/history\/\d{4}-\d{2}-\d{2}\.json|data\/daily-production-status\/latest\.json|data\/intraday-signals\/model-b\/(?:latest\.json|\d{4}-\d{2}-\d{2}\/1430\.json))$/u },
   { route: "api/kis-eod-top-stocks", allowed: /^data\/(?:history|kis-eod-published)\/\d{4}-\d{2}-\d{2}\.json$/u },
   // Tracing the price-ledger directory also retains its harmless schema README.
-  { route: "api/model-performance/research", allowed: /^data\/(?:(?:history|model-history|market-prices)\/\d{4}-\d{2}-\d{2}\.json|daily-runs\/\d{4}-\d{2}-\d{2}\/[a-zA-Z0-9_-]+\.json|trading-calendar\/status\.json|market-prices\/README\.md)$/u },
+  { route: "api/model-performance/research", allowed: /^data\/(?:(?:history|model-history|market-prices)\/\d{4}-\d{2}-\d{2}\.json|daily-runs\/\d{4}-\d{2}-\d{2}\/[a-zA-Z0-9_-]+\.json|trading-calendar\/status\.json|market-prices\/README\.md|model-validation\/daily-publication-evidence\.json)$/u },
 ];
 
 async function inspectTrace(definition) {
@@ -215,8 +215,8 @@ async function main() {
       if (route === "api/top-stocks") {
         assert.equal(packaged[1].body.dataMode, "historySnapshot");
         for (const response of packaged.slice(1)) {
-          if (response.body.dataMode === "historySnapshot") assert.equal(response.body.rankingAsOfDate, latestDate);
-          else assert.equal(response.body.dataMode, "intradayOfficialSignal");
+          assert.equal(response.body.dataMode, "historySnapshot");
+          assert.equal(response.body.rankingAsOfDate, latestDate);
           assert.equal(response.body.freshness.snapshotReferenceDate, latestDate);
           assert.ok(response.body.stocks.length);
         }
@@ -237,12 +237,16 @@ async function main() {
     const readyPointer = { status: "READY", signalDate: latestDate, officialSignalTime: "14:30:00", signalPath };
     await writeJson(path.join(topRoot, signalPath), readySignal(latestDate));
     await writeJson(pointer, readyPointer);
-    const ready = await request(top, "?model=B&limit=5");
+    const dailyB = await request(top, "?model=B&limit=5");
+    assert.equal(dailyB.body.dataMode, "historySnapshot", "a READY legacy pointer cannot override Daily B");
+    const ready = await request(top, "?model=B&limit=5&basis=archive1430");
     assert.equal(ready.status, 200); assert.equal(ready.body.dataMode, "intradayOfficialSignal");
     assert.equal(ready.body.stocks[0].name, "Synthetic trace fixture"); assert.equal(ready.body.stocks[0].closePrice, 12345);
     assert.equal(ready.body.rankingAsOfDate, latestDate); assert.equal(ready.body.officialSignal.status, "READY");
     const fallback = async (label) => {
       const response = await request(top, "?model=B&limit=5");
+      const archive = await request(top, "?model=B&limit=5&basis=archive1430");
+      assert.equal(archive.status, 503, label); assert.equal(archive.body.error.code, "ARCHIVE_UNAVAILABLE", label);
       assert.equal(response.status, 200, label); assert.equal(response.body.dataMode, "historySnapshot", label);
       assert.equal(response.body.rankingAsOfDate, latestDate, label);
       assert.ok(response.body.stocks.every((stock) => stock.name !== "Outside-path fixture"), label);
@@ -255,7 +259,7 @@ async function main() {
     const malicious = ["outside.json", "data/intraday-signals/model-b/../outside.json", "data/intraday-signals/model-b/../../../../outside.json", `data/intraday-signals/model-b/${latestDate}/../outside.json`, `data/intraday-signals/model-b/${latestDate}/other.json`, "data/intraday-signals/model-b/not-a-date/1430.json", `data/intraday-signals/model-b/${latestDate}/1430.json/../outside.json`, `data/intraday-signals/model-b/${latestDate}/1430.json?x=1`];
     for (const badPath of malicious) {
       // The file/../ case is invalid on disk; the remaining cases all exist.
-      if (!badPath.includes("1430.json/")) await writeJson(path.resolve(topRoot, badPath), readySignal(latestDate, "Outside-path fixture"));
+      if (!badPath.includes("1430.json/") && !(process.platform === "win32" && badPath.includes("?"))) await writeJson(path.resolve(topRoot, badPath), readySignal(latestDate, "Outside-path fixture"));
       await writeJson(pointer, { ...readyPointer, signalPath: badPath }); await fallback(`Rejected pointer ${badPath}`);
     }
     const outside = path.join(temporary, "outside.json");

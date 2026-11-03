@@ -29,6 +29,11 @@ type OutcomeArtifact = {
   [key: string]: unknown;
 };
 
+function observedClose(signalDate: string, target: unknown) {
+  return typeof target === "string" && /^\d{4}-\d{2}-\d{2}$/u.test(target) && target > signalDate &&
+    Date.parse(`${target}T15:30:00+09:00`) <= Date.now();
+}
+
 async function readJsonFiles<T>(directory: string): Promise<T[]> {
   let names: string[];
   try { names = (await readdir(directory)).filter((name) => /^\d{4}-\d{2}-\d{2}\.json$/u.test(name)).sort(); }
@@ -48,8 +53,8 @@ function embeddedOutcome(snapshot: HistorySnapshot, horizon: keyof typeof HORIZO
     const targetTradingDate = typeof resolvedAt === "object" && resolvedAt ? resolvedAt[fields.dateKey] : null;
     return {
       ticker: record.code,
-      status: finiteReturn == null ? "PENDING" : "MATURE",
-      reason: finiteReturn == null ? "outcomeNotMature" : null,
+      status: finiteReturn != null && observedClose(snapshot.asOfDate, targetTradingDate) ? "MATURE" : "PENDING",
+      reason: finiteReturn == null || !observedClose(snapshot.asOfDate, targetTradingDate) ? "outcomeNotVerified" : null,
       returnPercent: finiteReturn,
       targetTradingDate: typeof targetTradingDate === "string" ? targetTradingDate : null,
     };
@@ -78,7 +83,8 @@ async function handleGet() {
     const outcomesByHorizon = Object.fromEntries(await Promise.all(MODEL_PERFORMANCE_HORIZONS.map(async (horizon) => {
       const fields = HORIZON_FIELDS[horizon as keyof typeof HORIZON_FIELDS];
       const immutable = await readJsonFiles<OutcomeArtifact>(path.join(root, "data", "historical-outcomes", fields.directory));
-      const bySignalDate = new Map(immutable.map((outcome) => [outcome.signalDate, outcome]));
+      const bySignalDate = new Map(immutable.map(outcome => [outcome.signalDate, { ...outcome, records: outcome.records.filter(row =>
+        row.status !== "MATURE" || observedClose(outcome.signalDate, "targetTradingDate" in row ? row.targetTradingDate : outcome.targetTradingDate)) }]));
       for (const snapshot of snapshots) {
         if (bySignalDate.has(snapshot.asOfDate)) continue;
         const resolved = embeddedOutcome(snapshot, horizon as keyof typeof HORIZON_FIELDS);

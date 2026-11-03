@@ -141,8 +141,8 @@ assert.ok(dashboardHtml.includes("장중 잠정") || dashboardHtml.includes("LIV
 const archiveStates = [...resources]; archiveStates[7] = true;
 const archiveDashboard = compile(dashboardSource, { ...dashboardDependencies, react: harness(archiveStates).hooks });
 const archiveHtml = html(React.createElement(archiveDashboard.default, { ...callbacks, onOpenModel: noOp, onOpenPerformance: noOp }));
-assert.match(archiveHtml, /LIVE · 14:30 저장 관측/u);
-assert.match(archiveHtml, /새 14:00 결과가 아니며/u);
+assert.match(archiveHtml, /LIVE · 14:00 저장 관측/u);
+assert.match(archiveHtml, /과거 14:30 LIVE 성과/u);
 assert.ok(refreshCalls.includes(true), "homepage uses the shared freshness revalidation hook");
 
 // Transport can resolve after abort; discarded HOME requests cannot publish

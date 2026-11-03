@@ -13,6 +13,12 @@ type LiveStatus = { status: string; signalDate: string | null; runStartedAt?: st
 type Dashboard = { referenceDate: string | null; models: { referenceDate: string; models: Model[] } | null; transitions: HomeEodTransitions | null; calendar: { today: string; time: string; dayStatus: string; expectedTradingDate: string | null } | null; liveStatus: LiveStatus | null };
 type PerformanceRow = { modelVersion: string; horizon: string; topN: number; signalDate: string; targetTradingDate: string | null; observationCount: number; meanReturn: number | null; positiveRate: number | null };
 type Performance = { daily: PerformanceRow[]; live?: { daily: PerformanceRow[] } };
+type PublishedReport = {
+  layer: string; executionPolicyId: string; daily: PerformanceRow[];
+  publications: {signalDate: string; status: string; evaluation: string}[];
+  summary: {modelVersion: string; groups: {topN: number; horizons: {horizon: string; observationCount: number; meanReturn: number | null;
+    evaluatedSignalDates: number; expectedObservationCount: number; coverageRate: number | null}[]}[]}[];
+};
 type Verification = { referenceDate: string; verifiedAt: string | null; runUrl: string; commitSha: string; snapshotHash: string };
 type Operations = { latestAttempt?: { status: string; conclusion: string | null; stage: string | null; startedAt: string; completedAt: string | null; runUrl: string } | null; lastAutomaticRunAt?: string | null; lastAutomaticRunConclusion?: string | null; lastSuccessAt?: string | null; lastGoodStoredReferenceDate?: string | null; siteApiReferenceDate?: string | null; publishedReferenceDate?: string | null; latestConfirmedTradingDate?: string | null; latestCollectedReferenceDate?: string | null; latestValidatedReferenceDate?: string | null; lastSourceCheckAt?: string | null; sourceStatus?: string; recentFailureReason?: string | null; freshnessStatus?: string; repositoryPublicationStatus?: string; repositoryStatusAvailable?: boolean; siteApiMatchesPublished?: boolean; runStatus?: string; lagTradingDays?: number | null; deployment?: { state: string; reason: string | null; lastVerified: Verification | null; verification?: Verification | null; checkedAt?: string | null; intendedIdentity?: { referenceDate: string; snapshotHash: string; commitSha: string } | null } };
 type OperationEvidence = Operations & { lastFailureAt?: string | null; lastAttemptAt?: string | null };
@@ -38,15 +44,39 @@ function useResource<T>(url: string) {
 const labels: Record<string, string> = { VERIFIED: "실제 사이트 확인 완료", SOURCE_WAITING: "원본 대기", COLLECTED_VALIDATED: "수집·검증 완료", DEPLOYING: "배포 중", PUBLICATION_FAILED: "저장소 게시 실패", DEPLOYMENT_FAILED: "배포 실패", VERIFICATION_FAILED: "사이트 확인 실패", UNVERIFIED: "사이트 미확인", DELAYED: "새 원본 반영 지연", FAILED: "수집·검증 실패", UNKNOWN: "확인 불가" };
 const pct = (v: number | null) => Number.isFinite(v) ? (Number(v) > 0 ? "+" : "") + Number(v).toFixed(2) + "%" : "미확인";
 const time = homeTime;
+export function PublishedSelectionSummary({ report, failed = false }: { report: PublishedReport | null; failed?: boolean }) {
+  if (!report) return <p role="status" className="text-sm">{failed ? "14:00 선정 성과를 조회하지 못했습니다." : "14:00 선정 성과 조회 중"}</p>;
+  const tracked = new Set(report.publications.filter(p => p.status === "COMPLETE" && p.evaluation === "TRACKED").map(p => p.signalDate));
+  if (report.layer !== "INTRADAY_1400_LIVE" || report.executionPolicyId !== "intraday-1400-published-t1-open-v1" ||
+      report.daily.some(row => !tracked.has(row.signalDate))) return <p role="status">14:00 확정 신호의 평가 기준을 확인할 수 없습니다.</p>;
+  const partials = report.publications.filter(p => p.evaluation === "PARTIAL_EXCLUDED");
+  return <><div className="home-performance-grid" aria-label="14:00 TOP5 누적 선정 성과">
+    {["A-v1", "B-v1", "C-v1", "D-v1"].map(version => {
+      const metrics = report.summary.find(model => model.modelVersion === version)?.groups.find(group => group.topN === 5)?.horizons.find(h => h.horizon === "5DAY");
+      return <div key={version} className="home-performance-cell"><span className="font-semibold">{version}</span>
+        {metrics && metrics.observationCount > 0 && Number.isFinite(metrics.meanReturn) ? <><strong className="home-return">{pct(metrics.meanReturn)}</strong>
+          <p>확정 관측 {metrics.observationCount}/{metrics.expectedObservationCount}건 · 신호일 {metrics.evaluatedSignalDates}개</p></>
+          : <p className="mt-2">확정 표본 축적 중</p>}</div>;
+    })}
+  </div>{partials.length > 0 && <p className="mt-2 text-xs text-slate-600">잠정 게시 {partials.length}일 제외 · 최근 {homeDate(partials.at(-1)?.signalDate)}</p>}</>;
+}
+
+function HomePublishedSelection() {
+  const result = useResource<PublishedReport>("/api/model-performance/live");
+  return <div className="mt-4"><h3 className="font-medium">14:00 LIVE · TOP5 선정 성과 · 5거래일</h3>
+    <p className="text-xs text-slate-600">확정 게시 후 다음 거래일 공식 시가에 진입해 진입일 포함 다섯 번째 거래일 종가에 청산한 비용 차감 전 평균입니다.</p>
+    <PublishedSelectionSummary report={result.data} failed={result.error}/></div>;
+}
+
 export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerformance, onOpenTransition }: {
-  onSelectStock: (stock: Stock) => void | Promise<void>; onOpenModel: (model: string) => void; onOpenPerformance: () => void;
+  onSelectStock: (stock: Stock) => void | Promise<void>; onOpenModel: (model: string, source?: "LIVE" | "EOD") => void; onOpenPerformance: () => void;
   onOpenTransition: HomeTransitionNavigation;
 }) {
   const dashboard = useResource<Dashboard>("/api/home-dashboard?topN=5");
   const performance = useResource<Performance>("/api/model-performance");
   const operations = useResource<OperationEvidence>("/api/daily-production-status");
   const privateRelay = usePrivateLiveDelivery();
-  const live = useResource<{ signalDate: string; collectionCompletedAt: string }>("/api/intraday-model-top?model=B&limit=1");
+  const live = useResource<{ signalDate: string; collectionCompletedAt: string }>("/api/intraday-model-top?model=B&limit=1&profile=1430");
   const execution = useResource<CloudExecutionResponse>("/api/private-live-execution");
   const [source, setSource] = useState<"LIVE" | "EOD">("LIVE");
   const [operationsOpen, setOperationsOpen] = useState(false);
@@ -154,7 +184,7 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
       </div>
       <div role="tabpanel" id="home-panel-EOD" aria-labelledby="home-source-EOD" hidden={source !== "EOD"} className="home-source-panel">
         <div className="home-section-caption"><h2>모델 TOP3 · Daily EOD · {homeDate(data?.models?.referenceDate)}</h2><span>점수 단위: 점 / 100</span></div>
-        {data?.models ? <HomeModelRankings source="EOD" models={data.models.models} limit={3} onOpenModel={onOpenModel} onSelectStock={onSelectStock} /> : <div className="home-empty" role="status"><h3>{dashboard.error ? "순위 조회 실패" : "검증 가능한 저장 순위 확인 중"}</h3><p>수치가 없는 종목에 임의 점수를 표시하지 않습니다.</p></div>}
+        {data?.models ? <HomeModelRankings source="EOD" models={data.models.models} limit={3} onOpenModel={model => onOpenModel(model, "EOD")} onSelectStock={onSelectStock} /> : <div className="home-empty" role="status"><h3>{dashboard.error ? "순위 조회 실패" : "검증 가능한 저장 순위 확인 중"}</h3><p>수치가 없는 종목에 임의 점수를 표시하지 않습니다.</p></div>}
       </div>
       <details className="home-ranking-note"><summary className="tb-focus rounded">모델 점수 해석과 주의사항</summary><p>장세별 설명은 산식의 특성에 따른 구분이며, 수익률 우위가 검증된 것은 아닙니다.</p><p>하락장에서는 네 모델 모두 신규 매수 판단에 주의가 필요합니다. 모델 점수는 상승 확률이나 매수 추천이 아닙니다.</p></details>
     </section>
@@ -162,12 +192,12 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
     <section className="home-surface home-performance" aria-labelledby="home-performance-heading"><div className="home-section-caption"><h2 id="home-performance-heading">성과 요약 · TOP5</h2><button type="button" onClick={onOpenPerformance} className="tb-focus home-text-action">성과 상세 →</button></div>
       <h3 className="mt-4 font-medium">Daily 1D · 최신 확정 단면</h3>
       {renderPerformance("daily")}
-      <details className="home-detail"><summary className="tb-focus rounded">평가 기간·진입/종료 기준</summary><p>Daily EOD · 신호일 공식 종가 → 다음 거래일 공식 종가. 실제 매수 체결 수익률이 아닙니다.</p><p>14:00 스윙 · 기록 생성 후 다음 확정 거래일 시가 → 진입일 포함 5번째 거래일 종가. 당일 진입 전략의 성과와 구분하며, 비용·체결 가정은 기존 미확정 상태를 유지합니다.</p><p>신호일별 최신 확정 단면 · 독립 표본 아님 · 모델 우열 판정 없음</p><button type="button" onClick={onOpenPerformance} className="tb-focus home-text-action mt-2">5D / 20D 성과 →</button></details>
-      <div className="home-swing-pending"><h3 className="font-medium">14:00 스윙 · 5거래일</h3><p>A / B / C / D 모두 집계 대기 · 이 화면에 연결된 확정 성과가 없습니다. 예측 수치·기대수익률은 제공하지 않습니다.</p></div>
+      <details className="home-detail"><summary className="tb-focus rounded">평가 기간·진입/종료 기준</summary><p>Daily EOD · 신호일 공식 종가 → 다음 거래일 공식 종가. 실제 매수 체결 수익률이 아닙니다.</p><p>14:00 TOP5는 확정 선정 종목을 동일비중으로 관측한 성과입니다. 스윙 예측 장부와 실계좌 수익률은 별도로 평가합니다.</p><p>신호일별 최신 확정 단면 · 독립 표본 아님 · 모델 우열 판정 없음</p><button type="button" onClick={onOpenPerformance} className="tb-focus home-text-action mt-2">5D / 20D 성과 →</button></details>
+      <HomePublishedSelection />
     </section>
 
+    <details className="home-surface" onToggle={event => setArchiveOpen(event.currentTarget.open)}><summary className="tb-focus rounded">전환 신호 · 14:00 LIVE / 확정 일봉</summary>{archiveOpen && <HomeTransitionCard transitions={transitions ?? null} eodError={dashboard.error} onSelectStock={onSelectStock} onOpenTransition={onOpenTransition} />}</details>
     <section className="home-surface home-archive" aria-labelledby="home-archive-heading"><h2 id="home-archive-heading" className="text-lg font-semibold">과거 기록</h2>
-      <details onToggle={event => setArchiveOpen(event.currentTarget.open)}><summary className="tb-focus rounded">과거 14:30 전환 분석</summary><p className="my-3 text-sm text-slate-600">기존 저장 관측의 과거 분석입니다. 새 14:00 결과가 아니며, 부분 수집·REJECTED 집계는 정상 최신 결과가 아닙니다.</p>{archiveOpen && <HomeTransitionCard transitions={transitions ?? null} eodError={dashboard.error} onSelectStock={onSelectStock} onOpenTransition={onOpenTransition} />}</details>
       <details><summary className="tb-focus rounded">과거 14:30 LIVE 성과 · 기존 별도 기준</summary><p className="mt-3 text-sm text-slate-600">14:30 동결 신호 → 다음 거래일 공식 시가 진입 → 해당 평가 거래일 종가. 1D는 진입일 종가 기준이며, 실제 체결·비용·슬리피지를 반영한 실현 성과가 아닙니다.</p>{renderPerformance("live")}<button type="button" onClick={onOpenPerformance} className="tb-focus home-text-action mt-3">성과 상세 (Daily·14:30) →</button></details>
       <details><summary className="tb-focus rounded">과거 14:30 실행 기록 · 운영 종료</summary><dl className="home-facts">
         <div><dt>예약 / runner 첫 단계 시작</dt><dd>{time(data?.liveStatus?.scheduledAt)} / {time(data?.liveStatus?.runnerFirstStepAt)}</dd></div>

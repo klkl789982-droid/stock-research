@@ -1,6 +1,6 @@
 {
   "registryVersion": 1,
-  "updatedAt": "2026-10-15T05:38:00Z",
+  "updatedAt": "2026-11-03T07:18:48.586Z",
   "models": [
     {
       "modelId": "A",
@@ -174,6 +174,106 @@
       "validationStartDate": null,
       "validationEndDate": null,
       "notes": "Offline evaluation only. No production routing, automatic promotion, historical rewrite, weight tuning, or full-N momentum migration."
+    },
+    {
+      "modelId": "A",
+      "version": "v4-research",
+      "changedFrom": "A-v1",
+      "status": "evaluation",
+      "role": "challenger",
+      "evaluationOnly": true,
+      "promotionStatus": "notApproved",
+      "formulaDescription": "Sort eligible stocks by (stored price momentum minus same-market median momentum) / positive stored volatility20. Tie by baseline rank.",
+      "formulaHash": "923454c49dc52b4c92855bed12313cbc775cc41ae73904a8b5383e0792739e24",
+      "hypothesis": "Sort eligible stocks by (stored price momentum minus same-market median momentum) / positive stored volatility20. Tie by baseline rank.",
+      "expectedBenefit": "Test whether this isolated change improves price return after declared costs or reduces loss exposure.",
+      "knownRisk": "Unverified publication timing, short inspected period, raw price basis, concentrated positions and uncertain execution.",
+      "evaluationMetrics": [
+        "averageReturn",
+        "excessReturn",
+        "MDD"
+      ],
+      "changeReason": "Preregistered offline comparison; no production routing.",
+      "validationStartDate": "2026-11-04",
+      "validationEndDate": null,
+      "notes": "daily-strategy-research-v1; exploratory past performance only.",
+      "modelVersion": "A-v4-research",
+      "createdAt": "2026-11-03T07:18:48.574Z"
+    },
+    {
+      "modelId": "B",
+      "version": "v2-research",
+      "changedFrom": "B-v1",
+      "status": "evaluation",
+      "role": "challenger",
+      "evaluationOnly": true,
+      "promotionStatus": "notApproved",
+      "formulaDescription": "Keep each original TOP10 slot only if its market's median stock momentum exceeds median daily volatility. Other slots stay cash.",
+      "formulaHash": "d6671edceaa940d599160960e2a1d3ef429ec826b5d48180df544ef5bc564a35",
+      "hypothesis": "Keep each original TOP10 slot only if its market's median stock momentum exceeds median daily volatility. Other slots stay cash.",
+      "expectedBenefit": "Test whether this isolated change improves price return after declared costs or reduces loss exposure.",
+      "knownRisk": "Unverified publication timing, short inspected period, raw price basis, concentrated positions and uncertain execution.",
+      "evaluationMetrics": [
+        "averageReturn",
+        "excessReturn",
+        "MDD"
+      ],
+      "changeReason": "Preregistered offline comparison; no production routing.",
+      "validationStartDate": "2026-11-04",
+      "validationEndDate": null,
+      "notes": "daily-strategy-research-v1; exploratory past performance only.",
+      "modelVersion": "B-v2-research",
+      "createdAt": "2026-11-03T07:18:48.580Z"
+    },
+    {
+      "modelId": "C",
+      "version": "v3-research",
+      "changedFrom": "C-v1",
+      "status": "evaluation",
+      "role": "challenger",
+      "evaluationOnly": true,
+      "promotionStatus": "notApproved",
+      "formulaDescription": "An original TOP10 stock with the stored overbought flag sits in cash. No replacement.",
+      "formulaHash": "449a1e613334f091a6d1da12e5996606426face77f59a853dbf984589e1ca64d",
+      "hypothesis": "An original TOP10 stock with the stored overbought flag sits in cash. No replacement.",
+      "expectedBenefit": "Test whether this isolated change improves price return after declared costs or reduces loss exposure.",
+      "knownRisk": "Unverified publication timing, short inspected period, raw price basis, concentrated positions and uncertain execution.",
+      "evaluationMetrics": [
+        "averageReturn",
+        "excessReturn",
+        "MDD"
+      ],
+      "changeReason": "Preregistered offline comparison; no production routing.",
+      "validationStartDate": "2026-11-04",
+      "validationEndDate": null,
+      "notes": "daily-strategy-research-v1; exploratory past performance only.",
+      "modelVersion": "C-v3-research",
+      "createdAt": "2026-11-03T07:18:48.583Z"
+    },
+    {
+      "modelId": "D",
+      "version": "v3-research",
+      "changedFrom": "D-v1",
+      "status": "evaluation",
+      "role": "challenger",
+      "evaluationOnly": true,
+      "promotionStatus": "notApproved",
+      "formulaDescription": "Rank by min(B-v1,C-v1) within the same D-v1 eligible universe. Tie by baseline rank.",
+      "formulaHash": "ff8acf4b0160518df61ab9b307684ac7748ae6e82887af9c4c7a84bf9769d8e7",
+      "hypothesis": "Rank by min(B-v1,C-v1) within the same D-v1 eligible universe. Tie by baseline rank.",
+      "expectedBenefit": "Test whether this isolated change improves price return after declared costs or reduces loss exposure.",
+      "knownRisk": "Unverified publication timing, short inspected period, raw price basis, concentrated positions and uncertain execution.",
+      "evaluationMetrics": [
+        "averageReturn",
+        "excessReturn",
+        "MDD"
+      ],
+      "changeReason": "Preregistered offline comparison; no production routing.",
+      "validationStartDate": "2026-11-04",
+      "validationEndDate": null,
+      "notes": "daily-strategy-research-v1; exploratory past performance only.",
+      "modelVersion": "D-v3-research",
+      "createdAt": "2026-11-03T07:18:48.586Z"
     }
   ]
 }

@@ -56,14 +56,14 @@ for (const text of ["근접 후보 · 잠정", "교차 경계가 초과", "100.1
 assert.ok(html.includes("hidden overflow-x-auto xl:block"));
 assert.ok(html.includes("md:grid-cols-2 xl:hidden"));
 assert.doesNotMatch(html, /거래량|동시간|상승 확률 [0-9]/u);
-assert.match(liveSource, /type="number" required min="0" max="5"/u);
+assert.match(liveSource, /select className=\{fieldClass\} value=\{filters.nearPercent\}/u);
 assert.ok(liveSource.includes("key={`${search.revision}:${refreshVersion}`}"), "a new search or refresh immediately replaces old results");
 assert.match(wrapperSource, /new URLSearchParams\(\{ tab: "transition", mode: "EOD" \}\)/u);
 assert.ok(researchSource.includes('key={`${code}:${mode}:${nearPercent}:${mode === "LIVE" ? refreshVersion : 0}`}'));
 const wrapper = loadWrapper(harness().hooks).default({ onSelectStock: () => {} });
 const wrapperHtml = renderToStaticMarkup(wrapper);
 assert.ok(wrapperHtml.includes("LIVE branch"));
-assert.match(wrapperHtml, /aria-pressed="true"[^>]*>LIVE · 14:30 저장 관측/u);
+assert.match(wrapperHtml, /aria-pressed="true"[^>]*>LIVE · 14:00 저장 관측/u);
 assert.match(wrapperHtml, /aria-pressed="false"[^>]*>EOD · 확정 일봉 비교/u);
 for (const [initialState, initialDirection] of [["APPROACHING", "dead"], ["CONFIRMED", "golden"], ["CROSS_OCCURRED", "all"], ["all", "dead"]]) {
   const linkedWrapper = loadWrapper(harness().hooks).default({ onSelectStock: () => {}, initialState, initialDirection });

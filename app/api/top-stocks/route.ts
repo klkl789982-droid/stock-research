@@ -123,7 +123,8 @@ async function loadOfficialModelBStatus(): Promise<{ status: IntradayModelBStatu
     const value: unknown = JSON.parse(await readFile(path.join(process.cwd(), "data", "intraday-signals", "model-b", signalPath[1], "1430.json"), "utf8"));
     if (typeof value !== "object" || value === null) return { status: { ...status, status: "UNAVAILABLE", reason: "invalidOfficialSignal" }, signal: null };
     const signal = value as IntradayModelBSignal;
-    return signal.status === "READY" && signal.modelVersion === "B-v1" && Array.isArray(signal.records) ? { status, signal } : { status: { ...status, status: "UNAVAILABLE", reason: "invalidOfficialSignal" }, signal: null };
+    return signal.status === "READY" && signal.modelVersion === "B-v1" && signal.signalDate === signalPath[1] && signal.signalDate === status.signalDate
+      && signal.officialSignalTime === "14:30:00" && Array.isArray(signal.records) ? { status, signal } : { status: { ...status, status: "UNAVAILABLE", reason: "invalidOfficialSignal" }, signal: null };
   } catch { return { status: { signalDate: null, status: "UNAVAILABLE", reason: "officialSignalNotAvailable", officialSignalTime: null }, signal: null }; }
 }
 
@@ -133,6 +134,8 @@ async function handleGet(request: NextRequest) {
     return NextResponse.json({ error: { code: "INVALID_MODEL", message: "model은 A, B, C, D 중 하나여야 합니다." } }, { status: 400 });
   }
   const model = modelParameter as ModelId;
+  const basis = request.nextUrl.searchParams.get("basis") ?? "daily";
+  if (basis !== "daily" && !(basis === "archive1430" && model === "B")) return NextResponse.json({ error: { code: "INVALID_BASIS", message: "현재 14:00 LIVE는 /api/intraday-model-top에서, 과거 B 기록은 basis=archive1430으로 조회할 수 있습니다." } }, { status: 400 });
   const requestedVersion = request.nextUrl.searchParams.get("version");
   if (requestedVersion && (model !== "A" || !["A-v1", "A-v2"].includes(requestedVersion))) {
     return NextResponse.json({ error: { code: "INVALID_MODEL_VERSION", message: "version은 model=A에서 A-v1 또는 A-v2만 지원합니다." } }, { status: 400 });
@@ -148,12 +151,13 @@ async function handleGet(request: NextRequest) {
   }
   const freshness = await loadDailyTopFreshness(snapshot);
 
-  if (model === "B" && !requestedVersion) {
+  if (basis === "archive1430") {
     const official = await loadOfficialModelBStatus(); const signal = official.signal;
     if (signal) {
-      const stocks = signal.records.filter((record) => record.dataStatus === "AVAILABLE" && Number.isInteger(record.rank) && Number.isFinite(record.score)).sort((a, b) => Number(a.rank) - Number(b.rank)).slice(0, limit).map((record) => ({ rank: record.rank, code: normalizeStockCode(record.ticker) ?? record.ticker, name: record.companyName, market: "", score: record.score, closePrice: record.provisionalOhlcv?.close ?? 0, priceBasis: "intradayOfficialSignal", priceAsOfDate: signal.signalDate, rankingUniverseCount: signal.collection.successful, rankPercentile: Number(record.rank) / signal.collection.successful }));
-      return NextResponse.json({ dataMode: "intradayOfficialSignal", model: "B", modelName: "trendStrength", modelVersion: "B-v1", rankingAsOfDate: signal.signalDate, priceAsOfDate: signal.signalDate, priceBasis: "intradayOfficialSignal", officialSignalTime: signal.officialSignalTime, collectionStartedAt: signal.collectionStartedAt, collectionCompletedAt: signal.collectionCompletedAt, count: stocks.length, stocks, freshness, officialSignal: official.status }, { headers: { "Cache-Control": "no-store" } });
+      const stocks = signal.records.filter((record) => record.dataStatus === "AVAILABLE" && Number.isInteger(record.rank) && Number.isFinite(record.score)).sort((a, b) => Number(a.rank) - Number(b.rank)).slice(0, limit).map((record) => ({ rank: record.rank, code: normalizeStockCode(record.ticker) ?? record.ticker, name: record.companyName, market: "", score: record.score, closePrice: record.provisionalOhlcv?.close ?? null, priceBasis: "intradayOfficialSignal", priceAsOfDate: signal.signalDate, rankingUniverseCount: signal.collection.successful, rankPercentile: Number(record.rank) / signal.collection.successful }));
+      return NextResponse.json({ dataMode: "intradayOfficialSignal", model: "B", modelName: "trendStrength", modelVersion: "B-v1", rankingAsOfDate: signal.signalDate, priceAsOfDate: signal.signalDate, priceBasis: "intradayOfficialSignal", officialSignalTime: signal.officialSignalTime, collectionStartedAt: signal.collectionStartedAt, collectionCompletedAt: signal.collectionCompletedAt, count: stocks.length, stocks, archive: true, activeProducer: false, currentResultsEndpoint: "/api/intraday-model-top", officialSignal: official.status }, { headers: { "Cache-Control": "no-store" } });
     }
+    return NextResponse.json({ error: { code: "ARCHIVE_UNAVAILABLE", message: "과거 14:30 B 관측을 확인할 수 없습니다." } }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
 
   if (model === "A" && requestedVersion === "A-v2") {
@@ -247,7 +251,7 @@ async function handleGet(request: NextRequest) {
     eligibleForRankBacktest: snapshot.dataQuality?.certification?.eligibleForRankBacktest ?? false,
     sourceManifestVersion: snapshot.sourceManifest?.schemaVersion ?? null,
     freshness,
-    officialSignal: model === "B" ? (await loadOfficialModelBStatus()).status : undefined,
+    liveEndpoint: "/api/intraday-model-top",
     count: stocks.length,
     stocks,
   }, { headers: { "Cache-Control": "no-store" } });

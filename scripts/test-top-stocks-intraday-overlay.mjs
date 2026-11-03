@@ -1,3 +1,4 @@
+import { latestMinuteTrade } from "../lib/recent-kis-price.mjs";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { TOP_INTRADAY_POLL_MS, toTopIntradayOverlay } from "../lib/top-stocks-intraday-overlay.mjs";
@@ -25,6 +26,18 @@ assert.match(panel, /시세 확인 불가/u);
 assert.match(panel, /KIS 최근 조회 ·/u);
 assert.match(panel, /sm:hidden/u);
 assert.match(panel, /compact \? "hidden sm:table-cell"/u);
-assert.doesNotMatch(panel, /setData\(.*intraday/u);
+const overlayEffect = panel.slice(panel.indexOf("async function loadQuotes()"), panel.indexOf("const onVisibilityChange"));
+assert.match(overlayEffect, /setIntradayByCode/u);
+assert.doesNotMatch(overlayEffect, /setData\(/u);
 
 console.log("TOP intraday overlay 성공·실패·종목 불일치·polling cleanup·daily 분리 테스트 통과");
+const lastTrade = latestMinuteTrade({ rt_cd: "0", output2: [
+  { stck_bsop_date: "20261103", stck_cntg_hour: "153000", stck_prpr: "101" },
+  { stck_bsop_date: "20261104", stck_cntg_hour: "100000", stck_prpr: "400" },
+] }, "053800", "2026-11-03T07:00:00Z");
+const recent = toTopIntradayOverlay("053800", { code: "053800", price: 110, freshnessStatus: "unverified", lastTrade });
+assert.equal(recent.price, 101);
+assert.equal(recent.asOfTime, "15:30:00");
+assert.equal(recent.asOfDate, "2026-11-03");
+assert.equal(recent.rate, null);
+assert.equal(toTopIntradayOverlay("005930", { code: "005930", lastTrade }).status, "unavailable");

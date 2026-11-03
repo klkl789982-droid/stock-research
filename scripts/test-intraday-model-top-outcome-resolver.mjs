@@ -8,6 +8,16 @@ const ledgers = dates.map((date, index) => ({ date, recordsByCode: new Map([["00
 const signal = { schemaVersion: 1, artifactType: "intradayModelTopOfficialSignal", observationType: "LIVE_OBSERVATION", status: "READY", signalDate: "2026-10-06", officialSignalTime: "14:30:00", contentHash: "signal-hash", records: [{ ticker: "000001", companyName: "A", dataStatus: "AVAILABLE", ranks: { "A-v1": 1, "B-v1": 2, "C-v1": 21, "D-v1": 3 }, observationIds: { "A-v1": "a", "B-v1": "b", "C-v1": "c", "D-v1": "d" } }] };
 
 const pending = resolveIntradayModelTopOutcomes({ signal, priceLedgers: ledgers.slice(0, 1), tradingCalendar: calendar(1), resolvedAt: "2026-10-06T12:00:00Z" });
+const current = { ...signal, observationPolicyId: "intraday-1400-v1", officialSignalTime: "14:00:00", publicationStatus: "COMPLETE",
+  revision: 2, publishedAt: "2026-10-06T07:00:00Z", collectionCompletedAt: "2026-10-06T05:04:00Z" };
+const resolveCurrent = (fields = {}) => resolveIntradayModelTopOutcomes({ signal: { ...current, ...fields }, priceLedgers: ledgers,
+  tradingCalendar: calendar(6), resolvedAt: "2026-10-13T12:00:00Z" });
+assert.throws(() => resolveCurrent({ publicationStatus: "PARTIAL" }), /LIVE_SIGNAL_INVALID/);
+assert.throws(() => resolveCurrent({ publishedAt: null }), /LIVE_SIGNAL_INVALID/);
+assert.equal(resolveCurrent({ publishedAt: "2026-10-07T00:00:00Z" }).records[0].entry.reason, "signalNotPublishedBeforeEntry");
+assert.deepEqual(validateIntradayModelTopOutcomes(resolveCurrent()), []);
+assert.equal(resolveCurrent().records[0].horizons["5DAY"].status, "MATURE");
+assert.equal(resolveCurrent().layer, "INTRADAY_1400_LIVE");
 assert.deepEqual(validateIntradayModelTopOutcomes(pending), []);
 assert.equal(pending.records.length, 3);
 assert.equal(pending.records[0].entry.status, "PENDING");

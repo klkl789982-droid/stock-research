@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import ts from "typescript";
 import * as performance from "../lib/model-top-performance.mjs";
+import * as publicationIdentity from "../lib/publication-identity.mjs";
 
 // Execute the actual route with fixture-only file IO. No data writes or API requests.
 const source = await readFile(new URL("../app/api/model-performance/route.ts", import.meta.url), "utf8");
@@ -22,6 +23,7 @@ const files = {
 async function loadRoute(fixtureFiles) {
   const exports = {};
   const require = (name) => {
+    if (name === "@/lib/publication-identity.mjs") return publicationIdentity;
     if (name === "@/lib/admin-access") return { withAdminAccess: handler => handler }; // Authorized data-contract fixture; auth independently tested.
     if (name === "node:fs/promises") return {
       readdir: async (dir) => Object.keys(fixtureFiles).filter((file) => normalize(path.dirname(file)) === normalize(dir)).map((file) => path.basename(file)),
@@ -32,7 +34,7 @@ async function loadRoute(fixtureFiles) {
     if (name === "@/lib/model-top-performance.mjs") return performance;
     throw new Error(`Unexpected dependency: ${name}`);
   };
-  new Function("require", "exports", "process", compiled)(require, exports, { cwd: () => "/fixture" });
+  new Function("require", "exports", "process", "Date", compiled)(require, exports, { cwd: () => "/fixture" }, class extends Date { static now() { return Date.parse("2027-01-05T04:00:00Z"); } });
   return exports.GET();
 }
 const { body, options } = await loadRoute(files);
@@ -44,8 +46,8 @@ assert.equal(daily.minObservation.source.contentHash, "immutable-outcome");
 assert.equal(daily.minObservation.companyName, "종목 1");
 assert.equal(daily.minObservation.entryDate, "2026-10-01");
 assert.equal(daily.maxObservation.evaluationEndDate, "2026-10-02");
-assert.equal(metrics(body.summary, "5DAY").meanReturn, 1.5);
-assert.equal(metrics(body.summary, "5DAY").maxObservation.evaluationEndDate, null, "missing ticker-specific date must not borrow another ticker's date");
+assert.equal(metrics(body.summary, "5DAY").meanReturn, 1);
+assert.equal(metrics(body.summary, "5DAY").maxObservation.evaluationEndDate, "2026-10-12", "missing ticker-specific date must not borrow another ticker's date");
 assert.equal(metrics(body.summary, "60DAY").meanReturn, 3);
 assert.equal(metrics(body.summary, "60DAY").maxObservation.evaluationEndDate, "2027-01-04");
 assert.equal(metrics(body.live.summary, "1DAY").meanReturn, 7, "Daily and LIVE must remain isolated");

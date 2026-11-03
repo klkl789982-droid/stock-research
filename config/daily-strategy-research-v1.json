@@ -1,0 +1,26 @@
+{
+  "studyId": "daily-strategy-research-v1",
+  "frozenOn": "2026-11-03",
+  "layer": "RETROSPECTIVE_DAILY_EOD_EXPLORATORY",
+  "promotion": "DISABLED",
+  "development": ["2026-08-13", "2026-10-16"],
+  "chronologicalCheck": ["2026-10-19", "2026-11-02"],
+  "prospectiveStart": "2026-11-04",
+  "prospectiveRule": "Freeze hypotheses before results. Reserve the next 60 distinct signal sessions and wait for their exits. This runner never opens that sample.",
+  "purge": "Both signal and official exit must lie within a partition. Do not bridge unknown calendar sessions.",
+  "primaryHoldingDays": {"A-v1": 5, "B-v1": 20, "C-v1": 1, "D-v1": 5},
+  "commonHoldingDays": 1,
+  "topN": 10,
+  "entry": "public-eod-t2-open-v1; require recorded signal generation before entry. Actual publication may be unverified. Classify all reconstructed selections as retrospective.",
+  "account": "KRW 100 million, whole shares, equal target weights, fixed holding-period sleeve budget. Unfilled slots remain cash. No stop or intraday fill assumption.",
+  "cost": {"mode":"USER_INPUT", "buyFeeBps":2, "sellFeeBps":2, "buySlippageBps":5, "sellSlippageBps":5, "sellTaxBps":0, "basisDate":"2026-11-03", "basis":"Illustrative symmetric research stress only (7bp per side); excludes taxes. Actual costs unknown."},
+  "candidates": [
+    {"modelId":"A","version":"v4-research","changedFrom":"A-v1","rule":"Sort eligible stocks by (stored price momentum minus same-market median momentum) / positive stored volatility20. Tie by baseline rank."},
+    {"modelId":"B","version":"v2-research","changedFrom":"B-v1","rule":"Keep each original TOP10 slot only if its market's median stock momentum exceeds median daily volatility. Other slots stay cash."},
+    {"modelId":"C","version":"v3-research","changedFrom":"C-v1","rule":"An original TOP10 stock with the stored overbought flag sits in cash. No replacement."},
+    {"modelId":"D","version":"v3-research","changedFrom":"D-v1","rule":"Rank by min(B-v1,C-v1) within the same D-v1 eligible universe. Tie by baseline rank."}
+  ],
+  "allocationControl": "D-v1 original TOP10 with five percent target per stock per cohort; residual cash. Sector cap requires dated industry memberships.",
+  "diagnostics": "Date-balanced top and bottom quintiles of model scores and stored factors, same-market momentum bands +/- median daily volatility, high volatility and ticker concentration, C risk flags. Equal-weight eligible universe and simple momentum controls. One change at a time. Retain adverse and null results. No fitted weights.",
+  "constraints": "Daily official raw open/close price returns only. Report unavailable adjustment, publication, PIT or benchmark evidence. Never mix with observed LIVE, dividends, verified fills, sector attribution or prospective evidence."
+}

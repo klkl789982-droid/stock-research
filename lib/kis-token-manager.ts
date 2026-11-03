@@ -5,8 +5,8 @@ import { createKisTokenManager } from "./kis-token-manager-core.mjs";
 
 function getCredentials() {
   return {
-    appKey: process.env.KIS_APP_KEY ?? "",
-    appSecret: process.env.KIS_APP_SECRET ?? "",
+    appKey: (process.env.KIS_APP_KEY ?? "").trim(),
+    appSecret: (process.env.KIS_APP_SECRET ?? "").trim(),
   };
 }
 

@@ -3,9 +3,11 @@ import { parseKisQuote, attachKisMinuteObservation } from "../../lib/kis-quote-p
 import { createLiveDelivery, validateLiveDelivery } from "../../lib/private-live-delivery.mjs";
 import { kst, safeCode } from "./core.mjs";
 import { buildCloudSwingIntent } from "./cloud-swing.mjs";
-import { liveScoreBounds, validLiveScore } from "../../lib/live-model-score-contract.mjs";
+import { bounds, versions, requiredRowIssues } from "../../lib/live-observation-contract.mjs";
+export { bounds, versions, requiredRowIssues };
 import { STOCK_CODE_PATTERN } from "../../lib/stock-code.mjs";
 import { isLiveMissingReason } from "../../lib/live-collection-reason.mjs";
+import { freezeTransitionVerdicts } from "../../lib/live-transition-verdict.mjs";
 export { isLiveMissingReason };
 export { kst } from "./core.mjs";
 
@@ -24,11 +26,9 @@ export const OTHER_DAILY_RESERVE = Object.freeze({ workflowSteps: 100, workerReq
 // Duration pessimistically reserves12 whole15-minute scheduled events at128MB.
 // No new Workflow instances/state except ensuring a missing canonical day ID.
 export const WATCH_DAILY_RESERVE=Object.freeze({workflowSteps:0,workerRequests:500,doRequests:200,durationGbSeconds:1500,sqlRowsRead:20000,sqlRowsWritten:2000});
-export const versions = Object.freeze(["A-v1", "B-v1", "C-v1", "D-v1"]);
 // 14:00 remains the signal anchor. A delayed recovery may observe until the
 // Korean cash-market close, while every actual request/response timestamp is
 // retained. Nothing collected after 15:30 KST is eligible.
-export const bounds = date => ({ start: Date.parse(`${date}T14:00:00+09:00`), end: Date.parse(`${date}T15:30:00+09:00`) });
 export function assertProduction(env) {
   if (env.LIVE_PRODUCTION_ENABLED !== "true" || env.LIVE_PRODUCER !== "cloud"
     || !/^[a-f0-9]{64}$/u.test(env.LIVE_CUTOVER_RECEIPT_HASH ?? "")) throw new Error("LIVE_CLOUD_DISABLED");
@@ -78,29 +78,10 @@ export function productionObservation({ quote, minute, code, timing, input, seed
   const row = signal.records[0];
   return { code, companyName: input.name, status: input.eligible ? "AVAILABLE" : "EXCLUDED", scores: row.scores,
     ...timing, observedDate: q.asOfDate, observedTime: q.asOfTime, responseHash: hash({ quote, minute }),
-    originalRecordHash: hash(row), rawPricesStored: false, modelFormulaUnchanged: true };
+    originalRecordHash: hash(row), transitionV1: freezeTransitionVerdicts(input.rows, row.provisionalOhlcv.close),
+    rawPricesStored: false, modelFormulaUnchanged: true };
 }
 
-// Same predicate for publishing and for the restricted, management-only quality audit.
-// Never copy a quote, price, candidate list, full observation or credentials into the report.
-export function requiredRowIssues(r, day) {
-  const issues=[], b=bounds(day);
-  const issue=(field, value, rule)=>issues.push({field, value, rule});
-  if(r?.status!=="AVAILABLE") issue("status",r?.status??null,"AVAILABLE");
-  if(!r)return issues;
-  if(r.observedDate!==day)issue("observedDate",r.observedDate??null,day);
-  for(const v of versions){const s=r.scores?.[v];if(!validLiveScore(v,s))issue("scores."+v,Number.isFinite(s)?s:null,"finite "+liveScoreBounds(v).join(".."));}
-  const keys=["quoteRequestedAt","quoteReceivedAt","minuteRequestedAt","minuteReceivedAt"];
-  keys.forEach((k,i)=>{const t=Date.parse(r[k]);if(!Number.isFinite(t)||t<b.start||t>b.end)issue(k,r[k]??null,"inside session");
-    if(i&&Date.parse(r[keys[i-1]])>t)issue(k,r[k],"not before "+r[keys[i-1]]);});
-  const local=Date.parse(r.observedDate+"T"+r.observedTime+"+09:00");
-  if(!/^\d{2}:\d{2}:\d{2}$/u.test(r.observedTime??"")||!Number.isFinite(local))issue("observedTime",r.observedTime??null,"valid KST HH:mm:ss");
-  else if(local<b.start)issue("observedTime",r.observedTime,"at or after 14:00:00 KST");
-  else if(local>Date.parse(r.quoteReceivedAt))issue("observedTime",r.observedTime,"not after "+r.quoteReceivedAt);
-  for(const k of ["originalRecordHash","responseHash"])if(!/^[a-f0-9]{64}$/u.test(r[k]??""))issue(k,r[k]==null?null:"invalid digest","SHA256");
-  for(const [k,want] of [["rawPricesStored",false],["modelFormulaUnchanged",true]])if(r[k]!==want)issue(k,r[k]??null,String(want));
-  return issues;
-}
 function pinnedUniverse(prepared) {
   if (prepared?.readiness !== "READY" || prepared.universe !== 553 || !Array.isArray(prepared.codes)
     || prepared.codes.length !== 553 || new Set(prepared.codes).size !== 553 || !Array.isArray(prepared.eligibleCodes)

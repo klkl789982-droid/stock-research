@@ -2,6 +2,10 @@ import { withAdminAccess } from "@/lib/admin-access";
 import { NextResponse } from "next/server";
 import { loadModelPerformanceResearch } from "@/lib/model-performance-research-store.mjs";
 import { validateResearchOptions } from "@/lib/model-performance-research.mjs";
+import { kisRequest } from "@/lib/kis-token-manager";
+import { loadPublicationEvidence } from "@/lib/daily-publication-status.mjs";
+import { loadPrivateBenchmarkLegs } from "@/lib/research-index-benchmarks.mjs";
+import { readResearchPublicationReceipts } from "@/lib/research-publication-receipts.mjs";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -24,7 +28,8 @@ async function handleGet(request: Request) {
     return NextResponse.json({ status: "INVALID_RESEARCH_FILTER", message: "모델·기간·비용 입력을 확인하세요." }, { status: 400, headers });
   }
   try {
-    const result = await loadModelPerformanceResearch({ options });
+    const result = await loadModelPerformanceResearch({ options, indexRequest: kisRequest, archiveReader: loadPrivateBenchmarkLegs,
+      receiptReader: readResearchPublicationReceipts, publicationEvidence: loadPublicationEvidence });
     // Derived statistics only. Entry/exit/reference raw prices are not returned by this public route.
     const cohorts = result.cohorts.map((cohort: { rows: Array<Record<string, unknown>> }) => ({ ...cohort, rows: cohort.rows.map(({ referencePrice: _price, ...row }) => { void _price; return row; }) }));
     return NextResponse.json({ ...result, cohorts }, { headers });

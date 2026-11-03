@@ -80,9 +80,10 @@ const deliveryPanel = {};
 new Function("require","exports",compile(await readFile(new URL("../components/PrivateLiveDeliveryPanel.tsx",import.meta.url),"utf8"),true))(name => {
   if(name==="react/jsx-runtime")return jsx;if(name==="react")return React;if(name==="../lib/home-presentation.mjs")return presentation;throw Error(name);
 },deliveryPanel);
-const render = (data = dashboard, failedPerformance = false, operationsInput = operations, failedHome = false, relay = {delivery:null}, run = null) => {
+const render = (data = dashboard, failedPerformance = false, operationsInput = operations, failedHome = false, relay = {delivery:null}, run = null, publishedPerformance = null) => {
   const resources = [{ url: "/api/home-dashboard?topN=5", data, error: failedHome }, { url: "/api/model-performance", data: failedPerformance ? null : performance, error: failedPerformance }, { url: "/api/daily-production-status", data: operationsInput, error: false }, { url: "/api/intraday-model-top?model=B&limit=1", data: null, error: true }];
   resources.push({url:"/api/private-live-execution",data:run,error:!run});
+  resources.push({url:"/api/model-performance/live",data:publishedPerformance,error:false});
   let index = 0;
   const uiExports = {};
   const requireUi = (name) => {
@@ -104,6 +105,15 @@ const render = (data = dashboard, failedPerformance = false, operationsInput = o
   return renderToStaticMarkup(React.createElement(uiExports.default, { onSelectStock: () => {}, onOpenModel: () => {}, onOpenPerformance: () => {}, onOpenTransition: () => {} }));
 };
 const html = render();
+const publishedPerformance = {layer:"INTRADAY_1400_LIVE",executionPolicyId:"intraday-1400-published-t1-open-v1",
+  publications:[{signalDate:"2026-10-19",status:"COMPLETE",evaluation:"TRACKED"},{signalDate:"2026-11-03",status:"PARTIAL",evaluation:"PARTIAL_EXCLUDED"}],
+  daily:[{signalDate:"2026-10-19"}],summary:[{modelVersion:"A-v1",groups:[{topN:5,horizons:[{horizon:"5DAY",observationCount:4,
+    expectedObservationCount:5,meanReturn:-2.75,evaluatedSignalDates:1}]}]}]};
+const homePerformance = report => render(dashboard,false,operations,false,{delivery:null},null,report);
+const selectedPerformance = homePerformance(publishedPerformance);
+for(const value of ["14:00 LIVE · TOP5 선정 성과 · 5거래일","-2.75%","확정 관측 4/5건","잠정 게시 1일 제외","2026.11.03","확정 표본 축적 중"]) assert.ok(selectedPerformance.includes(value),value);
+assert.ok(!homePerformance({...publishedPerformance,daily:[{signalDate:"2026-11-03"}]}).includes("-2.75%"));
+assert.ok(!homePerformance({...publishedPerformance,layer:"INTRADAY_1430_LIVE"}).includes("-2.75%"));
 const codes = ["000011","000012","000013","000014","009450"];
 const omitted = codes.map(ticker => ({ticker,reason:"LIVE_CLOUD_RATE_EVIDENCE_INVALID"}));
 const coverage = {status:"WITHHELD",targetCount:508,validCount:503,missing:omitted,universeHash:"a".repeat(64)};

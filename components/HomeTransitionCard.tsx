@@ -28,8 +28,8 @@ export function validateHomeLiveTransitionResponses(value: unknown): [HomeLiveTr
   for (const [index, input] of value.entries()) {
     const response = record(input), source = record(response?.source), exclusions = record(response?.exclusions);
     if (!response || response.mode !== "LIVE" || response.pair !== PAIRS[index] || response.nearPercent !== 1
-      || !date(response.referenceDate) || !date(response.previousOfficialDate) || response.modelReferenceDate !== response.previousOfficialDate
-      || response.previousOfficialDate >= response.referenceDate || response.snapshotTime !== "14:30:00" || !text(response.ruleVersion)
+      || !date(response.referenceDate) || !date(response.previousOfficialDate) || response.modelReferenceDate !== (response.snapshotTime === "14:00:00" ? response.referenceDate : response.previousOfficialDate)
+      || response.previousOfficialDate >= response.referenceDate || !["14:00:00", "14:30:00"].includes(String(response.snapshotTime)) || !text(response.ruleVersion)
       || !text(response.collectionStartedAt) || !Number.isFinite(Date.parse(response.collectionStartedAt))
       || !text(response.collectionCompletedAt) || !Number.isFinite(Date.parse(response.collectionCompletedAt))
       || !source || !text(source.signalContentHash) || !text(source.seedContentHash) || !text(source.normalizedInputHash) || source.isRealtime !== false
@@ -42,8 +42,8 @@ export function validateHomeLiveTransitionResponses(value: unknown): [HomeLiveTr
       if (!row || !text(row.code) || codes.has(row.code) || !text(row.name) || !text(row.market)
         || row.pair !== response.pair || row.referenceDate !== response.referenceDate || row.modelReferenceDate !== response.modelReferenceDate
         || row.qualityStatus !== "PROVISIONAL" || !Array.isArray(row.missingReasons) || row.missingReasons.length !== 0
-        || !STATUSES.includes(row.status as LiveTransitionStatus) || !finite(row.observedPrice) || row.observedPrice <= 0
-        || !finite(row.crossRequiredPrice) || !finite(row.requiredAdditionalRisePercent) || row.requiredAdditionalRisePercent < 0
+        || !STATUSES.includes(row.status as LiveTransitionStatus) || (response.snapshotTime === "14:00:00" ? row.observedPrice !== null || row.crossRequiredPrice !== null || row.requiredAdditionalRisePercent !== null : (!finite(row.observedPrice) || row.observedPrice <= 0
+        || !finite(row.crossRequiredPrice) || !finite(row.requiredAdditionalRisePercent) || row.requiredAdditionalRisePercent < 0))
         || row.quoteAsOfDate !== response.referenceDate || typeof row.quoteAsOfTime !== "string" || !/^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/u.test(row.quoteAsOfTime)
         || !text(row.receivedAt) || !Number.isFinite(Date.parse(row.receivedAt))) throw new Error(INVALID_RESPONSE);
       codes.add(row.code);
@@ -109,7 +109,7 @@ export function HomeLiveTransitionResults({ onSelectStock, onOpenTransition }: A
 export function HomeLiveTransitionSummary({ responses, onSelectStock, onOpenTransition }: Actions & { responses: [HomeLiveTransitionPair, HomeLiveTransitionPair] }) {
   return <div aria-label="홈 LIVE 전환 집계">
     <LiveTransitionMetadata data={responses[0]} />
-    {responses.map((response) => {
+    {responses[0].snapshotTime === "14:00:00" && responses[0].indicatorCoverage === 0 ? <p className="mt-2 text-sm">이 날짜의 종목별 전환은 확인할 수 없습니다.</p> : responses.map((response) => {
       const groups = STATUSES.map((status) => ({ status, rows: response.results.filter((row) => row.status === status) }));
       const examples = groups.slice(0, 2).flatMap((group) => group.rows.slice(0, 1));
       const quoteTimes = response.results.map((row) => row.quoteAsOfTime).sort();

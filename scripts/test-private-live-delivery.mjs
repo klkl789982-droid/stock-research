@@ -10,6 +10,7 @@ import { isPublicResource } from "../lib/admin-route-policy.mjs";
 import { isAutomationRequest } from "../lib/admin-auth.mjs";
 import { queueSiteDelivery, flushSiteDelivery } from "../infra/live-executor/site-delivery.mjs";
 import { createLocalExecutionStore } from "../infra/live-executor/store.mjs";
+import { publishedLivePerformance } from "../lib/published-live-performance.mjs";
 
 const now = "2026-10-17T02:00:00.000Z";
 const fixture = (date = "2026-10-16", end = "05:02:00.000Z") => ["A", "B", "C", "D"].map(model => ({
@@ -74,6 +75,33 @@ test("score-only projection, real adapter create/read/hash, identical retry and 
   b.options.readOnly = true; b.methods.length = 0;
   assert.deepEqual(await readLatestPrivateLive(b.store, { now }), value);
   assert.ok(b.methods.every(method => method === "GET"));
+});
+
+test("14:00 performance counts only the verified final revision at its own publication time", async () => {
+  const { store } = backend();
+  const partial = revision(["000099"]);
+  await deliverPrivateLive(store, partial, { now });
+  const options = { store, now: "2026-10-19T09:00:00.000Z",
+    prices: async () => ({ tradingCalendar: { dates: { "2026-10-19": { status: "tradingDay" } } },
+      priceLedgers: [{ date: "2026-10-19", recordsByCode: new Map([["000001", { openPrice: 100, closePrice: 95, executable: true }]]) }] }) };
+  const withheld = await publishedLivePerformance({ ...options, readUniverse: () => assert.fail("partial must never be evaluated") });
+  assert.equal(withheld.publications[0].evaluation, "PARTIAL_EXCLUDED");
+  assert.equal(withheld.totalOutcomeObservationCount, 0);
+  const complete = revision([], partial);
+  await deliverPrivateLive(store, complete, { now });
+  const report = await publishedLivePerformance({ ...options, readUniverse: async () => ({
+    ...complete, deliveryHash: complete.deliveryHash, officialSignalTime: "14:00:00", collectionCompletedAt: complete.models[0].collectionCompletedAt,
+    revision: 2, publicationStatus: "COMPLETE", publishedAt: now, records: [{ code: "000001", name: "test", observationHash: "a".repeat(64),
+      models: { "B-v1": { score: 90, rank: 1 } } }],
+  }) });
+  assert.equal(report.publications.length, 1);
+  assert.equal(report.totalOutcomeObservationCount, 1);
+  assert.equal(report.daily.find(row => row.topN === 5).meanReturn, -5);
+  const legacy = backend().store;
+  await deliverPrivateLive(legacy, exportFixture("2026-10-16", "05:02:00.000Z"), { now });
+  const archive = await publishedLivePerformance({ ...options, store: legacy });
+  assert.equal(archive.publications[0].evaluation, "PUBLICATION_TIME_UNKNOWN");
+  assert.equal(archive.totalOutcomeObservationCount, 0);
 });
 
 test("interrupted publish preserves prior latest; exact retry completes orphan; old upload cannot rewind", async () => {
