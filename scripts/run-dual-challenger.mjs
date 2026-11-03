@@ -59,8 +59,12 @@ for(const h of [5,20]){
  const fits={v2:trainChallengers(train),R:fit(vtrain,"R"),P:fit(vtrain,"P")};lastFit=fits;
  const ids=["R1","P2","BASE","MOM","R3","P3raw","P3",...(h===20?["P1"]:[])],runs=ids.map(k=>evaluate(test,k,fits,h));
  const find=k=>runs.find(r=>r.id===k).metrics,r=find("R3"),p=find("P3"),b=find("BASE"),rr=find("R1"),pp=find("P2");
- const pass={R:r.ic>0&&r.ic>=rr.ic+.01&&r.edge>0&&r.edge>rr.edge,P:p.lift>=1&&p.lift>pp.lift&&p.auc>.5&&p.brier<=Math.min(b.brier,pp.brier)-.001};
- folds.push({start,training:train.length,controlDays:vtrain.length,fitCutoffs:[fits.v2.coreEnd,fits.v2.calibrationStart,fits.v2.trainEnd],days:test.length,pass,runs});}
+ const paired=(candidate,control,col)=>{const baseline=new Map(runs.find(x=>x.id===control).daily.map(x=>[x[0],x[col]]));
+   const pairs=runs.find(x=>x.id===candidate).daily.filter(x=>Number.isFinite(x[col])&&Number.isFinite(baseline.get(x[0])));
+   return {days:pairs.length,candidate:mean(pairs.map(x=>x[col])),control:mean(pairs.map(x=>baseline.get(x[0])))};};
+ const pairs={R:paired("R3","R1",2),P:paired("P3","P2",3)};
+ const pass={R:r.ic>0&&r.ic>=rr.ic+.01&&pairs.R.candidate>0&&pairs.R.candidate>pairs.R.control,P:pairs.P.candidate>=1&&pairs.P.candidate>pairs.P.control&&p.auc>.5&&p.brier<=Math.min(b.brier,pp.brier)-.001};
+ folds.push({start,training:train.length,controlDays:vtrain.length,fitCutoffs:[fits.v2.coreEnd,fits.v2.calibrationStart,fits.v2.trainEnd],days:test.length,pairs,pass,runs});}
  const common={};for(const layer of ["reconstructed","publishedTiming"]){
  const picked=new Map();for(const d of ds){const a=archive.get(d.date);if(!a||d.date<cfg.folds[2])continue;const en=layer==="reconstructed"?d.i+2:a.at?days.findIndex(day=>day>d.date&&Date.parse(day+"T09:00:00+09:00")>Date.parse(a.at)):-1;
  if(en<0||en+h>days.length)continue;const rows=d.rows.flatMap(r=>{const native=a.maps.map(m=>m.get(r.code));return native.every(Number.isFinite)?[{...r,native,y:outcome(by.get(r.code),en,h)}]:[]});if(rows.length>=20)picked.set(en,{...d,rows,entry:days[en],exitDate:days[en+h-1]});}
