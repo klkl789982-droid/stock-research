@@ -20,6 +20,9 @@ assert.match(panel, /최신 공식 일봉.*순위 생성이 아직 완료되지 
 assert.match(panel, /최신 공식 일봉 기준일을 확인할 수 없습니다/u);
 assert.match(panel, /onSelectStock\(\{ code: stock\.code, name: stock\.name, market: stock\.market \}\)/u);
 assert.match(panel, /overflow-x-auto/u);
+assert.match(panel, /tb-segmented[^>]*aria-label="활성 비교 모델"/u);
+assert.match(panel, /시세 상세<\/summary>/u);
+assert.equal((panel.match(/<WatchlistStar code=\{stock.code\}/gu) ?? []).length, 2, "모바일 목록과 데스크톱 표 모두 관심종목을 저장한다");
 assert.match(page, /모델 화면 탭/u);
 assert.match(page, /모델 TOP/u);
 assert.match(page, /모델 성과/u);

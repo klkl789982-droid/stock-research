@@ -84,11 +84,11 @@ export default function BacktestPanel() {
   const retry = () => { setResult(null); setFailed(false); setRequest({key}); };
 
   return <section className="tb-card min-w-0 p-4 sm:p-6" aria-labelledby="backtest-heading">
-    <h2 id="backtest-heading" className="text-xl font-bold text-slate-950">백테스트</h2>
-    <div className="mt-3 flex flex-wrap gap-3 border-b border-[var(--tb-border)]" role="tablist" aria-label="백테스트 자료">
+    <h2 id="backtest-heading" className="tb-page-title">백테스트</h2>
+    <div className="tb-segmented mt-4" role="tablist" aria-label="백테스트 자료">
       {([["published","게시 종목 가상매매"],["study","연구 후보 비교"]] as const).map(([id,label]) =>
         <button type="button" key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
-          className={`tb-focus border-b-2 px-1 py-2 text-sm font-semibold ${tab === id ? "border-[var(--tb-orange)] text-[var(--tb-orange)]" : "border-transparent text-slate-600"}`}>{label}</button>)}
+          className="tb-focus">{label}</button>)}
     </div>
     {inventoryError ? <p role="alert" className="mt-4 text-sm">평가 가능 범위를 조회하지 못했습니다. <button type="button" onClick={() => { setInventoryError(false); setReload(v=>v+1); }} className="tb-focus underline">다시 조회</button></p> :
       !inventory ? <p role="status" className="mt-4 text-sm">저장된 신호와 가격을 확인하고 있습니다.</p> :

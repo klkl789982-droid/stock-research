@@ -12,6 +12,8 @@ function compile(source, dependencies) {
   const out = {};
   new Function("require", "exports", ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText)(name => {
     if (name === "react/jsx-runtime") return jsx;
+    if (name.endsWith(".module.css")) return {};
+    if (name === "./WatchlistStar") return () => null;
     if (Object.hasOwn(dependencies, name)) return dependencies[name];
     throw Error(name);
   }, out);
@@ -34,21 +36,30 @@ for (const [state, reason, label] of [
   ["VERIFIED", null, "실제 사이트 확인 완료"],
 ]) assert.equal(dates.homeDeploymentLabel({ state, reason }), label);
 assert.equal(dates.homeDeploymentLabel(null), "사이트 확인 불가");
+const chart = compile(await read("components/HomeMarketFlow.tsx"), { react: React }).IndexFlowChart;
+const chartPoints = [{date:"2026-10-15",close:1251.75},{date:"2026-10-16",close:1264.25}];
+const chartHtml = html(chart({ market:"KOSPI", points:chartPoints }));
+for (const label of ["최근 2거래일","2026-10-15 1,251.75","2026-10-16 1,264.25","<polyline"]) assert.ok(chartHtml.includes(label), label);
+assert.ok(!html(chart({ market:"KOSDAQ", points:chartPoints.slice(0,1) })).includes("<svg"), "one real close cannot draw a curve");
+assert.ok(!html(chart({ market:"KOSDAQ", points:chartPoints.map(p=>({...p,close:500})) })).includes("NaN"), "flat actual prices remain drawable");
 const ranking = compile(await read("components/HomeModelRankings.tsx"), { "../lib/home-presentation.mjs": dates }).default;
 const execution = compile(await read("components/HomeCloudExecutionStatus.tsx"), { "../lib/home-presentation.mjs": dates });
 // Synthetic rendering fixtures only, never passed to an application store/API.
 const models = ["A", "B", "C", "D"].map(model => ({ modelVersion: model + "-v1", comparisonStatus: "AVAILABLE", previousDate: "2026-10-16", top: Array.from({ length: 5 }, (_, i) => ({ code: String(i).padStart(6, "0"), name: "매우 긴 합성 종목명 " + i, rank: i + 1, score: i === 0 ? 0 : 81.234 + i, previousRank: i + 3, rankChange: 2 })) }));
 const stockOpens = [], modelOpens = [];
 const props = { models, limit: 5, source: "LIVE", onSelectStock: stock => stockOpens.push(stock), onOpenModel: model => modelOpens.push(model) };
-const liveTree = ranking(props), live = html(liveTree);
-assert.equal((live.match(/data-stock-code=/g) ?? []).length, 20);
-assert.equal((live.match(/data-stock-code="000000"/g) ?? []).length, 4, "same stock retains each model's rank/score");
-assert.ok(live.includes("0.00")); assert.ok(!live.includes("↑2"), "LIVE has no verified previous ranking");
-for (const button of find(liveTree, node => node.type === "button")) button.props.onClick();
-assert.deepEqual(modelOpens, ["A-v1", "B", "C", "D"]); assert.equal(stockOpens.length, 20); assert.equal(stockOpens[0].code, "000000");
-const eod = html(ranking({ ...props, limit: 3, source: "EOD" }));
-assert.equal((eod.match(/data-stock-code=/g) ?? []).length, 12); assert.equal((eod.match(/↑2/g) ?? []).length, 12);
-assert.ok(!html(ranking({ ...props, source: "EOD", models: models.map(m => ({ ...m, comparisonStatus: "UNAVAILABLE" })) })).includes("↑2"));
+for (const selectedModel of ["A","B","C","D"]) {
+  const liveTree = ranking({ ...props, selectedModel }), live = html(liveTree);
+  assert.equal((live.match(/data-stock-code=/g) ?? []).length, 5);
+  assert.equal((live.match(/data-stock-code="000000"/g) ?? []).length, 1);
+  assert.ok(live.includes(selectedModel + "-v1"));
+  assert.ok(live.includes("0.00")); assert.ok(!live.includes("↑2"), "LIVE has no verified previous ranking");
+  for (const button of find(liveTree, node => node.type === "button")) button.props.onClick();
+  const eod = html(ranking({ ...props, selectedModel, limit: 3, source: "EOD" }));
+  assert.equal((eod.match(/data-stock-code=/g) ?? []).length, 3); assert.equal((eod.match(/↑2/g) ?? []).length, 3);
+  assert.ok(!html(ranking({ ...props, selectedModel, source: "EOD", models: models.map(m => ({ ...m, comparisonStatus: "UNAVAILABLE" })) })).includes("↑2"));
+}
+assert.equal(stockOpens.length, 20); assert.equal(stockOpens[0].code, "000000");
 const source = await read("components/HomeDashboard.tsx");
 let slot = 0; const updates = [];
 const resources = [
@@ -60,7 +71,7 @@ const resources = [
 ];
 const state = { ...React, useEffect: () => {}, useRef: value => ({ current: value }), useState: initial => { const id = slot++; return [id < 5 ? resources[id] : initial, value => updates.push({ id, value })]; } };
 const dashboard = compile(source, { react: state, "../lib/home-dashboard.mjs": helpers, "../lib/home-presentation.mjs": dates,
-  "./HomeModelRankings": { __esModule: true, default: ranking }, "./HomeTransitionCard": { __esModule: true, default: () => { throw Error("archive must be lazy"); } },
+  "./HomeMarketFlow": () => null, "./HomeModelRankings": { __esModule: true, default: ranking }, "./HomeTransitionCard": { __esModule: true, default: () => React.createElement("h2",null,"전환 신호") },
   "./HomeCloudExecutionStatus": { __esModule: true, ...execution },
   "./PrivateLiveDeliveryPanel": { usePrivateLiveDelivery: () => ({ data: { delivery: null }, failed: true, disabled: false }), PrivateLiveDeliveryView: () => null },
 }).default;
@@ -80,13 +91,15 @@ try {
   find(tree, node => node.props.role === "tablist")[0].props.onKeyDown({ key: "ArrowRight", preventDefault() {} });
   assert.deepEqual(updates.at(-1), { id: 5, value: "EOD" }); assert.deepEqual(focused, ["home-source-EOD"]);
 } finally { if (savedDocument === undefined) delete globalThis.document; else globalThis.document = savedDocument; }
-const css = await read("app/globals.css");
-assert.match(css, /min-width: 640px[\s\S]*repeat\(2,minmax/); assert.match(css, /min-width: 1280px[\s\S]*repeat\(4,minmax/);
-assert.match(css, /min-width: 640px[\s\S]*\.home-rank-list > li \{ min-height: 90px; \}/, "long names reserve equal comparison-row height, without enlarging mobile rows");
-assert.match(css, /\.home-dashboard \[hidden\]/);
-assert.match(css, /\.home-stock-name[^}]*font-size: 16px;[^}]*text-wrap: balance;/);
-assert.doesNotMatch(css.slice(0, css.indexOf(":root")), /text-overflow: ellipsis/);
-assert.match(css, /grid-template-columns: 1\.5rem minmax\(0,1fr\) 3\.25rem 2rem/);
-assert.match(css, /\.home-rank-heading > span \{ white-space: nowrap; \}/);
-assert.doesNotMatch(source, /onOpenSearch|종목 검색/);
-console.log("Home summary: date/KST, LIVE20/EOD12, shared stocks, scores, verified changes, navigation, default/no-fallback, unknown/failure, lazy archive, keyboard tabs and responsive rules passed");
+const modelSelectors = find(tree, node => node.props["aria-label"] === "모델 선택")[0];
+const modelButtons = React.Children.toArray(modelSelectors.props.children);
+assert.equal(modelButtons.length, 4); assert.equal(modelButtons[0].props["aria-pressed"], true);
+for (const [i, letter] of ["A", "B", "C", "D"].entries()) {
+  modelButtons[i].props.onClick();
+  assert.equal(updates.at(-1).value, letter);
+}
+find(tree, node => node.type === "button" && node.props.children === "전체 순위 보기 →")[0].props.onClick();
+assert.equal(modelOpens.at(-1), "A-v1");
+assert.match(markup, /전환 신호/);
+assert.ok(!source.includes("setArchiveOpen"), "the transition action is present without expanding history");
+console.log("Home summary: all four selectable stored models, Live5 / EOD3, verified rank changes, navigation, freshness guard and primary transition action passed");

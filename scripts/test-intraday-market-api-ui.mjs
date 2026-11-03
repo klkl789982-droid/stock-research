@@ -14,6 +14,9 @@ assert.match(page,/api\/intraday-market-analysis/);
 assert.equal((page.match(/api\/intraday-market-analysis/g)??[]).length,2);
 assert.match(page,/intradayAnalysis\?\.session\?\.sessionStatus !== "inferredOpen"/);
 assert.match(panel,/TOP\/백테스트\/최적화 미사용/);
-assert.doesNotMatch(top,/intraday/i);
+// The stored Official Signal has its own intraday identity. The search-only
+// provisional analysis and its quote must never feed TOP rankings.
+assert.match(api,/eligibleForRanking: false/);
+assert.doesNotMatch(top,/intraday-market-analysis|calculateIntradayMarketAnalysis|getKisQuote/);
 assert.doesNotMatch(resolver,/intraday/i);
 console.log("장중 API·UI·TOP/history 격리 테스트 통과");

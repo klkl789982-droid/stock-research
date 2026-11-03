@@ -24,6 +24,8 @@ const compile = (source, dependencies) => {
   const exports = {};
   const require = (name) => {
     if (name === "react/jsx-runtime") return jsx;
+    if (name.endsWith(".module.css")) return {};
+    if (name === "./WatchlistStar" || name === "./HomeMarketFlow") return () => null;
     if (Object.hasOwn(dependencies, name)) return dependencies[name];
     throw new Error(`Unexpected Home UI dependency: ${name}`);
   };
@@ -138,9 +140,7 @@ assert.match(dashboardHtml, /14:00 관측 대기/u);
 assert.match(dashboardHtml, /Daily EOD로 자동 대체하지 않습니다/u);
 assert.ok(!dashboardHtml.includes("11종목"), "actual homepage defaults to LIVE despite EOD summary availability");
 assert.ok(dashboardHtml.includes("장중 잠정") || dashboardHtml.includes("LIVE"));
-const archiveStates = [...resources]; archiveStates[7] = true;
-const archiveDashboard = compile(dashboardSource, { ...dashboardDependencies, react: harness(archiveStates).hooks });
-const archiveHtml = html(React.createElement(archiveDashboard.default, { ...callbacks, onOpenModel: noOp, onOpenPerformance: noOp }));
+const archiveHtml = dashboardHtml;
 assert.match(archiveHtml, /LIVE · 14:00 저장 관측/u);
 assert.match(archiveHtml, /과거 14:30 LIVE 성과/u);
 assert.ok(refreshCalls.includes(true), "homepage uses the shared freshness revalidation hook");
@@ -201,7 +201,8 @@ try {
   };
   for (const match of pageSource.matchAll(/from "([^"]+)"/gu)) if (!Object.hasOwn(appDependencies, match[1]) && match[1] !== "react") appDependencies[match[1]] = { __esModule: true, default: noOp };
   const app = compile(pageSource, appDependencies);
-  const homeElement = find(app.default(), (node) => node.type === homeMarker)[0];
+  const renderApp = module => { const page = module.default(); return page.props.children.type(page.props.children.props); };
+  const homeElement = find(renderApp(app), (node) => node.type === homeMarker)[0];
   assert.ok(homeElement);
   for (const mode of ["LIVE", "EOD"]) {
     homeElement.props.onOpenTransition("20-60", "APPROACHING", "golden", mode);
@@ -209,10 +210,10 @@ try {
     assert.deepEqual(entry, { tab: "transition", pair: "20-60", state: "APPROACHING", direction: "golden", mode });
     const rerenderStates = [...appHooks.states]; rerenderStates[3] = "screener"; rerenderStates[6] = entry;
     const rerender = compile(pageSource, { ...appDependencies, react: harness(rerenderStates).hooks });
-    const stockElement = find(rerender.default(), (node) => node.type === screenerMarker)[0];
+    const stockElement = find(renderApp(rerender), (node) => node.type === screenerMarker)[0];
     assert.equal(stockElement.props.initialMode, mode); assert.ok(stockElement.key.includes(mode));
     const transitionMarker = () => null;
-    const stock = compile(stockSource, { react: harness().hooks, "./TransitionScreenerPanel": { __esModule: true, default: transitionMarker } });
+    const stock = compile(stockSource, { react: harness().hooks, "./WatchlistStar": { __esModule: true, default: noOp }, "./TransitionScreenerPanel": { __esModule: true, default: transitionMarker } });
     const transitionElement = find(stock.default(stockElement.props), (node) => node.type === transitionMarker)[0];
     assert.equal(transitionElement.props.initialMode, mode);
     const transition = compile(transitionSource, { react: harness().hooks, "./LiveTransitionDetails": details, "./LiveTransitionScreenerPanel": { __esModule: true, default: noOp }, "./ApproachStrengthDetails": { __esModule: true, default: noOp }, "./TransitionEvidenceDetails": { __esModule: true, default: noOp }, "../lib/directional-transition.mjs": directional, "../lib/transition-evidence-policy.mjs": evidencePolicy });

@@ -10,8 +10,7 @@ const route = await readFile(new URL("../app/api/screener/route.ts", import.meta
 
 assert.match(page, /"home" \| "models" \| "screener"/u);
 assert.match(page, /openScreenerFromNavigation/u);
-assert.match(page, /navigationButtons\(true\)/u, "모바일도 공통 메뉴를 사용한다");
-assert.match(page, /navigationButtons\(false\)/u, "데스크톱도 공통 메뉴를 사용한다");
+assert.equal((page.match(/\{navigationButtons\}/gu) ?? []).length, 2, "모바일과 데스크톱이 같은 메뉴를 표시한다");
 assert.match(page, /<StockScreenerPanel onSelectStock=\{handleSearch\}/u, "기존 검색 handler로 상세 이동한다");
 assert.doesNotMatch(page, /\['▽', '스크리닝'\].*준비 중/u);
 assert.match(panel, /\/api\/screener/u);
@@ -19,6 +18,9 @@ assert.match(panel, /조건 초기화/u);
 assert.match(panel, /모델 데이터 \{data\.modelCoverage\}\/\{data\.totalUniverse\}/u);
 assert.match(panel, /onSelectStock\(\{ code: row\.code, name: row\.name, market: row\.market \}\)/u);
 assert.match(panel, /overflow-x-auto/u);
+assert.doesNotMatch(panel, /min-w-\[720px\]/u);
+assert.match(panel, /<WatchlistStar code=\{row.code\} name=\{row.name\}/u);
+assert.match(panel, /md:hidden"><summary[^>]*>상세 정보<\/summary>/u);
 assert.match(panel, /AbortController/);
 assert.match(panel, /request !== sequence.current/);
 assert.match(route, /"data", "history"/u);
@@ -29,7 +31,7 @@ const callbacks = [], updates = [], pending = [];
 let index = 0;
 const exports = {}, require = (name) => {
   if (name === "react/jsx-runtime") return jsx;
-  if (name === "./TransitionScreenerPanel") return { default: () => null };
+  if (name === "./WatchlistStar" || name === "./TransitionScreenerPanel") return { default: () => null };
   if (name === "react") return { ...React, useEffect: () => {}, useCallback: (fn) => { callbacks.push(fn); return fn; }, useRef: (value) => ({ current: value }),
     useState: (initial) => { const slot = index++; return [initial, (value) => { if (slot === 1) updates.push(value); }]; } };
   throw new Error(name);

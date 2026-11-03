@@ -20,6 +20,7 @@ const points = days.map((date, i) => ({ date, market: "KOSPI", close: 2 ** i, ob
 test("same-market calendar-aligned close changes, daily sample deviation and dating", () => {
   const x = summarizeMarketIndex("KOSPI", [...points].reverse(), calendar, now, days.at(-1));
   assert.equal(x.status, "AVAILABLE");
+  assert.deepEqual(x.recentCloses, points.slice(-5).map(({ date, close }) => ({ date, close })));
   assert.equal(x.changePct, 100);
   assert.equal(x.return5Pct, 3100);
   assert.equal(x.volatility20Pct, 0);
@@ -37,6 +38,7 @@ test("same-market calendar-aligned close changes, daily sample deviation and dat
   assert.equal(summarizeMarketIndex("KOSDAQ", points, calendar, now, days.at(-1)).status, "UNAVAILABLE");
   const noPrior = summarizeMarketIndex("KOSPI", points.filter(row => row.date !== days.at(-2)), calendar, now, days.at(-1));
   assert.equal(noPrior.change, null);
+  assert.deepEqual(noPrior.recentCloses, [{ date: days.at(-1), close: points.at(-1).close }], "never bridge an unobserved trading day on the index chart");
   assert.equal(noPrior.return5Pct, null);
   assert.equal(noPrior.volatility20Pct, null);
   assert.equal(summarizeMarketIndex("KOSPI", [...points, points.at(-1)], calendar, now, days.at(-1)).status, "UNAVAILABLE");

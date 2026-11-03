@@ -4,6 +4,8 @@ import { dailyOperationState, latestOneDayPerformance, publicationReasonLabel, h
 import HomeTransitionCard, { type HomeEodTransitions, type HomeTransitionNavigation } from "./HomeTransitionCard";
 import { LiveCoverageSummary, PrivateLiveDeliveryView, usePrivateLiveDelivery } from "./PrivateLiveDeliveryPanel";
 import HomeModelRankings from "./HomeModelRankings";
+import HomeMarketFlow from "./HomeMarketFlow";
+import styles from "./HomeDashboard.module.css";
 import HomeCloudExecutionStatus, { cloudExecutionLabel, cloudExecutionWarning, type CloudExecutionResponse } from "./HomeCloudExecutionStatus";
 import { homeDate, homeTime, homeDeploymentLabel } from "../lib/home-presentation.mjs";
 type Stock = { code: string; name: string; market?: string };
@@ -80,7 +82,7 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
   const execution = useResource<CloudExecutionResponse>("/api/private-live-execution");
   const [source, setSource] = useState<"LIVE" | "EOD">("LIVE");
   const [operationsOpen, setOperationsOpen] = useState(false);
-  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [selectedModel, setSelectedModel] = useState("A");
   const operationsButton = useRef<HTMLButtonElement | null>(null);
   const data = dashboard.data, transitions = data?.transitions;
   const delivery = privateRelay.data?.delivery;
@@ -113,9 +115,10 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
       ?? <p className="col-span-full text-sm text-slate-600">{performance.error ? "성과 조회 실패" : "확정 성과 확인 중"}</p>}
   </div>;
   return <section className="home-dashboard space-y-5" aria-labelledby="home-dashboard-heading">
-    <header className="home-intro"><h1 id="home-dashboard-heading" className="text-2xl font-semibold tracking-tight text-[var(--tb-navy)]">시장 요약</h1>
+    <header className="home-intro"><h1 id="home-dashboard-heading" className="text-2xl font-semibold tracking-tight text-[var(--tb-text)]">홈</h1>
       <button ref={operationsButton} type="button" className="tb-focus home-secondary-button" aria-expanded={operationsOpen} aria-controls="home-operations-details" onClick={() => setOperationsOpen(!operationsOpen)}>운영 상세 <span aria-hidden="true">{operationsOpen ? "−" : "+"}</span></button>
     </header>
+    <HomeMarketFlow />
     <div className={"home-status-line " + (warning || privateRelay.failed ? "home-status-warning" : "")} aria-label="데이터 최신성 요약" role="status">
       <div className="home-status-results"><span><strong>저장된 LIVE 결과</strong> {fixture ? "합성 검증" : delivery ? homeDate(delivery.signalDate) + " · 14:00 KST" : privateRelay.data ? "없음" : "기준일 확인 불가"} · {liveReadLabel}</span>
         <span><strong>공식 EOD</strong> {homeDate(data?.referenceDate)} · {operationLabel}{additionalEodFailure ? " · " + additionalEodFailure : ""}</span></div>
@@ -162,7 +165,10 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
       <p className="mt-2">시장 지수와 분석 대상 종목 통계는 시장 현황에서 확인할 수 있습니다.</p></details>
     </section>
 
-    <section className="home-surface" aria-label="모델 순위 비교">
+    <div className={styles.mainGrid}>
+    <section className="home-surface min-w-0" aria-label="모델 순위 비교">
+      <div className={styles.titleRow}><h2>모델 TOP</h2><button type="button" className="tb-focus" onClick={() => onOpenModel(selectedModel === "A" ? "A-v1" : selectedModel, source)}>전체 순위 보기 →</button></div>
+      <div className={styles.segments} role="group" aria-label="모델 선택">{["A", "B", "C", "D"].map(letter => <button className="tb-focus" key={letter} type="button" aria-pressed={selectedModel === letter} onClick={() => setSelectedModel(letter)}>모델 {letter}</button>)}</div>
       <div role="tablist" aria-label="분석 데이터 선택" className="home-source-tabs" onKeyDown={event => {
         if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) { event.preventDefault(); const next = event.key === "Home" ? "LIVE" : event.key === "End" ? "EOD" : source === "LIVE" ? "EOD" : "LIVE"; setSource(next); document.getElementById("home-source-" + next)?.focus(); }
       }}>
@@ -173,18 +179,21 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
         {blocked && <p className="home-inline-notice">공통 장애로 새 순위 게시가 차단되었습니다.{delivery && " 아래는 마지막으로 검증된 이전 게시본입니다."}</p>}
         {withheld ? <LiveCoverageSummary coverage={withheld}/> : publication && <>
           <LiveCoverageSummary coverage={publication}/>
-          <p className="text-sm">실제 관측 구간 {time(delivery?.models[0]?.collectionStartedAt)} ~ {time(delivery?.models[0]?.collectionCompletedAt)} · 발행 버전 r{publication.revision} · 최초 게시 {time(publicationTimes?.firstPublishedAt)}{publication.revision > 1 && " · 수정 게시 " + time(publicationTimes?.publishedAt)}</p>
+          <details className="mt-2 text-xs text-slate-600"><summary className="tb-focus w-fit cursor-pointer rounded">관측·게시 시각</summary><p>실제 관측 구간 {time(delivery?.models[0]?.collectionStartedAt)} ~ {time(delivery?.models[0]?.collectionCompletedAt)} · 발행 버전 r{publication.revision} · 최초 게시 {time(publicationTimes?.firstPublishedAt)}{publication.revision > 1 && " · 수정 게시 " + time(publicationTimes?.publishedAt)}</p></details>
         </>}
         {fixture && <p className="home-inline-notice">합성 자료 · 실제 시세·정식 관측이 아닙니다. 성과 계산에 사용하지 않습니다.</p>}
         {privateRelay.data?.freshnessStatus === "HISTORICAL" && <p className="home-inline-notice">이전 날짜 저장 기록입니다. 현재 거래일의 정상 관측으로 표시하지 않습니다.</p>}
-        {withheld ? <p>필수 종목이 5개 이상 미반영되어 당일 모델 순위를 게시하지 않았습니다.</p> : delivery ? <HomeModelRankings source="LIVE" models={liveModels} limit={5} onOpenModel={onOpenModel} onSelectStock={onSelectStock} /> : <div className="home-empty" role="status"><h3>{privateRelay.failed ? "LIVE 결과 조회 실패" : privateRelay.disabled ? "LIVE 전달 연결 비활성" : !privateRelay.data ? "LIVE 저장 결과 확인 중" : "14:00 관측 대기"}</h3><p>{privateRelay.failed ? "인증된 결과를 읽지 못했습니다. 운영 상세에서 확인하세요." : privateRelay.disabled ? "이 환경에는 비공개 조회 연결이 설정되지 않았습니다." : privateRelay.data ? "전달된 유효한 14:00 결과가 없습니다." : "조회가 끝나기 전에는 결과를 추정하지 않습니다."} Daily EOD로 자동 대체하지 않습니다.</p></div>}
+        {withheld ? <p>필수 종목이 5개 이상 미반영되어 당일 모델 순위를 게시하지 않았습니다.</p> : delivery ? <HomeModelRankings selectedModel={selectedModel} source="LIVE" models={liveModels} limit={5} onSelectStock={onSelectStock} /> : <div className="home-empty" role="status"><h3>{privateRelay.failed ? "LIVE 결과 조회 실패" : privateRelay.disabled ? "LIVE 전달 연결 비활성" : !privateRelay.data ? "LIVE 저장 결과 확인 중" : "14:00 관측 대기"}</h3><p>{privateRelay.failed ? "인증된 결과를 읽지 못했습니다. 운영 상세에서 확인하세요." : privateRelay.disabled ? "이 환경에는 비공개 조회 연결이 설정되지 않았습니다." : privateRelay.data ? "전달된 유효한 14:00 결과가 없습니다." : "조회가 끝나기 전에는 결과를 추정하지 않습니다."} Daily EOD로 자동 대체하지 않습니다.</p></div>}
       </div>
       <div role="tabpanel" id="home-panel-EOD" aria-labelledby="home-source-EOD" hidden={source !== "EOD"} className="home-source-panel">
         <div className="home-section-caption"><h2>모델 TOP3 · Daily EOD · {homeDate(data?.models?.referenceDate)}</h2><span>점수 단위: 점 / 100</span></div>
-        {data?.models ? <HomeModelRankings source="EOD" models={data.models.models} limit={3} onOpenModel={model => onOpenModel(model, "EOD")} onSelectStock={onSelectStock} /> : <div className="home-empty" role="status"><h3>{dashboard.error ? "순위 조회 실패" : "검증 가능한 저장 순위 확인 중"}</h3><p>수치가 없는 종목에 임의 점수를 표시하지 않습니다.</p></div>}
+        {data?.models ? <HomeModelRankings selectedModel={selectedModel} source="EOD" models={data.models.models} limit={3} onSelectStock={onSelectStock} /> : <div className="home-empty" role="status"><h3>{dashboard.error ? "순위 조회 실패" : "검증 가능한 저장 순위 확인 중"}</h3><p>수치가 없는 종목에 임의 점수를 표시하지 않습니다.</p></div>}
       </div>
       <details className="home-ranking-note"><summary className="tb-focus rounded">모델 점수 해석과 주의사항</summary><p>장세별 설명은 산식의 특성에 따른 구분이며, 수익률 우위가 검증된 것은 아닙니다.</p><p>하락장에서는 네 모델 모두 신규 매수 판단에 주의가 필요합니다. 모델 점수는 상승 확률이나 매수 추천이 아닙니다.</p></details>
     </section>
+
+    <HomeTransitionCard transitions={transitions ?? null} eodError={dashboard.error} onSelectStock={onSelectStock} onOpenTransition={onOpenTransition} />
+    </div>
 
     <section className="home-surface home-performance" aria-labelledby="home-performance-heading"><div className="home-section-caption"><h2 id="home-performance-heading">성과 요약 · TOP5</h2><button type="button" onClick={onOpenPerformance} className="tb-focus home-text-action">성과 상세 →</button></div>
       <h3 className="mt-4 font-medium">Daily 1D · 최신 확정 단면</h3>
@@ -193,7 +202,6 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
       <HomePublishedSelection />
     </section>
 
-    <details className="home-surface" onToggle={event => setArchiveOpen(event.currentTarget.open)}><summary className="tb-focus rounded">전환 신호 · 14:00 LIVE / 확정 일봉</summary>{archiveOpen && <HomeTransitionCard transitions={transitions ?? null} eodError={dashboard.error} onSelectStock={onSelectStock} onOpenTransition={onOpenTransition} />}</details>
     <section className="home-surface home-archive" aria-labelledby="home-archive-heading"><h2 id="home-archive-heading" className="text-lg font-semibold">과거 기록</h2>
       <details><summary className="tb-focus rounded">과거 14:30 LIVE 성과 · 기존 별도 기준</summary><p className="mt-3 text-sm text-slate-600">14:30 동결 신호 → 다음 거래일 공식 시가 진입 → 해당 평가 거래일 종가. 1D는 진입일 종가 기준이며, 실제 체결·비용·슬리피지를 반영한 실현 성과가 아닙니다.</p>{renderPerformance("live")}<button type="button" onClick={onOpenPerformance} className="tb-focus home-text-action mt-3">성과 상세 (Daily·14:30) →</button></details>
       <details><summary className="tb-focus rounded">과거 14:30 실행 기록 · 운영 종료</summary><dl className="home-facts">

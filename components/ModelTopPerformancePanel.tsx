@@ -66,7 +66,7 @@ const formatReturn = (value: number | null) => value == null ? "—" : `${value 
 const returnTone = (value: number | null) => value == null ? "text-slate-400" : value > 0 ? "text-red-600" : value < 0 ? "text-blue-600" : "text-slate-700";
 
 function ExtremeReturn({ label, value, observation, isDaily }: { label: string; value: number | null; observation: ExtremeObservation | null; isDaily: boolean }) {
-  return <div className="min-w-0 rounded-lg border border-slate-200/70 bg-[rgba(247,243,236,0.9)] px-3 py-2 text-xs">
+  return <div className="min-w-0 rounded-lg border border-slate-200/70 bg-slate-50 px-3 py-2 text-xs">
     <div className="flex items-center justify-between gap-2"><span className="text-slate-600">{label} · 개별 종목</span><strong className={`tabular-nums ${returnTone(value)}`}>{formatReturn(value)}</strong></div>
     {observation ? <>
       <p className="mt-1 break-words font-medium text-slate-900">{observation.companyName ?? "종목명 미확인"} <span className="font-normal text-slate-600">{observation.ticker}</span></p>
@@ -142,10 +142,10 @@ export default function ModelTopPerformancePanel() {
   const metadata = performanceLayer === "DAILY_EOD" ? data : performanceLayer === "INTRADAY_1400_LIVE" ? published : data?.live;
 
   return (
-    <section className="tb-card mt-6 p-4 sm:p-6" aria-labelledby="model-performance-heading">
+    <section className="tb-card p-4 sm:p-6" aria-labelledby="model-performance-heading">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h2 id="model-performance-heading" className="text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">모델 성과</h2>
+          <h2 id="model-performance-heading" className="tb-page-title">모델 성과</h2>
         </div>
         {performanceLayer !== "RESEARCH" && <div className="grid grid-cols-2 gap-x-5 gap-y-1 text-xs text-slate-600 sm:grid-cols-4 lg:text-right">
           <span>분석 기간</span><strong className="font-semibold text-slate-800">{metadata?.signalDateRange ? `${metadata.signalDateRange.from} ~ ${metadata.signalDateRange.to}` : "축적 중"}</strong>
@@ -156,33 +156,33 @@ export default function ModelTopPerformancePanel() {
         </div>}
       </div>
 
-      <div className="mt-4 inline-flex max-w-full flex-wrap rounded-lg bg-slate-100/90 p-1" role="tablist" aria-label="성과 계층 선택">
-        <button type="button" role="tab" aria-selected={performanceLayer === "DAILY_EOD"} onClick={() => setPerformanceLayer("DAILY_EOD")} className={`rounded-md px-3 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tb-orange)] ${performanceLayer === "DAILY_EOD" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}>Daily EOD</button>
-        <button type="button" role="tab" aria-selected={performanceLayer === "INTRADAY_1400_LIVE"} onClick={() => { setPerformanceLayer("INTRADAY_1400_LIVE"); setTopN(5); }} className={`rounded-md px-3 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tb-orange)] ${performanceLayer === "INTRADAY_1400_LIVE" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}>14:00 LIVE</button>
-        <button type="button" role="tab" aria-selected={performanceLayer === "INTRADAY_1430_LIVE"} onClick={() => setPerformanceLayer("INTRADAY_1430_LIVE")} className={`rounded-md px-3 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tb-orange)] ${performanceLayer === "INTRADAY_1430_LIVE" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}>과거 14:30 LIVE</button>
-        <button type="button" role="tab" aria-selected={performanceLayer === "RESEARCH"} onClick={() => setPerformanceLayer("RESEARCH")} className={`rounded-md px-3 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tb-orange)] ${performanceLayer === "RESEARCH" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}>실행 연구</button>
+      <div className="tb-segmented mt-4" role="tablist" aria-label="성과 계층 선택">
+        <button type="button" role="tab" aria-selected={performanceLayer === "DAILY_EOD"} onClick={() => setPerformanceLayer("DAILY_EOD")} className="tb-focus">Daily EOD</button>
+        <button type="button" role="tab" aria-selected={performanceLayer === "INTRADAY_1400_LIVE"} onClick={() => { setPerformanceLayer("INTRADAY_1400_LIVE"); setTopN(5); }} className="tb-focus">14:00 LIVE</button>
+        <button type="button" role="tab" aria-selected={performanceLayer === "INTRADAY_1430_LIVE"} onClick={() => setPerformanceLayer("INTRADAY_1430_LIVE")} className="tb-focus">과거 14:30 LIVE</button>
+        <button type="button" role="tab" aria-selected={performanceLayer === "RESEARCH"} onClick={() => setPerformanceLayer("RESEARCH")} className="tb-focus">실행 연구</button>
       </div>
       {performanceLayer === "RESEARCH" ? <ModelPerformanceResearchPanel /> : <>
-      <p className="mt-2 text-xs text-slate-500">{performanceLayer === "DAILY_EOD" ? "동결된 EOD 순위와 공식 종가 결과 · 누적 통계는 최신 공식 해시가 일치하는 관측 기준" : performanceLayer === "INTRADAY_1400_LIVE" ? "14:00 확정 게시 후 다음 거래일 시가 진입 · 종가 청산 · 비용 차감 전" : "14:30 동결 신호 · 다음 거래일 공식 시가 진입 · 거래일 종가 성과"}</p>
+      <p className="mt-2 text-xs text-slate-500">{performanceLayer === "DAILY_EOD" ? "확정 일봉 순위 · 신호일 종가에서 평가일 종가까지의 수익률" : performanceLayer === "INTRADAY_1400_LIVE" ? "14:00 확정 게시 후 다음 거래일 시가 진입 · 종가 청산 · 비용 차감 전" : "14:30 동결 신호 · 다음 거래일 공식 시가 진입 · 거래일 종가 성과"}</p>
 
       {performanceLayer === "INTRADAY_1400_LIVE" && <div className="mt-2 text-xs text-slate-600" aria-live="polite">
         {liveError ? "14:00 게시 기록을 조회하지 못했습니다." : !published ? "게시 기록 확인 중…" : <>
           {published.publications.length === 0 && <p>확인된 게시 기록이 없습니다.</p>}
           {published.publications.filter(p => p.selectionDepth === 5).map(p => <p key={p.signalDate}>{p.signalDate} · 당시 공개가 확인된 TOP5만 보존 · TOP10·20 비교 제외</p>)}
           {published.publications.filter(p => p.evaluation !== "TRACKED").slice(-3).map(p =>
-            <p key={p.signalDate}>{p.signalDate}{p.revision == null ? "" : ` r${p.revision}`} · {p.evaluation === "PARTIAL_EXCLUDED" ? "잠정 순위 · 확정 성과 제외" : "실제 게시 시각을 확인할 수 없어 실행 성과 제외"}</p>)}
+            <p key={p.signalDate}>{p.signalDate} · {p.evaluation === "PARTIAL_EXCLUDED" ? "잠정 순위 · 확정 성과 제외" : "실제 게시 시각을 확인할 수 없어 실행 성과 제외"}</p>)}
         </>}
       </div>}
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-3">
-        <div className="flex gap-1" role="tablist" aria-label="성과 모델 선택">
-          {MODELS.map((model) => <button key={model.version} type="button" role="tab" aria-selected={modelVersion === model.version} onClick={() => setModelVersion(model.version)} className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tb-orange)] ${modelVersion === model.version ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"}`}>모델 {model.label}</button>)}
+        <div className="tb-segmented" role="tablist" aria-label="성과 모델 선택">
+          {MODELS.map((model) => <button key={model.version} type="button" role="tab" aria-selected={modelVersion === model.version} onClick={() => setModelVersion(model.version)} className="tb-focus">모델 {model.label}</button>)}
         </div>
-        <div className="flex gap-1 rounded-lg bg-slate-100/90 p-1" aria-label="TOP 범위 선택">
-          {TOP_SIZES.map((size) => <button key={size} type="button" onClick={() => setTopN(size)} className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tb-orange)] ${topN === size ? "bg-white text-[var(--tb-orange)] shadow-sm" : "text-slate-500 hover:text-slate-900"}`}>TOP {size}</button>)}
+        <div className="tb-segmented" role="group" aria-label="TOP 범위 선택">
+          {TOP_SIZES.map((size) => <button key={size} type="button" aria-pressed={topN === size} onClick={() => setTopN(size)} className="tb-focus">TOP {size}</button>)}
         </div>
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-xl border border-[var(--tb-border)] bg-[rgba(255,252,247,0.84)]">
+      <div className="mt-4 overflow-hidden rounded-xl border border-[var(--tb-border)] bg-slate-50">
         <div className="grid grid-cols-[0.9fr_1fr_1fr_1fr_0.75fr] gap-2 border-b border-slate-200 bg-slate-50/90 px-3 py-2.5 text-xs font-medium text-slate-500 sm:px-4">
           <span>기간</span><span className="text-right">평균</span><span className="text-right">중앙값</span><span className="text-right">상승비율</span><span className="text-right">표본</span>
         </div>

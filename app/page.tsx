@@ -7,7 +7,7 @@ import ModelExplanationPanel from "../components/ModelExplanationPanel";
 import MarketAnalysisPanel, { type MarketAnalysisResponse, type IntradayAnalysisResponse } from "../components/market-analysis/MarketAnalysisPanel";
 import CompanyAnalysisPanel, { companyAnalysisRecordReasonLabel, type CompanyAnalysisResult } from "../components/company-analysis/CompanyAnalysisPanel";
 import TechnicalStrengthPanel from "../components/TechnicalStrengthPanel";
-import BrandMark from "../components/BrandMark";
+import WatchlistStar, { WatchlistProvider } from "../components/WatchlistStar";
 import StockScreenerPanel from "../components/StockScreenerPanel";
 import HomeDashboard from "../components/HomeDashboard";
 import type { TransitionMode } from "../components/LiveTransitionDetails";
@@ -22,13 +22,31 @@ import { buildSearchTechnicalStrength } from "../lib/search-technical-strength.m
 import { buildSearchMarketAnalysis } from "../lib/search-market-analysis.mjs";
 import { analysisAvailabilityMessage } from "../lib/analysis-availability.mjs";
 import { isVerifiedKisRealtimeQuote } from "../lib/kis-quote-display-policy.mjs";
-const toolsNavigation = [
-  { view: "market", icon: "▥", name: "시장 현황" },
-  { view: "backtest", icon: "⌁", name: "백테스트" },
-  { view: "watchlist", icon: "☆", name: "관심종목" },
+const navigationPaths = {
+  home: "m3 10 9-7 9 7v10H3z M9 20v-7h6v7",
+  market: "M3 3v17h18 M6 14l4-4 4 2 6-7",
+  top: "M8 6h12 M8 12h9 M8 18h5 M3 6h1 M3 12h1 M3 18h1",
+  performance: "M3 3v17h18 M7 16v-5 M12 16V6 M17 16V9",
+  screener: "M3 6h8m4 0h6 M3 12h3m4 0h11 M3 18h11m4 0h3 M11 4v4 M6 10v4 M14 16v4",
+  watchlist: "m12 3 2.8 5.8 6.4.9-4.6 4.5 1.1 6.3-5.7-3-5.7 3 1.1-6.3-4.6-4.5 6.4-.9z",
+  backtest: "M9 3h6 M10 3v6L4 19q0 2 2 2h12q2 0 2-2L14 9V3 M7 15h10",
+  search: "M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0 M15.5 15.5 21 21",
+  menu: "M3 6h18 M3 12h18 M3 18h18", close: "M5 5l14 14 M19 5 5 19",
+};
+const navigation = [
+  { icon: "home", label: "홈" }, { icon: "market", label: "시장 현황" },
+  { icon: "top", label: "모델 TOP" }, { icon: "performance", label: "모델 성과" },
+  { icon: "screener", label: "스크리닝" }, { icon: "watchlist", label: "관심종목" },
+  { icon: "backtest", label: "백테스트" }, { icon: "search", label: "종목 분석" },
 ] as const;
-type PageView = "home" | "models" | "screener" | typeof toolsNavigation[number]["view"];
+function NavIcon({ icon }: { icon: keyof typeof navigationPaths }) {
+  return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-[19px] w-[19px] shrink-0"><path d={navigationPaths[icon]}/></svg>;
+}
+type PageView = "home" | "models" | "screener" | "market" | "backtest" | "watchlist";
 export default function Home() {
+  return <WatchlistProvider><ResearchApp /></WatchlistProvider>;
+}
+function ResearchApp() {
   const [query, setQuery] = useState("");
   const [searchedStock, setSearchedStock] = useState<string | null>(null);
 const [activeTab, setActiveTab] = useState<"technical" | "company">("technical");
@@ -92,7 +110,8 @@ const [priceMeta, setPriceMeta] = useState<{
   closePrice: number;
 } | null>(null);
 const [modelProfile, setModelProfile] = useState<"1400" | "1430" | "daily">("1400");
-const [watchlistQuery, setWatchlistQuery] = useState("");
+const menuTrigger = useRef<HTMLButtonElement>(null);
+const menuDialog = useRef<HTMLElement>(null);
 const searchRequestIdRef = useRef(0);
 const searchControllerRef = useRef<AbortController | null>(null);
 const selectedCodeRef = useRef<string | null>(null);
@@ -384,16 +403,28 @@ useEffect(() => {
 }, [handleSearch, restoreExplorer]);
 useEffect(() => {
   if (!mobileNavOpen) return;
+  const previousOverflow = document.body.style.overflow;
+  document.body.style.overflow = "hidden";
+  const dialog = menuDialog.current;
+  dialog?.querySelector<HTMLButtonElement>("button")?.focus();
   const handleEscape = (event: KeyboardEvent) => {
-    if (event.key === "Escape") setMobileNavOpen(false);
+    if (event.key === "Escape") { setMobileNavOpen(false); menuTrigger.current?.focus(); }
+    if (event.key !== "Tab" || !dialog) return;
+    const buttons = Array.from(dialog.querySelectorAll<HTMLButtonElement>("button:not(:disabled)"));
+    const first = buttons[0], last = buttons.at(-1);
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+    if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
   };
+  const desktop = window.matchMedia("(min-width: 1024px)");
+  const closeAtDesktop = () => { if (desktop.matches) setMobileNavOpen(false); };
+  desktop.addEventListener("change", closeAtDesktop);
   document.addEventListener("keydown", handleEscape);
-  return () => document.removeEventListener("keydown", handleEscape);
+  return () => { document.body.style.overflow = previousOverflow; document.removeEventListener("keydown", handleEscape); desktop.removeEventListener("change", closeAtDesktop); };
 }, [mobileNavOpen]);
 const openSearchFromNavigation = () => {
   handleHome();
   setMobileNavOpen(false);
-  requestAnimationFrame(() => { searchInputRef.current?.focus(); if (window.innerWidth < 640) document.getElementById("mobile-header-stock-search")?.focus(); });
+  requestAnimationFrame(() => searchInputRef.current?.focus());
 };
 const openModelsFromNavigation = () => {
   handleHome();
@@ -409,56 +440,53 @@ const openScreenerFromNavigation = () => {
   setScreenerEntry({ tab: "models", pair: "5-20", state: "all" });
   setMobileNavOpen(false);
 };
-const navigationButtons = (closeOnSelect: boolean) => <>
-  <button type="button" onClick={() => { handleHome(); if (closeOnSelect) setMobileNavOpen(false); }} className={`tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold ${pageView === "home" ? "bg-[rgba(182,91,50,0.13)] text-[var(--tb-orange)]" : "text-slate-300 hover:bg-white/10 hover:text-white"}`}><span aria-hidden="true">⌂</span> 홈</button>
-  <button type="button" onClick={openSearchFromNavigation} className="tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"><span aria-hidden="true">⌕</span> 종목 분석</button>
-  <button type="button" onClick={openModelsFromNavigation} className={`tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold ${pageView === "models" ? "bg-[rgba(182,91,50,0.13)] text-[var(--tb-orange)]" : "text-slate-300 hover:bg-white/10 hover:text-white"}`}><span aria-hidden="true">▦</span> 모델</button>
-  <div className="my-3 border-t border-white/10" />
-  <button type="button" onClick={openScreenerFromNavigation} className={`tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold ${pageView === "screener" ? "bg-[rgba(182,91,50,0.13)] text-[var(--tb-orange)]" : "text-slate-300 hover:bg-white/10 hover:text-white"}`}><span aria-hidden="true">▽</span> 스크리닝</button>
-  <div className="mt-3 border-t border-white/10 pt-3">
-    {toolsNavigation.map(({ view, icon, name }) => <button key={view} type="button"
-      aria-current={!searchedStock && pageView === view ? "page" : undefined}
-      className="tb-focus tb-tool-nav flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
-      onClick={() => { handleHome(); setWatchlistQuery(""); setPageView(view); setMobileNavOpen(false); }}>
-      <span aria-hidden="true">{icon}</span>{name}
-    </button>)}
-  </div>
-</>;
+const openTool = (view: "market" | "watchlist" | "backtest") => { handleHome(); setPageView(view); };
+const navActions = {
+  home: () => handleHome(), market: () => openTool("market"), top: openModelsFromNavigation,
+  performance: () => { openModelsFromNavigation(); setModelPageTab("performance"); },
+  screener: openScreenerFromNavigation, watchlist: () => openTool("watchlist"),
+  backtest: () => openTool("backtest"), search: openSearchFromNavigation,
+};
+const selectedView = searchedStock ? "search" : pageView === "models"
+  ? (modelPageTab === "performance" ? "performance" : "top") : pageView;
+const navigationButtons = navigation.map(item =>
+  <button key={item.icon} type="button" aria-current={selectedView === item.icon ? "page" : undefined}
+    className="tb-focus flex min-h-11 w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-[15px] font-medium text-slate-600 hover:bg-slate-50 aria-[current=page]:bg-[#eaf2ff] aria-[current=page]:font-semibold aria-[current=page]:text-[var(--tb-blue)]"
+    onClick={() => { navActions[item.icon](); setMobileNavOpen(false); }}>
+    <NavIcon icon={item.icon} />{item.label}
+  </button>);
+const closeMobileMenu = () => { setMobileNavOpen(false); menuTrigger.current?.focus(); };
 return (
-    <main ref={pageTopRef} className={"tb-page-ambient min-h-screen text-slate-900" + (!searchedStock && (pageView === "home" || toolsNavigation.some(tool => tool.view === pageView)) ? " tb-home-shell" : "")}>
-      <header className="tb-brand-shell sticky top-0 z-30 border-b border-white/10 text-white shadow-[0_8px_25px_rgba(7,18,40,0.14)]">
-        <div className="flex w-full items-center gap-3 px-3 py-2 sm:gap-4 sm:px-6 lg:px-6">
-          <button type="button" onClick={() => setMobileNavOpen(true)} aria-label="메뉴 열기" aria-expanded={mobileNavOpen} className="tb-focus inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/15 text-xl leading-none text-white hover:bg-white/10 lg:hidden">☰</button>
-          <button type="button" onClick={() => handleHome()} className="tb-focus shrink-0 rounded-xl text-left" aria-label="Tight Budget 홈으로">
-            <BrandMark inverse />
-          </button>
-          <form className="ml-auto hidden min-w-0 flex-1 gap-2 sm:flex sm:max-w-xl" onSubmit={(event) => { event.preventDefault(); void handleSearch(); }}>
-            <label className="sr-only" htmlFor="header-stock-search">종목명 또는 종목코드 검색</label>
-            <input ref={searchInputRef} id="header-stock-search" value={query} onChange={(event) => setQuery(event.target.value)} disabled={loading} placeholder="종목명 또는 종목코드 검색" className="tb-focus min-w-0 flex-1 rounded-full border border-white/15 bg-white/10 px-5 py-2.5 text-sm text-white placeholder:text-slate-300 focus:border-white/35 focus:bg-white/15 focus:outline-none" />
-            <button type="submit" disabled={loading} className="tb-focus rounded-full bg-[var(--tb-orange)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[var(--tb-orange-bright)] disabled:opacity-40">{loading ? "조회 중" : "검색"}</button>
+    <main ref={pageTopRef} className="min-h-dvh bg-[var(--tb-page)] text-[var(--tb-text)]">
+      <a className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-2 focus:z-50 focus:rounded-lg focus:bg-white focus:p-3" href="#research-content">본문으로 이동</a>
+      <header className="sticky top-0 z-30 border-b border-[var(--tb-border)] bg-white">
+        <div className="flex w-full flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:flex-nowrap sm:gap-5 sm:px-6 xl:px-8">
+          <button type="button" ref={menuTrigger} onClick={() => setMobileNavOpen(true)} aria-label="메뉴 열기" aria-expanded={mobileNavOpen} aria-controls="mobile-navigation" className="tb-focus inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl hover:bg-slate-100 lg:hidden"><NavIcon icon="menu" /></button>
+          <button type="button" onClick={() => handleHome()} className="tb-focus shrink-0 rounded-lg text-left text-[21px] font-bold tracking-tight" aria-label="Tight Budget 홈으로">Tight Budget</button>
+          <form role="search" className="order-last flex w-full min-w-0 items-center gap-2 sm:order-none sm:ml-auto sm:max-w-md" onSubmit={(event) => { event.preventDefault(); void handleSearch(); }}>
+            <label className="flex min-h-11 min-w-0 flex-1 items-center gap-2.5 rounded-xl bg-[#f5f7fb] px-3.5 text-slate-500 focus-within:ring-2 focus-within:ring-[var(--tb-blue)]" htmlFor="header-stock-search">
+              <NavIcon icon="search" /><span className="sr-only">종목명 또는 종목코드 검색</span>
+              <input ref={searchInputRef} id="header-stock-search" value={query} onChange={(event) => setQuery(event.target.value)} disabled={loading} placeholder="종목명 또는 종목코드 검색" className="min-w-0 flex-1 bg-transparent py-2 text-base text-[var(--tb-text)] outline-none placeholder:text-slate-500" />
+            </label>
+            <button type="submit" disabled={loading} className="tb-focus min-h-11 shrink-0 rounded-xl bg-[var(--tb-blue)] px-4 text-sm font-semibold text-white disabled:opacity-50">{loading ? "조회 중" : "검색"}</button>
           </form>
           <AdminLogout />
         </div>
-        {<form className="flex gap-2 border-t border-white/10 px-4 py-2.5 sm:hidden" onSubmit={(event) => { event.preventDefault(); void handleSearch(); }}>
-          <label className="sr-only" htmlFor="mobile-header-stock-search">종목명 또는 종목코드 검색</label>
-          <input id="mobile-header-stock-search" value={query} onChange={(event) => setQuery(event.target.value)} disabled={loading} placeholder="종목명 또는 종목코드 검색" className="tb-focus min-w-0 flex-1 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm text-white placeholder:text-slate-300 focus:outline-none" />
-          <button type="submit" disabled={loading} className="tb-focus rounded-full bg-[var(--tb-orange)] px-4 py-2 text-sm font-bold text-white disabled:opacity-40">{loading ? "조회 중" : "검색"}</button>
-        </form>}
       </header>
       {mobileNavOpen && <div className="fixed inset-0 z-50 lg:hidden" role="presentation">
-        <button type="button" aria-label="메뉴 바깥 닫기" onClick={() => setMobileNavOpen(false)} className="absolute inset-0 h-full w-full bg-slate-950/55" />
-        <aside role="dialog" aria-modal="true" aria-label="모바일 주요 메뉴" className="tb-sidebar-surface relative flex h-full w-[min(18rem,calc(100vw-2.5rem))] max-w-full flex-col overflow-y-auto px-3 py-4 shadow-2xl">
-          <div className="mb-4 flex items-center justify-between gap-3 border-b border-white/10 px-2 pb-3"><span className="text-sm font-semibold text-white">주요 메뉴</span><button type="button" onClick={() => setMobileNavOpen(false)} aria-label="메뉴 닫기" className="tb-focus rounded-lg px-2 py-1 text-xl leading-none text-slate-200 hover:bg-white/10">×</button></div>
-          <nav className="space-y-1" aria-label="모바일 주요 메뉴">{navigationButtons(true)}</nav>
+        <button type="button" tabIndex={-1} aria-label="메뉴 바깥 닫기" onClick={closeMobileMenu} className="absolute inset-0 h-full w-full bg-slate-950/35" />
+        <aside ref={menuDialog} id="mobile-navigation" role="dialog" aria-modal="true" aria-label="모바일 주요 메뉴" className="relative flex h-full w-[min(18rem,calc(100vw-2.5rem))] flex-col overflow-y-auto bg-white px-4 py-4 shadow-lg">
+          <div className="mb-3 flex items-center justify-between border-b border-[var(--tb-border)] pb-2 pl-2"><span className="text-base font-semibold">메뉴</span><button type="button" onClick={closeMobileMenu} aria-label="메뉴 닫기" className="tb-focus inline-flex h-11 w-11 items-center justify-center rounded-xl hover:bg-slate-100"><NavIcon icon="close" /></button></div>
+          <nav className="space-y-1" aria-label="모바일 주요 메뉴">{navigationButtons}</nav>
         </aside>
       </div>}
-      <div className="relative z-[1] flex w-full items-stretch">
-        <aside className="tb-sidebar-surface hidden w-52 shrink-0 border-r border-[var(--tb-border)] px-3 py-4 lg:flex lg:min-h-[calc(100vh-60px)] lg:flex-col">
-          <nav className="space-y-1" aria-label="주요 메뉴">
-            {navigationButtons(false)}
+      <div className="flex w-full items-stretch">
+        <aside className="hidden w-[190px] shrink-0 border-r border-[var(--tb-border)] bg-white px-3 lg:block xl:w-[200px]">
+          <nav className="sticky top-[69px] max-h-[calc(100dvh-69px)] space-y-1 overflow-y-auto py-6" aria-label="주요 메뉴">
+            {navigationButtons}
           </nav>
         </aside>
-        <div className="min-w-0 flex-1 px-3 py-3 sm:px-4 sm:py-4 lg:px-4 xl:px-5">
+        <div id="research-content" tabIndex={-1} className="min-w-0 flex-1 px-4 py-5 sm:px-6 lg:px-7 lg:py-7 xl:px-9">
         {searchError && <p role="alert" className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{searchError === "notFound" ? "해당 종목을 찾을 수 없습니다." : "검색 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요."}</p>}
         {pageView === "home" && <div hidden={Boolean(searchedStock)}><HomeDashboard
           onSelectStock={handleSearch}
@@ -469,12 +497,12 @@ return (
 
         {!searchedStock && pageView === "models" && (
           <section aria-labelledby="models-heading">
-            <div className="tb-card p-4 sm:p-6">
+            <div className="pb-3">
               <h1 id="models-heading" className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">모델</h1>
-              <div className="mt-5 flex gap-1 border-b border-slate-200/80" role="tablist" aria-label="모델 화면 탭">
-                <button type="button" role="tab" aria-selected={modelPageTab === "top"} onClick={() => setModelPageTab("top")} className={`tb-focus -mb-px border-b-2 px-4 py-2.5 text-sm font-semibold ${modelPageTab === "top" ? "border-[var(--tb-orange)] text-[var(--tb-orange)]" : "border-transparent text-slate-500 hover:text-slate-900"}`}>모델 TOP</button>
-                <button type="button" role="tab" aria-selected={modelPageTab === "performance"} onClick={() => setModelPageTab("performance")} className={`tb-focus -mb-px border-b-2 px-4 py-2.5 text-sm font-semibold ${modelPageTab === "performance" ? "border-[var(--tb-orange)] text-[var(--tb-orange)]" : "border-transparent text-slate-500 hover:text-slate-900"}`}>모델 성과</button>
-                <button type="button" role="tab" aria-selected={modelPageTab === "guide"} onClick={() => setModelPageTab("guide")} className={`tb-focus -mb-px border-b-2 px-4 py-2.5 text-sm font-semibold ${modelPageTab === "guide" ? "border-[var(--tb-orange)] text-[var(--tb-orange)]" : "border-transparent text-slate-500 hover:text-slate-900"}`}>모델 설명</button>
+              <div className="mt-3 flex max-w-full gap-1 border-b border-slate-200/80" role="tablist" aria-label="모델 화면 탭">
+                <button type="button" role="tab" aria-selected={modelPageTab === "top"} onClick={() => setModelPageTab("top")} className={`tb-focus -mb-px border-b-2 px-4 py-2.5 text-sm font-semibold ${modelPageTab === "top" ? "border-[var(--tb-blue)] text-[var(--tb-blue)]" : "border-transparent text-slate-500 hover:text-slate-900"}`}>모델 TOP</button>
+                <button type="button" role="tab" aria-selected={modelPageTab === "performance"} onClick={() => setModelPageTab("performance")} className={`tb-focus -mb-px border-b-2 px-4 py-2.5 text-sm font-semibold ${modelPageTab === "performance" ? "border-[var(--tb-blue)] text-[var(--tb-blue)]" : "border-transparent text-slate-500 hover:text-slate-900"}`}>모델 성과</button>
+                <button type="button" role="tab" aria-selected={modelPageTab === "guide"} onClick={() => setModelPageTab("guide")} className={`tb-focus -mb-px border-b-2 px-4 py-2.5 text-sm font-semibold ${modelPageTab === "guide" ? "border-[var(--tb-blue)] text-[var(--tb-blue)]" : "border-transparent text-slate-500 hover:text-slate-900"}`}>모델 설명</button>
               </div>
             </div>
             {modelPageTab === "top" ? <TopStocksPanel key={modelInitialTab} initialTab={modelInitialTab} onTabChange={setModelInitialTab} initialProfile={modelProfile} onProfileChange={setModelProfile} onSelectStock={handleSearch} /> : modelPageTab === "performance" ? <ModelTopPerformancePanel /> : <ModelExplanationPanel />}
@@ -484,24 +512,20 @@ return (
         {pageView === "screener" && <div hidden={Boolean(searchedStock)}><StockScreenerPanel onSelectStock={handleSearch} key={`${screenerEntry.tab}:${screenerEntry.pair}:${screenerEntry.state}:${screenerEntry.direction}:${screenerEntry.mode}`} initialTab={screenerEntry.tab} initialPair={screenerEntry.pair} initialState={screenerEntry.state} initialDirection={screenerEntry.direction} initialMode={screenerEntry.mode} /></div>}
 
         {!searchedStock && (pageView === "watchlist" || pageView === "market" || pageView === "backtest") &&
-          <div className="tb-tool-page">{pageView === "watchlist" ? <WatchlistPanel initialQuery={watchlistQuery} onSelectStock={handleSearch} /> :
+          <div className="tb-tool-page">{pageView === "watchlist" ? <WatchlistPanel onSelectStock={handleSearch} /> :
             pageView === "market" ? <MarketOverviewPanel /> : <BacktestPanel />}</div>}
         {searchedStock && (
-          <div className="tb-card mt-3 overflow-hidden p-4 sm:p-5">
-            <div className="flex justify-end"><button type="button" onClick={() => { if (window.history.state?.tbStock?.returnToExplorer) window.history.back(); else { restoreExplorer(); const url = new URL(window.location.href); url.searchParams.delete("stock"); window.history.replaceState(window.history.state, "", url); } }} className="tb-focus rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium">← 돌아가기</button></div>
-
-            <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">
-              {searchedStock}
-            </h2>
+          <div className="tb-card min-w-0 p-4 sm:p-6">
+            <button type="button" onClick={() => { if (window.history.state?.tbStock?.returnToExplorer) window.history.back(); else { restoreExplorer(); const url = new URL(window.location.href); url.searchParams.delete("stock"); window.history.replaceState(window.history.state, "", url); } }} className="tb-focus rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium">← 돌아가기</button>
+            <div className="mt-2 flex items-center gap-2"><h1 className="min-w-0 break-words text-2xl font-bold tracking-tight text-slate-950 sm:text-[28px]">{searchedStock}</h1>
+              {stockInfo && <WatchlistStar code={String(stockInfo.srtnCd).replace(/^A/, "")} name={searchedStock} />}</div>
 
            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500">
   <span>{stockInfo?.srtnCd?.replace(/^A/, "")}</span><span>{stockInfo?.mrktCtg}</span><span>공식 EOD {priceMeta?.asOfDate ?? "기준일 미확인"}</span>
-  {stockInfo && <button type="button" className="tb-focus rounded border border-slate-300 px-2 py-1 text-xs text-slate-700" onClick={() => {
-    setWatchlistQuery(selectedCodeRef.current ?? ""); handleHome(); setPageView("watchlist");
-  }}>관심종목에서 관리</button>}
+
 </div>
 {(priceInfo || realtimePrice || priceError || realtimeError) && (
-  <div className="mt-3 rounded-xl bg-[#f7f3eb] p-3">
+  <div className="mt-3 rounded-xl bg-[#f5f7fb] p-3">
     <p className="text-sm font-semibold text-gray-900">
       최근 시세
     </p>
@@ -793,7 +817,6 @@ return (
     </p>
   </div>
 )}
-{searchedStock && <section className="mt-6 rounded-xl border border-dashed border-gray-300 bg-gray-50 px-5 py-4"><h2 className="text-sm font-semibold text-gray-800">추가 분석 준비 중</h2><p className="mt-1 text-sm text-gray-500">배당 · 공매도 · 대차잔고 데이터를 안전하게 연결하고 있습니다.</p></section>}
       </div>
       </div>
     </main>

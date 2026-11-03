@@ -37,7 +37,7 @@ export default function MarketOverviewPanel() {
   const indexDates = [...new Set(data?.indices.flatMap(row => row.status === "AVAILABLE" ? [row.date] : []))];
   return <section className="tb-card min-w-0 p-4 sm:p-6" aria-labelledby="market-overview-title">
     <header className="flex items-center justify-between gap-3">
-      <h1 id="market-overview-title" className="text-xl font-bold text-slate-950 sm:text-2xl">시장 현황</h1>
+      <h1 id="market-overview-title" className="tb-page-title">시장 현황</h1>
       <button type="button" disabled={loading} onClick={() => { setFailed(false); setLoading(true); setAttempt(n => n + 1); }}
         className="tb-focus rounded-lg border border-[var(--tb-border)] px-3 py-2 text-sm font-medium disabled:opacity-50">새로고침</button>
     </header>
@@ -46,8 +46,8 @@ export default function MarketOverviewPanel() {
     {data && <>
       <h2 className="mt-6 text-base font-bold text-slate-900">코스피·코스닥 지수</h2>
       <p className="mt-1 text-xs text-slate-600">한국투자증권 지수 일봉 · 일 단위 자료 · 원천 지연 시간 미확인</p>
-      <div className="mt-3 grid divide-y divide-[var(--tb-border)] border-y border-[var(--tb-border)] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
-        {data.indices.map(row => <article key={row.market} className="min-w-0 py-4 sm:even:pl-5" aria-label={row.market}>
+      <div className="mt-3 grid gap-4 sm:grid-cols-2">
+        {data.indices.map(row => <article key={row.market} className="min-w-0 rounded-2xl border border-[var(--tb-border)] bg-slate-50 p-4 sm:p-5" aria-label={row.market}>
           <h3 className="text-sm font-semibold text-slate-700">{row.market === "KOSPI" ? "코스피" : "코스닥"}</h3>
           {row.status === "UNAVAILABLE" ? <p className="mt-2 text-sm text-slate-600">지수 자료를 확인할 수 없습니다.</p> : <>
             <p className="mt-1 text-2xl font-bold tabular-nums text-slate-950">{amount.format(row.close)}<span className="ml-1 text-xs font-normal text-slate-500">pt</span></p>

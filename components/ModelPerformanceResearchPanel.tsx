@@ -12,7 +12,7 @@ const versions = ["A-v1", "A-v2", "B-v1", "C-v1", "D-v1"];
 const reasons: Record<string, string> = { DATA_QUALITY_BLOCKED: "기존 백테스트 품질 인증 부적격", POINT_IN_TIME_UNIVERSE_UNVERIFIED: "당시 universe 미검증", FORMULA_HASH_CONFLICT: "공식 hash 근거 불일치", FORMULA_HASH_MISSING: "공식 hash 누락", SIGNAL_PUBLICATION_TIME_UNVERIFIED: "실제 발행 완료시각 미검증", PUBLICATION_UNVERIFIED: "발행·동결 순위 근거 미확인", DIFFERENT_RESEARCH_LAYER: "다른 연구 계층", SOURCE_LAYER_NOT_ALLOWED: "Daily 공식 입력 아님", INCOMPLETE_OR_DUPLICATE_RANKING: "순위 누락·중복", SIGNAL_TIMING_CONFLICT: "신호 생성·발행 시각 불일치", timingInvalid: "신호 발행이 진입시각 이후", missingTradingDaySnapshot: "해당 거래일 가격 원장 없음", missingEntryOpenPrice: "진입 시가 없음", missingExitClosePrice: "청산 종가 없음", pendingFutureTradingDay: "미래 거래일 미성숙", unchecked: "거래일 달력 미검증", missingTradingCalendarStatus: "거래일 판정 근거 없음" };
 const pct = (value: number | null) => value == null ? "—" : `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
 const tone = (value: number | null) => value == null ? "text-slate-500" : value > 0 ? "text-red-700" : value < 0 ? "text-blue-700" : "text-slate-800";
-const fieldClass = "min-w-0 w-full rounded-lg border border-slate-300 bg-[rgba(255,252,247,0.95)] px-2 py-2 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tb-orange)]";
+const fieldClass = "min-w-0 w-full rounded-lg border border-slate-300 bg-slate-50 px-2 py-2 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tb-blue)]";
 function Metric({ label, value }: { label: string; value: number | null }) {
   return <div className="min-w-0"><dt className="text-xs text-slate-600">{label}</dt><dd className={`mt-1 text-base font-semibold tabular-nums ${tone(value)}`}>{pct(value)}</dd></div>;
 }
@@ -35,7 +35,7 @@ export default function ModelPerformanceResearchPanel() {
   useEffect(() => { const timer = setInterval(() => setRevision((value) => value + 1), 120000); return () => clearInterval(timer); }, []);
 
   return <div className="mt-4 min-w-0" aria-labelledby="execution-research-heading">
-    <h3 id="execution-research-heading" className="text-lg font-semibold text-slate-950">실행 수익률 연구 · 기존 성과와 별도 계약</h3>
+    <h3 id="execution-research-heading" className="text-lg font-semibold text-slate-950">실행 수익률 연구</h3>
     <p className="mt-1 text-sm leading-relaxed text-slate-600">사이트 게시가 확인된 Daily 순위로 T+2 공식 시가 진입을 가정합니다. 게시 종목 가격관측에는 기업행사·과거 유니버스가 완전히 검증되지 않은 기간도 포함되며, 인증 백테스트는 따로 볼 수 있습니다.</p>
     <form className="mt-4 space-y-3" onSubmit={(event) => {
       event.preventDefault(); const form = new FormData(event.currentTarget), parameters = new URLSearchParams();
@@ -43,18 +43,18 @@ export default function ModelPerformanceResearchPanel() {
       for (const [key, value] of form.entries()) if (key !== "models" && typeof value === "string" && value !== "") parameters.set(key, value);
       setLoading(true); setData(null); setError(null); setQuery(parameters.toString()); setRevision((v) => v + 1);
     }}>
-      <fieldset className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-800"><legend className="mb-1 text-xs text-slate-600">모델·버전 선택 (서로 다른 공식 hash는 별도 코호트)</legend>{versions.map((version) => <label key={version} className="flex items-center gap-1.5"><input type="checkbox" name="models" value={version} defaultChecked className="accent-[var(--tb-orange)]" />{version}</label>)}</fieldset>
+      <fieldset className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-800"><legend className="mb-1 text-xs text-slate-600">모델·버전 선택 (산식별로 비교)</legend>{versions.map((version) => <label key={version} className="flex items-center gap-1.5"><input type="checkbox" name="models" value={version} defaultChecked className="accent-[var(--tb-blue)]" />{version}</label>)}</fieldset>
       <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
         <label className="text-xs text-slate-600">TOP 범위<select name="topN" defaultValue="10" className={fieldClass}>{[5, 10, 20].map((n) => <option key={n} value={n}>TOP{n}</option>)}</select></label>
         <label className="text-xs text-slate-600">거래일 보유기간<select name="horizon" className={fieldClass}><option value="H1">1D</option><option value="H5">5D</option><option value="H20">20D</option></select></label>
         <label className="text-xs text-slate-600">시장<select name="market" className={fieldClass}><option value="ALL">전체</option><option>KOSPI</option><option>KOSDAQ</option></select></label>
-        <label className="text-xs text-slate-600">신호 분류<select name="classification" className={fieldClass}><option value="PUBLISHED_PRICE_OBSERVATION">실제 게시 종목 가격관측</option><option value="AS_PUBLISHED">저장 신호 · 인증 백테스트</option><option value="RETROSPECTIVE">RETROSPECTIVE · 사후 연구</option></select></label>
+        <label className="text-xs text-slate-600">신호 분류<select name="classification" className={fieldClass}><option value="PUBLISHED_PRICE_OBSERVATION">실제 게시 종목 가격관측</option><option value="AS_PUBLISHED">저장 신호 · 인증 백테스트</option><option value="RETROSPECTIVE">사후 연구</option></select></label>
         <label className="text-xs text-slate-600">신호 시작일<input type="date" name="from" className={fieldClass} /></label>
         <label className="text-xs text-slate-600">신호 종료일<input type="date" name="to" className={fieldClass} /></label>
       </div>
       <details className="rounded-lg border border-slate-200/70 px-3 py-2 text-sm text-slate-700"><summary className="cursor-pointer font-medium">비용 시나리오 · 벤치마크</summary>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <label className="text-xs">거래비용<select name="costMode" value={costMode} onChange={(e) => setCostMode(e.target.value)} className={fieldClass}><option value="GROSS_ONLY">비용 미적용 · gross만</option><option value="ZERO_COST_RESEARCH">연구용 0비용 가정 (실제 세율 아님)</option><option value="USER_INPUT">사용자 입력 연구 시나리오</option></select></label>
+          <label className="text-xs">거래비용<select name="costMode" value={costMode} onChange={(e) => setCostMode(e.target.value)} className={fieldClass}><option value="GROSS_ONLY">비용 전 수익률</option><option value="ZERO_COST_RESEARCH">연구용 0비용 가정 (실제 세율 아님)</option><option value="USER_INPUT">사용자 입력 연구 시나리오</option></select></label>
           <label className="text-xs">벤치마크<select name="benchmark" className={fieldClass}><option value="MATCHED_MARKET">동일 기간 KOSPI/KOSDAQ (공식 데이터 필요)</option><option value="NONE">비교하지 않음</option></select></label>
         </div>
         {costMode === "USER_INPUT" && <div className="mt-3 grid gap-2 sm:grid-cols-3">
@@ -69,15 +69,15 @@ export default function ModelPerformanceResearchPanel() {
     {loading && <p className="mt-3 text-sm text-slate-600" role="status">연구 입력 검증 중…</p>}
     {error && <p className="mt-3 text-sm text-red-700" role="alert">{error}</p>}
     {data && <>
-      <div className="mt-4 rounded-lg border border-slate-200/70 bg-[rgba(247,243,236,0.92)] p-3 text-xs leading-relaxed text-slate-700">
+      <div className="mt-4 rounded-lg border border-slate-200/70 bg-slate-50 p-3 text-xs leading-relaxed text-slate-700">
         <p>저장 신호 {data.coverage.storedSignalCount}일 · 발행 근거 확인 {data.coverage.selectedSignalCount}일 · 최신 신호 {data.coverage.latestStoredSignalDate ?? "없음"} · 공식 가격 원장 {data.coverage.officialPriceDateRange ? `${data.coverage.officialPriceDateRange.from} ~ ${data.coverage.officialPriceDateRange.to}` : "없음"}</p>
         <p>비용 {data.costStatus === "NOT_APPLIED" ? "미적용 (수수료·슬리피지·매도세 제외)" : data.filter.cost.mode === "ZERO_COST_RESEARCH" ? "수수료·슬리피지·매도세 0 가정" : `연구 가정 · 수수료 매수/매도 ${data.filter.cost.buyFeeBps}/${data.filter.cost.sellFeeBps}bp · 슬리피지 ${data.filter.cost.buySlippageBps}/${data.filter.cost.sellSlippageBps}bp · 매도세 ${data.filter.cost.sellTaxBps ? data.filter.cost.sellTaxBps+"bp" : "미포함"}`} · 공식 지수 일봉 코스피 {data.benchmarkCoverage?.datesByMarket.KOSPI ?? 0}일 / 코스닥 {data.benchmarkCoverage?.datesByMarket.KOSDAQ ?? 0}일 · {data.benchmarkStatus === "UNAVAILABLE" ? "같은 진입·청산일의 비교 가능 표본 없음" : "종목별 시장에 맞춰 비교"}</p>
         <p>모델 우열 판단 보류 · 비교 가능한 공통 성숙 신호일 {data.comparison.commonMatureSignalDates.length}일. 같은 날짜라도 universe가 다르면 같은 조건으로 합산하지 않습니다.</p>
         {data.coverage.rejectedSignals.length > 0 && <details><summary className="cursor-pointer">제외한 신호 {data.coverage.rejectedSignals.length}일</summary>{data.coverage.rejectedSignals.map((s) => `${s.signalDate} (${reasons[s.reason] ?? "기준 확인 필요"})`).join(" · ")}</details>}
       </div>
-      {data.comparison.metrics.length > 0 && <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">{data.comparison.metrics.map((m) => <div key={m.modelVersion} className="rounded-lg bg-[rgba(247,243,236,0.92)] p-3 text-sm"><strong>{m.modelVersion}</strong><p>공통 신호일 포트폴리오 평균 {pct(m.meanReturn)}</p><p className="text-xs">{m.observationCount}일 · 기술통계만 / 우열 미판정</p></div>)}</div>}
-      {!data.cohorts.length && <p className="mt-4 text-sm text-slate-600">선택 계층·기간·버전의 신호가 없습니다. 사후 신호나 미래 성과를 생성하지 않습니다.</p>}
-      <div className="mt-3 space-y-3">{data.cohorts.map((cohort) => <section key={cohort.id} className="min-w-0 rounded-xl border border-slate-200/80 bg-[rgba(247,243,236,0.96)] p-3 sm:p-4" aria-label={`${cohort.modelVersion} 연구 코호트`}>
+      {data.comparison.metrics.length > 0 && <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">{data.comparison.metrics.map((m) => <div key={m.modelVersion} className="rounded-lg bg-slate-50 p-3 text-sm"><strong>{m.modelVersion}</strong><p>공통 신호일 포트폴리오 평균 {pct(m.meanReturn)}</p><p className="text-xs">{m.observationCount}일 · 기술통계만 / 우열 미판정</p></div>)}</div>}
+      {!data.cohorts.length && <p className="mt-4 text-sm text-slate-600">선택 계층·기간·버전의 신호가 없습니다. </p>}
+      <div className="mt-3 space-y-3">{data.cohorts.map((cohort) => <section key={cohort.id} className="min-w-0 rounded-xl border border-slate-200/80 bg-slate-50 p-3 sm:p-4" aria-label={`${cohort.modelVersion} 연구 코호트`}>
         <div className="flex flex-wrap items-baseline justify-between gap-2"><h4 className="font-semibold text-slate-950">{cohort.modelVersion} · TOP{data.filter.topN} · {data.filter.horizon.replace("H", "")}D</h4><span className="text-xs text-slate-600">{cohort.classification === "PUBLISHED_PRICE_OBSERVATION" ? "게시 종목 가격관측" : cohort.classification === "AS_PUBLISHED" ? "인증 연구" : "사후 연구"} · {cohort.signalDates[0]} ~ {cohort.signalDates.at(-1)}</span></div>
         <p className="mt-1 text-xs text-slate-600">관측 신호일 {cohort.signalDateCount} · 일부 성숙 {cohort.observedSignalDateCount}일 · 완전 성숙 포트폴리오 {cohort.matureSignalDateCount}일 · 미성숙 {cohort.pendingCount}건 · 결측/검증 제외 {cohort.missingCount}건</p>
         <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4"><Metric label="신호일 포트폴리오 평균 (gross)" value={cohort.portfolioMetrics.meanReturn} /><Metric label="입력 비용 가정 적용" value={cohort.netScenarioMetrics.meanReturn} /><Metric label="벤치마크 대비 평균 초과" value={cohort.excessMetrics.meanReturn} /><Metric label="포트폴리오 중앙값" value={cohort.portfolioMetrics.medianReturn} /></dl>
@@ -91,7 +91,7 @@ export default function ModelPerformanceResearchPanel() {
           <p className="mt-2 text-xs">초과수익 중앙값 {pct(cohort.excessMetrics.medianReturn)} · 벤치마크 초과 비율 {pct(cohort.excessMetrics.positiveRate)} · 비교 가능한 포트폴리오 {cohort.excessMetrics.observationCount}일</p>
           <p className="mt-2 text-xs">성과 분포: {cohort.stockMetrics.distribution ? `음수 ${cohort.stockMetrics.distribution.negative} · 0% ${cohort.stockMetrics.distribution.zero} · 양수 ${cohort.stockMetrics.distribution.positive}` : "확정 표본 없음"}</p>
           <div className="mt-3 space-y-2">{cohort.portfolios.map((p) => <p key={p.signalDate} className="rounded bg-slate-100/80 p-2 text-xs">{p.signalDate} 신호 · {p.entryDate} 진입 → {p.exitDate} 청산 · 동일가중 {p.memberCount}종목 · gross {pct(p.grossReturn)} · 비용 시나리오 {pct(p.netScenarioReturn)} · 시장지수 {pct(p.benchmarkReturn)} · 분석 대상 전체 동일가중 {pct(p.universeReturn)} ({p.universeCoverage.priced}/{p.universeCoverage.expected}종목)</p>)}</div>
-          <details className="mt-3"><summary className="cursor-pointer text-xs">종목 관측 {cohort.rows.length}건 (원천 가격 비노출)</summary><div className="mt-2 max-h-96 space-y-2 overflow-y-auto">{cohort.rows.map((r) => <div key={`${r.signalDate}-${r.ticker}`} className="rounded-lg border border-slate-200 bg-[rgba(255,252,247,0.95)] p-2 text-xs">
+          <details className="mt-3"><summary className="cursor-pointer text-xs">종목 관측 {cohort.rows.length}건 (원천 가격 비노출)</summary><div className="mt-2 max-h-96 space-y-2 overflow-y-auto">{cohort.rows.map((r) => <div key={`${r.signalDate}-${r.ticker}`} className="rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs">
             <p className="font-medium">#{r.rank} {r.companyName ?? "종목명 미확인"} {r.ticker} · 점수 {r.score.toFixed(2)}</p><p>{r.signalDate} 신호 · {r.entryDate ?? "진입 미확정"} → {r.exitDate ?? "청산 미확정"} · {r.status === "MATURE" ? pct(r.grossReturn) : reasons[r.reason ?? ""] ?? r.reason ?? "미확정"}</p>
             <p className="mt-1 break-all text-slate-600">신호 생성 {r.signalGeneratedAt ?? "미확인"} · 발행 가용시각 {r.signalAvailableAt ?? "미확인"} · 원본 hash {r.sourceSnapshotHash}</p>
           </div>)}</div></details>

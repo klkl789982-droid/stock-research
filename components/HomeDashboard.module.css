@@ -1,0 +1,61 @@
+.mainGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 18px;
+}
+@media (min-width: 1150px) {
+  .mainGrid { grid-template-columns: minmax(0, 1fr) minmax(280px, 30%); gap: 24px; }
+}
+.titleRow { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; }
+.titleRow h2 { font-size: 1.18rem; font-weight: 700; color: var(--tb-text); }
+.titleRow > span, .receipt, .chartDates, .figure figcaption { font-size: .78rem; color: var(--tb-muted); }
+.titleRow button, .noChart button { font-size: .83rem; font-weight: 650; color: var(--tb-blue); padding-block: 5px; }
+.flow { display: grid; grid-template-columns: minmax(138px, 180px) minmax(0,1fr); gap: 26px; align-items: center; margin-top: 15px; }
+.indices { display: grid; gap: 8px; }
+.index { min-width: 0; text-align: left; border-radius: 12px; border: 1px solid transparent; background: #f5f7fb; padding: 10px 15px; }
+.index[aria-pressed=true] { border-color: var(--tb-blue); background: #eaf2ff; }
+.index > span { display: block; font-size: .75rem; color: var(--tb-muted); font-weight: 650; }
+.index[aria-pressed=true] > span { color: var(--tb-blue); }
+.index strong { display: block; font-size: clamp(1.25rem,2vw,1.55rem); font-weight: 750; color: var(--tb-text); font-variant-numeric: tabular-nums; }
+.index small { font-size: .78rem; font-weight: 600; }
+.up { color: var(--tb-positive); }
+.down { color: var(--tb-negative); }
+.figure { min-width: 0; }
+.figure figcaption { display: flex; align-items: baseline; gap: .35em; }
+.figure figcaption span { margin-left: auto; }
+.chart { display: grid; grid-template-columns: 3.7rem minmax(0, 1fr); gap: 9px; margin-top: 8px; }
+.chart svg { display: block; width: 100%; height: 122px; }
+.axis { display: flex; flex-direction: column; justify-content: space-between; align-items: end; padding-block: 4px; color: var(--tb-muted); font-size: .75rem; font-variant-numeric: tabular-nums; }
+.axis:has(> :only-child) { justify-content: center; }
+.chartDates { display: flex; justify-content: space-between; margin: 4px 0 0 calc(3.7rem + 9px); font-variant-numeric: tabular-nums; }
+.receipt { line-height: 1.6; margin-top: 8px; }
+.noChart { display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content:center; min-height: 135px; font-size: .88rem; color: var(--tb-muted); text-align: center; }
+.segments { display: inline-flex; max-width: 100%; gap: 2px; padding: 3px; margin: 12px 0; background: #f2f5fa; border-radius: 12px; }
+.segments button { min-height: 36px; padding: 0 13px; font-size: .88rem; font-weight: 600; border-radius: 10px; color: #525f73; }
+.segments button[aria-pressed=true] { background: white; color: var(--tb-blue); box-shadow: 0 1px 4px #27334d17; }
+.explain { font-size: .8rem; color: #58657a; margin: 9px 0; }
+.explain summary { width: fit-content; cursor: pointer; }
+.rankTable { width: 100%; border-collapse: collapse; table-layout: fixed; font-variant-numeric: tabular-nums; }
+.rankTable th { color: var(--tb-muted); font-weight: 550; font-size: .75rem; text-align: right; padding-block: 6px; }
+.rankTable td { padding: 8px 0; border-top: 1px solid var(--tb-border); font-size: .88rem; text-align: right; }
+.rankTable th:first-child, .rankTable td:first-child { width: 2.4rem; text-align: left; }
+.rankTable th:nth-child(2), .rankTable td:nth-child(2) { text-align: left; }
+.rankTable th:nth-child(3) { width: 4.3rem; }
+.rankTable th:nth-child(4) { width: 3rem; }
+.rankTable th:last-child { width: 3rem; }
+.stock { min-width: 0; max-width: 100%; min-height: 40px; text-align: left; }
+.stock strong { font-size: 1rem; font-weight: 650; overflow-wrap: anywhere; }
+.stock small { display: block; color: var(--tb-muted); font-size: .75rem; }
+.score { font-weight: 700; color: var(--tb-blue); }
+@media (max-width: 640px) {
+  .flow { grid-template-columns: minmax(0,1fr); gap: 14px; }
+  .indices { grid-template-columns: repeat(2,minmax(0, 1fr)); }
+  .index { padding: 9px 12px; }
+  .segments { display:flex; }
+  .segments button { flex: 1; min-height: 40px; padding-inline: 5px; }
+  .rankTable th:first-child { width: 2rem; }
+  .rankTable th:nth-child(3) { width: 3.1rem; }
+  .rankTable th:nth-child(4) { width: 2.1rem; }
+  .rankTable th:last-child { width: 2.6rem; }
+}

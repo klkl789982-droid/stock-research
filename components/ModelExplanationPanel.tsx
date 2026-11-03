@@ -139,17 +139,17 @@ export default function ModelExplanationPanel() {
   const model = MODELS.find((item) => item.id === activeId) ?? MODELS[0];
 
   return (
-    <section className="tb-card mt-6 p-4 sm:p-6" aria-labelledby="model-explanation-heading">
-      <h2 id="model-explanation-heading" className="text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">모델 설명</h2>
+    <section className="tb-card p-4 sm:p-6" aria-labelledby="model-explanation-heading">
+      <h2 id="model-explanation-heading" className="tb-page-title">모델 설명</h2>
 
       <p className="mt-2 text-sm leading-6 text-slate-600">점수는 수익 확률이 아닙니다. 모델마다 산식과 점수 범위가 달라 숫자만으로 강도를 직접 비교할 수 없습니다.</p>
 
-      <div className="mt-5 flex flex-wrap gap-1 border-b border-slate-200/80" role="tablist" aria-label="설명할 모델 선택">
-        {MODELS.map((item) => <button key={item.id} type="button" role="tab" aria-selected={activeId === item.id} onClick={() => setActiveId(item.id)} className={`tb-focus -mb-px border-b-2 px-3 py-2 text-sm font-semibold ${activeId === item.id ? "border-[var(--tb-orange)] text-[var(--tb-orange)]" : "border-transparent text-slate-500 hover:text-slate-900"}`}>{item.label}</button>)}
+      <div className="tb-segmented mt-5" role="tablist" aria-label="설명할 모델 선택">
+        {MODELS.map((item) => <button key={item.id} type="button" role="tab" aria-selected={activeId === item.id} onClick={() => setActiveId(item.id)} className="tb-focus">{item.label}</button>)}
       </div>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
-        <article className="rounded-xl border border-[var(--tb-border)] bg-[rgba(255,252,247,0.82)] p-4">
+        <article className="rounded-xl border border-[var(--tb-border)] bg-slate-50 p-4">
           <h3 className="text-lg font-semibold text-slate-950">{model.label} · {model.title}</h3>
           <dl className="mt-4 space-y-4 text-sm leading-6">
             <div><dt className="font-semibold text-slate-800">목적</dt><dd className="mt-1 text-slate-600">{model.purpose}</dd></div>
@@ -157,11 +157,11 @@ export default function ModelExplanationPanel() {
             <div><dt className="font-semibold text-slate-800">높은 점수의 의미</dt><dd className="mt-1 text-slate-600">{model.meaning}</dd></div>
           </dl>
         </article>
-        <article className="rounded-xl border border-[var(--tb-border)] bg-[rgba(255,252,247,0.82)] p-4">
+        <article className="rounded-xl border border-[var(--tb-border)] bg-slate-50 p-4">
           <h3 className="font-semibold text-slate-900">구성요소와 가중치</h3>
-          <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-600">{model.weights.map((item) => <li key={item} className="flex gap-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--tb-orange)]" />{item}</li>)}</ul>
+          <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-600">{model.weights.map((item) => <li key={item} className="flex gap-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--tb-blue)]" />{item}</li>)}</ul>
           <h3 className="mt-5 font-semibold text-slate-900">실제 계산식</h3>
-          <ol className="mt-3 space-y-2 text-sm leading-6 text-slate-600">{model.formula.map((item, index) => <li key={item} className="flex gap-2"><span className="font-semibold text-[var(--tb-orange)]">{index + 1}.</span>{item}</li>)}</ol>
+          <ol className="mt-3 space-y-2 text-sm leading-6 text-slate-600">{model.formula.map((item, index) => <li key={item} className="flex gap-2"><span className="font-semibold text-[var(--tb-blue)]">{index + 1}.</span>{item}</li>)}</ol>
         </article>
       </div>
       <aside className="mt-4 rounded-xl border border-amber-200/80 bg-amber-50/80 p-4" aria-label={`${model.label} 해석 시 주의점`}>

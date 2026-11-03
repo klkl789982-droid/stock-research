@@ -59,21 +59,22 @@ export function validateHomeLiveTransitionResponses(value: unknown): [HomeLiveTr
 }
 
 function StockButton({ stock, onSelectStock }: { stock: Stock; onSelectStock: Actions["onSelectStock"] }) {
-  return <button type="button" onClick={() => void onSelectStock({ code: stock.code, name: stock.name, market: stock.market })} className="tb-focus min-w-0 rounded text-left hover:text-[var(--tb-orange)]"><span className="block truncate font-medium">{stock.name}</span><span className="text-[10px] text-slate-600">{stock.code}</span></button>;
+  return <button type="button" onClick={() => void onSelectStock({ code: stock.code, name: stock.name, market: stock.market })} className="tb-focus min-w-0 rounded text-left hover:text-[var(--tb-blue)]"><span className="block truncate font-medium">{stock.name}</span><span className="text-xs text-slate-600">{stock.code}</span></button>;
 }
 
 export default function HomeTransitionCard({ transitions, onSelectStock, onOpenTransition, eodError = false }: Actions & { transitions: HomeEodTransitions | null; eodError?: boolean }) {
   const [mode, setMode] = useState<TransitionMode>("LIVE");
   const { rootRef, refreshVersion } = useLiveTransitionRevalidation(mode === "LIVE");
-  return <section ref={rootRef} className="tb-card min-w-0 p-4" aria-labelledby="home-transition-heading">
-    <h2 id="home-transition-heading" className="text-base font-semibold">전환 신호 · {mode === "LIVE" ? "LIVE 장중 잠정" : "EOD 확정 일봉"}</h2>
+  return <section ref={rootRef} className="tb-card min-w-0 p-4 sm:p-5" aria-labelledby="home-transition-heading">
+    <h2 id="home-transition-heading" className="text-lg font-bold">전환 신호</h2>
     <div className="mt-3"><TransitionModeSelector mode={mode} onChange={setMode} label="홈 전환 신호 데이터 기준" /></div>
     {mode === "LIVE" ? <>
-      <p className="mt-3 text-xs leading-relaxed text-amber-800">TOP LIVE의 저장된 14:30 관측 스냅샷입니다. 실시간 스트리밍이 아니며, 장중 또는 종가에서 신호가 되돌아갈 수 있습니다.</p>
-      <p className="mt-2 text-xs text-slate-600">근접 기준: 교차 경계까지 필요 추가 상승률 1% 이하 · 연구용 탐색 조건이며 검증된 확률이 아닙니다.</p>
+      <p className="mt-3 text-xs leading-relaxed text-amber-800">14:00 저장 관측 · 장중 잠정</p>
+
       <HomeLiveTransitionResults key={refreshVersion} onSelectStock={onSelectStock} onOpenTransition={onOpenTransition} />
       <LiveTransitionRules nearPercent={1} />
     </> : <HomeEodTransitionSummary transitions={transitions} eodError={eodError} onSelectStock={onSelectStock} onOpenTransition={onOpenTransition} />}
+    <button type="button" className="tb-focus mt-4 w-full rounded-xl bg-[#eaf2ff] px-3 py-3 text-sm font-semibold text-[var(--tb-blue)]" onClick={() => onOpenTransition("5-20", "all", "golden", mode)}>스크리닝 열기 →</button>
   </section>;
 }
 
@@ -108,31 +109,32 @@ export function HomeLiveTransitionResults({ onSelectStock, onOpenTransition }: A
 
 export function HomeLiveTransitionSummary({ responses, onSelectStock, onOpenTransition }: Actions & { responses: [HomeLiveTransitionPair, HomeLiveTransitionPair] }) {
   return <div aria-label="홈 LIVE 전환 집계">
-    <LiveTransitionMetadata data={responses[0]} />
+    <p className="mt-3 text-xs text-slate-600">{responses[0].referenceDate} · 전환 계산 가능 {responses[0].indicatorCoverage}/{responses[0].totalUniverse}종목</p>
+    <details className="mt-2 text-xs text-slate-600"><summary className="tb-focus w-fit cursor-pointer rounded">관측 기준과 자료 범위</summary><LiveTransitionMetadata data={responses[0]} /></details>
     {responses[0].snapshotTime === "14:00:00" && responses[0].indicatorCoverage === 0 ? <p className="mt-2 text-sm">이 날짜의 종목별 전환은 확인할 수 없습니다.</p> : responses.map((response) => {
       const groups = STATUSES.map((status) => ({ status, rows: response.results.filter((row) => row.status === status) }));
       const examples = groups.slice(0, 2).flatMap((group) => group.rows.slice(0, 1));
       const quoteTimes = response.results.map((row) => row.quoteAsOfTime).sort();
       return <div key={response.pair} className="mt-4 border-t border-slate-200 pt-3">
         <h3 className="text-sm font-semibold text-slate-900">{response.pair.replace("-", "/")}일 이동평균선</h3>
-        <p className="mt-1 text-[11px] text-slate-600">입력 검증 통과 {response.resultCount}종목 기준 · 데이터 부족 제외 {response.exclusions.dataMissing}종목</p>
-        <p className="mt-1 text-[11px] text-slate-600">실제 시세 시각 {quoteTimes.length ? `${quoteTimes[0]}${quoteTimes.at(-1) !== quoteTimes[0] ? ` ~ ${quoteTimes.at(-1)}` : ""} KST` : "검증 가능한 관측 없음"}</p>
-        <div className="mt-2 grid grid-cols-2 gap-2">{groups.map(({ status, rows }) => <button key={status} type="button" onClick={() => onOpenTransition(response.pair, status, "golden", "LIVE")} className="tb-focus min-w-0 rounded-lg bg-[#f7f3eb] px-2 py-2 text-left text-xs hover:bg-orange-50"><span className="block font-medium text-slate-800">{liveStatusLabel(status)}</span><span className="mt-1 block font-semibold text-[var(--tb-orange)]">{rows.length}종목 →</span></button>)}</div>
+        <p className="mt-1 text-xs text-slate-600">입력 검증 통과 {response.resultCount}종목 기준 · 데이터 부족 제외 {response.exclusions.dataMissing}종목</p>
+        <p className="mt-1 text-xs text-slate-600">실제 시세 시각 {quoteTimes.length ? `${quoteTimes[0]}${quoteTimes.at(-1) !== quoteTimes[0] ? ` ~ ${quoteTimes.at(-1)}` : ""} KST` : "검증 가능한 관측 없음"}</p>
+        <div className="mt-2 grid grid-cols-2 gap-2">{groups.map(({ status, rows }) => <button key={status} type="button" onClick={() => onOpenTransition(response.pair, status, "golden", "LIVE")} className="tb-focus min-w-0 rounded-lg bg-slate-50 px-2 py-2 text-left text-xs hover:bg-blue-50"><span className="block font-medium text-slate-800">{liveStatusLabel(status)}</span><span className="mt-1 block font-semibold text-[var(--tb-blue)]">{rows.length}종목 →</span></button>)}</div>
         {examples.length ? <div className="mt-3 space-y-2" aria-label={`${response.pair} 대표 LIVE 후보`}>{examples.map((row) => <article key={row.code} className="rounded-lg border border-slate-200 p-3 text-xs">
-          <div className="flex flex-wrap items-start justify-between gap-2"><StockButton stock={row} onSelectStock={onSelectStock} /><p className="text-[11px] text-orange-800">{liveStatusLabel(row.status)}</p></div>
-          <p className="mt-2 text-[11px] text-slate-600">실제 시세 {liveQuoteStamp(row)}</p>
+          <div className="flex flex-wrap items-start justify-between gap-2"><StockButton stock={row} onSelectStock={onSelectStock} /><p className="text-xs text-[var(--tb-blue)]">{liveStatusLabel(row.status)}</p></div>
+          <p className="mt-2 text-xs text-slate-600">실제 시세 {liveQuoteStamp(row)}</p>
           <dl className="mt-2 grid grid-cols-2 gap-2"><div><dt className="text-slate-500">관측가</dt><dd className="mt-0.5 font-semibold tabular-nums">{livePrice(row.observedPrice)}</dd></div><div><dt className="text-slate-500">필요 추가 상승률</dt><dd className="mt-0.5 font-semibold tabular-nums">{liveNumber(row.requiredAdditionalRisePercent, "%")}</dd></div><div className="col-span-2"><dt className="text-slate-500">교차 경계가 초과</dt><dd className="mt-0.5 tabular-nums">약 {livePrice(row.crossRequiredPrice, 4)} 초과 (참고 경계)</dd></div></dl>
         </article>)}</div> : <p className="mt-3 text-xs text-slate-600">검증 가능한 종목 중 골든크로스 진입·근접 후보가 없습니다.</p>}
       </div>;
     })}
-    <p className="mt-3 text-[10px] leading-relaxed text-slate-600">표시 경계가는 참고용 반올림 값입니다. 엄격 교차는 관측가가 원래 계산된 경계가를 초과해야 합니다. 주문 가능한 최소 가격·매수 추천이 아닙니다.</p>
+    <p className="mt-3 text-xs leading-relaxed text-slate-600">표시 경계가는 참고용 반올림 값입니다. 엄격 교차는 관측가가 원래 계산된 경계가를 초과해야 합니다. 주문 가능한 최소 가격·매수 추천이 아닙니다.</p>
   </div>;
 }
 
 export function HomeEodTransitionSummary({ transitions, onSelectStock, onOpenTransition, eodError = false }: Actions & { transitions: HomeEodTransitions | null; eodError?: boolean }) {
   return <div aria-label="홈 EOD 전환 집계">
     <p className="mt-3 text-xs text-slate-600">{transitions ? transitions.referenceDate + " · 확정 일봉 지표 " + transitions.indicatorCoverage + "/" + transitions.totalUniverse : eodError ? "확정 일봉 전환 지표 조회 실패" : "전환 지표 데이터 없음"}</p>
-    {transitions?.pairs.map((pair) => <div key={pair.pair} className="mt-3"><h3 className="mb-1 text-xs font-medium">{pair.pair.replace("-", "/")}일 이동평균선</h3><div className="grid grid-cols-2 gap-1">{(pair.directionalStates ?? pair.states.map((state) => ({ ...state, direction: "golden" }))).map((state) => <div key={state.direction + ":" + state.state} className="min-w-0 rounded-lg bg-[#f7f3eb] px-2 py-2 text-xs"><button type="button" onClick={() => onOpenTransition(pair.pair, state.state, state.direction, "EOD")} className="tb-focus w-full rounded text-left hover:text-[var(--tb-orange)]"><span className="block font-medium">{transitionLabel(state.direction, state.state)}</span><span className="mt-1 block text-[var(--tb-orange)]">{state.count === null ? "확인 불가" : state.count + "종목"} →</span></button>{state.examples[0] ? <div className="mt-1 truncate text-[10px] text-slate-600"><StockButton stock={state.examples[0]} onSelectStock={onSelectStock} /></div> : <p className="mt-1 text-[10px] text-slate-600">{state.count === 0 ? "해당 조건 종목 없음" : "대표 종목 없음"}</p>}</div>)}</div></div>)}
-    <p className="mt-2 text-[10px] text-slate-600">연구 규칙 · 매수 추천 아님{transitions ? " · 원천 품질 " + transitions.sourceQualityGrade : ""}</p>
+    {transitions?.pairs.map((pair) => <div key={pair.pair} className="mt-3"><h3 className="mb-1 text-xs font-medium">{pair.pair.replace("-", "/")}일 이동평균선</h3><div className="grid grid-cols-2 gap-1">{(pair.directionalStates ?? pair.states.map((state) => ({ ...state, direction: "golden" }))).map((state) => <div key={state.direction + ":" + state.state} className="min-w-0 rounded-lg bg-slate-50 px-2 py-2 text-xs"><button type="button" onClick={() => onOpenTransition(pair.pair, state.state, state.direction, "EOD")} className="tb-focus w-full rounded text-left hover:text-[var(--tb-blue)]"><span className="block font-medium">{transitionLabel(state.direction, state.state)}</span><span className="mt-1 block text-[var(--tb-blue)]">{state.count === null ? "확인 불가" : state.count + "종목"} →</span></button>{state.examples[0] ? <div className="mt-1 truncate text-xs text-slate-600"><StockButton stock={state.examples[0]} onSelectStock={onSelectStock} /></div> : <p className="mt-1 text-xs text-slate-600">{state.count === 0 ? "해당 조건 종목 없음" : "대표 종목 없음"}</p>}</div>)}</div></div>)}
+    <p className="mt-2 text-xs text-slate-600">연구 규칙 · 매수 추천 아님{transitions ? " · 원천 품질 " + transitions.sourceQualityGrade : ""}</p>
   </div>;
 }

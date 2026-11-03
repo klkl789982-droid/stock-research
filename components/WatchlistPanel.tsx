@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { toTopIntradayOverlay } from "../lib/top-stocks-intraday-overlay.mjs";
 
+import WatchlistStar, { useWatchlist } from "./WatchlistStar";
+
 type Stock = { code: string; name: string; market: string };
 type Model = { score: number | null; rank: number | null };
 type Item = Stock & { date: string | null; close: number | null; closeChangePct: number | null; models: Record<string, Model> | null };
@@ -49,32 +51,11 @@ function WatchlistQuote({ item }: { item: Item }) {
 export default function WatchlistPanel({ onSelectStock, initialQuery = "" }: {
   onSelectStock: (stock: Stock) => void | Promise<void>; initialQuery?: string;
 }) {
-  const [items, setItems] = useState<Item[]>([]);
-  const [listStatus, setListStatus] = useState<"loading" | "ready" | "error">("loading");
-  const [marketAvailable, setMarketAvailable] = useState(true);
-  const [version, setVersion] = useState(0);
+  const list = useWatchlist();
   const [query, setQuery] = useState(initialQuery);
   const [search, setSearch] = useState<{ query: string } | null>(initialQuery ? { query: initialQuery } : null);
   const [matches, setMatches] = useState<Stock[]>([]);
   const [searchStatus, setSearchStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
-  const saved = new Set(items.map(row => row.code));
-
-  useEffect(() => {
-    const request = new AbortController();
-    (async () => {
-      setListStatus("loading");
-      try {
-        const res = await fetch("/api/watchlist", { cache: "no-store", signal: request.signal });
-        if (!res.ok) throw new Error();
-        const result = await res.json();
-        if (!request.signal.aborted) { setItems(result.items); setMarketAvailable(result.marketAvailable); setListStatus("ready"); }
-      } catch { if (!request.signal.aborted) setListStatus("error"); }
-    })();
-    return () => request.abort();
-  }, [version]);
-
   useEffect(() => {
     if (!search) return;
     const request = new AbortController();
@@ -91,22 +72,11 @@ export default function WatchlistPanel({ onSelectStock, initialQuery = "" }: {
     return () => request.abort();
   }, [search]);
 
-  async function update(row: Stock, method: "PUT" | "DELETE") {
-    if (busy || listStatus !== "ready") return;
-    setBusy(true); setMessage("");
-    try {
-      const res = await fetch("/api/watchlist", { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: row.code }) });
-      if (res.status === 409) { setMessage("관심종목은 최대 50개까지 저장할 수 있습니다."); return; }
-      if (!res.ok) throw new Error();
-      setMessage(`${row.name} · ${method === "PUT" ? "추가했습니다." : "삭제했습니다."}`);
-      setVersion(v => v + 1);
-    } catch { setMessage("저장 여부를 확인하지 못했습니다. 목록을 새로 확인해 주세요."); setVersion(v => v + 1); }
-    finally { setBusy(false); }
-  }
-
+  if (!list) return null;
+  const { items, listStatus, marketAvailable, busy, refresh } = list;
   return <section className="tb-card min-w-0 p-4 sm:p-6" aria-labelledby="watchlist-title">
     <h1 id="watchlist-title" className="text-xl font-bold text-slate-950 sm:text-2xl">관심종목</h1>
-    <form className="mt-4 flex flex-wrap gap-2" onSubmit={e => { e.preventDefault(); if (query.trim()) { setSearch({ query: query.trim() }); setMessage(""); } }}>
+    <form className="mt-4 flex flex-wrap gap-2" onSubmit={e => { e.preventDefault(); if (query.trim()) { setSearch({ query: query.trim() }); } }}>
       <label className="sr-only" htmlFor="watchlist-search">관심종목 검색</label>
       <input id="watchlist-search" className="tb-focus min-w-0 flex-1 rounded-md border border-[var(--tb-border)] px-3 py-2 text-sm sm:max-w-sm"
         maxLength={64} placeholder="분석 대상 종목명 또는 코드" value={query} onChange={e => { setQuery(e.target.value); setSearch(null); setSearchStatus("idle"); setMatches([]); }} />
@@ -120,15 +90,13 @@ export default function WatchlistPanel({ onSelectStock, initialQuery = "" }: {
     {matches.length > 0 && <ul aria-label="검색된 종목" className="mt-2 max-w-lg divide-y divide-slate-200">
       {matches.map(row => <li key={row.code} className="flex items-center justify-between gap-2 py-1.5">
         <span className="min-w-0 break-words text-sm">{row.name} <small className="text-slate-600">{row.code}</small></span>
-        <button className={button} type="button" disabled={busy || listStatus !== "ready" || saved.has(row.code)} aria-label={`${row.name} 관심종목 추가`}
-          onClick={() => void update(row, "PUT")}>{saved.has(row.code) ? "저장됨" : "추가"}</button>
+        <WatchlistStar code={row.code} name={row.name} />
       </li>)}</ul>}
     <div className="mt-5 flex items-center justify-between border-b border-slate-200 pb-2">
       <h2 className="text-base font-semibold">내 목록{listStatus === "ready" && ` · ${items.length}종목`}</h2>
-      <button type="button" className={button} onClick={() => setVersion(v => v + 1)} disabled={busy || listStatus === "loading"}>목록 새로고침</button>
+      <button type="button" className={button} onClick={refresh} disabled={busy || listStatus === "loading"}>목록 새로고침</button>
     </div>
     <div className="mt-2 text-sm text-slate-600" role="status">
-      {message && <p>{message}</p>}
       {listStatus === "loading" ? "목록 확인 중…" : listStatus === "error" ? "저장된 목록을 불러오지 못했습니다. 다시 시도해 주세요." :
         !items.length ? "저장된 관심종목이 없습니다." : !marketAvailable ? "종목 목록은 확인했지만 일봉 자료를 불러오지 못했습니다." : ""}
     </div>
@@ -142,7 +110,7 @@ export default function WatchlistPanel({ onSelectStock, initialQuery = "" }: {
           {row.models && Object.values(row.models).some(m => m.rank !== null && m.score !== null)
             ? <ul className="mt-1">{Object.entries(row.models).map(([name, m]) => <li key={name}>{name} · {m.score !== null && m.rank !== null ? `${m.score.toFixed(2)}점 · ${m.rank}위` : "분석 자료 없음"}</li>)}</ul> : <p>분석 자료 없음</p>}
         </details>
-        <button className={button + " col-start-2 row-start-1 sm:col-start-4"} type="button" disabled={busy} aria-label={`${row.name} 관심종목 삭제`} onClick={() => void update(row, "DELETE")}>삭제</button>
+        <div className="col-start-2 row-start-1 sm:col-start-4"><WatchlistStar code={row.code} name={row.name} /></div>
       </li>)}</ul>}
   </section>;
 }

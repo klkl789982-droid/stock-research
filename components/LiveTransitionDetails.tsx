@@ -69,8 +69,8 @@ const collectionStamp = (value: string | null) => {
 };
 
 export function TransitionModeSelector({ mode, onChange, label = "전환 신호 데이터 기준" }: { mode: TransitionMode; onChange: (mode: TransitionMode) => void; label?: string }) {
-  return <div role="group" aria-label={label} className="flex flex-wrap gap-2">
-    {([ ["LIVE", "LIVE · 14:00 저장 관측"], ["EOD", "EOD · 확정 일봉 비교"] ] as const).map(([value, title]) => <button key={value} type="button" aria-pressed={mode === value} onClick={() => onChange(value)} className={`tb-focus min-h-10 rounded-lg border px-3 py-2 text-xs font-semibold sm:text-sm ${mode === value ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"}`}>{title}</button>)}
+  return <div role="group" aria-label={label} className="tb-segmented">
+    {([ ["LIVE", "LIVE · 14:00 저장 관측"], ["EOD", "EOD · 확정 일봉 비교"] ] as const).map(([value, title]) => <button key={value} type="button" aria-pressed={mode === value} onClick={() => onChange(value)} className="tb-focus">{title}</button>)}
   </div>;
 }
 
@@ -90,8 +90,8 @@ export function LiveTransitionMetadata({ data }: { data: LiveTransitionResponse 
     <p>직전 확정 일봉 {liveDate(data.previousOfficialDate)} · 저장 모델 A~D 기준일 {liveDate(data.modelReferenceDate)}</p>
     {data.reasonCounts?.transitionVerdictNotStored > 0 && <p>이 게시본에는 {data.reasonCounts.transitionVerdictNotStored}종목의 전환 판정값이 보존되지 않았습니다.</p>}
     {Number(data.transitionReplayedCount) > 0 && <p>당시 관측가와 직전 확정 일봉으로 {data.transitionReplayedCount}종목의 전환 판정을 재계산해 확인했습니다.</p>}
-    <p>계산 가능 {data.indicatorCoverage}/{data.totalUniverse} · 격리 {data.quarantinedCount ?? "미확인"} · 원천 품질 {data.sourceQualityGrade} · {data.isPartialRanking ? "부분 집계" : "저장 집계"}</p>
-    <details><summary className="tb-focus w-fit cursor-pointer rounded">수집 시각 · 규칙</summary><p className="mt-1">수집 시작 {collectionStamp(data.collectionStartedAt)}<br />수집 완료 {collectionStamp(data.collectionCompletedAt)}<br />규칙 {data.ruleVersion}</p></details>
+    <p>계산 가능 {data.indicatorCoverage}/{data.totalUniverse} · 격리 {data.quarantinedCount ?? "미확인"} · {data.isPartialRanking ? "부분 집계" : "저장 집계"}</p>
+    <details><summary className="tb-focus w-fit cursor-pointer rounded">수집 시각 · 규칙</summary><p className="mt-1">수집 시작 {collectionStamp(data.collectionStartedAt)}<br />수집 완료 {collectionStamp(data.collectionCompletedAt)}<br />규칙 {data.ruleVersion} · 원천 품질 {data.sourceQualityGrade}</p></details>
   </div>;
 }
 

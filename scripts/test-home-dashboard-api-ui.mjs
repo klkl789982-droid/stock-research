@@ -71,6 +71,8 @@ new Function("require", "exports", compile(await readFile(new URL("../components
 const rankings = {};
 new Function("require", "exports", compile(await readFile(new URL("../components/HomeModelRankings.tsx", import.meta.url), "utf8"), true))((name) => {
   if (name === "react/jsx-runtime") return jsx;
+  if (name.endsWith(".module.css")) return {};
+  if (name === "./WatchlistStar") return () => null;
   if (name === "../lib/home-presentation.mjs") return presentation;
   throw new Error(name);
 }, rankings);
@@ -80,7 +82,7 @@ const deliveryPanel = {};
 new Function("require","exports",compile(await readFile(new URL("../components/PrivateLiveDeliveryPanel.tsx",import.meta.url),"utf8"),true))(name => {
   if(name==="react/jsx-runtime")return jsx;if(name==="react")return React;if(name==="../lib/home-presentation.mjs")return presentation;throw Error(name);
 },deliveryPanel);
-const render = (data = dashboard, failedPerformance = false, operationsInput = operations, failedHome = false, relay = {delivery:null}, run = null, publishedPerformance = null) => {
+const render = (data = dashboard, failedPerformance = false, operationsInput = operations, failedHome = false, relay = {delivery:null}, run = null, publishedPerformance = null, selectedModel = relay?.delivery?.models?.[0]?.modelVersion?.[0] ?? data?.models?.models?.[0]?.modelVersion?.[0] ?? "A") => {
   const resources = [{ url: "/api/home-dashboard?topN=5", data, error: failedHome }, { url: "/api/model-performance", data: failedPerformance ? null : performance, error: failedPerformance }, { url: "/api/daily-production-status", data: operationsInput, error: false }, { url: "/api/intraday-model-top?model=B&limit=1", data: null, error: true }];
   resources.push({url:"/api/private-live-execution",data:run,error:!run});
   resources.push({url:"/api/model-performance/live",data:publishedPerformance,error:false});
@@ -88,6 +90,8 @@ const render = (data = dashboard, failedPerformance = false, operationsInput = o
   const uiExports = {};
   const requireUi = (name) => {
     if (name === "./PrivateLiveDeliveryPanel") return { ...deliveryPanel, PrivateLiveDeliveryView: () => null, usePrivateLiveDelivery: () => ({ data: relay, failed: false, disabled: false }) };
+    if (name.endsWith(".module.css")) return {};
+    if (name === "./HomeMarketFlow") return () => null;
     if (name === "./HomeModelRankings") return { __esModule: true, ...rankings };
     if (name === "./HomeCloudExecutionStatus") return { __esModule: true, ...execution };
     if (name === "../lib/home-presentation.mjs") return presentation;
@@ -96,7 +100,7 @@ const render = (data = dashboard, failedPerformance = false, operationsInput = o
     if (name === "react/jsx-runtime") return jsx;
     // Explicitly inspect EOD and expanded diagnostics/archive. Default LIVE is
     // covered separately; resource state must not consume the new UI states.
-    if (name === "react") return { ...React, useState: initial => [initial === null ? resources[index++] : initial === "LIVE" ? "EOD" : initial === false ? true : initial, () => {}], useRef: () => ({ current: 0 }), useEffect: () => {} };
+    if (name === "react") return { ...React, useState: initial => [initial === null ? resources[index++] : initial === "LIVE" ? "EOD" : initial === "A" ? selectedModel : initial === false ? true : initial, () => {}], useRef: () => ({ current: 0 }), useEffect: () => {} };
     if (name === "../lib/home-dashboard.mjs") return helpers;
     if (name === "../lib/directional-transition.mjs") return directional;
     throw new Error(name);
@@ -136,7 +140,7 @@ const blockedRun={...report,record:{...report.record,status:"GLOBAL_BLOCKED",eve
 const blockedHtml=render(dashboard,false,operations,false,corrected,blockedRun);
 for(const word of ["전체 수집 차단","한국투자증권 인증 실패","마지막으로 검증된 이전 게시본","잠정 순위","검증용순위","새 게시 중단"])assert.ok(blockedHtml.includes(word),word);
 assert.ok(!blockedHtml.includes("잠정 순위 전달 완료"));assert.ok(!blockedHtml.includes("비공개 전달 확인 2026.11.03 17:00:00 KST"));
-assert.match(html, /<h1 id="home-dashboard-heading"[^>]*>시장 요약<\/h1>/u);
+assert.match(html, /<h1 id="home-dashboard-heading"[^>]*>홈<\/h1>/u);
 assert.doesNotMatch(html, /오늘의 분석 대시보드|TIGHT BUDGET · DAILY RESEARCH/u);
 const modelUsage = {
   "A-v1": "상승장 · 주도주 탐색",
@@ -144,16 +148,13 @@ const modelUsage = {
   "C-v1": "횡보장 · 단기 반등 신호가 나올 때",
   "D-v1": "상승장 · 추세와 진입 조건 함께 확인",
 };
-const allModelsHtml = render({ ...dashboard, models: { ...dashboard.models, models: Object.keys(modelUsage).map((modelVersion) => ({ ...model, modelVersion })) } });
-const modelCards = [...allModelsHtml.matchAll(/<article\b[^>]*>[\s\S]*?<\/article>/g)].map(([card]) => card);
-assert.equal(modelCards.length, Object.keys(modelUsage).length);
-for (const [index, [version, usage]] of Object.entries(modelUsage).entries()) {
-  const card = modelCards[index];
-  assert.ok(card.includes(`모델 ${version} 상세 순위`));
-  assert.ok(card.includes(usage), `${version}: the usage must be in its existing ranking card`);
+const allModels = { ...dashboard, models: { ...dashboard.models, models: Object.keys(modelUsage).map((modelVersion) => ({ ...model, modelVersion })) } };
+const allModelsHtml = render(allModels);
+for (const [version, usage] of Object.entries(modelUsage)) {
+  const card = render(allModels, false, operations, false, {delivery:null}, null, null, version[0]);
+  assert.ok(card.includes(usage));
   assert.ok(card.includes("긴종목명검증") && card.includes("88.00") && card.includes("↑2"), "guidance must not replace rankings or scores");
 }
-assert.match(allModelsHtml, /home-model-grid/);
 assert.match(allModelsHtml, /home-ranking-note/);
 assert.doesNotMatch(allModelsHtml, /저점 매수|수익률 보장|장세 자동 전환|하락장 자동 차단/u);
 const caveats = ["장세별 설명은 산식의 특성에 따른 구분이며, 수익률 우위가 검증된 것은 아닙니다.", "하락장에서는 네 모델 모두 신규 매수 판단에 주의가 필요합니다."];
@@ -163,7 +164,7 @@ for (const output of [allModelsHtml, render(null), render(null, false, operation
 assert.ok(render(null, false, operations, true).includes("순위 조회 실패"));
 const emptyModel = render({ ...dashboard, models: { ...dashboard.models, models: [{ ...model, modelVersion: "C-v1", top: [] }] } });
 assert.ok(emptyModel.includes(modelUsage["C-v1"]) && emptyModel.includes("분석 가능한 종목 없음"));
-for (const text of ["시장 요약", "모델 TOP3", "긴종목명검증", "000660", "골든크로스 접근", "골든크로스 확인", "해당 조건 종목 없음", "508/553", "실행 기록 조회 실패", "집계 대기", "-1.25%", "관측 4건", "관측 대기 · 전달된 결과 없음", "확인 불가", "Daily EOD", "14:30 LIVE", "REJECTED", "↑2"]) assert.ok(html.includes(text), text);
+for (const text of ["홈", "모델 TOP3", "긴종목명검증", "000660", "골든크로스 접근", "골든크로스 확인", "해당 조건 종목 없음", "508/553", "실행 기록 조회 실패", "집계 대기", "-1.25%", "관측 4건", "관측 대기 · 전달된 결과 없음", "확인 불가", "Daily EOD", "14:30 LIVE", "REJECTED", "↑2"]) assert.ok(html.includes(text), text);
 assert.ok(render(dashboard, true).includes("성과 조회 실패"));
 assert.ok(render({ ...dashboard, transitions: null }).includes("전환 지표 데이터 없음"));
 const noComparison = render({ ...dashboard, models: { ...dashboard.models, models: [{ ...model, comparisonStatus: "UNAVAILABLE", comparisonReason: "FORMULA_PROVENANCE_CHANGED_OR_MISSING" }] } });

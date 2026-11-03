@@ -43,7 +43,7 @@ export function StockResearchResults({ code, mode, nearPercent }: { code: string
   const sample = results?.flatMap((result) => result.rows)[0];
   const modelReferenceDate = mode === "LIVE" ? sample?.modelReferenceDate ?? results?.find((result) => result.modelReferenceDate)?.modelReferenceDate : sample?.referenceDate ?? results?.find((result) => result.referenceDate)?.referenceDate;
   return <div className="grid gap-3 md:grid-cols-2">
-    <div className="rounded-xl border border-slate-200 bg-[#f7f3eb] p-3">
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
       <h3 className="text-sm font-semibold">전환 신호 · {mode === "LIVE" ? "LIVE 장중 잠정" : "EOD 확정 일봉"}</h3>
       {mode === "LIVE" && <p className="mt-2 text-xs leading-relaxed text-amber-800">저장된 TOP LIVE 14:00 관측이며 실시간 스트리밍이 아닙니다. 이후 장중 또는 종가에서 신호가 되돌아갈 수 있습니다.</p>}
       {results ? results.map((result) => <div key={result.pair} className="mt-3 border-t border-slate-200 pt-3 text-xs">
@@ -53,7 +53,7 @@ export function StockResearchResults({ code, mode, nearPercent }: { code: string
       </div>) : <p role="status" className="mt-3 text-xs text-slate-600">{mode === "LIVE" ? "저장된 LIVE 관측값" : "확정 일봉 지표"} 조회 중</p>}
       {mode === "LIVE" ? <LiveTransitionRules nearPercent={Number(nearPercent)} /> : <p className="mt-3 text-[10px] text-slate-600">v2 방향 분리 · 접근 강도는 교차 확률이 아님 · 확정 일봉 기준</p>}
     </div>
-    <div className="self-start rounded-xl border border-slate-200 bg-[#f7f3eb] p-3">
+    <div className="self-start rounded-xl border border-slate-200 bg-slate-50 p-3">
       <h3 className="text-sm font-semibold">저장 모델 A~D · {mode === "LIVE" ? "LIVE" : "Daily EOD"}</h3>
       <p className="mt-1 text-xs text-slate-600">모델 기준일 {modelReferenceDate ? liveDate(modelReferenceDate) : "미확인"} · 새 점수 계산 없음</p>
       {mode === "LIVE" && <p className="mt-2 text-xs leading-relaxed text-amber-800">{results?.some(r => r.snapshotTime === "14:30:00") ? "14:30 관측일 이전의 확정 EOD 저장 점수입니다." : "14:00 관측일의 게시본에 저장된 점수입니다."}</p>}
