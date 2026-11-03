@@ -8,7 +8,7 @@ import { currentTransitionView } from "../lib/live-transition-store.mjs";
 import { screenLiveTransitions } from "../lib/live-transition-screener.mjs";
 import { observeLiveGoldenTransition, freezeTransitionVerdicts, readTransitionVerdict, LIVE_NEAR_THRESHOLDS } from "../lib/live-transition-verdict.mjs";
 import { transitionReplayKey } from "../lib/live-transition-replay.mjs";
-import { auditStoredPublication } from "../lib/live-postclose-audit.mjs";
+import { auditStoredPublication,auditLateReceipt } from "../lib/live-postclose-audit.mjs";
 
 const seed = JSON.parse(await readFile(new URL("../data/analysis/market-seeds/2026-11-02.json", import.meta.url)));
 const date = "2026-11-03", issued = date + "T06:43:00.000Z";
@@ -145,6 +145,9 @@ objects.set(replayKey,replayBundle.transitionReplay);
 const verified = await separate({now:issued,replayTransitions:true});
 const receipt=await audit();assert.deepEqual([receipt.status,receipt.replayed,receipt.topRows,receipt.revision,receipt.coverage],["VERIFIED",withInputs.length,20,1,"PARTIAL"]);
 assert.equal(receipt.authenticatedUi,"NOT_CHECKED");
+const lateArgs={store,date,now:issued,readSeed:async()=>seed};
+assert.deepEqual(await auditLateReceipt({...lateArgs,expectedHash:receipt.deliveryHash}),receipt);
+assert.equal((await auditLateReceipt({...lateArgs,expectedHash:"0".repeat(64)})).status,"HEAD_CHANGED");
 const projected = currentTransitionView(verified,{dates:{}},new Date(issued));
 assert.equal(verified.deliveryHash,scores.deliveryHash);
 assert.equal(projected.transitionReplayedCount,withInputs.length);

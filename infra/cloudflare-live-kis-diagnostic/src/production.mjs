@@ -5,7 +5,7 @@ import { assertProduction, assertWindow, bounds, kst, productionObservation, pro
 import { safeCode, edgeFetch, transportReason } from "../core.mjs";
 import { createKisEodPrivateStore } from "../../../lib/kis-eod-private-store.mjs";
 import { privateRequestBudget } from "../relay-budget.mjs";
-import {auditStoredPublication} from "../../../lib/live-postclose-audit.mjs";
+import {auditStoredPublication,auditLateReceipt} from "../../../lib/live-postclose-audit.mjs";
 import { verifyNativeProductionFixture } from "../production-fixture.mjs";
 import { executionRecordKey } from "../../../lib/private-live-execution-status.mjs";
 import { createFixedBatchGroup } from "../batch-creation.mjs";
@@ -127,6 +127,21 @@ export class LiveDay extends DurableObject {
       publishExecution:(...args)=>publishExecutionRecord(this.state,remote,...args),retryMissing:()=>this.retryMissing(date)});
   }
   watchStatus(){const last=this.state.read("watch-latest");return last?this.state.read(`watch-snapshot:${last.slot}`):null;}
+  async auditLate(date,expectedHash){
+    assertProduction(this.env);
+    if(kst(Date.now()).date!==date||Date.now()<bounds(date).end+300000||!/^[a-f0-9]{64}$/.test(expectedHash))return {status:"NOT_DUE"};
+    const latest=this.state.currentOutbox();
+    if(latest?.delivery.deliveryHash!==expectedHash||this.state.read(this.state.receiptKey(latest))?.deliveryHash!==expectedHash)return {status:"HEAD_CHANGED"};
+    const old=this.state.read("watch-snapshot:1535")?.privateReadback?.replayAudit;
+    if(old?.deliveryHash===expectedHash && old.status==="VERIFIED")return old;
+    const key="postclose-audit:"+expectedHash,previous=this.state.read(key);
+    if(previous)return previous;
+    const io=privateRequestBudget(edgeFetch,24);
+    const store=createKisEodPrivateStore({repository:"klkl789982-droid/tight-budget-private-data",token:this.env.PRIVATE_LIVE_DELIVERY_WRITE_TOKEN,fetchImpl:io.fetch});
+    const receipt=await auditLateReceipt({store,date,expectedHash,now:new Date().toISOString(),fetchImpl:io.fetch});
+    if(receipt.deliveryHash===expectedHash)this.state.write(key,receipt);
+    return receipt;
+  }
   async publishExecution(date,event,workflowState,error) {
     const io=privateRequestBudget(edgeFetch,12);
     const remote=createKisEodPrivateStore({repository:"klkl789982-droid/tight-budget-private-data",token:this.env.PRIVATE_LIVE_DELIVERY_WRITE_TOKEN,fetchImpl:io.fetch});
@@ -198,6 +213,11 @@ export class CloudLive extends WorkflowEntrypoint {
       if(result.publication?.status==="PARTIAL" && Date.now()+30000<bounds(date).end)
         await step.do("bounded retry of verified missing symbols",options,()=>target.retryMissing(date));
     };
+    const auditIfLate=async result=>{
+      if(!result?.publication||!result.deliveryHash||Date.now()<bounds(date).end+300000)return;
+      try{await step.do("audit late publication from stored inputs",{...options,retries:{limit:0,delay:"1 second"}},()=>target.auditLate(date,result.deliveryHash));}
+      catch{console.warn(JSON.stringify({event:"LIVE_POST_CLOSE_AUDIT_UNVERIFIED",date,revision:result.publication.revision}));}
+    };
     let stage = p.mode === "batch" ? "BATCH_COLLECTION" : ["relay","publish-preserved"].includes(p.mode) ? "RELAY" : "PREPARE";
     try {
       if (p.mode === "relay" || p.mode === "publish-preserved") {
@@ -212,6 +232,7 @@ export class CloudLive extends WorkflowEntrypoint {
         });
         if(result.status==="WITHHELD") await report(`POLICY_W${result.coverage.missing.length}`);
         else if(result.status!=="WAITING_FOR_BATCHES") await report(result.publication?`POLICY_R${result.publication.revision}`:"DELIVERED");
+        await auditIfLate(result);
         if(p.mode==="relay")await retryPartial(result);
         return result;
       }
@@ -328,7 +349,7 @@ export class CloudLive extends WorkflowEntrypoint {
       if (!recovery) await report("VALIDATED");
       stage = "RELAY";
       const result=await step.do("publish private score-only delivery", options, () => target.relay(date));
-      if (!recovery) {await report(result.publication?`POLICY_R${result.publication.revision}`:"DELIVERED");await retryPartial(result);}return result;
+      if (!recovery) {await report(result.publication?`POLICY_R${result.publication.revision}`:"DELIVERED");await auditIfLate(result);await retryPartial(result);}return result;
     } catch (e) {
       const primaryCode = p.mode==="batch"?transportReason(e):safeCode(e);
       if(p.mode==="batch")try{
