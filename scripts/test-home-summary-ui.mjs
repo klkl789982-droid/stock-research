@@ -36,12 +36,13 @@ for (const [state, reason, label] of [
   ["VERIFIED", null, "실제 사이트 확인 완료"],
 ]) assert.equal(dates.homeDeploymentLabel({ state, reason }), label);
 assert.equal(dates.homeDeploymentLabel(null), "사이트 확인 불가");
-const chart = compile(await read("components/HomeMarketFlow.tsx"), { react: React }).IndexFlowChart;
-const chartPoints = [{date:"2026-10-15",close:1251.75},{date:"2026-10-16",close:1264.25}];
-const chartHtml = html(chart({ market:"KOSPI", points:chartPoints }));
-for (const label of ["최근 2거래일","2026-10-15 1,251.75","2026-10-16 1,264.25","<polyline"]) assert.ok(chartHtml.includes(label), label);
-assert.ok(!html(chart({ market:"KOSDAQ", points:chartPoints.slice(0,1) })).includes("<svg"), "one real close cannot draw a curve");
-assert.ok(!html(chart({ market:"KOSDAQ", points:chartPoints.map(p=>({...p,close:500})) })).includes("NaN"), "flat actual prices remain drawable");
+const chart = compile(await read("components/DailyCandles.tsx"), {react:React}).default;
+const bars=[{date:"2026-10-15",open:100,high:104,low:99,close:101},{date:"2026-10-16",open:101,high:101,low:101,close:101}];
+const chartProps={title:"KOSPI",unit:"pt",source:"fixture",retry:()=>{},data:{bars,missing:[],unknown:[],invalid:[],failedPages:0}};
+const chartHtml=html(React.createElement(chart,chartProps));
+for(const label of ["2거래일","2026-10-16","101.00pt",'data-session="2026-10-15"',"var(--tb-positive)","<rect","가격축 pt"]) assert.ok(chartHtml.includes(label),label);
+assert.ok(!html(React.createElement(chart,{...chartProps,data:null})).includes("<svg"));
+assert.ok(!chartHtml.includes("NaN"));
 const ranking = compile(await read("components/HomeModelRankings.tsx"), { "../lib/home-presentation.mjs": dates }).default;
 const execution = compile(await read("components/HomeCloudExecutionStatus.tsx"), { "../lib/home-presentation.mjs": dates });
 // Synthetic rendering fixtures only, never passed to an application store/API.

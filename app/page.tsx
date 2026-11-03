@@ -11,7 +11,7 @@ import WatchlistStar, { WatchlistProvider } from "../components/WatchlistStar";
 import StockScreenerPanel from "../components/StockScreenerPanel";
 import HomeDashboard from "../components/HomeDashboard";
 import type { TransitionMode } from "../components/LiveTransitionDetails";
-import StockPriceChart from "../components/StockPriceChart";
+import DailyCandles, {type CandleData} from "../components/DailyCandles";
 import StockResearchPanel from "../components/StockResearchPanel";
 import AdminLogout from "../components/AdminLogout";
 import WatchlistPanel from "../components/WatchlistPanel";
@@ -106,6 +106,7 @@ const [priceMeta, setPriceMeta] = useState<{
   code: string;
   source: "officialDailyPrice";
   priceBasis: "officialDailyClose";
+  candles?: CandleData;
   asOfDate: string;
   closePrice: number;
 } | null>(null);
@@ -291,7 +292,7 @@ const tasks = [
     if (result.status === "success" && priceData?.code === stockCode && Array.isArray(priceData.items) && priceData.items.length > 0) {
       setPriceInfo(priceData.items[0]);
       setPriceHistory(priceData.items);
-      setPriceMeta({ code: priceData.code, source: priceData.source, priceBasis: priceData.priceBasis, asOfDate: priceData.asOfDate, closePrice: priceData.closePrice });
+      setPriceMeta({ code: priceData.code, source: priceData.source, priceBasis: priceData.priceBasis, asOfDate: priceData.asOfDate, closePrice: priceData.closePrice, candles:priceData.candles });
       setPriceError(null);
       setPriceRequestStatus("success");
     } else {
@@ -633,7 +634,11 @@ return (
   </div>
 )}
 
-<StockPriceChart rows={priceHistory} meta={priceMeta} />
+{stockInfo && <DailyCandles key={String(stockInfo.srtnCd)+":"+priceMeta?.asOfDate}
+  title={searchedStock+" "+String(stockInfo.srtnCd).replace(/^A(?=.{6}$)/,"")} unit="원"
+  data={priceMeta?.code===String(stockInfo.srtnCd).replace(/^A(?=.{6}$)/,"") ? priceMeta?.candles : null}
+  loading={priceRequestStatus==="loading"} source="금융위원회 주식시세정보 · 한국거래소 · 공공데이터포털"
+  retry={()=>void handleSearch({code:String(stockInfo.srtnCd).replace(/^A(?=.{6}$)/,""),name:searchedStock,market:stockInfo.mrktCtg},false)}/>}
 
 <details className="mt-3 text-xs text-gray-500">
   <summary className="cursor-pointer font-medium text-gray-600">종목·가격 데이터 기준 자세히 보기</summary>
