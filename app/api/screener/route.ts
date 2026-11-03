@@ -11,6 +11,11 @@ import { parseLiveTransitionFilters, screenLiveTransitions, LIVE_TRANSITION_ERRO
 import { DIRECTIONAL_RULE_VERSION, approachPolicy } from "@/lib/directional-transition.mjs";
 import { evidencePolicy } from "@/lib/transition-evidence-policy.mjs";
 import { evidenceConfigHash } from "@/lib/transition-evidence.mjs";
+import { buildTransitionRows } from "@/lib/transition-screener.mjs";
+import { selectThree } from "@/lib/top-cross-comparison.mjs";
+import { taxEligibilityForStudy } from "@/lib/research-sell-tax.mjs";
+import study from "@/data/model-validation/top-cross-comparison-v1.json";
+import master from "@/data/universe.json";
 
 type JsonObject = Record<string, unknown>;
 
@@ -33,6 +38,18 @@ const numberParam = (request: NextRequest, name: string) => {
 };
 
 async function handleGet(request: NextRequest) {
+  if(request.nextUrl.searchParams.get("tab")==="research-cross"){
+    const date=request.nextUrl.searchParams.get("date"), model=request.nextUrl.searchParams.get("model")??"B-v1";
+    if(!date||!study.inventory.some(d=>d.date===date)||!["A-v1","B-v1","C-v1","D-v1"].includes(model))
+      return NextResponse.json({error:"INVALID_STUDY_FILTER"},{status:400});
+    const json=async(f:string)=>JSON.parse(await readFile(path.join(process.cwd(),"data",f),"utf8"));
+    try{const [history,seed,calendar]=await Promise.all([json("history/"+date+".json"),json("analysis/market-seeds/"+date+".json"),json("trading-calendar/status.json")]);
+      if(study.inventory.find(i=>i.date===date)?.seedHash!==seed.contentHash)throw Error("STUDY_SOURCE_CHANGED");
+      const rows=buildTransitionRows({history,seed,calendar}),tax=taxEligibilityForStudy(master,[history]);
+      const v=selectThree(history,model,rows,(r:{ticker:string;market:string})=>tax(date,{code:r.ticker,market:r.market},date.slice(0,4)+"-12-31"));
+      return NextResponse.json(v,{headers:{"Cache-Control":"no-store"}});
+    }catch{return NextResponse.json({error:"STUDY_INPUT_UNAVAILABLE"},{status:503});}
+  }
   const tab = request.nextUrl.searchParams.get("tab") ?? "models";
   if (!["models", "transition"].includes(tab)) return NextResponse.json({ error: { message: "지원하지 않는 검색 영역입니다." } }, { status: 400 });
   if (tab === "transition") {

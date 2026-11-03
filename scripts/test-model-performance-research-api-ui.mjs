@@ -18,6 +18,8 @@ function makeRoute(loader) {
     if (name === "@/lib/admin-access") return { withAdminAccess: handler => handler }; // Authorized data-contract fixture; auth independently tested.
     if (name === "@/data/model-validation/frozen-strategy-summary-20261103.json") return { default: { candidates: [] } };
     if (name === "@/data/model-validation/sell-tax-comparison-20261103.json") return { default: { comparisons: [] } };
+    if (name === "@/data/model-validation/top-cross-comparison-v1.json") return {default:{summary:[],inventory:[]}};
+    if (name === "@/lib/top-cross-benchmark.mjs") return {compareOfficialMarkets:async()=>[]};
     if (name === "next/server") return { NextResponse: { json: (body, options) => ({ body, options }) } };
     if (name === "@/lib/model-performance-research.mjs") return researchEngine;
     if (name === "@/lib/kis-token-manager") return { kisRequest: () => { throw new Error("Network disabled in fixture"); } };
@@ -94,6 +96,7 @@ test("backtest reports count mature, pending and missing by actual ranks and hor
   function render(tab, opts, error=false) {
     let index = 0; const states = [tab,opts,0,error,"D-v1",10,1,"","",false,null,null,false], exports={};
     new Function("require","exports",compiled(view))((name)=>{
+      if(name==="./TopCrossStudy") return {default:()=>React.createElement("section",null,"세 방식 비교")};
       if(name==="react/jsx-runtime") return jsxRuntime;
       if(name==="react") return {...React,useState:()=>[states[index++],()=>{}],useEffect:()=>{}};
       throw new Error(name);

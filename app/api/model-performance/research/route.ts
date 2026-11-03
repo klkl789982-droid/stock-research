@@ -8,6 +8,8 @@ import { loadPrivateBenchmarkLegs } from "@/lib/research-index-benchmarks.mjs";
 import { readResearchPublicationReceipts } from "@/lib/research-publication-receipts.mjs";
 import frozenStudy from "@/data/model-validation/frozen-strategy-summary-20261103.json";
 import taxStudy from "@/data/model-validation/sell-tax-comparison-20261103.json";
+import crossStudy from "@/data/model-validation/top-cross-comparison-v1.json";
+import { compareOfficialMarkets } from "@/lib/top-cross-benchmark.mjs";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -22,6 +24,10 @@ let pendingInventory: Promise<ReturnType<typeof inventoryOf>> | null = null;
 async function handleGet(request: Request) {
   const query = new URL(request.url).searchParams;
   const view = query.get("view");
+  if(view==="top-cross" && [...query].length===1){
+    try{return NextResponse.json({version:crossStudy.version,through:crossStudy.through,planHash:crossStudy.planHash,inventory:crossStudy.inventory,summary:await compareOfficialMarkets(crossStudy,kisRequest)},{headers});}
+    catch{return NextResponse.json({status:"COMPARISON_READ_FAILED"},{status:503,headers});}
+  }
   const inventory = view === "backtest-options";
   let options;
   try {

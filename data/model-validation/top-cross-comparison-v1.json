@@ -1,0 +1,6132 @@
+{
+  "version": "top-cross-comparison-v1",
+  "planHash": "1e55fde20ae4ed2a791c657fd99a17177af33a590a538d00d1fe090576d97e6f",
+  "inputHash": "1452026c78907b7b619178414e45867362b6e76adde3b32190249c3e40a5503a",
+  "through": "2026-11-02",
+  "inventory": [
+    {
+      "date": "2026-09-22",
+      "published": {
+        "entry": null,
+        "exit": null,
+        "status": "PUBLICATION_UNKNOWN"
+      },
+      "seedGeneratedAt": "2026-09-23T02:17:06.941Z",
+      "seedHash": "47517e464d55e6d73ba7f5ff3785550c68e7e7c002dca5ba82742de71cb8c56e",
+      "formulaHashes": {
+        "A-v1": "a84bed8266a13edbbd1d3d3b49c5da8217edf7c98b3c20603076742baf609217",
+        "A-v2": "0b83966f3b2be9b4258d621d8cfa5dbf77fba3f015b0602541c60eabb7fea563",
+        "B-v1": "cce71e6b2a9174798d8d2553e7fb63f9b798a82a142582e96998c2b934f2ebc4",
+        "C-v1": "e58d70091eaad25fa58136ab455f2130956e5b4885bbe9d8cec2198b30f1433a",
+        "D-v1": "91dc84f34eb8de8465a50f75d5685676d3e752a0d4993b29b04fcfa2a9b44888"
+      },
+      "models": {},
+      "error": "TRANSITION_TRADING_DATE_UNVERIFIED",
+      "daily": {
+        "entry": null,
+        "exit": null,
+        "status": "NO_CONFIRMED_OPEN"
+      }
+    },
+    {
+      "date": "2026-09-28",
+      "published": {
+        "entry": null,
+        "exit": null,
+        "status": "PUBLICATION_UNKNOWN"
+      },
+      "seedGeneratedAt": "2026-09-29T12:20:00.919Z",
+      "seedHash": "29133b15a9dcd790d1242da59d82498ee5e57262ba6f502bf11d42ea81bbd7c4",
+      "formulaHashes": {
+        "A-v1": "43efe2d499ccb05b183056f8e8f82bf91190e863ba86fb326c398f16006fcb4c",
+        "A-v2": "b3578fe7f9452d9cc169f705b0508de3b6f0f0e1674c5d4e10b7bac3d358bb2a",
+        "B-v1": "b9a45d38d0398617133ce8c9ce9dd05393ba787c3ad8e032efc8cb5cea6052d0",
+        "C-v1": "86f255711483ae949ec913750048461ac3a41b98dc28b2c0e21ca10522b16b8b",
+        "D-v1": "033a5f3e40adba3c74360e646b622b95683b1a83805baeb079227226658e732f"
+      },
+      "models": {
+        "B-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 0
+        },
+        "A-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 0
+        },
+        "C-v1": {
+          "status": "ORIGINAL_TOP10_INCOMPLETE",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 9,
+          "cross": 10,
+          "both": 0
+        },
+        "D-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 1
+        }
+      },
+      "daily": {
+        "entry": null,
+        "exit": null,
+        "status": "NO_CONFIRMED_OPEN"
+      }
+    },
+    {
+      "date": "2026-09-30",
+      "published": {
+        "entry": null,
+        "exit": null,
+        "status": "PUBLICATION_UNKNOWN"
+      },
+      "seedGeneratedAt": "2026-10-01T17:35:56.486Z",
+      "seedHash": "7152423137ec19076381e00ca2f8e99fef5f673597949a1c7cd5b219ba5d2db0",
+      "formulaHashes": {
+        "A-v1": "43efe2d499ccb05b183056f8e8f82bf91190e863ba86fb326c398f16006fcb4c",
+        "A-v2": "b3578fe7f9452d9cc169f705b0508de3b6f0f0e1674c5d4e10b7bac3d358bb2a",
+        "B-v1": "b9a45d38d0398617133ce8c9ce9dd05393ba787c3ad8e032efc8cb5cea6052d0",
+        "C-v1": "86f255711483ae949ec913750048461ac3a41b98dc28b2c0e21ca10522b16b8b",
+        "D-v1": "033a5f3e40adba3c74360e646b622b95683b1a83805baeb079227226658e732f"
+      },
+      "models": {
+        "B-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 5,
+          "both": 0
+        },
+        "A-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 5,
+          "both": 0
+        },
+        "C-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 5,
+          "both": 2
+        },
+        "D-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 5,
+          "both": 0
+        }
+      },
+      "daily": {
+        "entry": "2026-10-01",
+        "exit": "2026-10-08",
+        "status": "MATURE"
+      }
+    },
+    {
+      "date": "2026-10-01",
+      "published": {
+        "entry": null,
+        "exit": null,
+        "status": "PUBLICATION_UNKNOWN"
+      },
+      "seedGeneratedAt": "2026-10-02T16:56:05.279Z",
+      "seedHash": "ca2f586142ec48f277ff9fb3d3b81d27a21c44959b71d492e60389e8caa5ce03",
+      "formulaHashes": {
+        "A-v1": "43efe2d499ccb05b183056f8e8f82bf91190e863ba86fb326c398f16006fcb4c",
+        "A-v2": "b3578fe7f9452d9cc169f705b0508de3b6f0f0e1674c5d4e10b7bac3d358bb2a",
+        "B-v1": "b9a45d38d0398617133ce8c9ce9dd05393ba787c3ad8e032efc8cb5cea6052d0",
+        "C-v1": "86f255711483ae949ec913750048461ac3a41b98dc28b2c0e21ca10522b16b8b",
+        "D-v1": "033a5f3e40adba3c74360e646b622b95683b1a83805baeb079227226658e732f"
+      },
+      "models": {
+        "B-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 0
+        },
+        "A-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 0
+        },
+        "C-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 4
+        },
+        "D-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 0
+        }
+      },
+      "daily": {
+        "entry": "2026-10-02",
+        "exit": "2026-10-12",
+        "status": "MATURE"
+      }
+    },
+    {
+      "date": "2026-10-02",
+      "published": {
+        "entry": null,
+        "exit": null,
+        "status": "PUBLICATION_UNKNOWN"
+      },
+      "seedGeneratedAt": "2026-10-06T09:56:21.976Z",
+      "seedHash": "ccd86f119189748f56bfab3f32ad9118bd365e06f60bf845f5399f598ed1fe43",
+      "formulaHashes": {
+        "A-v1": "51dd5074a7dea7d87cb0ce79cd7fc7188c512e02d679ff86d3f787fe0eb91f8f",
+        "A-v2": "b3578fe7f9452d9cc169f705b0508de3b6f0f0e1674c5d4e10b7bac3d358bb2a",
+        "B-v1": "b9a45d38d0398617133ce8c9ce9dd05393ba787c3ad8e032efc8cb5cea6052d0",
+        "C-v1": "86f255711483ae949ec913750048461ac3a41b98dc28b2c0e21ca10522b16b8b",
+        "D-v1": "033a5f3e40adba3c74360e646b622b95683b1a83805baeb079227226658e732f"
+      },
+      "models": {
+        "B-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 0
+        },
+        "A-v1": {
+          "status": "FORMULA_LINEAGE_MISMATCH",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 0
+        },
+        "C-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 2
+        },
+        "D-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 0
+        }
+      },
+      "daily": {
+        "entry": "2026-10-06",
+        "exit": "2026-10-13",
+        "status": "MATURE"
+      }
+    },
+    {
+      "date": "2026-10-06",
+      "published": {
+        "entry": null,
+        "exit": null,
+        "status": "PUBLICATION_UNKNOWN"
+      },
+      "seedGeneratedAt": "2026-10-07T18:04:21.560Z",
+      "seedHash": "44ebef779ce69d3d3936273415a093113ade228ca113a407ec6256a81e8768e3",
+      "formulaHashes": {
+        "A-v1": "43efe2d499ccb05b183056f8e8f82bf91190e863ba86fb326c398f16006fcb4c",
+        "A-v2": "b3578fe7f9452d9cc169f705b0508de3b6f0f0e1674c5d4e10b7bac3d358bb2a",
+        "B-v1": "b9a45d38d0398617133ce8c9ce9dd05393ba787c3ad8e032efc8cb5cea6052d0",
+        "C-v1": "86f255711483ae949ec913750048461ac3a41b98dc28b2c0e21ca10522b16b8b",
+        "D-v1": "033a5f3e40adba3c74360e646b622b95683b1a83805baeb079227226658e732f"
+      },
+      "models": {
+        "B-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 0
+        },
+        "A-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 0
+        },
+        "C-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 4
+        },
+        "D-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 2
+        }
+      },
+      "daily": {
+        "entry": "2026-10-07",
+        "exit": "2026-10-14",
+        "status": "MATURE"
+      }
+    },
+    {
+      "date": "2026-10-07",
+      "published": {
+        "entry": null,
+        "exit": null,
+        "status": "PUBLICATION_UNKNOWN"
+      },
+      "seedGeneratedAt": "2026-10-08T06:37:39.913Z",
+      "seedHash": "0b7fdb53422dd0559a6ba30508a2b3f957d6880bd391c96e71f52a57ffded1f4",
+      "formulaHashes": {
+        "A-v1": "a84bed8266a13edbbd1d3d3b49c5da8217edf7c98b3c20603076742baf609217",
+        "A-v2": "cb94c4df4507c5d99d52f03bdca7176c87e6b8232e5c2772923cd4ef3c6d01d0",
+        "B-v1": "cce71e6b2a9174798d8d2553e7fb63f9b798a82a142582e96998c2b934f2ebc4",
+        "C-v1": "e58d70091eaad25fa58136ab455f2130956e5b4885bbe9d8cec2198b30f1433a",
+        "D-v1": "91dc84f34eb8de8465a50f75d5685676d3e752a0d4993b29b04fcfa2a9b44888"
+      },
+      "models": {
+        "B-v1": {
+          "status": "FORMULA_LINEAGE_MISMATCH",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 0
+        },
+        "A-v1": {
+          "status": "FORMULA_LINEAGE_MISMATCH",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 0
+        },
+        "C-v1": {
+          "status": "FORMULA_LINEAGE_MISMATCH",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 2
+        },
+        "D-v1": {
+          "status": "FORMULA_LINEAGE_MISMATCH",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 0
+        }
+      },
+      "daily": {
+        "entry": "2026-10-08",
+        "exit": "2026-10-15",
+        "status": "MATURE"
+      }
+    },
+    {
+      "date": "2026-10-08",
+      "published": {
+        "entry": null,
+        "exit": null,
+        "status": "PUBLICATION_UNKNOWN"
+      },
+      "seedGeneratedAt": "2026-10-12T02:36:03.079Z",
+      "seedHash": "44c5ec9686218b435f6ecd0b985031ffebbb83f3da65fc708c09a30ad62a36cf",
+      "formulaHashes": {
+        "A-v1": "43efe2d499ccb05b183056f8e8f82bf91190e863ba86fb326c398f16006fcb4c",
+        "A-v2": "e334ec0275dcca3483db936cd6442294bace8e607f034db8869f4f02071ee697",
+        "B-v1": "b9a45d38d0398617133ce8c9ce9dd05393ba787c3ad8e032efc8cb5cea6052d0",
+        "C-v1": "86f255711483ae949ec913750048461ac3a41b98dc28b2c0e21ca10522b16b8b",
+        "D-v1": "033a5f3e40adba3c74360e646b622b95683b1a83805baeb079227226658e732f"
+      },
+      "models": {
+        "B-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 0
+        },
+        "A-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 0
+        },
+        "C-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 1
+        },
+        "D-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 0
+        }
+      },
+      "daily": {
+        "entry": "2026-10-12",
+        "exit": "2026-10-16",
+        "status": "MATURE"
+      }
+    },
+    {
+      "date": "2026-10-12",
+      "published": {
+        "entry": null,
+        "exit": null,
+        "status": "PUBLICATION_UNKNOWN"
+      },
+      "seedGeneratedAt": "2026-10-13T03:44:50.115Z",
+      "seedHash": "03de2b527922fbeab42072afa1b075d9b99400c31a3c81496dd9a3a3fab5b2ae",
+      "formulaHashes": {
+        "A-v1": "43efe2d499ccb05b183056f8e8f82bf91190e863ba86fb326c398f16006fcb4c",
+        "A-v2": "e334ec0275dcca3483db936cd6442294bace8e607f034db8869f4f02071ee697",
+        "B-v1": "b9a45d38d0398617133ce8c9ce9dd05393ba787c3ad8e032efc8cb5cea6052d0",
+        "C-v1": "86f255711483ae949ec913750048461ac3a41b98dc28b2c0e21ca10522b16b8b",
+        "D-v1": "033a5f3e40adba3c74360e646b622b95683b1a83805baeb079227226658e732f"
+      },
+      "models": {
+        "B-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 5,
+          "both": 0
+        },
+        "A-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 5,
+          "both": 0
+        },
+        "C-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 5,
+          "both": 0
+        },
+        "D-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 5,
+          "both": 0
+        }
+      },
+      "daily": {
+        "entry": "2026-10-13",
+        "exit": "2026-10-19",
+        "status": "MATURE"
+      }
+    },
+    {
+      "date": "2026-10-13",
+      "published": {
+        "entry": null,
+        "exit": null,
+        "status": "PUBLICATION_UNKNOWN"
+      },
+      "seedGeneratedAt": "2026-10-14T02:05:37.996Z",
+      "seedHash": "6ea07f7edc370f75f48e8fb34c787b9bca3da2559d2fbe395e566a2f9bc4a559",
+      "formulaHashes": {
+        "A-v1": "43efe2d499ccb05b183056f8e8f82bf91190e863ba86fb326c398f16006fcb4c",
+        "A-v2": "e334ec0275dcca3483db936cd6442294bace8e607f034db8869f4f02071ee697",
+        "B-v1": "b9a45d38d0398617133ce8c9ce9dd05393ba787c3ad8e032efc8cb5cea6052d0",
+        "C-v1": "86f255711483ae949ec913750048461ac3a41b98dc28b2c0e21ca10522b16b8b",
+        "D-v1": "033a5f3e40adba3c74360e646b622b95683b1a83805baeb079227226658e732f"
+      },
+      "models": {
+        "B-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 1,
+          "both": 0
+        },
+        "A-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 1,
+          "both": 0
+        },
+        "C-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 1,
+          "both": 0
+        },
+        "D-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 1,
+          "both": 0
+        }
+      },
+      "daily": {
+        "entry": "2026-10-14",
+        "exit": "2026-10-20",
+        "status": "MATURE"
+      }
+    },
+    {
+      "date": "2026-10-14",
+      "published": {
+        "entry": "2026-10-16",
+        "exit": "2026-10-22",
+        "status": "MATURE"
+      },
+      "seedGeneratedAt": "2026-10-15T04:19:01.606Z",
+      "seedHash": "a47e20a0f8a5ae1f2aa0dca9f3c243e5cf8b466e5d5d99bb13dd2e7079e182d7",
+      "formulaHashes": {
+        "A-v1": "43efe2d499ccb05b183056f8e8f82bf91190e863ba86fb326c398f16006fcb4c",
+        "A-v2": "e334ec0275dcca3483db936cd6442294bace8e607f034db8869f4f02071ee697",
+        "B-v1": "b9a45d38d0398617133ce8c9ce9dd05393ba787c3ad8e032efc8cb5cea6052d0",
+        "C-v1": "86f255711483ae949ec913750048461ac3a41b98dc28b2c0e21ca10522b16b8b",
+        "D-v1": "033a5f3e40adba3c74360e646b622b95683b1a83805baeb079227226658e732f"
+      },
+      "models": {
+        "B-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 3,
+          "both": 0
+        },
+        "A-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 3,
+          "both": 0
+        },
+        "C-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 3,
+          "both": 0
+        },
+        "D-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 3,
+          "both": 0
+        }
+      },
+      "daily": {
+        "entry": "2026-10-15",
+        "exit": "2026-10-21",
+        "status": "MATURE"
+      }
+    },
+    {
+      "date": "2026-10-15",
+      "published": {
+        "entry": "2026-10-19",
+        "exit": "2026-10-23",
+        "status": "MATURE"
+      },
+      "seedGeneratedAt": "2026-10-16T04:56:14.645Z",
+      "seedHash": "a449a571a82d693e675a216f829f697d1003d7a30e3cfe1b1d06924701115a4e",
+      "formulaHashes": {
+        "A-v1": "43efe2d499ccb05b183056f8e8f82bf91190e863ba86fb326c398f16006fcb4c",
+        "A-v2": "e334ec0275dcca3483db936cd6442294bace8e607f034db8869f4f02071ee697",
+        "B-v1": "b9a45d38d0398617133ce8c9ce9dd05393ba787c3ad8e032efc8cb5cea6052d0",
+        "C-v1": "86f255711483ae949ec913750048461ac3a41b98dc28b2c0e21ca10522b16b8b",
+        "D-v1": "033a5f3e40adba3c74360e646b622b95683b1a83805baeb079227226658e732f"
+      },
+      "models": {
+        "B-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 1,
+          "both": 0
+        },
+        "A-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 1,
+          "both": 0
+        },
+        "C-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 1,
+          "both": 1
+        },
+        "D-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 1,
+          "both": 0
+        }
+      },
+      "daily": {
+        "entry": "2026-10-16",
+        "exit": "2026-10-22",
+        "status": "MATURE"
+      }
+    },
+    {
+      "date": "2026-10-16",
+      "published": {
+        "entry": "2026-10-20",
+        "exit": "2026-10-26",
+        "status": "MATURE"
+      },
+      "seedGeneratedAt": "2026-10-19T03:19:45.901Z",
+      "seedHash": "78ba8ad1f57e4f4bb3a031cb6f03fdf9d9192b12ebdc1c5ea056d8a7bca61676",
+      "formulaHashes": {
+        "A-v1": "43efe2d499ccb05b183056f8e8f82bf91190e863ba86fb326c398f16006fcb4c",
+        "A-v2": "e334ec0275dcca3483db936cd6442294bace8e607f034db8869f4f02071ee697",
+        "B-v1": "b9a45d38d0398617133ce8c9ce9dd05393ba787c3ad8e032efc8cb5cea6052d0",
+        "C-v1": "86f255711483ae949ec913750048461ac3a41b98dc28b2c0e21ca10522b16b8b",
+        "D-v1": "033a5f3e40adba3c74360e646b622b95683b1a83805baeb079227226658e732f"
+      },
+      "models": {
+        "B-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 5,
+          "both": 0
+        },
+        "A-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 5,
+          "both": 0
+        },
+        "C-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 5,
+          "both": 0
+        },
+        "D-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 5,
+          "both": 0
+        }
+      },
+      "daily": {
+        "entry": "2026-10-19",
+        "exit": "2026-10-23",
+        "status": "MATURE"
+      }
+    },
+    {
+      "date": "2026-10-19",
+      "published": {
+        "entry": "2026-10-21",
+        "exit": "2026-10-27",
+        "status": "MATURE"
+      },
+      "seedGeneratedAt": "2026-10-20T02:01:37.114Z",
+      "seedHash": "5ba521b8cf6c3e93d21d4a11fc7be08874b8c87e341fd260c61727be364fb397",
+      "formulaHashes": {
+        "A-v1": "43efe2d499ccb05b183056f8e8f82bf91190e863ba86fb326c398f16006fcb4c",
+        "A-v2": "e334ec0275dcca3483db936cd6442294bace8e607f034db8869f4f02071ee697",
+        "B-v1": "b9a45d38d0398617133ce8c9ce9dd05393ba787c3ad8e032efc8cb5cea6052d0",
+        "C-v1": "86f255711483ae949ec913750048461ac3a41b98dc28b2c0e21ca10522b16b8b",
+        "D-v1": "033a5f3e40adba3c74360e646b622b95683b1a83805baeb079227226658e732f"
+      },
+      "models": {
+        "B-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 7,
+          "both": 0
+        },
+        "A-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 7,
+          "both": 0
+        },
+        "C-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 7,
+          "both": 2
+        },
+        "D-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 7,
+          "both": 0
+        }
+      },
+      "daily": {
+        "entry": "2026-10-20",
+        "exit": "2026-10-26",
+        "status": "MATURE"
+      }
+    },
+    {
+      "date": "2026-10-20",
+      "published": {
+        "entry": "2026-10-22",
+        "exit": "2026-10-28",
+        "status": "MATURE"
+      },
+      "seedGeneratedAt": "2026-10-21T05:09:12.344Z",
+      "seedHash": "3d8525f66094ce0fa24bd5c1f83099635de27972e7552a4ebadd1c7dc33d237d",
+      "formulaHashes": {
+        "A-v1": "43efe2d499ccb05b183056f8e8f82bf91190e863ba86fb326c398f16006fcb4c",
+        "A-v2": "e334ec0275dcca3483db936cd6442294bace8e607f034db8869f4f02071ee697",
+        "B-v1": "b9a45d38d0398617133ce8c9ce9dd05393ba787c3ad8e032efc8cb5cea6052d0",
+        "C-v1": "86f255711483ae949ec913750048461ac3a41b98dc28b2c0e21ca10522b16b8b",
+        "D-v1": "033a5f3e40adba3c74360e646b622b95683b1a83805baeb079227226658e732f"
+      },
+      "models": {
+        "B-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 5,
+          "both": 0
+        },
+        "A-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 5,
+          "both": 0
+        },
+        "C-v1": {
+          "status": "ORIGINAL_TOP10_INCOMPLETE",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 9,
+          "cross": 5,
+          "both": 2
+        },
+        "D-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 5,
+          "both": 1
+        }
+      },
+      "daily": {
+        "entry": "2026-10-21",
+        "exit": "2026-10-27",
+        "status": "MATURE"
+      }
+    },
+    {
+      "date": "2026-10-21",
+      "published": {
+        "entry": "2026-10-23",
+        "exit": "2026-10-29",
+        "status": "MATURE"
+      },
+      "seedGeneratedAt": "2026-10-22T04:18:06.286Z",
+      "seedHash": "39a00ad5345cb8add567d707baea6c83bd89b7651a0916a846eb165bfb59d2df",
+      "formulaHashes": {
+        "A-v1": "43efe2d499ccb05b183056f8e8f82bf91190e863ba86fb326c398f16006fcb4c",
+        "A-v2": "e334ec0275dcca3483db936cd6442294bace8e607f034db8869f4f02071ee697",
+        "B-v1": "b9a45d38d0398617133ce8c9ce9dd05393ba787c3ad8e032efc8cb5cea6052d0",
+        "C-v1": "86f255711483ae949ec913750048461ac3a41b98dc28b2c0e21ca10522b16b8b",
+        "D-v1": "033a5f3e40adba3c74360e646b622b95683b1a83805baeb079227226658e732f"
+      },
+      "models": {
+        "B-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 7,
+          "both": 0
+        },
+        "A-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 7,
+          "both": 0
+        },
+        "C-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 7,
+          "both": 1
+        },
+        "D-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 7,
+          "both": 0
+        }
+      },
+      "daily": {
+        "entry": "2026-10-22",
+        "exit": "2026-10-28",
+        "status": "MATURE"
+      }
+    },
+    {
+      "date": "2026-10-22",
+      "published": {
+        "entry": "2026-10-26",
+        "exit": "2026-10-30",
+        "status": "MATURE"
+      },
+      "seedGeneratedAt": "2026-10-23T04:48:00.100Z",
+      "seedHash": "02108f4950df22e2b94cd73f0786fdd36c4ab87a7562fd76a02e437950c75bfe",
+      "formulaHashes": {
+        "A-v1": "43efe2d499ccb05b183056f8e8f82bf91190e863ba86fb326c398f16006fcb4c",
+        "A-v2": "e334ec0275dcca3483db936cd6442294bace8e607f034db8869f4f02071ee697",
+        "B-v1": "b9a45d38d0398617133ce8c9ce9dd05393ba787c3ad8e032efc8cb5cea6052d0",
+        "C-v1": "86f255711483ae949ec913750048461ac3a41b98dc28b2c0e21ca10522b16b8b",
+        "D-v1": "033a5f3e40adba3c74360e646b622b95683b1a83805baeb079227226658e732f"
+      },
+      "models": {
+        "B-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 2
+        },
+        "A-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 2
+        },
+        "C-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 1
+        },
+        "D-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 10,
+          "both": 2
+        }
+      },
+      "daily": {
+        "entry": "2026-10-23",
+        "exit": "2026-10-29",
+        "status": "MATURE"
+      }
+    },
+    {
+      "date": "2026-10-23",
+      "published": {
+        "entry": "2026-10-27",
+        "exit": "2026-11-02",
+        "status": "MATURE"
+      },
+      "seedGeneratedAt": "2026-10-26T04:18:08.700Z",
+      "seedHash": "e8db7d8e1dff992226f9b07090edf58ef95edf247a21bc5457b4b845b02cb2ad",
+      "formulaHashes": {
+        "A-v1": "43efe2d499ccb05b183056f8e8f82bf91190e863ba86fb326c398f16006fcb4c",
+        "A-v2": "e334ec0275dcca3483db936cd6442294bace8e607f034db8869f4f02071ee697",
+        "B-v1": "b9a45d38d0398617133ce8c9ce9dd05393ba787c3ad8e032efc8cb5cea6052d0",
+        "C-v1": "86f255711483ae949ec913750048461ac3a41b98dc28b2c0e21ca10522b16b8b",
+        "D-v1": "033a5f3e40adba3c74360e646b622b95683b1a83805baeb079227226658e732f"
+      },
+      "models": {
+        "B-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 7,
+          "both": 0
+        },
+        "A-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 7,
+          "both": 1
+        },
+        "C-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 7,
+          "both": 1
+        },
+        "D-v1": {
+          "status": "READY",
+          "eligible": 505,
+          "excluded": 48,
+          "top": 10,
+          "cross": 7,
+          "both": 2
+        }
+      },
+      "daily": {
+        "entry": "2026-10-26",
+        "exit": "2026-10-30",
+        "status": "MATURE"
+      }
+    },
+    {
+      "date": "2026-10-26",
+      "published": {
+        "entry": "2026-10-28",
+        "exit": null,
+        "status": "IMMATURE_OR_CALENDAR_GAP"
+      },
+      "seedGeneratedAt": "2026-10-27T02:16:18.507Z",
+      "seedHash": "5e4ff1175e93c206fb322d392246e43581ebf25da1f09837aff0d961b4cecc15",
+      "formulaHashes": {
+        "A-v1": "43efe2d499ccb05b183056f8e8f82bf91190e863ba86fb326c398f16006fcb4c",
+        "A-v2": "e334ec0275dcca3483db936cd6442294bace8e607f034db8869f4f02071ee697",
+        "B-v1": "b9a45d38d0398617133ce8c9ce9dd05393ba787c3ad8e032efc8cb5cea6052d0",
+        "C-v1": "86f255711483ae949ec913750048461ac3a41b98dc28b2c0e21ca10522b16b8b",
+        "D-v1": "033a5f3e40adba3c74360e646b622b95683b1a83805baeb079227226658e732f"
+      },
+      "models": {
+        "B-v1": {
+          "status": "READY",
+          "eligible": 506,
+          "excluded": 47,
+          "top": 10,
+          "cross": 1,
+          "both": 0
+        },
+        "A-v1": {
+          "status": "READY",
+          "eligible": 506,
+          "excluded": 47,
+          "top": 10,
+          "cross": 1,
+          "both": 0
+        },
+        "C-v1": {
+          "status": "READY",
+          "eligible": 506,
+          "excluded": 47,
+          "top": 10,
+          "cross": 1,
+          "both": 0
+        },
+        "D-v1": {
+          "status": "READY",
+          "eligible": 506,
+          "excluded": 47,
+          "top": 10,
+          "cross": 1,
+          "both": 0
+        }
+      },
+      "daily": {
+        "entry": "2026-10-27",
+        "exit": "2026-11-02",
+        "status": "MATURE"
+      }
+    },
+    {
+      "date": "2026-10-27",
+      "published": {
+        "entry": "2026-10-29",
+        "exit": null,
+        "status": "IMMATURE_OR_CALENDAR_GAP"
+      },
+      "seedGeneratedAt": "2026-10-28T02:29:42.109Z",
+      "seedHash": "957f63419d68f23977adb82297c9a0e2a41290e82f69b2c400bbaac32b6f9b47",
+      "formulaHashes": {
+        "A-v1": "43efe2d499ccb05b183056f8e8f82bf91190e863ba86fb326c398f16006fcb4c",
+        "A-v2": "e334ec0275dcca3483db936cd6442294bace8e607f034db8869f4f02071ee697",
+        "B-v1": "b9a45d38d0398617133ce8c9ce9dd05393ba787c3ad8e032efc8cb5cea6052d0",
+        "C-v1": "86f255711483ae949ec913750048461ac3a41b98dc28b2c0e21ca10522b16b8b",
+        "D-v1": "033a5f3e40adba3c74360e646b622b95683b1a83805baeb079227226658e732f"
+      },
+      "models": {
+        "B-v1": {
+          "status": "READY",
+          "eligible": 506,
+          "excluded": 47,
+          "top": 10,
+          "cross": 5,
+          "both": 1
+        },
+        "A-v1": {
+          "status": "READY",
+          "eligible": 506,
+          "excluded": 47,
+          "top": 10,
+          "cross": 5,
+          "both": 1
+        },
+        "C-v1": {
+          "status": "READY",
+          "eligible": 506,
+          "excluded": 47,
+          "top": 10,
+          "cross": 5,
+          "both": 2
+        },
+        "D-v1": {
+          "status": "READY",
+          "eligible": 506,
+          "excluded": 47,
+          "top": 10,
+          "cross": 5,
+          "both": 0
+        }
+      },
+      "daily": {
+        "entry": "2026-10-28",
+        "exit": null,
+        "status": "IMMATURE_OR_CALENDAR_GAP"
+      }
+    },
+    {
+      "date": "2026-10-28",
+      "published": {
+        "entry": "2026-10-30",
+        "exit": null,
+        "status": "IMMATURE_OR_CALENDAR_GAP"
+      },
+      "seedGeneratedAt": "2026-10-29T02:37:20.337Z",
+      "seedHash": "f10b2b1c1cac6709715fa930639f153d21ad4fab9d4a5728469f229464f23df7",
+      "formulaHashes": {
+        "A-v1": "43efe2d499ccb05b183056f8e8f82bf91190e863ba86fb326c398f16006fcb4c",
+        "A-v2": "e334ec0275dcca3483db936cd6442294bace8e607f034db8869f4f02071ee697",
+        "B-v1": "b9a45d38d0398617133ce8c9ce9dd05393ba787c3ad8e032efc8cb5cea6052d0",
+        "C-v1": "86f255711483ae949ec913750048461ac3a41b98dc28b2c0e21ca10522b16b8b",
+        "D-v1": "033a5f3e40adba3c74360e646b622b95683b1a83805baeb079227226658e732f"
+      },
+      "models": {
+        "B-v1": {
+          "status": "READY",
+          "eligible": 506,
+          "excluded": 47,
+          "top": 10,
+          "cross": 6,
+          "both": 3
+        },
+        "A-v1": {
+          "status": "READY",
+          "eligible": 506,
+          "excluded": 47,
+          "top": 10,
+          "cross": 6,
+          "both": 0
+        },
+        "C-v1": {
+          "status": "READY",
+          "eligible": 506,
+          "excluded": 47,
+          "top": 10,
+          "cross": 6,
+          "both": 0
+        },
+        "D-v1": {
+          "status": "READY",
+          "eligible": 506,
+          "excluded": 47,
+          "top": 10,
+          "cross": 6,
+          "both": 1
+        }
+      },
+      "daily": {
+        "entry": "2026-10-29",
+        "exit": null,
+        "status": "IMMATURE_OR_CALENDAR_GAP"
+      }
+    },
+    {
+      "date": "2026-10-29",
+      "published": {
+        "entry": "2026-11-02",
+        "exit": null,
+        "status": "IMMATURE_OR_CALENDAR_GAP"
+      },
+      "seedGeneratedAt": "2026-10-30T02:47:46.903Z",
+      "seedHash": "87461aaac00ef71892cfc9941f50f03c59b12b3445dd6cf7aaeb0efe98af95d5",
+      "formulaHashes": {
+        "A-v1": "43efe2d499ccb05b183056f8e8f82bf91190e863ba86fb326c398f16006fcb4c",
+        "A-v2": "e334ec0275dcca3483db936cd6442294bace8e607f034db8869f4f02071ee697",
+        "B-v1": "b9a45d38d0398617133ce8c9ce9dd05393ba787c3ad8e032efc8cb5cea6052d0",
+        "C-v1": "86f255711483ae949ec913750048461ac3a41b98dc28b2c0e21ca10522b16b8b",
+        "D-v1": "033a5f3e40adba3c74360e646b622b95683b1a83805baeb079227226658e732f"
+      },
+      "models": {
+        "B-v1": {
+          "status": "READY",
+          "eligible": 506,
+          "excluded": 47,
+          "top": 10,
+          "cross": 8,
+          "both": 1
+        },
+        "A-v1": {
+          "status": "READY",
+          "eligible": 506,
+          "excluded": 47,
+          "top": 10,
+          "cross": 8,
+          "both": 1
+        },
+        "C-v1": {
+          "status": "READY",
+          "eligible": 506,
+          "excluded": 47,
+          "top": 10,
+          "cross": 8,
+          "both": 1
+        },
+        "D-v1": {
+          "status": "READY",
+          "eligible": 506,
+          "excluded": 47,
+          "top": 10,
+          "cross": 8,
+          "both": 1
+        }
+      },
+      "daily": {
+        "entry": "2026-10-30",
+        "exit": null,
+        "status": "IMMATURE_OR_CALENDAR_GAP"
+      }
+    },
+    {
+      "date": "2026-10-30",
+      "published": {
+        "entry": null,
+        "exit": null,
+        "status": "NO_CONFIRMED_OPEN"
+      },
+      "seedGeneratedAt": "2026-11-02T02:44:45.038Z",
+      "seedHash": "4aaf064cbcb6e5f166727b3f21d955d3a8bb960c40b997ccc89192bc6ce81d26",
+      "formulaHashes": {
+        "A-v1": "43efe2d499ccb05b183056f8e8f82bf91190e863ba86fb326c398f16006fcb4c",
+        "A-v2": "e334ec0275dcca3483db936cd6442294bace8e607f034db8869f4f02071ee697",
+        "B-v1": "b9a45d38d0398617133ce8c9ce9dd05393ba787c3ad8e032efc8cb5cea6052d0",
+        "C-v1": "86f255711483ae949ec913750048461ac3a41b98dc28b2c0e21ca10522b16b8b",
+        "D-v1": "033a5f3e40adba3c74360e646b622b95683b1a83805baeb079227226658e732f"
+      },
+      "models": {
+        "B-v1": {
+          "status": "READY",
+          "eligible": 506,
+          "excluded": 47,
+          "top": 10,
+          "cross": 7,
+          "both": 0
+        },
+        "A-v1": {
+          "status": "READY",
+          "eligible": 506,
+          "excluded": 47,
+          "top": 10,
+          "cross": 7,
+          "both": 0
+        },
+        "C-v1": {
+          "status": "READY",
+          "eligible": 506,
+          "excluded": 47,
+          "top": 10,
+          "cross": 7,
+          "both": 1
+        },
+        "D-v1": {
+          "status": "READY",
+          "eligible": 506,
+          "excluded": 47,
+          "top": 10,
+          "cross": 7,
+          "both": 0
+        }
+      },
+      "daily": {
+        "entry": "2026-11-02",
+        "exit": null,
+        "status": "IMMATURE_OR_CALENDAR_GAP"
+      }
+    },
+    {
+      "date": "2026-11-02",
+      "published": {
+        "entry": null,
+        "exit": null,
+        "status": "NO_CONFIRMED_OPEN"
+      },
+      "seedGeneratedAt": "2026-11-03T04:49:20.870Z",
+      "seedHash": "9a0f437779380b21c9a6f0bb81908b97dcfaa71a670ca0f0eafd8425fac83328",
+      "formulaHashes": {
+        "A-v1": "43efe2d499ccb05b183056f8e8f82bf91190e863ba86fb326c398f16006fcb4c",
+        "A-v2": "e334ec0275dcca3483db936cd6442294bace8e607f034db8869f4f02071ee697",
+        "B-v1": "b9a45d38d0398617133ce8c9ce9dd05393ba787c3ad8e032efc8cb5cea6052d0",
+        "C-v1": "86f255711483ae949ec913750048461ac3a41b98dc28b2c0e21ca10522b16b8b",
+        "D-v1": "033a5f3e40adba3c74360e646b622b95683b1a83805baeb079227226658e732f"
+      },
+      "models": {
+        "B-v1": {
+          "status": "READY",
+          "eligible": 506,
+          "excluded": 47,
+          "top": 10,
+          "cross": 10,
+          "both": 0
+        },
+        "A-v1": {
+          "status": "READY",
+          "eligible": 506,
+          "excluded": 47,
+          "top": 10,
+          "cross": 10,
+          "both": 2
+        },
+        "C-v1": {
+          "status": "READY",
+          "eligible": 506,
+          "excluded": 47,
+          "top": 10,
+          "cross": 10,
+          "both": 3
+        },
+        "D-v1": {
+          "status": "READY",
+          "eligible": 506,
+          "excluded": 47,
+          "top": 10,
+          "cross": 10,
+          "both": 2
+        }
+      },
+      "daily": {
+        "entry": null,
+        "exit": null,
+        "status": "NO_CONFIRMED_OPEN"
+      }
+    }
+  ],
+  "live": {
+    "status": "NOT_QUERIED"
+  },
+  "summary": [
+    {
+      "layer": "daily",
+      "model": "B-v1",
+      "arm": "TOP",
+      "basis": "COMMON",
+      "commonDays": 16,
+      "selected": 160,
+      "status": "VALUED",
+      "total": -12.88893,
+      "mdd": -22.862901,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 40,
+      "signals": 4,
+      "stocks": 25,
+      "mean": -2.9377888000342374,
+      "median": -3.398839672684047,
+      "win": 40,
+      "exposure": 75.916695,
+      "cashPct": 24.083304999999996,
+      "stockConcentration": 9.612355500533154,
+      "exitConcentration": 30.166274766784117,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.79508965283334,
+          "n": 8
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.1985368984398,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 1.0119281552620198,
+          "n": 9
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.11266882425900002,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.79996656477069,
+          "n": 8
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.20000992898699999,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.8672525387245801,
+          "n": 9
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.09606720960000001,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "B-v1",
+      "arm": "CROSS",
+      "basis": "COMMON",
+      "commonDays": 16,
+      "selected": 97,
+      "status": "VALUED",
+      "total": -6.927305,
+      "mdd": -13.37562,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 36,
+      "signals": 8,
+      "stocks": 36,
+      "mean": -1.8369039557223372,
+      "median": -1.7864562508287811,
+      "win": 33.333333333333336,
+      "exposure": 68.939748,
+      "cashPct": 31.060252000000006,
+      "stockConcentration": 9.62861368936399,
+      "exitConcentration": 23.139264988965987,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.29908164056724,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.19958913459494998,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-02",
+          "exitDate": "2026-10-12",
+          "fraction": 0.40114334397626994,
+          "n": 4
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-02",
+          "exitDate": "2026-10-12",
+          "fraction": 0.09996993998999999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.3167556054534,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.21136237127145002,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-13",
+          "exitDate": "2026-10-19",
+          "fraction": 0.39655183170743996,
+          "n": 4
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-13",
+          "exitDate": "2026-10-19",
+          "fraction": 0.0993334947264,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.288593552994165,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.19527011296335,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.1978364083698,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.29779834275899997,
+          "n": 3
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.1848933532764,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.27882887152338,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.0917191676655,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "B-v1",
+      "arm": "BOTH",
+      "basis": "COMMON",
+      "commonDays": 16,
+      "selected": 2,
+      "status": "VALUED",
+      "total": 1.469863,
+      "mdd": -2.075407,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 2,
+      "signals": 1,
+      "stocks": 2,
+      "mean": 7.354055199470835,
+      "median": 7.354055199470835,
+      "win": 100,
+      "exposure": 3.841375,
+      "cashPct": 96.158625,
+      "stockConcentration": 86.55967685628201,
+      "exitConcentration": 100,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.19968470145449999,
+          "n": 2
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "B-v1",
+      "arm": "TOP",
+      "basis": "ALL_MODELS_COMMON",
+      "commonDays": 14,
+      "selected": 140,
+      "status": "VALUED",
+      "total": -12.88893,
+      "mdd": -22.862901,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 40,
+      "signals": 4,
+      "stocks": 25,
+      "mean": -2.9377888000342374,
+      "median": -3.398839672684047,
+      "win": 40,
+      "exposure": 75.916695,
+      "cashPct": 24.083304999999996,
+      "stockConcentration": 9.612355500533154,
+      "exitConcentration": 30.166274766784117,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.79508965283334,
+          "n": 8
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.1985368984398,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 1.0119281552620198,
+          "n": 9
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.11266882425900002,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.79996656477069,
+          "n": 8
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.20000992898699999,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.8672525387245801,
+          "n": 9
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.09606720960000001,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "B-v1",
+      "arm": "CROSS",
+      "basis": "ALL_MODELS_COMMON",
+      "commonDays": 14,
+      "selected": 82,
+      "status": "VALUED",
+      "total": -6.927305,
+      "mdd": -13.37562,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 36,
+      "signals": 8,
+      "stocks": 36,
+      "mean": -1.8369039557223372,
+      "median": -1.7864562508287811,
+      "win": 33.333333333333336,
+      "exposure": 68.939748,
+      "cashPct": 31.060252000000006,
+      "stockConcentration": 9.62861368936399,
+      "exitConcentration": 23.139264988965987,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.29908164056724,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.19958913459494998,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-02",
+          "exitDate": "2026-10-12",
+          "fraction": 0.40114334397626994,
+          "n": 4
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-02",
+          "exitDate": "2026-10-12",
+          "fraction": 0.09996993998999999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.3167556054534,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.21136237127145002,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-13",
+          "exitDate": "2026-10-19",
+          "fraction": 0.39655183170743996,
+          "n": 4
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-13",
+          "exitDate": "2026-10-19",
+          "fraction": 0.0993334947264,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.288593552994165,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.19527011296335,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.1978364083698,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.29779834275899997,
+          "n": 3
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.1848933532764,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.27882887152338,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.0917191676655,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "B-v1",
+      "arm": "BOTH",
+      "basis": "ALL_MODELS_COMMON",
+      "commonDays": 14,
+      "selected": 2,
+      "status": "VALUED",
+      "total": 1.469863,
+      "mdd": -2.075407,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 2,
+      "signals": 1,
+      "stocks": 2,
+      "mean": 7.354055199470835,
+      "median": 7.354055199470835,
+      "win": 100,
+      "exposure": 3.841375,
+      "cashPct": 96.158625,
+      "stockConcentration": 86.55967685628201,
+      "exitConcentration": 100,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.19968470145449999,
+          "n": 2
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "B-v1",
+      "arm": "CROSS",
+      "basis": "CROSS_EXTENDED",
+      "commonDays": 17,
+      "selected": 107,
+      "status": "VALUED",
+      "total": -6.927305,
+      "mdd": -13.37562,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 36,
+      "signals": 8,
+      "stocks": 36,
+      "mean": -1.8369039557223372,
+      "median": -1.7864562508287811,
+      "win": 33.333333333333336,
+      "exposure": 68.939748,
+      "cashPct": 31.060252000000006,
+      "stockConcentration": 9.62861368936399,
+      "exitConcentration": 23.139264988965987,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.29908164056724,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.19958913459494998,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-02",
+          "exitDate": "2026-10-12",
+          "fraction": 0.40114334397626994,
+          "n": 4
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-02",
+          "exitDate": "2026-10-12",
+          "fraction": 0.09996993998999999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.3167556054534,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.21136237127145002,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-13",
+          "exitDate": "2026-10-19",
+          "fraction": 0.39655183170743996,
+          "n": 4
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-13",
+          "exitDate": "2026-10-19",
+          "fraction": 0.0993334947264,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.288593552994165,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.19527011296335,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.1978364083698,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.29779834275899997,
+          "n": 3
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.1848933532764,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.27882887152338,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.0917191676655,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "A-v1",
+      "arm": "TOP",
+      "basis": "COMMON",
+      "commonDays": 15,
+      "selected": 150,
+      "status": "VALUED",
+      "total": -18.466538,
+      "mdd": -24.416974,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 40,
+      "signals": 4,
+      "stocks": 34,
+      "mean": -4.705562871977001,
+      "median": -4.5374839863031236,
+      "win": 30,
+      "exposure": 75.946121,
+      "cashPct": 24.053878999999995,
+      "stockConcentration": 10.136839590749577,
+      "exitConcentration": 31.735083735356216,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.9946403605444499,
+          "n": 10
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.7491809346256801,
+          "n": 7
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.3210155857791,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.66670693497405,
+          "n": 7
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.2859890808789,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.8160788370807899,
+          "n": 9
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.09030317702400001,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "A-v1",
+      "arm": "CROSS",
+      "basis": "COMMON",
+      "commonDays": 15,
+      "selected": 87,
+      "status": "VALUED",
+      "total": -6.927305,
+      "mdd": -13.37562,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 36,
+      "signals": 8,
+      "stocks": 36,
+      "mean": -1.8369039557223372,
+      "median": -1.7864562508287811,
+      "win": 33.333333333333336,
+      "exposure": 68.939748,
+      "cashPct": 31.060252000000006,
+      "stockConcentration": 9.62861368936399,
+      "exitConcentration": 23.139264988965987,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.29908164056724,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.19958913459494998,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-02",
+          "exitDate": "2026-10-12",
+          "fraction": 0.40114334397626994,
+          "n": 4
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-02",
+          "exitDate": "2026-10-12",
+          "fraction": 0.09996993998999999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.3167556054534,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.21136237127145002,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-13",
+          "exitDate": "2026-10-19",
+          "fraction": 0.39655183170743996,
+          "n": 4
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-13",
+          "exitDate": "2026-10-19",
+          "fraction": 0.0993334947264,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.288593552994165,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.19527011296335,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.1978364083698,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.29779834275899997,
+          "n": 3
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.1848933532764,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.27882887152338,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.0917191676655,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "A-v1",
+      "arm": "BOTH",
+      "basis": "COMMON",
+      "commonDays": 15,
+      "selected": 3,
+      "status": "VALUED",
+      "total": -0.854117,
+      "mdd": -3.514077,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 3,
+      "signals": 2,
+      "stocks": 3,
+      "mean": -2.799748305932319,
+      "median": -3.7994232060699304,
+      "win": 33.333333333333336,
+      "exposure": 5.847012,
+      "cashPct": 94.152988,
+      "stockConcentration": 53.88667481157099,
+      "exitConcentration": 53.88667481157099,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.1993364578197,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.10228906247174999,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "A-v1",
+      "arm": "TOP",
+      "basis": "ALL_MODELS_COMMON",
+      "commonDays": 14,
+      "selected": 140,
+      "status": "VALUED",
+      "total": -18.466538,
+      "mdd": -24.416974,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 40,
+      "signals": 4,
+      "stocks": 34,
+      "mean": -4.705562871977001,
+      "median": -4.5374839863031236,
+      "win": 30,
+      "exposure": 75.946121,
+      "cashPct": 24.053878999999995,
+      "stockConcentration": 10.136839590749577,
+      "exitConcentration": 31.735083735356216,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.9946403605444499,
+          "n": 10
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.7491809346256801,
+          "n": 7
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.3210155857791,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.66670693497405,
+          "n": 7
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.2859890808789,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.8160788370807899,
+          "n": 9
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.09030317702400001,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "A-v1",
+      "arm": "CROSS",
+      "basis": "ALL_MODELS_COMMON",
+      "commonDays": 14,
+      "selected": 82,
+      "status": "VALUED",
+      "total": -6.927305,
+      "mdd": -13.37562,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 36,
+      "signals": 8,
+      "stocks": 36,
+      "mean": -1.8369039557223372,
+      "median": -1.7864562508287811,
+      "win": 33.333333333333336,
+      "exposure": 68.939748,
+      "cashPct": 31.060252000000006,
+      "stockConcentration": 9.62861368936399,
+      "exitConcentration": 23.139264988965987,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.29908164056724,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.19958913459494998,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-02",
+          "exitDate": "2026-10-12",
+          "fraction": 0.40114334397626994,
+          "n": 4
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-02",
+          "exitDate": "2026-10-12",
+          "fraction": 0.09996993998999999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.3167556054534,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.21136237127145002,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-13",
+          "exitDate": "2026-10-19",
+          "fraction": 0.39655183170743996,
+          "n": 4
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-13",
+          "exitDate": "2026-10-19",
+          "fraction": 0.0993334947264,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.288593552994165,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.19527011296335,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.1978364083698,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.29779834275899997,
+          "n": 3
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.1848933532764,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.27882887152338,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.0917191676655,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "A-v1",
+      "arm": "BOTH",
+      "basis": "ALL_MODELS_COMMON",
+      "commonDays": 14,
+      "selected": 3,
+      "status": "VALUED",
+      "total": -0.854117,
+      "mdd": -3.514077,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 3,
+      "signals": 2,
+      "stocks": 3,
+      "mean": -2.799748305932319,
+      "median": -3.7994232060699304,
+      "win": 33.333333333333336,
+      "exposure": 5.847012,
+      "cashPct": 94.152988,
+      "stockConcentration": 53.88667481157099,
+      "exitConcentration": 53.88667481157099,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.1993364578197,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.10228906247174999,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "A-v1",
+      "arm": "CROSS",
+      "basis": "CROSS_EXTENDED",
+      "commonDays": 17,
+      "selected": 107,
+      "status": "VALUED",
+      "total": -6.927305,
+      "mdd": -13.37562,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 36,
+      "signals": 8,
+      "stocks": 36,
+      "mean": -1.8369039557223372,
+      "median": -1.7864562508287811,
+      "win": 33.333333333333336,
+      "exposure": 68.939748,
+      "cashPct": 31.060252000000006,
+      "stockConcentration": 9.62861368936399,
+      "exitConcentration": 23.139264988965987,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.29908164056724,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.19958913459494998,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-02",
+          "exitDate": "2026-10-12",
+          "fraction": 0.40114334397626994,
+          "n": 4
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-02",
+          "exitDate": "2026-10-12",
+          "fraction": 0.09996993998999999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.3167556054534,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.21136237127145002,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-13",
+          "exitDate": "2026-10-19",
+          "fraction": 0.39655183170743996,
+          "n": 4
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-13",
+          "exitDate": "2026-10-19",
+          "fraction": 0.0993334947264,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.288593552994165,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.19527011296335,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.1978364083698,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.29779834275899997,
+          "n": 3
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.1848933532764,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.27882887152338,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.0917191676655,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "C-v1",
+      "arm": "TOP",
+      "basis": "COMMON",
+      "commonDays": 15,
+      "selected": 150,
+      "status": "VALUED",
+      "total": 7.507014,
+      "mdd": -6.288819,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 40,
+      "signals": 4,
+      "stocks": 36,
+      "mean": 1.9906923091962903,
+      "median": 0.056244951689248965,
+      "win": 50,
+      "exposure": 76.014618,
+      "cashPct": 23.985382,
+      "stockConcentration": 15.469866553471038,
+      "exitConcentration": 47.14708764753175,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.598474849110615,
+          "n": 6
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.39923921182599,
+          "n": 4
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.55960410474126,
+          "n": 5
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.55905041737593,
+          "n": 5
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.32629728090689997,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.76448233964475,
+          "n": 7
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.4296145627314,
+          "n": 4
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.6464592695006999,
+          "n": 6
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "C-v1",
+      "arm": "CROSS",
+      "basis": "COMMON",
+      "commonDays": 15,
+      "selected": 92,
+      "status": "VALUED",
+      "total": -6.927305,
+      "mdd": -13.37562,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 36,
+      "signals": 8,
+      "stocks": 36,
+      "mean": -1.8369039557223372,
+      "median": -1.7864562508287811,
+      "win": 33.333333333333336,
+      "exposure": 68.939748,
+      "cashPct": 31.060252000000006,
+      "stockConcentration": 9.62861368936399,
+      "exitConcentration": 23.139264988965987,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.29908164056724,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.19958913459494998,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-02",
+          "exitDate": "2026-10-12",
+          "fraction": 0.40114334397626994,
+          "n": 4
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-02",
+          "exitDate": "2026-10-12",
+          "fraction": 0.09996993998999999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.3167556054534,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.21136237127145002,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-13",
+          "exitDate": "2026-10-19",
+          "fraction": 0.39655183170743996,
+          "n": 4
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-13",
+          "exitDate": "2026-10-19",
+          "fraction": 0.0993334947264,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.288593552994165,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.19527011296335,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.1978364083698,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.29779834275899997,
+          "n": 3
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.1848933532764,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.27882887152338,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.0917191676655,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "C-v1",
+      "arm": "BOTH",
+      "basis": "COMMON",
+      "commonDays": 15,
+      "selected": 19,
+      "status": "VALUED",
+      "total": -3.439171,
+      "mdd": -6.200663,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 17,
+      "signals": 10,
+      "stocks": 17,
+      "mean": -2.0065849120915016,
+      "median": -2.2332086206446795,
+      "win": 29.41176470588235,
+      "exposure": 32.346968,
+      "cashPct": 67.653032,
+      "stockConcentration": 12.880211875772384,
+      "exitConcentration": 23.222488316455998,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.19955601142163998,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-02",
+          "exitDate": "2026-10-12",
+          "fraction": 0.40089126762107996,
+          "n": 4
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-06",
+          "exitDate": "2026-10-13",
+          "fraction": 0.09985886227889999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-06",
+          "exitDate": "2026-10-13",
+          "fraction": 0.1005473439477,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-07",
+          "exitDate": "2026-10-14",
+          "fraction": 0.10278440902125,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-07",
+          "exitDate": "2026-10-14",
+          "fraction": 0.094416054435,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.102311578224,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.099219414915,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.0997657971696,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.09906930989999999,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-22",
+          "exitDate": "2026-10-28",
+          "fraction": 0.09861699345479999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.09758026815120001,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.09733559697675,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "C-v1",
+      "arm": "TOP",
+      "basis": "ALL_MODELS_COMMON",
+      "commonDays": 14,
+      "selected": 140,
+      "status": "VALUED",
+      "total": 7.507014,
+      "mdd": -6.288819,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 40,
+      "signals": 4,
+      "stocks": 36,
+      "mean": 1.9906923091962903,
+      "median": 0.056244951689248965,
+      "win": 50,
+      "exposure": 76.014618,
+      "cashPct": 23.985382,
+      "stockConcentration": 15.469866553471038,
+      "exitConcentration": 47.14708764753175,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.598474849110615,
+          "n": 6
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.39923921182599,
+          "n": 4
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.55960410474126,
+          "n": 5
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.55905041737593,
+          "n": 5
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.32629728090689997,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.76448233964475,
+          "n": 7
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.4296145627314,
+          "n": 4
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.6464592695006999,
+          "n": 6
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "C-v1",
+      "arm": "CROSS",
+      "basis": "ALL_MODELS_COMMON",
+      "commonDays": 14,
+      "selected": 82,
+      "status": "VALUED",
+      "total": -6.927305,
+      "mdd": -13.37562,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 36,
+      "signals": 8,
+      "stocks": 36,
+      "mean": -1.8369039557223372,
+      "median": -1.7864562508287811,
+      "win": 33.333333333333336,
+      "exposure": 68.939748,
+      "cashPct": 31.060252000000006,
+      "stockConcentration": 9.62861368936399,
+      "exitConcentration": 23.139264988965987,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.29908164056724,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.19958913459494998,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-02",
+          "exitDate": "2026-10-12",
+          "fraction": 0.40114334397626994,
+          "n": 4
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-02",
+          "exitDate": "2026-10-12",
+          "fraction": 0.09996993998999999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.3167556054534,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.21136237127145002,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-13",
+          "exitDate": "2026-10-19",
+          "fraction": 0.39655183170743996,
+          "n": 4
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-13",
+          "exitDate": "2026-10-19",
+          "fraction": 0.0993334947264,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.288593552994165,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.19527011296335,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.1978364083698,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.29779834275899997,
+          "n": 3
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.1848933532764,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.27882887152338,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.0917191676655,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "C-v1",
+      "arm": "BOTH",
+      "basis": "ALL_MODELS_COMMON",
+      "commonDays": 14,
+      "selected": 17,
+      "status": "VALUED",
+      "total": -5.080604,
+      "mdd": -7.051732,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 17,
+      "signals": 9,
+      "stocks": 17,
+      "mean": -3.06759192794693,
+      "median": -3.253119658265957,
+      "win": 29.41176470588235,
+      "exposure": 32.236608,
+      "cashPct": 67.76339200000001,
+      "stockConcentration": 12.388652527503853,
+      "exitConcentration": 31.631289764499286,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.19955601142163998,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-02",
+          "exitDate": "2026-10-12",
+          "fraction": 0.40089126762107996,
+          "n": 4
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-07",
+          "exitDate": "2026-10-14",
+          "fraction": 0.29740857007004995,
+          "n": 3
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-07",
+          "exitDate": "2026-10-14",
+          "fraction": 0.10207141019999999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.09946958993999999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.097418154735,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.09775438996859999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.09756825975,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-22",
+          "exitDate": "2026-10-28",
+          "fraction": 0.09688077878129998,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.0954277622361,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.0956018840535,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "C-v1",
+      "arm": "CROSS",
+      "basis": "CROSS_EXTENDED",
+      "commonDays": 17,
+      "selected": 107,
+      "status": "VALUED",
+      "total": -6.927305,
+      "mdd": -13.37562,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 36,
+      "signals": 8,
+      "stocks": 36,
+      "mean": -1.8369039557223372,
+      "median": -1.7864562508287811,
+      "win": 33.333333333333336,
+      "exposure": 68.939748,
+      "cashPct": 31.060252000000006,
+      "stockConcentration": 9.62861368936399,
+      "exitConcentration": 23.139264988965987,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.29908164056724,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.19958913459494998,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-02",
+          "exitDate": "2026-10-12",
+          "fraction": 0.40114334397626994,
+          "n": 4
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-02",
+          "exitDate": "2026-10-12",
+          "fraction": 0.09996993998999999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.3167556054534,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.21136237127145002,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-13",
+          "exitDate": "2026-10-19",
+          "fraction": 0.39655183170743996,
+          "n": 4
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-13",
+          "exitDate": "2026-10-19",
+          "fraction": 0.0993334947264,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.288593552994165,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.19527011296335,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.1978364083698,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.29779834275899997,
+          "n": 3
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.1848933532764,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.27882887152338,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.0917191676655,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "D-v1",
+      "arm": "TOP",
+      "basis": "COMMON",
+      "commonDays": 16,
+      "selected": 160,
+      "status": "VALUED",
+      "total": -20.210411,
+      "mdd": -23.668681,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 40,
+      "signals": 4,
+      "stocks": 34,
+      "mean": -5.3839203164109275,
+      "median": -5.009813597036915,
+      "win": 32.5,
+      "exposure": 75.870373,
+      "cashPct": 24.129627,
+      "stockConcentration": 9.124454013304963,
+      "exitConcentration": 37.662697289861065,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.7936502458094999,
+          "n": 8
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.19954540400058,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.80925126043851,
+          "n": 8
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.20191726337759996,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.8949608237234701,
+          "n": 10
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.84311144937216,
+          "n": 10
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "D-v1",
+      "arm": "CROSS",
+      "basis": "COMMON",
+      "commonDays": 16,
+      "selected": 97,
+      "status": "VALUED",
+      "total": -6.927305,
+      "mdd": -13.37562,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 36,
+      "signals": 8,
+      "stocks": 36,
+      "mean": -1.8369039557223372,
+      "median": -1.7864562508287811,
+      "win": 33.333333333333336,
+      "exposure": 68.939748,
+      "cashPct": 31.060252000000006,
+      "stockConcentration": 9.62861368936399,
+      "exitConcentration": 23.139264988965987,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.29908164056724,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.19958913459494998,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-02",
+          "exitDate": "2026-10-12",
+          "fraction": 0.40114334397626994,
+          "n": 4
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-02",
+          "exitDate": "2026-10-12",
+          "fraction": 0.09996993998999999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.3167556054534,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.21136237127145002,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-13",
+          "exitDate": "2026-10-19",
+          "fraction": 0.39655183170743996,
+          "n": 4
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-13",
+          "exitDate": "2026-10-19",
+          "fraction": 0.0993334947264,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.288593552994165,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.19527011296335,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.1978364083698,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.29779834275899997,
+          "n": 3
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.1848933532764,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.27882887152338,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.0917191676655,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "D-v1",
+      "arm": "BOTH",
+      "basis": "COMMON",
+      "commonDays": 16,
+      "selected": 7,
+      "status": "VALUED",
+      "total": 1.019386,
+      "mdd": -2.925615,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 7,
+      "signals": 4,
+      "stocks": 7,
+      "mean": 1.467298524625054,
+      "median": 4.899873629140382,
+      "win": 71.42857142857143,
+      "exposure": 13.535434,
+      "cashPct": 86.464566,
+      "stockConcentration": 27.980366008722363,
+      "exitConcentration": 27.980366008722363,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-07",
+          "exitDate": "2026-10-14",
+          "fraction": 0.099519624945,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-07",
+          "exitDate": "2026-10-14",
+          "fraction": 0.09958667185169999,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-21",
+          "exitDate": "2026-10-27",
+          "fraction": 0.10025113671810001,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.2004152125275,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.2022775154136,
+          "n": 2
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "D-v1",
+      "arm": "TOP",
+      "basis": "ALL_MODELS_COMMON",
+      "commonDays": 14,
+      "selected": 140,
+      "status": "VALUED",
+      "total": -20.210411,
+      "mdd": -23.668681,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 40,
+      "signals": 4,
+      "stocks": 34,
+      "mean": -5.3839203164109275,
+      "median": -5.009813597036915,
+      "win": 32.5,
+      "exposure": 75.870373,
+      "cashPct": 24.129627,
+      "stockConcentration": 9.124454013304963,
+      "exitConcentration": 37.662697289861065,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.7936502458094999,
+          "n": 8
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.19954540400058,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.80925126043851,
+          "n": 8
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.20191726337759996,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.8949608237234701,
+          "n": 10
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.84311144937216,
+          "n": 10
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "D-v1",
+      "arm": "CROSS",
+      "basis": "ALL_MODELS_COMMON",
+      "commonDays": 14,
+      "selected": 82,
+      "status": "VALUED",
+      "total": -6.927305,
+      "mdd": -13.37562,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 36,
+      "signals": 8,
+      "stocks": 36,
+      "mean": -1.8369039557223372,
+      "median": -1.7864562508287811,
+      "win": 33.333333333333336,
+      "exposure": 68.939748,
+      "cashPct": 31.060252000000006,
+      "stockConcentration": 9.62861368936399,
+      "exitConcentration": 23.139264988965987,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.29908164056724,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.19958913459494998,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-02",
+          "exitDate": "2026-10-12",
+          "fraction": 0.40114334397626994,
+          "n": 4
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-02",
+          "exitDate": "2026-10-12",
+          "fraction": 0.09996993998999999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.3167556054534,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.21136237127145002,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-13",
+          "exitDate": "2026-10-19",
+          "fraction": 0.39655183170743996,
+          "n": 4
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-13",
+          "exitDate": "2026-10-19",
+          "fraction": 0.0993334947264,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.288593552994165,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.19527011296335,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.1978364083698,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.29779834275899997,
+          "n": 3
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.1848933532764,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.27882887152338,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.0917191676655,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "D-v1",
+      "arm": "BOTH",
+      "basis": "ALL_MODELS_COMMON",
+      "commonDays": 14,
+      "selected": 6,
+      "status": "VALUED",
+      "total": 2.523424,
+      "mdd": -2.217194,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 6,
+      "signals": 3,
+      "stocks": 6,
+      "mean": 4.193456234552861,
+      "median": 5.462347904454218,
+      "win": 83.33333333333333,
+      "exposure": 11.675952,
+      "cashPct": 88.324048,
+      "stockConcentration": 33.25852822183764,
+      "exitConcentration": 38.432791249832775,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-07",
+          "exitDate": "2026-10-14",
+          "fraction": 0.099519624945,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-07",
+          "exitDate": "2026-10-14",
+          "fraction": 0.09958667185169999,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.20168109815400004,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.20317244151303,
+          "n": 2
+        }
+      ]
+    },
+    {
+      "layer": "daily",
+      "model": "D-v1",
+      "arm": "CROSS",
+      "basis": "CROSS_EXTENDED",
+      "commonDays": 17,
+      "selected": 107,
+      "status": "VALUED",
+      "total": -6.927305,
+      "mdd": -13.37562,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 36,
+      "signals": 8,
+      "stocks": 36,
+      "mean": -1.8369039557223372,
+      "median": -1.7864562508287811,
+      "win": 33.333333333333336,
+      "exposure": 68.939748,
+      "cashPct": 31.060252000000006,
+      "stockConcentration": 9.62861368936399,
+      "exitConcentration": 23.139264988965987,
+      "from": "2026-10-01",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.29908164056724,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-01",
+          "exitDate": "2026-10-08",
+          "fraction": 0.19958913459494998,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-02",
+          "exitDate": "2026-10-12",
+          "fraction": 0.40114334397626994,
+          "n": 4
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-02",
+          "exitDate": "2026-10-12",
+          "fraction": 0.09996993998999999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.3167556054534,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-12",
+          "exitDate": "2026-10-16",
+          "fraction": 0.21136237127145002,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-13",
+          "exitDate": "2026-10-19",
+          "fraction": 0.39655183170743996,
+          "n": 4
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-13",
+          "exitDate": "2026-10-19",
+          "fraction": 0.0993334947264,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.288593552994165,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.19527011296335,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.1978364083698,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.29779834275899997,
+          "n": 3
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.1848933532764,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.27882887152338,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.0917191676655,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "B-v1",
+      "arm": "TOP",
+      "basis": "COMMON",
+      "commonDays": 8,
+      "selected": 80,
+      "status": "VALUED",
+      "total": 4.193156,
+      "mdd": -11.708988,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 20,
+      "signals": 2,
+      "stocks": 15,
+      "mean": 2.068147712283385,
+      "median": 0.22606759134806842,
+      "win": 50,
+      "exposure": 66.500421,
+      "cashPct": 33.499579,
+      "stockConcentration": 30.150868962119553,
+      "exitConcentration": 59.59398843928418,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.69812071237323,
+          "n": 7
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.2984517999243,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.8148048457834799,
+          "n": 8
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.2034613436319,
+          "n": 2
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "B-v1",
+      "arm": "CROSS",
+      "basis": "COMMON",
+      "commonDays": 8,
+      "selected": 45,
+      "status": "VALUED",
+      "total": -8.119265,
+      "mdd": -8.396845,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 19,
+      "signals": 7,
+      "stocks": 19,
+      "mean": -4.394637584985252,
+      "median": -3.992135315489697,
+      "win": 21.05263157894737,
+      "exposure": 62.807452,
+      "cashPct": 37.192548,
+      "stockConcentration": 18.788502523581943,
+      "exitConcentration": 31.94228065311726,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.19930733744679002,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.09997114083012,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.0999169028847,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.297788335758,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.2003081376168,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-21",
+          "exitDate": "2026-10-27",
+          "fraction": 0.09867903686099999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.08609022960299999,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.19238809667535,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.09522662151599999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.1836825061554,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.2783267202132,
+          "n": 3
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "B-v1",
+      "arm": "BOTH",
+      "basis": "COMMON",
+      "commonDays": 8,
+      "selected": 2,
+      "status": "VALUED",
+      "total": -0.11768,
+      "mdd": -1.971664,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 2,
+      "signals": 1,
+      "stocks": 2,
+      "mean": -0.5666226952723159,
+      "median": -0.5666226952723159,
+      "win": 50,
+      "exposure": 6.852201,
+      "cashPct": 93.147799,
+      "stockConcentration": 52.743199087674896,
+      "exitConcentration": 100,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.19906827019290002,
+          "n": 2
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "B-v1",
+      "arm": "TOP",
+      "basis": "ALL_MODELS_COMMON",
+      "commonDays": 7,
+      "selected": 70,
+      "status": "VALUED",
+      "total": 4.193156,
+      "mdd": -11.708988,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 20,
+      "signals": 2,
+      "stocks": 15,
+      "mean": 2.068147712283385,
+      "median": 0.22606759134806842,
+      "win": 50,
+      "exposure": 66.500421,
+      "cashPct": 33.499579,
+      "stockConcentration": 30.150868962119553,
+      "exitConcentration": 59.59398843928418,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.69812071237323,
+          "n": 7
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.2984517999243,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.8148048457834799,
+          "n": 8
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.2034613436319,
+          "n": 2
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "B-v1",
+      "arm": "CROSS",
+      "basis": "ALL_MODELS_COMMON",
+      "commonDays": 7,
+      "selected": 40,
+      "status": "VALUED",
+      "total": -8.119265,
+      "mdd": -8.396845,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 19,
+      "signals": 7,
+      "stocks": 19,
+      "mean": -4.394637584985252,
+      "median": -3.992135315489697,
+      "win": 21.05263157894737,
+      "exposure": 62.807452,
+      "cashPct": 37.192548,
+      "stockConcentration": 18.788502523581943,
+      "exitConcentration": 31.94228065311726,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.19930733744679002,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.09997114083012,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.0999169028847,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.297788335758,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.2003081376168,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-21",
+          "exitDate": "2026-10-27",
+          "fraction": 0.09867903686099999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.08609022960299999,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.19238809667535,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.09522662151599999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.1836825061554,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.2783267202132,
+          "n": 3
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "B-v1",
+      "arm": "BOTH",
+      "basis": "ALL_MODELS_COMMON",
+      "commonDays": 7,
+      "selected": 2,
+      "status": "VALUED",
+      "total": -0.11768,
+      "mdd": -1.971664,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 2,
+      "signals": 1,
+      "stocks": 2,
+      "mean": -0.5666226952723159,
+      "median": -0.5666226952723159,
+      "win": 50,
+      "exposure": 6.852201,
+      "cashPct": 93.147799,
+      "stockConcentration": 52.743199087674896,
+      "exitConcentration": 100,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.19906827019290002,
+          "n": 2
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "B-v1",
+      "arm": "CROSS",
+      "basis": "CROSS_EXTENDED",
+      "commonDays": 8,
+      "selected": 45,
+      "status": "VALUED",
+      "total": -8.119265,
+      "mdd": -8.396845,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 19,
+      "signals": 7,
+      "stocks": 19,
+      "mean": -4.394637584985252,
+      "median": -3.992135315489697,
+      "win": 21.05263157894737,
+      "exposure": 62.807452,
+      "cashPct": 37.192548,
+      "stockConcentration": 18.788502523581943,
+      "exitConcentration": 31.94228065311726,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.19930733744679002,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.09997114083012,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.0999169028847,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.297788335758,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.2003081376168,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-21",
+          "exitDate": "2026-10-27",
+          "fraction": 0.09867903686099999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.08609022960299999,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.19238809667535,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.09522662151599999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.1836825061554,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.2783267202132,
+          "n": 3
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "A-v1",
+      "arm": "TOP",
+      "basis": "COMMON",
+      "commonDays": 8,
+      "selected": 80,
+      "status": "VALUED",
+      "total": -1.854455,
+      "mdd": -9.42862,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 20,
+      "signals": 2,
+      "stocks": 15,
+      "mean": -0.9478797159041956,
+      "median": -1.1440307160526155,
+      "win": 45,
+      "exposure": 66.486648,
+      "cashPct": 33.513352,
+      "stockConcentration": 25.122079935044322,
+      "exitConcentration": 60.31845743520191,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.79712807893704,
+          "n": 8
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.19913311555937996,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.2967516104544,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.69277827474936,
+          "n": 7
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "A-v1",
+      "arm": "CROSS",
+      "basis": "COMMON",
+      "commonDays": 8,
+      "selected": 45,
+      "status": "VALUED",
+      "total": -8.119265,
+      "mdd": -8.396845,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 19,
+      "signals": 7,
+      "stocks": 19,
+      "mean": -4.394637584985252,
+      "median": -3.992135315489697,
+      "win": 21.05263157894737,
+      "exposure": 62.807452,
+      "cashPct": 37.192548,
+      "stockConcentration": 18.788502523581943,
+      "exitConcentration": 31.94228065311726,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.19930733744679002,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.09997114083012,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.0999169028847,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.297788335758,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.2003081376168,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-21",
+          "exitDate": "2026-10-27",
+          "fraction": 0.09867903686099999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.08609022960299999,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.19238809667535,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.09522662151599999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.1836825061554,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.2783267202132,
+          "n": 3
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "A-v1",
+      "arm": "BOTH",
+      "basis": "COMMON",
+      "commonDays": 8,
+      "selected": 3,
+      "status": "VALUED",
+      "total": -3.025055,
+      "mdd": -3.718406,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 3,
+      "signals": 2,
+      "stocks": 3,
+      "mean": -10.132840506169199,
+      "median": -11.340277675541548,
+      "win": 0,
+      "exposure": 9.492487,
+      "cashPct": 90.507513,
+      "stockConcentration": 61.50693055270945,
+      "exitConcentration": 98.90509803796017,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.19916033460210003,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.09751272089445001,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "A-v1",
+      "arm": "TOP",
+      "basis": "ALL_MODELS_COMMON",
+      "commonDays": 7,
+      "selected": 70,
+      "status": "VALUED",
+      "total": -1.854455,
+      "mdd": -9.42862,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 20,
+      "signals": 2,
+      "stocks": 15,
+      "mean": -0.9478797159041956,
+      "median": -1.1440307160526155,
+      "win": 45,
+      "exposure": 66.486648,
+      "cashPct": 33.513352,
+      "stockConcentration": 25.122079935044322,
+      "exitConcentration": 60.31845743520191,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.79712807893704,
+          "n": 8
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.19913311555937996,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.2967516104544,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.69277827474936,
+          "n": 7
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "A-v1",
+      "arm": "CROSS",
+      "basis": "ALL_MODELS_COMMON",
+      "commonDays": 7,
+      "selected": 40,
+      "status": "VALUED",
+      "total": -8.119265,
+      "mdd": -8.396845,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 19,
+      "signals": 7,
+      "stocks": 19,
+      "mean": -4.394637584985252,
+      "median": -3.992135315489697,
+      "win": 21.05263157894737,
+      "exposure": 62.807452,
+      "cashPct": 37.192548,
+      "stockConcentration": 18.788502523581943,
+      "exitConcentration": 31.94228065311726,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.19930733744679002,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.09997114083012,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.0999169028847,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.297788335758,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.2003081376168,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-21",
+          "exitDate": "2026-10-27",
+          "fraction": 0.09867903686099999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.08609022960299999,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.19238809667535,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.09522662151599999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.1836825061554,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.2783267202132,
+          "n": 3
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "A-v1",
+      "arm": "BOTH",
+      "basis": "ALL_MODELS_COMMON",
+      "commonDays": 7,
+      "selected": 3,
+      "status": "VALUED",
+      "total": -3.025055,
+      "mdd": -3.718406,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 3,
+      "signals": 2,
+      "stocks": 3,
+      "mean": -10.132840506169199,
+      "median": -11.340277675541548,
+      "win": 0,
+      "exposure": 9.492487,
+      "cashPct": 90.507513,
+      "stockConcentration": 61.50693055270945,
+      "exitConcentration": 98.90509803796017,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.19916033460210003,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.09751272089445001,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "A-v1",
+      "arm": "CROSS",
+      "basis": "CROSS_EXTENDED",
+      "commonDays": 8,
+      "selected": 45,
+      "status": "VALUED",
+      "total": -8.119265,
+      "mdd": -8.396845,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 19,
+      "signals": 7,
+      "stocks": 19,
+      "mean": -4.394637584985252,
+      "median": -3.992135315489697,
+      "win": 21.05263157894737,
+      "exposure": 62.807452,
+      "cashPct": 37.192548,
+      "stockConcentration": 18.788502523581943,
+      "exitConcentration": 31.94228065311726,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.19930733744679002,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.09997114083012,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.0999169028847,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.297788335758,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.2003081376168,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-21",
+          "exitDate": "2026-10-27",
+          "fraction": 0.09867903686099999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.08609022960299999,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.19238809667535,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.09522662151599999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.1836825061554,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.2783267202132,
+          "n": 3
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "C-v1",
+      "arm": "TOP",
+      "basis": "COMMON",
+      "commonDays": 7,
+      "selected": 70,
+      "status": "VALUED",
+      "total": 0.373144,
+      "mdd": -7.508178,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 20,
+      "signals": 2,
+      "stocks": 19,
+      "mean": 0.21437044376586564,
+      "median": -0.6816742121882474,
+      "win": 50,
+      "exposure": 66.546495,
+      "cashPct": 33.45350500000001,
+      "stockConcentration": 15.063246088254765,
+      "exitConcentration": 51.20155744735932,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.4986098325260999,
+          "n": 5
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.49967317645236,
+          "n": 5
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.2928558849651,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.68456342755845,
+          "n": 7
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "C-v1",
+      "arm": "CROSS",
+      "basis": "COMMON",
+      "commonDays": 7,
+      "selected": 40,
+      "status": "VALUED",
+      "total": -8.119265,
+      "mdd": -8.396845,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 19,
+      "signals": 7,
+      "stocks": 19,
+      "mean": -4.394637584985252,
+      "median": -3.992135315489697,
+      "win": 21.05263157894737,
+      "exposure": 62.807452,
+      "cashPct": 37.192548,
+      "stockConcentration": 18.788502523581943,
+      "exitConcentration": 31.94228065311726,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.19930733744679002,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.09997114083012,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.0999169028847,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.297788335758,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.2003081376168,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-21",
+          "exitDate": "2026-10-27",
+          "fraction": 0.09867903686099999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.08609022960299999,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.19238809667535,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.09522662151599999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.1836825061554,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.2783267202132,
+          "n": 3
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "C-v1",
+      "arm": "BOTH",
+      "basis": "COMMON",
+      "commonDays": 7,
+      "selected": 6,
+      "status": "VALUED",
+      "total": -2.321793,
+      "mdd": -3.093145,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 6,
+      "signals": 5,
+      "stocks": 6,
+      "mean": -3.8801781636491772,
+      "median": -2.2705812473187432,
+      "win": 33.333333333333336,
+      "exposure": 19.734564,
+      "cashPct": 80.265436,
+      "stockConcentration": 39.307012615613644,
+      "exitConcentration": 55.71563858865549,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.0999169028847,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-21",
+          "exitDate": "2026-10-27",
+          "fraction": 0.09966972996,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-21",
+          "exitDate": "2026-10-27",
+          "fraction": 0.09942956193599999,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.09807911715104999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.0974441729376,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.0972620455194,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "C-v1",
+      "arm": "TOP",
+      "basis": "ALL_MODELS_COMMON",
+      "commonDays": 7,
+      "selected": 70,
+      "status": "VALUED",
+      "total": 0.373144,
+      "mdd": -7.508178,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 20,
+      "signals": 2,
+      "stocks": 19,
+      "mean": 0.21437044376586564,
+      "median": -0.6816742121882474,
+      "win": 50,
+      "exposure": 66.546495,
+      "cashPct": 33.45350500000001,
+      "stockConcentration": 15.063246088254765,
+      "exitConcentration": 51.20155744735932,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.4986098325260999,
+          "n": 5
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.49967317645236,
+          "n": 5
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.2928558849651,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.68456342755845,
+          "n": 7
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "C-v1",
+      "arm": "CROSS",
+      "basis": "ALL_MODELS_COMMON",
+      "commonDays": 7,
+      "selected": 40,
+      "status": "VALUED",
+      "total": -8.119265,
+      "mdd": -8.396845,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 19,
+      "signals": 7,
+      "stocks": 19,
+      "mean": -4.394637584985252,
+      "median": -3.992135315489697,
+      "win": 21.05263157894737,
+      "exposure": 62.807452,
+      "cashPct": 37.192548,
+      "stockConcentration": 18.788502523581943,
+      "exitConcentration": 31.94228065311726,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.19930733744679002,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.09997114083012,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.0999169028847,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.297788335758,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.2003081376168,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-21",
+          "exitDate": "2026-10-27",
+          "fraction": 0.09867903686099999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.08609022960299999,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.19238809667535,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.09522662151599999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.1836825061554,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.2783267202132,
+          "n": 3
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "C-v1",
+      "arm": "BOTH",
+      "basis": "ALL_MODELS_COMMON",
+      "commonDays": 7,
+      "selected": 6,
+      "status": "VALUED",
+      "total": -2.321793,
+      "mdd": -3.093145,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 6,
+      "signals": 5,
+      "stocks": 6,
+      "mean": -3.8801781636491772,
+      "median": -2.2705812473187432,
+      "win": 33.333333333333336,
+      "exposure": 19.734564,
+      "cashPct": 80.265436,
+      "stockConcentration": 39.307012615613644,
+      "exitConcentration": 55.71563858865549,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.0999169028847,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-21",
+          "exitDate": "2026-10-27",
+          "fraction": 0.09966972996,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-21",
+          "exitDate": "2026-10-27",
+          "fraction": 0.09942956193599999,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.09807911715104999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.0974441729376,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.0972620455194,
+          "n": 1
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "C-v1",
+      "arm": "CROSS",
+      "basis": "CROSS_EXTENDED",
+      "commonDays": 8,
+      "selected": 45,
+      "status": "VALUED",
+      "total": -8.119265,
+      "mdd": -8.396845,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 19,
+      "signals": 7,
+      "stocks": 19,
+      "mean": -4.394637584985252,
+      "median": -3.992135315489697,
+      "win": 21.05263157894737,
+      "exposure": 62.807452,
+      "cashPct": 37.192548,
+      "stockConcentration": 18.788502523581943,
+      "exitConcentration": 31.94228065311726,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.19930733744679002,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.09997114083012,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.0999169028847,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.297788335758,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.2003081376168,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-21",
+          "exitDate": "2026-10-27",
+          "fraction": 0.09867903686099999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.08609022960299999,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.19238809667535,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.09522662151599999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.1836825061554,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.2783267202132,
+          "n": 3
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "D-v1",
+      "arm": "TOP",
+      "basis": "COMMON",
+      "commonDays": 8,
+      "selected": 80,
+      "status": "VALUED",
+      "total": 3.224151,
+      "mdd": -10.507143,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 20,
+      "signals": 2,
+      "stocks": 19,
+      "mean": 1.6751125922265344,
+      "median": 0.7573815219554558,
+      "win": 55,
+      "exposure": 66.461577,
+      "cashPct": 33.538422999999995,
+      "stockConcentration": 14.817849333961854,
+      "exitConcentration": 64.90641365146271,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.59936892461496,
+          "n": 6
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.39673405919564997,
+          "n": 4
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.97280718583266,
+          "n": 10
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "D-v1",
+      "arm": "CROSS",
+      "basis": "COMMON",
+      "commonDays": 8,
+      "selected": 45,
+      "status": "VALUED",
+      "total": -8.119265,
+      "mdd": -8.396845,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 19,
+      "signals": 7,
+      "stocks": 19,
+      "mean": -4.394637584985252,
+      "median": -3.992135315489697,
+      "win": 21.05263157894737,
+      "exposure": 62.807452,
+      "cashPct": 37.192548,
+      "stockConcentration": 18.788502523581943,
+      "exitConcentration": 31.94228065311726,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.19930733744679002,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.09997114083012,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.0999169028847,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.297788335758,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.2003081376168,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-21",
+          "exitDate": "2026-10-27",
+          "fraction": 0.09867903686099999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.08609022960299999,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.19238809667535,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.09522662151599999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.1836825061554,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.2783267202132,
+          "n": 3
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "D-v1",
+      "arm": "BOTH",
+      "basis": "COMMON",
+      "commonDays": 8,
+      "selected": 5,
+      "status": "VALUED",
+      "total": 1.466777,
+      "mdd": -3.403571,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 5,
+      "signals": 3,
+      "stocks": 5,
+      "mean": 2.970382234974372,
+      "median": 1.399863693609919,
+      "win": 60,
+      "exposure": 16.511491,
+      "cashPct": 83.488509,
+      "stockConcentration": 39.00448132033226,
+      "exitConcentration": 56.50566854600452,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-22",
+          "exitDate": "2026-10-28",
+          "fraction": 0.09920340371339999,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.19906827019290002,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.19598261143455,
+          "n": 2
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "D-v1",
+      "arm": "TOP",
+      "basis": "ALL_MODELS_COMMON",
+      "commonDays": 7,
+      "selected": 70,
+      "status": "VALUED",
+      "total": 3.224151,
+      "mdd": -10.507143,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 20,
+      "signals": 2,
+      "stocks": 19,
+      "mean": 1.6751125922265344,
+      "median": 0.7573815219554558,
+      "win": 55,
+      "exposure": 66.461577,
+      "cashPct": 33.538422999999995,
+      "stockConcentration": 14.817849333961854,
+      "exitConcentration": 64.90641365146271,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.59936892461496,
+          "n": 6
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.39673405919564997,
+          "n": 4
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.97280718583266,
+          "n": 10
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "D-v1",
+      "arm": "CROSS",
+      "basis": "ALL_MODELS_COMMON",
+      "commonDays": 7,
+      "selected": 40,
+      "status": "VALUED",
+      "total": -8.119265,
+      "mdd": -8.396845,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 19,
+      "signals": 7,
+      "stocks": 19,
+      "mean": -4.394637584985252,
+      "median": -3.992135315489697,
+      "win": 21.05263157894737,
+      "exposure": 62.807452,
+      "cashPct": 37.192548,
+      "stockConcentration": 18.788502523581943,
+      "exitConcentration": 31.94228065311726,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.19930733744679002,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.09997114083012,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.0999169028847,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.297788335758,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.2003081376168,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-21",
+          "exitDate": "2026-10-27",
+          "fraction": 0.09867903686099999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.08609022960299999,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.19238809667535,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.09522662151599999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.1836825061554,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.2783267202132,
+          "n": 3
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "D-v1",
+      "arm": "BOTH",
+      "basis": "ALL_MODELS_COMMON",
+      "commonDays": 7,
+      "selected": 4,
+      "status": "VALUED",
+      "total": -0.012929,
+      "mdd": -3.465205,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 4,
+      "signals": 2,
+      "stocks": 4,
+      "mean": -0.01826097485668854,
+      "median": 0.5301007455589388,
+      "win": 50,
+      "exposure": 13.473011,
+      "cashPct": 86.526989,
+      "stockConcentration": 48.83103763986867,
+      "exitConcentration": 92.58262389184424,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.19906827019290002,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.1975602151422,
+          "n": 2
+        }
+      ]
+    },
+    {
+      "layer": "published",
+      "model": "D-v1",
+      "arm": "CROSS",
+      "basis": "CROSS_EXTENDED",
+      "commonDays": 8,
+      "selected": 45,
+      "status": "VALUED",
+      "total": -8.119265,
+      "mdd": -8.396845,
+      "marketMatched": null,
+      "excess": null,
+      "matchedTrades": 0,
+      "trades": 19,
+      "signals": 7,
+      "stocks": 19,
+      "mean": -4.394637584985252,
+      "median": -3.992135315489697,
+      "win": 21.05263157894737,
+      "exposure": 62.807452,
+      "cashPct": 37.192548,
+      "stockConcentration": 18.788502523581943,
+      "exitConcentration": 31.94228065311726,
+      "from": "2026-10-16",
+      "to": "2026-11-02",
+      "weights": [
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.19930733744679002,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-16",
+          "exitDate": "2026-10-22",
+          "fraction": 0.09997114083012,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-19",
+          "exitDate": "2026-10-23",
+          "fraction": 0.0999169028847,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.297788335758,
+          "n": 3
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-20",
+          "exitDate": "2026-10-26",
+          "fraction": 0.2003081376168,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-21",
+          "exitDate": "2026-10-27",
+          "fraction": 0.09867903686099999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.08609022960299999,
+          "n": 1
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-23",
+          "exitDate": "2026-10-29",
+          "fraction": 0.19238809667535,
+          "n": 2
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-26",
+          "exitDate": "2026-10-30",
+          "fraction": 0.09522662151599999,
+          "n": 1
+        },
+        {
+          "market": "KOSPI",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.1836825061554,
+          "n": 2
+        },
+        {
+          "market": "KOSDAQ",
+          "entryDate": "2026-10-27",
+          "exitDate": "2026-11-02",
+          "fraction": 0.2783267202132,
+          "n": 3
+        }
+      ]
+    }
+  ],
+  "indexIntervals": 0,
+  "periodIndices": {
+    "daily": [],
+    "published": []
+  }
+}

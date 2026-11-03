@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import TopCrossStudy from "./TopCrossStudy";
 
 type Choice = { date: string; model: string; horizon: string; topN: number; selected: number; mature: number; pending: number; missing: number };
 type Timing = { signalDate: string; generatedAt: string | null; confirmedBy: string; firstKnownRegularOpen: string | null; plannedEntryDate: string | null };
@@ -86,11 +87,11 @@ export default function BacktestPanel() {
   return <section className="tb-card min-w-0 p-4 sm:p-6" aria-labelledby="backtest-heading">
     <h2 id="backtest-heading" className="tb-page-title">백테스트</h2>
     <div className="tb-segmented mt-4" role="tablist" aria-label="백테스트 자료">
-      {([["published","게시 종목 가상매매"],["study","연구 후보 비교"]] as const).map(([id,label]) =>
+      {([["published","게시 종목 가상매매"],["study","연구 후보 비교"],["cross","TOP · 골든크로스 비교"]] as const).map(([id,label]) =>
         <button type="button" key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
           className="tb-focus">{label}</button>)}
     </div>
-    {inventoryError ? <p role="alert" className="mt-4 text-sm">평가 가능 범위를 조회하지 못했습니다. <button type="button" onClick={() => { setInventoryError(false); setReload(v=>v+1); }} className="tb-focus underline">다시 조회</button></p> :
+    {tab === "cross" ? <TopCrossStudy/> : inventoryError ? <p role="alert" className="mt-4 text-sm">평가 가능 범위를 조회하지 못했습니다. <button type="button" onClick={() => { setInventoryError(false); setReload(v=>v+1); }} className="tb-focus underline">다시 조회</button></p> :
       !inventory ? <p role="status" className="mt-4 text-sm">저장된 신호와 가격을 확인하고 있습니다.</p> :
       tab === "study" ? <div className="space-y-3 pt-4">
         <h3 className="font-semibold">사후 연구 · {inventory.study.from} ~ {inventory.study.to}</h3>

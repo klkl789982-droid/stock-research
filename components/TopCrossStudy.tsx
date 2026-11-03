@@ -1,0 +1,32 @@
+"use client";
+import {useEffect,useState} from "react";
+type Row={layer:string;model:string;arm:string;basis:string;status:string;reason?:string;from?:string;to?:string;commonDays:number;selected:number;trades:number;signals:number;stocks:number;total:number;mdd:number;excess:number|null;mean:number|null;median:number|null;win:number|null;exposure:number;cashPct:number;stockConcentration:number|null;exitConcentration:number|null;indices:Record<string,number|null>};
+type View={summary:Row[];inventory:{date:string;published:string|null}[];planHash:string};
+type Picks={status:string;TOP:string[];CROSS:string[];BOTH:string[];pool:{code:string;rank:number;cross:boolean}[];excluded:string[][]};
+type Pub={signalDate:string;status:string;evaluation:string;selectionDepth?:number;publishedAt?:string;authenticatedReadAt?:string};
+const label:Record<string,string>={TOP:"모델 TOP",CROSS:"골든크로스 진입",BOTH:"교집합"};
+const fmt=(v:number|null|undefined)=>v==null?"—":v.toFixed(2)+"%";
+export default function TopCrossStudy(){
+  const [view,setView]=useState<View|null>(null),[failed,setFailed]=useState(false),[reload,setReload]=useState(0);
+  const [model,setModel]=useState("B-v1"),[layer,setLayer]=useState("daily"),[basis,setBasis]=useState("COMMON"),[date,setDate]=useState("");
+  const [detail,setDetail]=useState<Picks|null>(null),[detailError,setDetailError]=useState(false),[live,setLive]=useState<Pub[]|null>(null),[liveError,setLiveError]=useState(false);
+  useEffect(()=>{const c=new AbortController();fetch("/api/model-performance/research?view=top-cross",{signal:c.signal,cache:"no-store"}).then(async r=>{if(!r.ok)throw Error();return r.json()}).then(setView).catch(()=>{if(!c.signal.aborted)setFailed(true)});return()=>c.abort()},[reload]);
+  useEffect(()=>{if(layer!=="live")return;const c=new AbortController();fetch("/api/model-performance/live",{signal:c.signal,cache:"no-store"}).then(async r=>{if(!r.ok)throw Error();const j=await r.json();if(!Array.isArray(j.publications))throw Error();return j.publications}).then(setLive).catch(()=>{if(!c.signal.aborted)setLiveError(true)});return()=>c.abort()},[layer]);
+  useEffect(()=>{if(!date)return;const c=new AbortController();fetch("/api/screener?tab=research-cross&date="+date+"&model="+model,{signal:c.signal,cache:"no-store"}).then(async r=>{if(!r.ok)throw Error();return r.json()}).then(setDetail).catch(()=>{if(!c.signal.aborted)setDetailError(true)});return()=>c.abort()},[date,model]);
+  const rows=view?.summary.filter(s=>s.model===model&&s.layer===layer&&s.basis===basis)??[],first=rows[0];
+  return <section className="mt-4 space-y-3 text-sm"><h3 className="text-lg font-bold">종목 탐색 방식 비교</h3>
+    <p>주평가 B-v1 · TOP10 · 5거래일 · 과거 자료 연구. 실제 체결 성적이나 상승 확률이 아닙니다.</p>
+    <div className="flex flex-wrap gap-3"><label>자료 <select value={layer} onChange={e=>setLayer(e.target.value)}><option value="daily">일봉 재구성</option><option value="published">게시 확인 후 가상매매</option><option value="live">실제 14:00 기록</option></select></label>
+    {layer!=="live"&&<><label>모델 <select value={model} onChange={e=>{setModel(e.target.value);setDetail(null);setDetailError(false)}}>{["B-v1","A-v1","C-v1","D-v1"].map(v=><option key={v}>{v}</option>)}</select></label>
+    <label>비교 범위 <select value={basis} onChange={e=>setBasis(e.target.value)}><option value="COMMON">세 방식 공통 기간</option><option value="ALL_MODELS_COMMON">네 모델 모두 가능한 기간</option><option value="CROSS_EXTENDED">진입 단독 추가 가능 기간 포함</option></select></label></>}</div>
+    {layer==="live"?<><p>전체 당시 순위·이평 입력·게시 시각·성숙 가격이 함께 확인된 경우만 비교합니다. 부분 게시 또는 TOP5 기록은 TOP10 성과로 간주하지 않습니다.</p>{liveError?<p role="alert">게시 기록 조회 실패</p>:live===null?"조회 중":live.map(p=><p key={p.signalDate}>{p.signalDate} · {p.status} · {p.selectionDepth?"보존 TOP"+p.selectionDepth:"선정 깊이 미확인"} · {p.evaluation==="PARTIAL_EXCLUDED"?"부분 게시 제외":p.evaluation==="TRACKED"?"기존 성과 추적 (세 방식 비교와 별개)":"게시 시각 미확인"}</p>)}</>:
+    failed?<p role="alert">비교 결과 조회 실패 <button onClick={()=>{setFailed(false);setReload(n=>n+1)}}>재시도</button></p>:!view?<p role="status">계좌 결과 조회 중</p>:<>
+    <p>{first?.from} ~ {first?.to} · 성숙 신호 {first?.commonDays}일 · 같은 기간 KOSPI {fmt(first?.indices.KOSPI)} / KOSDAQ {fmt(first?.indices.KOSDAQ)}</p>
+    <div className="overflow-x-auto"><table className="tb-performance-table"><thead><tr>{["방식","세후 순수익","지수 대비","최대낙폭","주식 노출","거래"].map(x=><th key={x}>{x}</th>)}</tr></thead><tbody>{rows.map(s=><tr key={s.arm}><th>{label[s.arm]}</th>{s.status==="UNAVAILABLE"?<td colSpan={5}>자료 부족 · {s.reason}</td>:<><td>{fmt(s.total)}</td><td>{s.excess==null?"미확인":s.excess.toFixed(2)+"%p"}</td><td>{fmt(s.mdd)}</td><td>{fmt(s.exposure)}</td><td>{s.trades}건</td></>}</tr>)}</tbody></table></div>
+    <details><summary>거래 분포·현금 비중·집중도</summary>{rows.map(s=><p className="mt-2" key={s.arm}>{label[s.arm]} · 평균 {fmt(s.mean)} / 중앙값 {fmt(s.median)} / 상승 {fmt(s.win)} · 체결 신호 {s.signals??"—"}일 / {s.stocks??"—"}종목 · 평균 현금 {fmt(s.cashPct)} · 절대손익 최대 종목 / 청산일 비중 {fmt(s.stockConcentration)} / {fmt(s.exitConcentration)}</p>)}</details>
+    <details><summary>날짜별 선정·제외 근거</summary><label>신호일 <select value={date} onChange={e=>{setDate(e.target.value);setDetail(null);setDetailError(false)}}><option value="">선택</option>{view.inventory.filter(i=>layer==="daily"||i.published).map(d=><option key={d.date}>{d.date}</option>)}</select></label>
+    {date&&(detailError?<p>입력 부족 또는 조회 실패</p>:!detail?"확인 중":<>{Object.entries(label).map(([k,n])=><p key={k}>{n}: {detail[k as "TOP"|"CROSS"|"BOTH"].join(", ")||"선정 없음"}</p>)}<p>공통 분석 가능 {detail.pool.length}종목 · {detail.status}</p><details><summary>순위·진입 여부와 제외 사유</summary><p>{detail.pool.map(r=>r.code+"("+r.rank+"위, "+(r.cross?"신규 교차":"진입 아님")+")").join(" · ")}</p><p>{detail.excluded.map(r=>r.join(": ")).join(" · ")||"별도 제외 없음"}</p></details></>)}</details>
+    <details><summary>사전 고정 계약과 한계</summary><p>재구성은 신호일 마감 후 이용 가능하다고 가정합니다. 게시 연구는 확인 시각 이후 최초 정규 시가입니다. 진입일 포함 다섯째 종가 청산, 1억원·최대 10자리·전일 평가액의 10%씩 정수주 매수, 현금 부족·중복 보유 시 건너뜁니다. 수수료 편도 2bp, 슬리피지 편도 5bp, 확인된 2026년 보통주 매도세 20bp. 배당·개인 양도세·실제 체결 가능 수량 미포함.</p>
+    <p>SMA5가 전일 SMA20 이하, 당일 초과일 때만 진입. 단독은 종목코드순 첫 10개, 교집합은 전체 진입과 원래 TOP10의 공통 종목입니다. 지수 대비는 각 거래와 동일 시장·일자·투입금액의 공식 지수 가격수익 대비이며 현금 이자는 0입니다. 결측 지수는 추정하지 않습니다. 표본은 이미 검토한 기간으로 미사용 검증이 아닙니다.</p><small>계약 {view.planHash.slice(0,12)}</small></details></>}
+  </section>;
+}
