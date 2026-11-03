@@ -132,6 +132,8 @@ const corrected={...saved,freshnessStatus:"NOT_EVALUATED",publicationTimes:{firs
   publication:{...coverage,status:"PARTIAL",validCount:507,missing:omitted.slice(-1),revision:2,firstIssuedAt:"2026-11-03T05:30:00Z"}}};
 const revisedHtml=render(dashboard,false,operations,false,corrected,report);
 for(const word of ["잠정 순위","정상 507 · 대상 508 · 미반영 1","009450 · 요청·응답 시각 검증 실패","발행 버전 r2","수정 게시 2026.11.03 16:31:00 KST","검증용순위"])assert.ok(revisedHtml.includes(word),word);
+assert.ok(revisedHtml.indexOf("정상 507 · 대상 508 · 미반영 1") < revisedHtml.indexOf('data-stock-code="000003"'));
+assert.ok(revisedHtml.indexOf('data-stock-code="000003"') < revisedHtml.indexOf("관측·게시 시각"));
 const completeRelay={...corrected,delivery:{...corrected.delivery,publication:{...corrected.delivery.publication,status:"COMPLETE",validCount:508,missing:[]}}};
 assert.ok(render(dashboard,false,operations,false,completeRelay,report).includes("확정 순위"));
 const blockedRun={...report,record:{...report.record,status:"GLOBAL_BLOCKED",event:"POLICY_GLOBAL_BLOCKED",recordedAt:"2026-11-03T08:00:00Z",

@@ -95,6 +95,7 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
     && publication.universeHash === executionRecord?.coverage?.universeHash
     && Date.parse(publicationTimes?.publishedAt ?? "") >= Date.parse(executionRecord.recordedAt);
   const withheld = !blocked && executionRecord?.coverage?.status === "WITHHELD" && !newerPublication ? executionRecord.coverage : null;
+  const visibleCoverage = withheld ?? publication;
   const outcome = performance.data ? latestOneDayPerformance(performance.data, 5) : null;
   const currentOperations = homeOperationStatus(operations.data, data, performance.data, { homeError: dashboard.error, performanceError: performance.error });
   const operation = dailyOperationState(currentOperations, data?.calendar);
@@ -119,13 +120,6 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
       <button ref={operationsButton} type="button" className="tb-focus home-secondary-button" aria-expanded={operationsOpen} aria-controls="home-operations-details" onClick={() => setOperationsOpen(!operationsOpen)}>운영 상세 <span aria-hidden="true">{operationsOpen ? "−" : "+"}</span></button>
     </header>
     <HomeMarketFlow />
-    <div className={"home-status-line " + (warning || privateRelay.failed ? "home-status-warning" : "")} aria-label="데이터 최신성 요약" role="status">
-      <div className="home-status-results"><span><strong>저장된 LIVE 결과</strong> {fixture ? "합성 검증" : delivery ? homeDate(delivery.signalDate) + " · 14:00 KST" : privateRelay.data ? "없음" : "기준일 확인 불가"} · {liveReadLabel}</span>
-        <span><strong>공식 EOD</strong> {homeDate(data?.referenceDate)} · {operationLabel}{additionalEodFailure ? " · " + additionalEodFailure : ""}</span></div>
-      <p className="home-collection-status"><strong>현재 자동 수집 상태</strong> {!blocked && newerPublication && executionRecord?.coverage?.status === "WITHHELD"
-        ? `이전 보류 기록 이후 r${publication.revision} ${publication.status === "PARTIAL" ? "잠정 순위" : "확정 순위"} 게시 확인 · ${time(publicationTimes?.publishedAt)}`
-        : cloudExecutionLabel(execution)}</p>
-    </div>
     <section hidden={!operationsOpen} id="home-operations-details" className="home-surface home-operations" aria-labelledby="home-operations-heading" onKeyDown={event => { if (event.key === "Escape") { setOperationsOpen(false); operationsButton.current?.focus(); } }}>
       <h2 id="home-operations-heading" className="text-lg font-semibold">운영 상세</h2>
       <p className="mt-1 text-sm text-slate-600">저장된 LIVE 결과는 마지막으로 검증된 발행본입니다. 오늘 Cloud 실행의 진행 상태와 실제 관측 시각은 아래에 따로 표시합니다.</p>
@@ -167,32 +161,42 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
 
     <div className={styles.mainGrid}>
     <section className="home-surface min-w-0" aria-label="모델 순위 비교">
-      <div className={styles.titleRow}><h2>모델 TOP</h2><button type="button" className="tb-focus" onClick={() => onOpenModel(selectedModel === "A" ? "A-v1" : selectedModel, source)}>전체 순위 보기 →</button></div>
+      <div className={styles.titleRow}><h2>모델 TOP{source === "LIVE" ? 5 : 3}</h2><button type="button" className="tb-focus" onClick={() => onOpenModel(selectedModel === "A" ? "A-v1" : selectedModel, source)}>전체 순위 보기 →</button></div>
+      <div className={styles.rankFilters}>
       <div className={styles.segments} role="group" aria-label="모델 선택">{["A", "B", "C", "D"].map(letter => <button className="tb-focus" key={letter} type="button" aria-pressed={selectedModel === letter} onClick={() => setSelectedModel(letter)}>모델 {letter}</button>)}</div>
       <div role="tablist" aria-label="분석 데이터 선택" className="home-source-tabs" onKeyDown={event => {
         if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) { event.preventDefault(); const next = event.key === "Home" ? "LIVE" : event.key === "End" ? "EOD" : source === "LIVE" ? "EOD" : "LIVE"; setSource(next); document.getElementById("home-source-" + next)?.focus(); }
       }}>
         {(["LIVE", "EOD"] as const).map(value => <button type="button" role="tab" key={value} id={"home-source-" + value} aria-selected={source === value} aria-controls={"home-panel-" + value} tabIndex={source === value ? 0 : -1} onClick={() => setSource(value)} className="tb-focus">{value === "LIVE" ? "14:00 LIVE" : "Daily EOD"}</button>)}
       </div>
+      </div>
       <div role="tabpanel" id="home-panel-LIVE" aria-labelledby="home-source-LIVE" hidden={source !== "LIVE"} className="home-source-panel">
-        <div className="home-section-caption"><h2>모델별 TOP5 · {fixture ? "합성 연결 검증" : homeDate(withheld ? execution.data?.targetDate : delivery?.signalDate)}</h2><span>점수 단위: 점 / 100 · 수익률 아님</span></div>
+        <div className={styles.rankMeta}>
+          <span>{fixture ? "합성 연결 검증" : homeDate(withheld ? execution.data?.targetDate : delivery?.signalDate)} · 14:00 기준</span>
+          {visibleCoverage && <LiveCoverageSummary compact coverage={visibleCoverage} />}
+        </div>
         {blocked && <p className="home-inline-notice">공통 장애로 새 순위 게시가 차단되었습니다.{delivery && " 아래는 마지막으로 검증된 이전 게시본입니다."}</p>}
-        {withheld ? <LiveCoverageSummary coverage={withheld}/> : publication && <>
-          <LiveCoverageSummary coverage={publication}/>
-          <details className="mt-2 text-xs text-slate-600"><summary className="tb-focus w-fit cursor-pointer rounded">관측·게시 시각</summary><p>실제 관측 구간 {time(delivery?.models[0]?.collectionStartedAt)} ~ {time(delivery?.models[0]?.collectionCompletedAt)} · 발행 버전 r{publication.revision} · 최초 게시 {time(publicationTimes?.firstPublishedAt)}{publication.revision > 1 && " · 수정 게시 " + time(publicationTimes?.publishedAt)}</p></details>
-        </>}
         {fixture && <p className="home-inline-notice">합성 자료 · 실제 시세·정식 관측이 아닙니다. 성과 계산에 사용하지 않습니다.</p>}
         {privateRelay.data?.freshnessStatus === "HISTORICAL" && <p className="home-inline-notice">이전 날짜 저장 기록입니다. 현재 거래일의 정상 관측으로 표시하지 않습니다.</p>}
         {withheld ? <p>필수 종목이 5개 이상 미반영되어 당일 모델 순위를 게시하지 않았습니다.</p> : delivery ? <HomeModelRankings selectedModel={selectedModel} source="LIVE" models={liveModels} limit={5} onSelectStock={onSelectStock} /> : <div className="home-empty" role="status"><h3>{privateRelay.failed ? "LIVE 결과 조회 실패" : privateRelay.disabled ? "LIVE 전달 연결 비활성" : !privateRelay.data ? "LIVE 저장 결과 확인 중" : "14:00 관측 대기"}</h3><p>{privateRelay.failed ? "인증된 결과를 읽지 못했습니다. 운영 상세에서 확인하세요." : privateRelay.disabled ? "이 환경에는 비공개 조회 연결이 설정되지 않았습니다." : privateRelay.data ? "전달된 유효한 14:00 결과가 없습니다." : "조회가 끝나기 전에는 결과를 추정하지 않습니다."} Daily EOD로 자동 대체하지 않습니다.</p></div>}
+        {publication && !withheld && <details className={styles.explain}><summary className="tb-focus">관측·게시 시각</summary><p>실제 관측 구간 {time(delivery?.models[0]?.collectionStartedAt)} ~ {time(delivery?.models[0]?.collectionCompletedAt)} · 발행 버전 r{publication.revision} · 최초 게시 {time(publicationTimes?.firstPublishedAt)}{publication.revision > 1 && " · 수정 게시 " + time(publicationTimes?.publishedAt)}</p></details>}
       </div>
       <div role="tabpanel" id="home-panel-EOD" aria-labelledby="home-source-EOD" hidden={source !== "EOD"} className="home-source-panel">
-        <div className="home-section-caption"><h2>모델 TOP3 · Daily EOD · {homeDate(data?.models?.referenceDate)}</h2><span>점수 단위: 점 / 100</span></div>
+        <p className={styles.rankMeta}>공식 일봉 {homeDate(data?.models?.referenceDate)} · {operationLabel}{additionalEodFailure && " · " + additionalEodFailure}</p>
         {data?.models ? <HomeModelRankings selectedModel={selectedModel} source="EOD" models={data.models.models} limit={3} onSelectStock={onSelectStock} /> : <div className="home-empty" role="status"><h3>{dashboard.error ? "순위 조회 실패" : "검증 가능한 저장 순위 확인 중"}</h3><p>수치가 없는 종목에 임의 점수를 표시하지 않습니다.</p></div>}
       </div>
-      <details className="home-ranking-note"><summary className="tb-focus rounded">모델 점수 해석과 주의사항</summary><p>장세별 설명은 산식의 특성에 따른 구분이며, 수익률 우위가 검증된 것은 아닙니다.</p><p>하락장에서는 네 모델 모두 신규 매수 판단에 주의가 필요합니다. 모델 점수는 상승 확률이나 매수 추천이 아닙니다.</p></details>
+      <details className="home-ranking-note"><summary className="tb-focus rounded">모델 점수 해석과 주의사항</summary><p>모델 점수는 100점 만점입니다.</p><p>장세별 설명은 산식의 특성에 따른 구분이며, 수익률 우위가 검증된 것은 아닙니다.</p><p>하락장에서는 네 모델 모두 신규 매수 판단에 주의가 필요합니다. 모델 점수는 상승 확률이나 매수 추천이 아닙니다.</p></details>
     </section>
 
     <HomeTransitionCard transitions={transitions ?? null} eodError={dashboard.error} onSelectStock={onSelectStock} onOpenTransition={onOpenTransition} />
+    </div>
+
+    <div className={"home-status-line " + (warning || privateRelay.failed ? "home-status-warning" : "")} aria-label="데이터 최신성 요약" role="status">
+      <div className="home-status-results"><span><strong>저장된 LIVE 결과</strong> {fixture ? "합성 검증" : delivery ? homeDate(delivery.signalDate) + " · 14:00 KST" : privateRelay.data ? "없음" : "기준일 확인 불가"} · {liveReadLabel}</span>
+        <span><strong>공식 EOD</strong> {homeDate(data?.referenceDate)} · {operationLabel}{additionalEodFailure ? " · " + additionalEodFailure : ""}</span></div>
+      <p className="home-collection-status"><strong>현재 자동 수집 상태</strong> {!blocked && newerPublication && executionRecord?.coverage?.status === "WITHHELD"
+        ? `이전 보류 기록 이후 r${publication.revision} ${publication.status === "PARTIAL" ? "잠정 순위" : "확정 순위"} 게시 확인 · ${time(publicationTimes?.publishedAt)}`
+        : cloudExecutionLabel(execution)}</p>
     </div>
 
     <section className="home-surface home-performance" aria-labelledby="home-performance-heading"><div className="home-section-caption"><h2 id="home-performance-heading">성과 요약 · TOP5</h2><button type="button" onClick={onOpenPerformance} className="tb-focus home-text-action">성과 상세 →</button></div>

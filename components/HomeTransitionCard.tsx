@@ -127,7 +127,7 @@ export function HomeLiveTransitionSummary({ responses, onSelectStock, onOpenTran
         </article>)}</div> : <p className="mt-3 text-xs text-slate-600">검증 가능한 종목 중 골든크로스 진입·근접 후보가 없습니다.</p>}
       </div>;
     })}
-    <p className="mt-3 text-xs leading-relaxed text-slate-600">표시 경계가는 참고용 반올림 값입니다. 엄격 교차는 관측가가 원래 계산된 경계가를 초과해야 합니다. 주문 가능한 최소 가격·매수 추천이 아닙니다.</p>
+
   </div>;
 }
 

@@ -14,11 +14,9 @@ export default function HomeModelRankings({ models, limit, source, selectedModel
 }) {
   const model = models.find(m => m.modelVersion === selectedModel + "-v1");
   return <div aria-label={`모델 ${selectedModel} ${source} TOP${limit}`}>
-    <details className={styles.explain}><summary className="tb-focus">모델 {selectedModel} · {purposes[selectedModel]}</summary>
-      <p>{descriptions[selectedModel]} · {selectedModel}-v1</p></details>
     {model?.top.length ? <table className={styles.rankTable}>
       <caption className="sr-only">모델 {selectedModel} 종목 순위 · {source}</caption>
-      <thead><tr><th>순위</th><th>종목</th><th>점수</th><th>변동</th><th><span className="sr-only">관심종목</span></th></tr></thead>
+      <thead><tr><th>순위</th><th>종목</th><th>점수<small className="sr-only"> (100점 만점 · 수익률 아님)</small></th><th>변동</th><th><span className="sr-only">관심종목</span></th></tr></thead>
       <tbody>{model.top.slice(0, limit).map(row => {
         const comparable = source === "EOD" && model.comparisonStatus === "AVAILABLE" && Number.isInteger(row.rankChange);
         const change = comparable ? Number(row.rankChange) : null;
@@ -32,6 +30,8 @@ export default function HomeModelRankings({ models, limit, source, selectedModel
           <td><WatchlistStar code={row.code} name={row.name} /></td>
         </tr>;
       })}</tbody></table> : <p className="py-4 text-sm text-slate-600">분석 가능한 종목 없음</p>}
+    <details className={styles.explain}><summary className="tb-focus">모델 {selectedModel} · {purposes[selectedModel]}</summary>
+      <p>{descriptions[selectedModel]} · {selectedModel}-v1</p></details>
     <p className={styles.receipt}>{source === "EOD" && model?.comparisonStatus === "AVAILABLE" ? `${homeDate(model.previousDate)} 대비 · 동일 버전·산식·종목군 확인` : source === "LIVE" ? "저장 점수 · 전일 순위 비교 기록 없음" : "전일 순위 비교 불가"}</p>
   </div>;
 }

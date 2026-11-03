@@ -37,12 +37,15 @@ const reasonLabels: Record<string,string> = {
 function reasonLabel(reason: string) {
   return reasonLabels[reason] ?? (reason.startsWith("KIS_HTTP_") ? "한국투자증권 HTTP 오류 " + reason.slice(9) : "종목 수집 오류");
 }
-export function LiveCoverageSummary({ coverage }: { coverage: LiveCoverage }) {
-  return <div className="home-inline-notice" role="status">
-    <strong>{coverage.status === "COMPLETE" ? "확정 순위" : coverage.status === "PARTIAL" ? "잠정 순위" : "오늘 순위 게시 보류"}</strong>
-    <p>정상 {coverage.validCount} · 대상 {coverage.targetCount} · 미반영 {coverage.missing.length}</p>
-    {coverage.status === "PARTIAL" && <p>정상 관측 종목으로 계산했습니다. 미반영 종목이 복구되면 순위가 달라질 수 있습니다.</p>}
-    {coverage.missing.length > 0 && <details><summary>미반영 종목과 사유 ({coverage.missing.length})</summary>
+export function LiveCoverageSummary({ coverage, compact = false }: { coverage: LiveCoverage; compact?: boolean }) {
+  const label = coverage.status === "COMPLETE" ? "확정 순위" : coverage.status === "PARTIAL" ? "잠정 순위" : "오늘 순위 게시 보류";
+  const explanation = "정상 관측 종목으로 계산했습니다. 미반영 종목이 복구되면 순위가 달라질 수 있습니다.";
+  return <div className={compact ? "flex flex-wrap items-baseline gap-x-2 gap-y-1" : "home-inline-notice"} role="status">
+    <strong className={compact ? (coverage.status === "COMPLETE" ? "text-[var(--tb-blue-dark)]" : "text-amber-800") : undefined}>{label}</strong>
+    <span className={compact ? undefined : "block"}>정상 {coverage.validCount} · 대상 {coverage.targetCount} · 미반영 {coverage.missing.length}</span>
+    {!compact && coverage.status === "PARTIAL" && <p>{explanation}</p>}
+    {coverage.missing.length > 0 && <details><summary className={compact ? "tb-focus cursor-pointer rounded text-[var(--tb-blue-dark)]" : undefined}>{compact ? "미반영 사유" : `미반영 종목과 사유 (${coverage.missing.length})`}</summary>
+      {compact && coverage.status === "PARTIAL" && <p>{explanation}</p>}
       <ul>{coverage.missing.map(row => <li key={row.ticker}>{row.ticker} · {reasonLabel(row.reason)}</li>)}</ul>
     </details>}
   </div>;

@@ -31,6 +31,10 @@
 .chartDates { display: flex; justify-content: space-between; margin: 4px 0 0 calc(3.7rem + 9px); font-variant-numeric: tabular-nums; }
 .receipt { line-height: 1.6; margin-top: 8px; }
 .noChart { display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content:center; min-height: 135px; font-size: .88rem; color: var(--tb-muted); text-align: center; }
+.rankFilters { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 5px 16px; margin: 8px 0; }
+.rankFilters .segments { margin: 0; }
+.rankFilters [role="tablist"] { margin: 0; }
+.rankMeta { display: flex; flex-wrap: wrap; gap: 3px 10px; align-items: baseline; margin: 5px 0; color: #58657a; font-size: .8rem; line-height: 1.55; }
 .segments { display: inline-flex; max-width: 100%; gap: 2px; padding: 3px; margin: 12px 0; background: #f2f5fa; border-radius: 12px; }
 .segments button { min-height: 36px; padding: 0 13px; font-size: .88rem; font-weight: 600; border-radius: 10px; color: #525f73; }
 .segments button[aria-pressed=true] { background: white; color: var(--tb-blue); box-shadow: 0 1px 4px #27334d17; }
