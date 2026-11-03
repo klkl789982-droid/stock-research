@@ -1,0 +1,17 @@
+{
+  "version": "top-cross-comparison-v1",
+  "frozenSource": "3563905",
+  "signalFrom": "2026-09-22", "dataThrough": "2026-11-02",
+  "primary": "B-v1", "secondary": ["A-v1","C-v1","D-v1"],
+  "groups": ["TOP","CROSS","BOTH"], "top":10, "holdingDays":5,
+  "universe": "Frozen date-specific certified ranked, seed-eligible and dated ordinary-share tax-verified stocks with 21 valid daily closes; original ranks 1..10 only, never backfill. Every arm uses the same pool per model/date.",
+  "cross": "SMA5/20 previous <= and current >; official closes for EOD, prior daily closes plus original observed price for LIVE. No near/confirmed/already-above.",
+  "crossPriority": "ascending ticker independent of model; cap 10. BOTH intersects original TOP10 with ALL entrants before cap.",
+  "layers": "Reconstructed available after signal close by assumption; verified publications at first confirmed regular open strictly after receipt; LIVE only with full contemporary ranked universe and transition input. Never pool layers.",
+  "portfolio": "KRW 100000000; ten concurrent slots; target previous closing NAV/10 each; integer units capped by remaining cash. Buy at open before close exits, no duplicate or extension, exit at fifth session close including entry. No leverage/stops. Only dates whose scheduled exit is on or before dataThrough; same entry date collision uses most recent known signal.",
+  "pricePolicy": "Official executable opens/closes. Untradable open: skip; missing held mark/exit: block account, no favorable fills. Gross cash yield 0. Daily bars cannot verify queue fills. No dividend/split-adjusted total-return claims.",
+  "cost": {"mode":"USER_INPUT","buyFeeBps":2,"sellFeeBps":2,"buySlippageBps":5,"sellSlippageBps":5,"sellTaxBps":20},
+  "benchmark": "Each actual funded trade notional times matched official market open-to-close index return; unused capital in cash. Incomplete coverage => no aggregate excess.",
+  "primaryMetric":"Net terminal NAV return, with max daily NAV drawdown, exposure, cash, net trade distribution, distinct entry signals/stocks and largest absolute P&L ticker and exit-date shares. No annualization or model promotion.",
+  "evaluation":"Previously inspected period; descriptive only. Preserve separate D challenger 60-new-signal-day and mature H5 gate."
+}
