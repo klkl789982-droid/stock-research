@@ -1,0 +1,62 @@
+{
+  "version": "dual-target-eod-research-v1",
+  "through": "2026-11-02",
+  "from": "2026-01-02",
+  "folds": [
+    "2026-05-01",
+    "2026-07-01",
+    "2026-09-01"
+  ],
+  "horizons": [
+    5,
+    20
+  ],
+  "source": "Reconstructed EOD using the 260 actual daily bars already cached per eligible member of the through-date seed. Current-universe survivor panel, no historical LIVE or point-in-time financial reconstruction.",
+  "timing": "Assume data available next business day after 13:00 KST, enter second session open; exit at Hth session close including entry. Actual publication timing only in separate archived-signal comparison.",
+  "calendar": "2026 KRX published closure list; require observable exchange sessions; do not fill unknown weekdays or missing bars.",
+  "features": [
+    "5-session return",
+    "20-session return",
+    "20-session realized volatility",
+    "20-session frequency of positive closes",
+    "5/20 SMA new upcross",
+    "volume vs previous 20 sessions"
+  ],
+  "candidates": {
+    "R1": [
+      0
+    ],
+    "R2": [
+      0,
+      1,
+      2,
+      4,
+      5
+    ],
+    "P1": [
+      3
+    ],
+    "P2": [
+      3,
+      0,
+      1,
+      4,
+      5
+    ],
+    "MOM": [
+      1
+    ]
+  },
+  "fit": "Per-date midrank fractions of each feature. Fit five-bin full gross return means or binary price-up rates, equal total weight per date. Shrink each bin by two date-equivalents toward train mean; interpolate between bin centers, average feature estimates. No tuning or target winsorization.",
+  "selection": "May-June validation chooses R candidate by mean daily Spearman and P candidate by smallest Brier. Lock per horizon before July; expand fit each subsequent fold using only labels whose exit is strictly before fold start. Exclude outcomes crossing evaluation block end. No independent unseen claim. Latest refit uses mature labels only. Never display outputs as validated percentages.",
+  "cost": {
+    "mode": "USER_INPUT",
+    "buyFeeBps": 2,
+    "sellFeeBps": 2,
+    "buySlippageBps": 5,
+    "sellSlippageBps": 5,
+    "sellTaxBps": 20
+  },
+  "account": "100M KRW, ten fixed slots, 1/10 prior NAV, only cash, buys at open before exit at close; no duplicate/extension, no stops. Block unverified held prices or corporate action jumps. Same existing simulator.",
+  "limits": "2026 ordinary KOSPI/KOSDAQ shares only. Reject invalid OHLCV, known quarantine, missing sessions, >30.1% discontinuities. Smaller actions, dividends and fills unknown. No sector/financial release history as predictive features. No strategy promotion."
+}
