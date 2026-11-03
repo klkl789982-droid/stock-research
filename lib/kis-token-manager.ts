@@ -2,6 +2,8 @@ import "server-only";
 
 import { createKisApiClient } from "./kis-api-client-core.mjs";
 import { createKisTokenManager } from "./kis-token-manager-core.mjs";
+import { createKisReadTransport, createSharedKisReadTokenManager } from "./kis-shared-read-token.mjs";
+import { authConfig, createRedisCommand } from "./admin-auth.mjs";
 
 function getCredentials() {
   return {
@@ -10,8 +12,11 @@ function getCredentials() {
   };
 }
 
-export const kisTokenManager = createKisTokenManager({ fetchImpl: fetch, getCredentials });
-const kisApiClient = createKisApiClient({ fetchImpl: fetch, tokenManager: kisTokenManager, getCredentials });
+const readTransport = createKisReadTransport(fetch);
+export const kisTokenManager = process.env.VERCEL === "1"
+  ? createSharedKisReadTokenManager({ getCredentials, fetchImpl:readTransport, command: (args: unknown[]) => createRedisCommand(authConfig())(args) })
+  : createKisTokenManager({ fetchImpl:readTransport, getCredentials });
+const kisApiClient = createKisApiClient({ fetchImpl:readTransport, tokenManager:kisTokenManager, getCredentials });
 
 export async function kisRequest(input: string | URL, init: RequestInit = {}) {
   return kisApiClient.request(input, init);

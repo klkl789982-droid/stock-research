@@ -180,8 +180,9 @@ export default function TopStocksPanel({ onSelectStock, compact = false, onOpenF
     };
   }, []);
 
+  const quoteCodes = data?.stocks.slice(0, 5).map((stock) => stock.code).join(",") ?? "";
   useEffect(() => {
-    const codes = data?.stocks.slice(0, 5).map((stock) => stock.code) ?? [];
+    const codes = quoteCodes ? quoteCodes.split(",") : [];
     const requestVersion = ++intradayRequestVersionRef.current;
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -195,25 +196,26 @@ export default function TopStocksPanel({ onSelectStock, compact = false, onOpenF
       clearTimer();
       if (!disposed && !document.hidden && codes.length > 0) timer = setTimeout(loadQuotes, TOP_INTRADAY_POLL_MS);
     };
+    let fetching = false;
     async function loadQuotes() {
-      if (disposed || document.hidden || codes.length === 0) return;
-      let results;
+      if (fetching || disposed || document.hidden || !codes.length) return;
+      fetching = true;
       try {
-        results = await Promise.all(codes.map(async (code) => {
+        for (const code of codes) {
+          if (disposed || document.hidden) break;
+          let quote = null;
           try {
             const response = await fetch(`/api/realtime?code=${code}`, { cache: "no-store", signal: controller.signal });
-            const quote = response.ok ? await response.json() : null;
-            return toTopIntradayOverlay(code, quote);
-          } catch {
-            return toTopIntradayOverlay(code, null);
-          }
-        }));
-      } catch {
-        return;
+            if (response.ok) quote = await response.json();
+          } catch { /* Keep other tickers available. */ }
+          if (disposed || requestVersion !== intradayRequestVersionRef.current) return;
+          const overlay = toTopIntradayOverlay(code, quote) as IntradayOverlay;
+          setIntradayByCode(previous => ({ ...previous, [code]: overlay }));
+        }
+      } finally {
+        fetching = false;
+        schedule();
       }
-      if (disposed || requestVersion !== intradayRequestVersionRef.current) return;
-      setIntradayByCode(Object.fromEntries(results.map((overlay) => [overlay.code, overlay])));
-      schedule();
     }
     const onVisibilityChange = () => {
       if (document.hidden) clearTimer();
@@ -228,7 +230,7 @@ export default function TopStocksPanel({ onSelectStock, compact = false, onOpenF
       controller.abort();
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, [data?.stocks]);
+  }, [quoteCodes]);
 
   return (
     <>

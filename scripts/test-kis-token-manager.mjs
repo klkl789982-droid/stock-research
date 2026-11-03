@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 import { createKisApiClient, classifyKisHttpStatus, safeKisError } from "../lib/kis-api-client-core.mjs";
-import { createKisTokenManager } from "../lib/kis-token-manager-core.mjs";
+import { createKisTokenManager, parseKisTokenExpiry } from "../lib/kis-token-manager-core.mjs";
 
 const credentials = { appKey: "synthetic-app-key", appSecret: "synthetic-app-secret" };
+const issueTime = Date.parse("2026-11-03T14:00:00+09:00");
+assert.equal(parseKisTokenExpiry({expires_in:86400,access_token_token_expired:"2026-11-03 13:59:59"},issueTime),null);
+assert.equal(parseKisTokenExpiry({expires_in:86400,access_token_token_expired:"2026-11-03 16:00:00"},issueTime),issueTime+2*3600_000);
 const tokenResponse = (token, expiresIn = 3600) => new Response(JSON.stringify({ access_token: token, expires_in: expiresIn }), { status: 200, headers: { "Content-Type": "application/json" } });
 const makeManager = ({ tokenFetch, now = () => 1_800_000_000_000 }) => createKisTokenManager({ fetchImpl: tokenFetch, getCredentials: () => credentials, now });
 
