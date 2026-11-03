@@ -122,19 +122,19 @@ const report = {targetDate:"2026-11-03",record:{signalDate:"2026-11-03",recorded
 const saved = { source:"privateLiveRelay",freshnessStatus:"HISTORICAL",delivery:{signalDate:"2026-11-02",models:[
   {modelVersion:"A-v1",records:[{ticker:"000003",companyName:"검증용순위",rank:1,score:55}]}]}};
 const withheldHtml=render(dashboard,false,operations,false,saved,report);
-for(const word of ["정상 503 · 대상 508 · 미반영 5","009450","오늘 순위 게시 보류","LIVE_CLOUD_RATE_EVIDENCE_INVALID"])assert.ok(withheldHtml.includes(word),word);
+for(const word of ["정상 503 · 대상 508 · 미반영 5","009450","오늘 순위 게시 보류","요청·응답 시각 검증 실패"])assert.ok(withheldHtml.includes(word),word);
 assert.ok(!withheldHtml.includes("검증용순위"),"a prior-day delivery cannot appear as the withheld day's ranking");
 const corrected={...saved,freshnessStatus:"NOT_EVALUATED",publicationTimes:{firstPublishedAt:"2026-11-03T06:00:00Z",publishedAt:"2026-11-03T07:31:00Z"},delivery:{...saved.delivery,signalDate:report.targetDate,exportedAt:"2026-11-03T07:30:00Z",
   publication:{...coverage,status:"PARTIAL",validCount:507,missing:omitted.slice(-1),revision:2,firstIssuedAt:"2026-11-03T05:30:00Z"}}};
 const revisedHtml=render(dashboard,false,operations,false,corrected,report);
-for(const word of ["잠정 순위 · PARTIAL","정상 507 · 대상 508 · 미반영 1","009450 · 요청·응답 시각 검증 실패","발행 버전 r2","수정 게시 2026.11.03 16:31:00 KST","검증용순위"])assert.ok(revisedHtml.includes(word),word);
+for(const word of ["잠정 순위","정상 507 · 대상 508 · 미반영 1","009450 · 요청·응답 시각 검증 실패","발행 버전 r2","수정 게시 2026.11.03 16:31:00 KST","검증용순위"])assert.ok(revisedHtml.includes(word),word);
 const completeRelay={...corrected,delivery:{...corrected.delivery,publication:{...corrected.delivery.publication,status:"COMPLETE",validCount:508,missing:[]}}};
-assert.ok(render(dashboard,false,operations,false,completeRelay,report).includes("확정 순위 · COMPLETE"));
+assert.ok(render(dashboard,false,operations,false,completeRelay,report).includes("확정 순위"));
 const blockedRun={...report,record:{...report.record,status:"GLOBAL_BLOCKED",event:"POLICY_GLOBAL_BLOCKED",recordedAt:"2026-11-03T08:00:00Z",
   coverage:corrected.delivery.publication,error:{code:"KIS_HTTP_401",stage:"BATCH_COLLECTION"},stages:{preparation:"SUCCEEDED",collection:"BLOCKED",validation:"BLOCKED",delivery:"BLOCKED"},
   validation:{outboxFrozen:true},delivery:{verified:true,deliveryHash:"b".repeat(64)}}};
 const blockedHtml=render(dashboard,false,operations,false,corrected,blockedRun);
-for(const word of ["전체 수집 차단","한국투자증권 인증 실패 (KIS_HTTP_401)","마지막으로 검증된 이전 게시본","잠정 순위 · PARTIAL","검증용순위","새 게시 중단"])assert.ok(blockedHtml.includes(word),word);
+for(const word of ["전체 수집 차단","한국투자증권 인증 실패","마지막으로 검증된 이전 게시본","잠정 순위","검증용순위","새 게시 중단"])assert.ok(blockedHtml.includes(word),word);
 assert.ok(!blockedHtml.includes("잠정 순위 전달 완료"));assert.ok(!blockedHtml.includes("비공개 전달 확인 2026.11.03 17:00:00 KST"));
 assert.match(html, /<h1 id="home-dashboard-heading"[^>]*>시장 요약<\/h1>/u);
 assert.doesNotMatch(html, /오늘의 분석 대시보드|TIGHT BUDGET · DAILY RESEARCH/u);

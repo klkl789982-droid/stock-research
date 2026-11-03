@@ -16,6 +16,7 @@ function makeRoute(loader) {
   const exports = {};
   new Function("require", "exports", compiled(routeSource))((name) => {
     if (name === "@/lib/admin-access") return { withAdminAccess: handler => handler }; // Authorized data-contract fixture; auth independently tested.
+    if (name === "@/data/model-validation/frozen-strategy-summary-20261103.json") return { default: { candidates: [] } };
     if (name === "next/server") return { NextResponse: { json: (body, options) => ({ body, options }) } };
     if (name === "@/lib/model-performance-research.mjs") return researchEngine;
     if (name === "@/lib/kis-token-manager") return { kisRequest: () => { throw new Error("Network disabled in fixture"); } };
@@ -55,4 +56,55 @@ test("render real research panel with repository diagnostics; no fake zero / no 
   assert.match(panelSource, /AbortController/); assert.match(panelSource, /controller\.signal\.aborted/);
   assert.match(panelSource, /grid-cols-2/); assert.match(panelSource, /sm:grid-cols-3/); assert.match(panelSource, /lg:grid-cols-6/);
   assert.doesNotMatch(routeSource, /GITHUB_TOKEN|KIS_OBSERVATION_STORE_TOKEN|kis-eod-private|intraday-signals/);
+});
+
+test("backtest catalog is fixed to official posted rows, caches only its immutable projection, and rejects mixed layers", async () => {
+  let calls = 0;
+  const choices = [{ date: "2026-10-19", model: "D-v1", horizon: "H1", topN: 5, selected: 5, mature: 5, missing: 0, pending: 0 }];
+  const run = makeRoute(async ({ options, includeChoices }) => {
+    calls++;
+    assert.equal(includeChoices, true); assert.equal(options.topN, 20); assert.equal(options.benchmark, "NONE");
+    assert.equal(options.classification, "PUBLISHED_PRICE_OBSERVATION");
+    return { choices, asOf: "2026-11-03T00:00:00Z", verifiedPublicationDates: [], cohorts: [{ rows: [{ referencePrice: 999 }] }] };
+  });
+  for (let i = 0; i < 2; i++) {
+    const response = await run(new Request("http://fixture/api/model-performance/research?view=backtest-options"));
+    assert.deepEqual(response.body.choices, choices);
+    assert.equal(response.body.cohorts, undefined);
+  }
+  for (const query of ["view=backtest-options&models=B-v1","view=backtest&models=D-v3-research", "view=backtest&classification=RETROSPECTIVE&models=D-v1"])
+    assert.equal((await run(new Request("http://fixture/?"+query))).options.status, 400);
+  assert.equal(calls,1);
+});
+
+test("backtest reports count mature, pending and missing by actual ranks and horizon, preserve receipt and research boundaries", async () => {
+  const options = { models: ["D-v1"], classification: "PUBLISHED_PRICE_OBSERVATION", topN: 20, benchmark: "NONE", from: "2026-10-14", to: "2026-10-15" };
+  const report = await loadModelPerformanceResearch({ asOf:"2026-11-03T06:00:00Z", options, includeChoices: true });
+  const row = (h, n) => report.choices.find(c=>c.date==="2026-10-14" && c.topN===n && c.horizon===h);
+  assert.equal(row("H1",5).mature,5); assert.equal(row("H5",10).mature,10);
+  assert.equal(row("H20",20).pending,20);
+  for (const choice of report.choices) assert.equal(choice.mature+choice.pending+choice.missing,choice.selected);
+  const timing = report.verifiedPublicationDates.find(s=>s.signalDate==="2026-10-14");
+  assert.equal(timing.confirmedBy,"2026-10-15T04:21:13Z");
+  assert.equal(timing.plannedEntryDate,"2026-10-16"); assert.equal(timing.firstKnownRegularOpen,timing.plannedEntryDate);
+
+  const view = await readFile(new URL("../components/BacktestPanel.tsx",import.meta.url),"utf8");
+  const study = JSON.parse(await readFile(new URL("../data/model-validation/frozen-strategy-summary-20261103.json",import.meta.url),"utf8"));
+  function render(tab, opts, error=false) {
+    let index = 0; const states = [tab,opts,0,error,"D-v1",10,1,"","",false,null,null,false], exports={};
+    new Function("require","exports",compiled(view))((name)=>{
+      if(name==="react/jsx-runtime") return jsxRuntime;
+      if(name==="react") return {...React,useState:()=>[states[index++],()=>{}],useEffect:()=>{}};
+      throw new Error(name);
+    },exports);
+    return renderToStaticMarkup(React.createElement(exports.default));
+  }
+  const inv = { choices: report.choices, study, confirmedDates: report.verifiedPublicationDates };
+  const standard=render("published",inv), research=render("study",inv);
+  assert.match(standard,/<option(?=[^>]*disabled="")(?=[^>]*value="20")[^>]*>20거래일 · 보유기간 미성숙/);
+  assert.match(standard,/성숙 20건/); assert.doesNotMatch(standard,/D-v3-research/);
+  assert.match(render("published",{...inv,choices:[]}),/조건을 충족한 게시 신호가 없습니다/);
+  assert.match(render("published",null,true),/평가 가능 범위를 조회하지 못했습니다/);
+  assert.match(research,/D-v3-research/); assert.match(research,/매도 세금은 제외/);
+  assert.equal(study.candidates.find(c=>c.version==="D-v3-research").pairedDates,5);
 });

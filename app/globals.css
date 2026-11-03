@@ -6,6 +6,11 @@
 .tb-home-shell .tb-brand-shell { background: #0a1733; box-shadow: none; }
 .tb-home-shell .tb-sidebar-surface { background: #112039; box-shadow: none; }
 .tb-home-shell .tb-muted-nav { color: #aebbcf; }
+.tb-tool-nav[aria-current="page"] { color: #f2a77b; background: #26334a; }
+.tb-tool-page { margin-inline: auto; max-width: 1440px; min-width: 0; font-variant-numeric: tabular-nums; }
+.tb-tool-page h1 { color: var(--tb-navy); font-size: clamp(1.35rem, 2vw, 1.65rem); line-height: 1.3; font-weight: 650; }
+.tb-tool-page :is(button, select, input):focus-visible { outline: 2px solid var(--tb-orange); outline-offset: 2px; }
+.tb-tool-page :is(input, select) { max-width: 100%; }
 .home-dashboard { width: 100%; max-width: 1660px; margin-inline: auto; color: #142038; }
 .home-dashboard [hidden] { display: none !important; }
 .home-intro, .home-section-caption { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }

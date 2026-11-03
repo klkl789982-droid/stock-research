@@ -6,6 +6,10 @@ import * as jsx from "react/jsx-runtime";
 import { renderToStaticMarkup } from "react-dom/server";
 import * as directional from "../lib/directional-transition.mjs";
 import * as evidencePolicy from "../lib/transition-evidence-policy.mjs";
+import { DatabaseSync } from "node:sqlite";
+import { getArchivedLiveTransitionData } from "../lib/live-transition-store.mjs";
+import * as liveScreen from "../lib/live-transition-screener.mjs";
+import * as liveVerdict from "../lib/live-transition-verdict.mjs";
 
 const read = (file) => readFile(new URL(`../components/${file}.tsx`, import.meta.url), "utf8");
 const [detailsSource, liveSource, wrapperSource, researchSource] = await Promise.all(["LiveTransitionDetails", "LiveTransitionScreenerPanel", "TransitionScreenerPanel", "StockResearchPanel"].map(read));
@@ -264,3 +268,48 @@ try {
   }
 }
 console.log("LIVE transition UI: defaults, EOD comparison, dates, boundaries, errors, responsive SSR, interrupted requests, 60-second/focus/visibility revalidation, hidden-view return, and cleanup passed");
+
+// Replay only a retained, validated observation with its original time and pinned seed.
+// No KIS call, new signal, remote write, or invented transport timestamp is needed.
+const archive = await getArchivedLiveTransitionData();
+assert.equal(archive.snapshotTime, "14:30:00");
+const db = new DatabaseSync(":memory:");
+try {
+  db.exec("CREATE TABLE projection (code TEXT PRIMARY KEY, value TEXT NOT NULL)");
+  const insert = db.prepare("INSERT INTO projection VALUES (?, ?)");
+  for (const { closedRows, observedPrice, ...row } of archive.rows) {
+    const transitionV1 = row.missingReasons.length ? null : liveVerdict.freezeTransitionVerdicts(closedRows, observedPrice);
+    insert.run(row.code, JSON.stringify({ ...row, transitionV1, observedPrice: null }));
+  }
+  const restored = { ...archive, rows: db.prepare("SELECT value FROM projection ORDER BY code").all().map(row => JSON.parse(row.value)) };
+  const source = await readFile(new URL("../app/api/screener/route.ts", import.meta.url), "utf8");
+  const modules = { "next/server": { NextResponse: Response }, "@/lib/admin-access": { withAdminAccess: handler => handler },
+    "@/lib/live-transition-store.mjs": { getArchivedLiveTransitionData: () => restored },
+    "@/lib/live-transition-screener.mjs": liveScreen, "@/lib/live-transition-verdict.mjs": liveVerdict };
+  for (const [, name] of source.matchAll(/from "([^"]+)"/gu)) {
+    if (!(name in modules)) modules[name] = name.startsWith("@/lib/") ? await import("../" + name.slice(2)) : await import(name);
+  }
+  const route = compile(source, modules);
+  let positives = 0;
+  for (const pair of ["5-20", "20-60"]) {
+    const nextUrl = new URL("https://fixture.invalid/api/screener?tab=transition&mode=LIVE&profile=1430&state=candidates&pair=" + pair);
+    const expected = liveScreen.screenLiveTransitions(archive.rows, liveScreen.parseLiveTransitionFilters(nextUrl.searchParams)).results;
+    const response = await route.GET({ nextUrl });
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.referenceDate, archive.referenceDate);
+    assert.equal(body.snapshotTime, archive.snapshotTime);
+    const identity = rows => rows.map(r => [r.code, r.status, r.quoteAsOfTime]).sort();
+    assert.deepEqual(identity(body.results), identity(expected));
+    assert.ok(body.results.every(r => r.observedPrice === null && !("closedRows" in r)));
+    if (body.resultCount) {
+      const html = renderLive([body, null, 0]);
+      assert.ok(html.includes(body.results[0].code), `first rendered ticker ${body.results[0].code}: ${html.slice(0,450)}`);
+      assert.ok(html.includes(archive.referenceDate));
+      positives += body.resultCount;
+    }
+  }
+  assert.ok(positives > 0);
+  console.log("Retained archive replay:", archive.referenceDate, archive.snapshotTime, "eligible inputs", restored.rows.filter(r => !r.missingReasons.length).length,
+    "candidate/pair matches", positives, "SQLite → actual GET → rendered results");
+} finally { db.close(); }

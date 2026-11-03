@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
     typescript: { tsconfigPath: "tsconfig.auth-test.json" },
   } : {}),
   outputFileTracingIncludes: {
+    "/api/watchlist": ["./data/history/*.json", "./data/trading-calendar/status.json"],
+    "/api/market-overview": ["./data/model-history/*.json", "./data/market-prices/*.json", "./data/trading-calendar/status.json"],
     "/api/model-performance/live": ["./data/market-prices/*.json", "./data/trading-calendar/status.json"],
     "/api/screener": ["./data/history/*.json", "./data/analysis/market-seeds/*.json", "./data/trading-calendar/status.json", "./data/intraday-signals/model-top/latest.json", "./data/intraday-signals/model-top/*/1430.json"],
     "/api/model-performance/research": ["./data/history/*.json", "./data/model-history/*.json", "./data/market-prices/*.json", "./data/daily-runs/**/*.json", "./data/trading-calendar/status.json", "./data/model-validation/daily-publication-evidence.json"],

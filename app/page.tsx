@@ -14,16 +14,25 @@ import type { TransitionMode } from "../components/LiveTransitionDetails";
 import StockPriceChart from "../components/StockPriceChart";
 import StockResearchPanel from "../components/StockResearchPanel";
 import AdminLogout from "../components/AdminLogout";
+import WatchlistPanel from "../components/WatchlistPanel";
+import MarketOverviewPanel from "../components/MarketOverviewPanel";
+import BacktestPanel from "../components/BacktestPanel";
 import { searchApiErrorMessage, settleSearchRequest, selectVerifiedStock } from "../lib/search-request-isolation.mjs";
 import { buildSearchTechnicalStrength } from "../lib/search-technical-strength.mjs";
 import { buildSearchMarketAnalysis } from "../lib/search-market-analysis.mjs";
 import { analysisAvailabilityMessage } from "../lib/analysis-availability.mjs";
 import { isVerifiedKisRealtimeQuote } from "../lib/kis-quote-display-policy.mjs";
+const toolsNavigation = [
+  { view: "market", icon: "▥", name: "시장 현황" },
+  { view: "backtest", icon: "⌁", name: "백테스트" },
+  { view: "watchlist", icon: "☆", name: "관심종목" },
+] as const;
+type PageView = "home" | "models" | "screener" | typeof toolsNavigation[number]["view"];
 export default function Home() {
   const [query, setQuery] = useState("");
   const [searchedStock, setSearchedStock] = useState<string | null>(null);
 const [activeTab, setActiveTab] = useState<"technical" | "company">("technical");
-const [pageView, setPageView] = useState<"home" | "models" | "screener">("home");
+const [pageView, setPageView] = useState<PageView>("home");
 const [modelPageTab, setModelPageTab] = useState<"top" | "performance" | "guide">("top");
 const [modelInitialTab, setModelInitialTab] = useState("B");
 const [screenerEntry, setScreenerEntry] = useState<{ tab: "models" | "transition"; pair: string; state: string; direction?: string; mode?: TransitionMode }>({ tab: "models", pair: "5-20", state: "all" });
@@ -83,12 +92,13 @@ const [priceMeta, setPriceMeta] = useState<{
   closePrice: number;
 } | null>(null);
 const [modelProfile, setModelProfile] = useState<"1400" | "1430" | "daily">("1400");
+const [watchlistQuery, setWatchlistQuery] = useState("");
 const searchRequestIdRef = useRef(0);
 const searchControllerRef = useRef<AbortController | null>(null);
 const selectedCodeRef = useRef<string | null>(null);
 const pageTopRef = useRef<HTMLElement | null>(null);
 const searchInputRef = useRef<HTMLInputElement | null>(null);
-const explorerOriginRef = useRef<{ view: "home" | "models" | "screener"; query: string; scrollY: number } | null>(null);
+const explorerOriginRef = useRef<{ view: PageView; query: string; scrollY: number } | null>(null);
 const routeInitializedRef = useRef(false);
 const technicalStrength = useMemo(() => buildSearchTechnicalStrength({
   priceHistory,
@@ -405,10 +415,17 @@ const navigationButtons = (closeOnSelect: boolean) => <>
   <button type="button" onClick={openModelsFromNavigation} className={`tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold ${pageView === "models" ? "bg-[rgba(182,91,50,0.13)] text-[var(--tb-orange)]" : "text-slate-300 hover:bg-white/10 hover:text-white"}`}><span aria-hidden="true">▦</span> 모델</button>
   <div className="my-3 border-t border-white/10" />
   <button type="button" onClick={openScreenerFromNavigation} className={`tb-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold ${pageView === "screener" ? "bg-[rgba(182,91,50,0.13)] text-[var(--tb-orange)]" : "text-slate-300 hover:bg-white/10 hover:text-white"}`}><span aria-hidden="true">▽</span> 스크리닝</button>
-  <section aria-label="보조 메뉴 · 준비 중" className="mt-6 border-t border-white/10 pt-4"><h2 className="px-3 pb-2 text-xs font-medium text-slate-400">보조 메뉴</h2>{[['▥', '시장 현황'], ['⌁', '백테스트'], ['☆', '관심 종목']].map(([icon, label]) => <div key={label} className="tb-muted-nav flex items-center gap-3 rounded-lg px-3 py-2 text-sm" aria-disabled="true"><span aria-hidden="true">{icon}</span><span>{label}</span><span className="ml-auto text-xs">준비 중</span></div>)}</section>
+  <div className="mt-3 border-t border-white/10 pt-3">
+    {toolsNavigation.map(({ view, icon, name }) => <button key={view} type="button"
+      aria-current={!searchedStock && pageView === view ? "page" : undefined}
+      className="tb-focus tb-tool-nav flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
+      onClick={() => { handleHome(); setWatchlistQuery(""); setPageView(view); setMobileNavOpen(false); }}>
+      <span aria-hidden="true">{icon}</span>{name}
+    </button>)}
+  </div>
 </>;
 return (
-    <main ref={pageTopRef} className={"tb-page-ambient min-h-screen text-slate-900" + (pageView === "home" && !searchedStock ? " tb-home-shell" : "")}>
+    <main ref={pageTopRef} className={"tb-page-ambient min-h-screen text-slate-900" + (!searchedStock && (pageView === "home" || toolsNavigation.some(tool => tool.view === pageView)) ? " tb-home-shell" : "")}>
       <header className="tb-brand-shell sticky top-0 z-30 border-b border-white/10 text-white shadow-[0_8px_25px_rgba(7,18,40,0.14)]">
         <div className="flex w-full items-center gap-3 px-3 py-2 sm:gap-4 sm:px-6 lg:px-6">
           <button type="button" onClick={() => setMobileNavOpen(true)} aria-label="메뉴 열기" aria-expanded={mobileNavOpen} className="tb-focus inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/15 text-xl leading-none text-white hover:bg-white/10 lg:hidden">☰</button>
@@ -466,6 +483,9 @@ return (
 
         {pageView === "screener" && <div hidden={Boolean(searchedStock)}><StockScreenerPanel onSelectStock={handleSearch} key={`${screenerEntry.tab}:${screenerEntry.pair}:${screenerEntry.state}:${screenerEntry.direction}:${screenerEntry.mode}`} initialTab={screenerEntry.tab} initialPair={screenerEntry.pair} initialState={screenerEntry.state} initialDirection={screenerEntry.direction} initialMode={screenerEntry.mode} /></div>}
 
+        {!searchedStock && (pageView === "watchlist" || pageView === "market" || pageView === "backtest") &&
+          <div className="tb-tool-page">{pageView === "watchlist" ? <WatchlistPanel initialQuery={watchlistQuery} onSelectStock={handleSearch} /> :
+            pageView === "market" ? <MarketOverviewPanel /> : <BacktestPanel />}</div>}
         {searchedStock && (
           <div className="tb-card mt-3 overflow-hidden p-4 sm:p-5">
             <div className="flex justify-end"><button type="button" onClick={() => { if (window.history.state?.tbStock?.returnToExplorer) window.history.back(); else { restoreExplorer(); const url = new URL(window.location.href); url.searchParams.delete("stock"); window.history.replaceState(window.history.state, "", url); } }} className="tb-focus rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium">← 돌아가기</button></div>
@@ -476,6 +496,9 @@ return (
 
            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500">
   <span>{stockInfo?.srtnCd?.replace(/^A/, "")}</span><span>{stockInfo?.mrktCtg}</span><span>공식 EOD {priceMeta?.asOfDate ?? "기준일 미확인"}</span>
+  {stockInfo && <button type="button" className="tb-focus rounded border border-slate-300 px-2 py-1 text-xs text-slate-700" onClick={() => {
+    setWatchlistQuery(selectedCodeRef.current ?? ""); handleHome(); setPageView("watchlist");
+  }}>관심종목에서 관리</button>}
 </div>
 {(priceInfo || realtimePrice || priceError || realtimeError) && (
   <div className="mt-3 rounded-xl bg-[#f7f3eb] p-3">

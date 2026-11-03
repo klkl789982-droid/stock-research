@@ -28,7 +28,7 @@ export function cloudExecutionLabel(state: State) {
   const record=state.data.record;
   if (!record) return `${homeDate(state.data.targetDate)} · 오늘 실행 기록 없음 · 실행 여부 미확인`;
   const prefix=homeDate(record.signalDate)+" · ";
-  if (record.status === "GLOBAL_BLOCKED") return prefix+"전체 수집 차단 · "+(reasons[record.error?.code??""]??"공통 오류")+" ("+record.error?.code+")";
+  if (record.status === "GLOBAL_BLOCKED") return prefix+"전체 수집 차단 · "+(reasons[record.error?.code??""]??"공통 오류");
   if (record.status === "PARTIAL") return prefix+"잠정 순위 전달 완료 · 미반영 "+record.coverage?.missing.length+"종목";
   if (record.status === "WITHHELD") return prefix+"순위 게시 보류 · 미반영 "+record.coverage?.missing.length+"종목";
   if (record.status === "SUCCEEDED") return prefix+"수집·검증·비공개 전달 완료";

@@ -8,6 +8,7 @@ import { validateMarketPriceLedger } from "../lib/market-price-ledger.mjs";
 import { simulateFundedPortfolio } from "../lib/funded-research-portfolio.mjs";
 import { runStrategyStudy } from "../lib/daily-strategy-study.mjs";
 import { deriveMarketBenchmarkLegs } from "../lib/research-index-benchmarks.mjs";
+import { summarizeFrozenStudy } from "../lib/backtest-study-summary.mjs";
 
 const read = async (file) => JSON.parse(await fs.readFile(file,"utf8"));
 const plan = await read("config/daily-strategy-research-v1.json");
@@ -60,4 +61,5 @@ function benchmark(market, entryDate, exitDate) {
   return indexLegs.get(key).find((r) => r.market === market)?.returnPercent ?? null;
 }
 const study = runStrategyStudy({ snapshots, calendar, ledgerMap, ledgers, plan, simulate: simulateFundedPortfolio, benchmark });
-console.log(JSON.stringify({ ...study, inputHashes },null,2));
+const withInputs = { ...study, inputHashes };
+console.log(JSON.stringify(process.argv.includes("--summary") ? summarizeFrozenStudy(withInputs, plan) : withInputs,null,2));

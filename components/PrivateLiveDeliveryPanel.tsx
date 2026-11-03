@@ -39,11 +39,11 @@ function reasonLabel(reason: string) {
 }
 export function LiveCoverageSummary({ coverage }: { coverage: LiveCoverage }) {
   return <div className="home-inline-notice" role="status">
-    <strong>{coverage.status === "COMPLETE" ? "확정 순위 · COMPLETE" : coverage.status === "PARTIAL" ? "잠정 순위 · PARTIAL" : "오늘 순위 게시 보류"}</strong>
+    <strong>{coverage.status === "COMPLETE" ? "확정 순위" : coverage.status === "PARTIAL" ? "잠정 순위" : "오늘 순위 게시 보류"}</strong>
     <p>정상 {coverage.validCount} · 대상 {coverage.targetCount} · 미반영 {coverage.missing.length}</p>
     {coverage.status === "PARTIAL" && <p>정상 관측 종목으로 계산했습니다. 미반영 종목이 복구되면 순위가 달라질 수 있습니다.</p>}
     {coverage.missing.length > 0 && <details><summary>미반영 종목과 사유 ({coverage.missing.length})</summary>
-      <ul>{coverage.missing.map(row => <li key={row.ticker}>{row.ticker} · {reasonLabel(row.reason)} · {row.reason}</li>)}</ul>
+      <ul>{coverage.missing.map(row => <li key={row.ticker}>{row.ticker} · {reasonLabel(row.reason)}</li>)}</ul>
     </details>}
   </div>;
 }

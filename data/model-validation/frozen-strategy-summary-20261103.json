@@ -1,0 +1,88 @@
+{
+  "studyId": "daily-strategy-research-v1",
+  "protocolHash": "ccd14d8be0de294b3ad27ea34df67874a58fe91dfedac24c3332f7213a542274",
+  "sourceStudyHash": "3877975bfc35a6957768e3bb97aa371c379df47ac83552683caf0a456188b2e3",
+  "from": "2026-10-19",
+  "to": "2026-11-02",
+  "topN": 10,
+  "unavailablePrimaryVersions": [
+    "B-v2-research"
+  ],
+  "candidates": [
+    {
+      "version": "A-v4-research",
+      "baselineVersion": "A-v1",
+      "holdingDays": 5,
+      "lineage": "07e581dbc881e9b775b9f29f5d8f489d7e6baee01f9b49c0283d0ca03de6ba04",
+      "pairedDates": 5,
+      "baseline": {
+        "dates": 5,
+        "observations": 50,
+        "mean": -2.7927,
+        "excess": -2.2514,
+        "total": -2.5883,
+        "drawdown": -3.1831,
+        "trades": 22
+      },
+      "candidate": {
+        "dates": 5,
+        "observations": 50,
+        "mean": -3.1299,
+        "excess": -6.5794,
+        "total": -1.9856,
+        "drawdown": -2.2515,
+        "trades": 18
+      }
+    },
+    {
+      "version": "C-v3-research",
+      "baselineVersion": "C-v1",
+      "holdingDays": 1,
+      "lineage": "710723a3731802301c677095dfc871b9ac5a6f3b5d2f3a6cdbb45ed34f2db39c",
+      "pairedDates": 9,
+      "baseline": {
+        "dates": 9,
+        "observations": 90,
+        "mean": 0.0056,
+        "excess": -0.0514,
+        "total": -0.0512,
+        "drawdown": -3.8147,
+        "trades": 90
+      },
+      "candidate": {
+        "dates": 9,
+        "observations": 90,
+        "mean": 0.0056,
+        "excess": -0.0514,
+        "total": -0.0512,
+        "drawdown": -3.8147,
+        "trades": 90
+      }
+    },
+    {
+      "version": "D-v3-research",
+      "baselineVersion": "D-v1",
+      "holdingDays": 5,
+      "lineage": "dc6276bd396ba84f7f5835989c2b52fe6a3a8f961d236939d2d965ad578c8467",
+      "pairedDates": 5,
+      "baseline": {
+        "dates": 5,
+        "observations": 50,
+        "mean": -0.6777,
+        "excess": 0.8818,
+        "total": -0.4787,
+        "drawdown": -3.8441,
+        "trades": 29
+      },
+      "candidate": {
+        "dates": 5,
+        "observations": 50,
+        "mean": 1.6004,
+        "excess": 2.9923,
+        "total": 1.0377,
+        "drawdown": -2.8645,
+        "trades": 28
+      }
+    }
+  ]
+}

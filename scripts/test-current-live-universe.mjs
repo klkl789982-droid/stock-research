@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { aggregateProduction } from "../infra/cloudflare-live-kis-diagnostic/production-core.mjs";
-import { checkCurrentLiveRelease, projectCurrentLiveUniverse } from "../lib/current-live-universe.mjs";
+import { checkCurrentLiveRelease, createCurrentLiveReader, projectCurrentLiveUniverse } from "../lib/current-live-universe.mjs";
+import { deliverPrivateLive, readLatestPublication } from "../lib/private-live-delivery.mjs";
 import { intradaySeedHash } from "../lib/intraday-market-seed.mjs";
 import { currentTransitionView } from "../lib/live-transition-store.mjs";
 import { screenLiveTransitions } from "../lib/live-transition-screener.mjs";
@@ -58,4 +59,53 @@ for (const pair of ["5-20","20-60"]) {
   }
 }
 assert.throws(()=>currentTransitionView(universe,{dates:{}},new Date("2026-11-04T05:00:00Z")),/LIVE_SNAPSHOT_STALE/u);
+
+// Read the home head and the full Model TOP through their normal selectors across
+// three successive publications. The private object store here is memory only.
+const objects = new Map();
+const store = {
+  verifyPrivateRepository: async () => {},
+  read: async key => objects.has(key) ? {value: objects.get(key)} : null,
+  writeImmutable: async (key, value) => {
+    if (objects.has(key)) assert.deepEqual(objects.get(key), value);
+    else objects.set(key, value);
+  },
+  listKeys: async path => {
+    const entries = new Map();
+    for (const key of objects.keys()) if (key.startsWith(path + "/")) {
+      const [name, child] = key.slice(path.length + 1).split("/");
+      entries.set(name, {name, type: child ? "dir" : "file"});
+    }
+    return [...entries.values()];
+  },
+};
+const readTop = createCurrentLiveReader({store, readSeed: async () => seed});
+const recovered = (target, score) => ({...rows[0], code: target.code, companyName: target.name,
+  scores: Object.fromEntries(versions.map(v => [v, score])), transitionV1: null});
+const successive = [
+  rows.slice(0,-1),
+  [...rows.slice(0,-1), recovered(targets.at(-2), 99)],
+  [...rows.slice(0,-1), recovered(targets.at(-2), 99), recovered(targets.at(-1), 100)],
+];
+let previousHash = null, firstDelivery;
+for (let step = 0; step < successive.length; step++) {
+  const revision = step + 1, now = new Date(Date.parse(issued) + step * 60_000).toISOString();
+  const bundle = aggregateProduction(prepared, successive[step], now, { revision, firstIssuedAt:issued, previousDeliveryHash:previousHash });
+  await store.writeImmutable(`cloud-live-score-evidence-v1/${date}/${bundle.evidence.contentHash}.json`, bundle.evidence);
+  await deliverPrivateLive(store, bundle.delivery, {now});
+  firstDelivery ??= bundle.delivery;
+  await deliverPrivateLive(store, firstDelivery, {now}); // Delayed old relay cannot rewind either consumer.
+  const [home, top] = await Promise.all([readLatestPublication(store, {now}), readTop({now})]);
+  assert.deepEqual([top.signalDate, top.revision, top.deliveryHash, top.sourceHash, top.publishedAt],
+    [home.delivery.signalDate, revision, home.delivery.deliveryHash, home.delivery.sourceHash, home.publicationTimes.publishedAt]);
+  assert.equal(top.publicationStatus, revision === 3 ? "COMPLETE" : "PARTIAL");
+  for (const model of home.delivery.models) {
+    const version = model.modelVersion;
+    assert.equal(top.modelDefinitions[model.model].formulaHash, seed.sourceManifest.modelFormulaHashes[version]);
+    const publishedTop = top.records.filter(row => row.models[version]).toSorted((a,b) => a.models[version].rank - b.models[version].rank).slice(0,5);
+    assert.deepEqual(model.records, publishedTop.map(row => ({ticker:row.code,companyName:row.name,...row.models[version]})));
+    if (revision > 1) assert.equal(model.records[0].ticker, targets.at(revision === 2 ? -2 : -1).code);
+  }
+  previousHash = top.deliveryHash;
+}
 console.log("14:00 whole-universe ranks, frozen model hashes, partial coverage, categorical transitions and cross-session expiry passed");

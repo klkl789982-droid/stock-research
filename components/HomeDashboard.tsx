@@ -115,7 +115,6 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
   return <section className="home-dashboard space-y-5" aria-labelledby="home-dashboard-heading">
     <header className="home-intro"><h1 id="home-dashboard-heading" className="text-2xl font-semibold tracking-tight text-[var(--tb-navy)]">시장 요약</h1>
       <button ref={operationsButton} type="button" className="tb-focus home-secondary-button" aria-expanded={operationsOpen} aria-controls="home-operations-details" onClick={() => setOperationsOpen(!operationsOpen)}>운영 상세 <span aria-hidden="true">{operationsOpen ? "−" : "+"}</span></button>
-      <p className="home-intro-description">저장된 분석에서 관심 종목의 근거를 확인하세요.</p>
     </header>
     <div className={"home-status-line " + (warning || privateRelay.failed ? "home-status-warning" : "")} aria-label="데이터 최신성 요약" role="status">
       <div className="home-status-results"><span><strong>저장된 LIVE 결과</strong> {fixture ? "합성 검증" : delivery ? homeDate(delivery.signalDate) + " · 14:00 KST" : privateRelay.data ? "없음" : "기준일 확인 불가"} · {liveReadLabel}</span>
@@ -160,7 +159,7 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
         <div><dt>마지막 확인 데이터 해시 / 배포 버전</dt><dd>{operations.data?.deployment?.lastVerified?.snapshotHash ?? "확인 기록 없음"}<br />{operations.data?.deployment?.lastVerified?.commitSha ?? "확인 기록 없음"}</dd></div>
       </dl><p className="mt-3">실제 사이트 확인은 홈·TOP·성과·운영 API의 기준일·내용 해시와 배포 버전을 대조합니다. 저장 성공이나 날짜 일치만으로 확인 완료가 되지 않습니다.</p>
       <p className="mt-2">공공 원본은 다음 영업일 13시 이후 제공 안내가 있으며 도착 시각은 보장되지 않습니다. 휴장·미확정 거래일을 날짜 경과만으로 실패 처리하지 않습니다.</p>
-      <p className="mt-2">KIS 잠정 EOD: 비공개 · 공개 연결 비활성. KOSPI/KOSDAQ/USD-KRW/거래대금: 미연결 · 숫자 미표시.</p></details>
+      <p className="mt-2">시장 지수와 분석 대상 종목 통계는 시장 현황에서 확인할 수 있습니다.</p></details>
     </section>
 
     <section className="home-surface" aria-label="모델 순위 비교">
@@ -175,8 +174,6 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
         {withheld ? <LiveCoverageSummary coverage={withheld}/> : publication && <>
           <LiveCoverageSummary coverage={publication}/>
           <p className="text-sm">실제 관측 구간 {time(delivery?.models[0]?.collectionStartedAt)} ~ {time(delivery?.models[0]?.collectionCompletedAt)} · 발행 버전 r{publication.revision} · 최초 게시 {time(publicationTimes?.firstPublishedAt)}{publication.revision > 1 && " · 수정 게시 " + time(publicationTimes?.publishedAt)}</p>
-          <p className="text-sm">전달 해시 {delivery?.deliveryHash?.slice(0,12)} · 전체 SHA256은 운영 상세에서 확인할 수 있습니다.</p>
-          {!blocked && executionRecord?.delivery.verified && executionRecord.delivery.deliveryHash === delivery?.deliveryHash && <p className="text-sm">비공개 전달 확인 {time(executionRecord.recordedAt)}</p>}
         </>}
         {fixture && <p className="home-inline-notice">합성 자료 · 실제 시세·정식 관측이 아닙니다. 성과 계산에 사용하지 않습니다.</p>}
         {privateRelay.data?.freshnessStatus === "HISTORICAL" && <p className="home-inline-notice">이전 날짜 저장 기록입니다. 현재 거래일의 정상 관측으로 표시하지 않습니다.</p>}
