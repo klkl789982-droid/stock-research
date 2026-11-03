@@ -34,7 +34,7 @@ test("before fix: actual 1/2ms receiver-clock skew rejects an otherwise valid co
   }
 });
 test("refreshed receipt clock preserves original timestamps and strict validator, without SQL lock during I/O", async t => {
-  for (const ahead of [1, 2, 25]) {
+  for (const ahead of [1, 2, 25, 26, 36, 220]) {
     const f = await fixture(t, ahead), original = structuredClone(f.value);
     assert.deepEqual(await completeWithReceiptClock(f.state, f.date, f.code, f.value), { stored: true });
     assert.deepEqual(f.value, original); assert.ok(f.now() >= f.value.calls.at(-1).completed);
@@ -45,11 +45,11 @@ test("refreshed receipt clock preserves original timestamps and strict validator
   }
 });
 test("large future timestamps and a non-advancing clock remain rejected, with finite waits", async t => {
-  for (const [ahead, frozen] of [[26, false], [2000, false], [2, true]]) {
+  for (const [ahead, frozen] of [[221, false], [2000, false], [2, true], [36, true]]) {
     const f = await fixture(t, ahead, { frozen });
     await assert.rejects(completeWithReceiptClock(f.state, f.date, f.code, f.value), /RATE_EVIDENCE_INVALID/u);
     assert.equal(f.state.read(`observation:${f.code}`), null); assert.ok(f.waits() <= 3);
-    if (ahead > 25) assert.equal(f.waits(), 0);
+    if (ahead > 220) assert.equal(f.waits(), 0);
   }
 });
 test("receipt wait cannot legalize late starts, reversed timestamps or wrong durable slots", async t => {
