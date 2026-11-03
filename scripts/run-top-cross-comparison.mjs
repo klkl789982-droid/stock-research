@@ -24,7 +24,7 @@ for(const d of dates){
   const published=signal.availabilityEvidence==="VERIFIED"&&signal.classification==="AS_PUBLISHED"?signal.availableAt:null;
   inputHashes[d]={seed:seed.contentHash,compact:compact?.contentHash??null,formula:h.sourceManifest?.modelFormulaHashes,universe:h.sourceManifest?.universe?.contentHash};
   const log={date:d,published,seedGeneratedAt:seed.generatedAt,seedHash:seed.contentHash,formulaHashes:h.sourceManifest?.modelFormulaHashes??{},models:{}};inventory.push(log);
-  let transitions;try{transitions=buildTransitionRows({history:h,seed,calendar:cal});}catch(e){log.error=e.message;continue;}
+  let transitions;try{transitions=buildTransitionRows({history:h,seed,calendar:cal});}catch(e){log.error=e.message;transitions=[];}
   const tax=taxEligibilityForStudy(master,[h]);
   for(const model of models){
     const v=selectThree(h,model,transitions,r=>tax(d,{code:r.ticker,market:r.market},d.slice(0,4)+"-12-31"));
@@ -37,8 +37,8 @@ const phases={daily:[],published:[]};
 for(const day of inventory)for(const layer of Object.keys(phases)){
   const d=day.date, next=shift(cal,d,1), entry=layer==="daily"?(next.status==="resolved"?next.date:null):day.published?sessions.find(s=>s>d&&Date.parse(s+"T09:00:00+09:00")>Math.max(Date.parse(day.published),Date.parse(day.seedGeneratedAt))):null;
   const exit=entry?shift(cal,entry,4):null;
-  day[layer]={entry:entry??null,exit:exit?.status==="resolved"?exit.date:null,status:!entry?(layer==="published"&&!day.published?"PUBLICATION_UNKNOWN":"NO_CONFIRMED_OPEN"):!exit||exit.status!=="resolved"||exit.date>through?"IMMATURE_OR_CALENDAR_GAP":"MATURE"};
-  if(day[layer].status!=="MATURE")continue;
+  day.assessment??={};day.assessment[layer]={entry:entry??null,exit:exit?.status==="resolved"?exit.date:null,status:!entry?(layer==="published"&&!day.published?"PUBLICATION_UNKNOWN":"NO_CONFIRMED_OPEN"):!exit||exit.status!=="resolved"||exit.date>through?"IMMATURE_OR_CALENDAR_GAP":"MATURE"};
+  if(day.assessment[layer].status!=="MATURE")continue;
   phases[layer].push({signalDate:d,entryDate:entry,exitDate:exit.date});pairs.push({entryDate:entry,exitDate:exit.date});
 }
 let store=null,live={status:"NOT_QUERIED"};
@@ -51,15 +51,17 @@ const key=(a,b)=>a+"/"+b;
 for(const days of Object.values(phases))if(days.length)pairs.push({entryDate:days[0].entryDate,exitDate:days.at(-1).exitDate});
 const benchmark=store?await loadPrivateBenchmarkLegs(pairs,{store}):[];
 for(const [layer,days] of Object.entries(phases))for(const model of models){
-  for(const [basis,arm] of [...cfg.groups.map(a=>["COMMON",a]),...cfg.groups.map(a=>["ALL_MODELS_COMMON",a]),["CROSS_EXTENDED","CROSS"]]){
+  for(const [basis,arm] of [...cfg.groups.map(a=>["COMMON",a]),...cfg.groups.map(a=>["ALL_MODELS_COMMON",a]),...cfg.groups.map(a=>["PAIRED_TIMING",a]),["CROSS_EXTENDED","CROSS"],["TOP_EXTENDED","TOP"]]){
+    const pairedDates=Object.values(phases).map(days=>new Set([...new Map(days.filter(p=>selections[p.signalDate]?.[model]?.status==="READY").map(p=>[p.entryDate,p])).values()].map(p=>p.signalDate)));
     const map=new Map();for(const p of days){const v=selections[p.signalDate]?.[model];
-      if(v&&(basis==="CROSS_EXTENDED"?v.pool.length>0:basis==="ALL_MODELS_COMMON"?models.every(m=>selections[p.signalDate]?.[m]?.status==="READY"):v.status==="READY"))map.set(p.entryDate,p);}
+      if(v&&(basis!=="PAIRED_TIMING"||pairedDates.every(s=>s.has(p.signalDate)))&&(basis==="TOP_EXTENDED"?!!v.nativeTOP:basis==="CROSS_EXTENDED"?v.pool.length>0:basis==="ALL_MODELS_COMMON"?models.every(m=>selections[p.signalDate]?.[m]?.status==="READY"):v.status==="READY"))map.set(p.entryDate,p);}
     const common=[...map.values()].sort((a,b)=>a.entryDate.localeCompare(b.entryDate));
-    const plans=common.map(p=>({...p,tickers:selections[p.signalDate][model][arm],capacity:10}));
+    const plans=common.map(p=>({...p,tickers:basis==="TOP_EXTENDED"?selections[p.signalDate][model].nativeTOP.map(r=>r.code):selections[p.signalDate][model][arm],capacity:10}));
     const account=simulateFundedPortfolio({selections:plans,ledgers,calendar:cal,holdingDays:5,cost:cfg.cost,fixedSlots:10,endDate:common.at(-1)?.exitDate});
-    const metrics=summarizeAccount(account,t=>selections[t.signalDate][model].pool.find(r=>r.code===t.ticker).market,benchmark,Date.now());
+    const marketOf=t=>(basis==="TOP_EXTENDED"?selections[t.signalDate][model].nativeTOP:selections[t.signalDate][model].pool).find(r=>r.code===t.ticker).market;
+    const metrics=summarizeAccount(account,marketOf,benchmark,Date.now());
     const weights=new Map();
-    for(const t of account.trades??[]){const market=selections[t.signalDate][model].pool.find(r=>r.code===t.ticker).market;
+    for(const t of account.trades??[]){const market=marketOf(t);
       const id=[market,t.entryDate,t.exitDate].join("/"),v=weights.get(id)??{market,entryDate:t.entryDate,exitDate:t.exitDate,fraction:0,n:0};
       v.fraction+=t.outlay/account.startingCapitalKrw;v.n++;weights.set(id,v);}
     summary.push({layer,model,arm,basis,commonDays:plans.length,selected:plans.reduce((n,p)=>n+p.tickers.length,0),...metrics,weights:[...weights.values()]});
