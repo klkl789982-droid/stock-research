@@ -41,7 +41,8 @@ async function handleGet(request: NextRequest) {
   if(request.nextUrl.searchParams.get("tab")==="dual-research"){
     const q=request.nextUrl.searchParams,h=Number(q.get("horizon")),target=q.get("target");
     if(![5,20].includes(h)||!(target==="P"||target==="R"))return NextResponse.json({error:"INVALID_RESEARCH_TARGET"},{status:400});
-    try {const {dualTargetView}=await import("@/lib/dual-target-view.mjs");return NextResponse.json(await dualTargetView(h,target),{headers:{"Cache-Control":"private, no-store"}});}
+    const variant=q.get("version")??"v1";if(!["auto","v1","v2"].includes(variant))return NextResponse.json({error:"INVALID_RESEARCH_VERSION"},{status:400});
+    try {const {dualTargetView}=await import("@/lib/dual-target-view.mjs");return NextResponse.json(await dualTargetView(h,target,variant),{headers:{"Cache-Control":"private, no-store"}});}
     catch{return NextResponse.json({error:"RESEARCH_INPUT_UNAVAILABLE"},{status:503});}
   }
   if(request.nextUrl.searchParams.get("tab")==="research-cross"){
