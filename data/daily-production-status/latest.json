@@ -1,25 +1,25 @@
 {
   "schemaVersion": 2,
   "dataset": "daily-top-freshness-status",
-  "snapshotReferenceDate": "2026-11-02",
+  "snapshotReferenceDate": "2026-11-03",
   "snapshotIdentity": {
-    "referenceDate": "2026-11-02",
-    "snapshotHash": "63897c50fc71f55d771978581315b16b515c67dd7d2055650d518d4b01a98ff9"
+    "referenceDate": "2026-11-03",
+    "snapshotHash": "c843828a14ea925fff548af45ec96c1c3062b3ac2e224feea11d9e6a24ab03b3"
   },
-  "observedOfficialDate": "2026-11-02",
+  "observedOfficialDate": "2026-11-03",
   "freshnessStatus": "fresh",
-  "freshnessReason": "sameReferenceDate",
-  "runStatus": "NO_NEW_OFFICIAL_EOD",
-  "updatedAt": "2026-11-03T22:19:51.564Z",
-  "lastAttemptAt": "2026-11-03T22:19:51.564Z",
-  "lastAutomaticRunAt": "2026-11-03T22:19:51.564Z",
-  "lastSuccessAt": "2026-11-03T04:49:35.969Z",
-  "lastOfficialEodDate": "2026-11-02",
-  "lastKnownOfficialEodDate": "2026-11-02",
-  "lastSourceCheckAt": "2026-11-03T22:19:51.564Z",
-  "latestCollectedReferenceDate": "2026-11-02",
-  "latestValidatedReferenceDate": "2026-11-02",
-  "sourceStatus": "NO_NEW_DATA",
+  "freshnessReason": null,
+  "runStatus": "PROMOTED",
+  "updatedAt": "2026-11-04T03:11:58.589Z",
+  "lastAttemptAt": "2026-11-04T03:11:58.589Z",
+  "lastAutomaticRunAt": "2026-11-04T03:11:58.589Z",
+  "lastSuccessAt": "2026-11-04T03:11:58.589Z",
+  "lastOfficialEodDate": "2026-11-03",
+  "lastKnownOfficialEodDate": "2026-11-03",
+  "lastSourceCheckAt": "2026-11-04T03:11:58.589Z",
+  "latestCollectedReferenceDate": "2026-11-03",
+  "latestValidatedReferenceDate": "2026-11-03",
+  "sourceStatus": "AVAILABLE",
   "lagTradingDays": 0,
   "recentFailureReason": null,
   "lastFailureAt": null,
@@ -27,20 +27,20 @@
     "reason": "LATEST_PROBE_NETWORK_TIMEOUT",
     "at": "2026-11-03T09:42:00.699Z"
   },
-  "publishedReferenceDate": "2026-11-02",
-  "publicationStatus": "unchanged",
+  "publishedReferenceDate": "2026-11-03",
+  "publicationStatus": "published",
   "trigger": "schedule",
   "sourceEvidence": [
     {
       "source": "공공데이터포털",
       "operation": "getStockPriceInfoLatestProbe",
-      "referenceDate": "2026-11-02",
-      "requestedAt": "2026-11-03T22:19:32.264Z",
-      "observedAt": "2026-11-03T22:19:51.465Z",
-      "sourceTimestamp": "20261102",
+      "referenceDate": "2026-11-03",
+      "requestedAt": "2026-11-04T03:03:17.930Z",
+      "observedAt": "2026-11-04T03:03:22.194Z",
+      "sourceTimestamp": "20261103",
       "sourceTimestampSemantics": "marketDateBasDt",
-      "minObservedBasDt": "20261102",
-      "maxObservedBasDt": "20261102",
+      "minObservedBasDt": "20261103",
+      "maxObservedBasDt": "20261103",
       "sourcePublishedAt": null,
       "availabilityEvidence": "SYSTEM_OBSERVED_PROBE_RESPONSE",
       "availabilityStatus": "OBSERVED",
@@ -50,5 +50,5 @@
       "outcome": "success"
     }
   ],
-  "contentHash": "d066a08e975670652b40f30d44a7c524ce3ce3567f96eea19ea1e9ca92f381fb"
+  "contentHash": "506ba5452ffa7b8d20a6e5a0792bac60c8da62f43a2c0b504cf0c27ad28c53e4"
 }
