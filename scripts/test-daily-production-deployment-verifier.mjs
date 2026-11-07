@@ -5,29 +5,32 @@ const expectedSnapshotHash = "a".repeat(64), expectedCommitSha = "b".repeat(40);
 const identity = (date, state = {}) => ({ referenceDate: date, snapshotHash: state.hash ?? expectedSnapshotHash, commitSha: state.commit ?? expectedCommitSha });
 const jsonResponse = (value, status = 200) => new Response(JSON.stringify(value), { status, headers: { "content-type": "application/json" } });
 
-function deploymentFetch(sequence) {
-  let round = 0;
+function deploymentFetch(sequence, calls = []) {
+  let round = -1;
   return async (url) => {
+    calls.push(new URL(url).pathname);
+    if (url.includes("/api/model-performance")) round++;
     const state = sequence[Math.min(round, sequence.length - 1)];
     if (url.includes("/api/top-stocks")) return jsonResponse({ rankingAsOfDate: state.date, freshness: { freshnessStatus: state.freshness ?? "fresh" }, dataIdentity: identity(state.date, state), publicationReady: true });
     if (url.includes("/api/model-performance")) return jsonResponse({ latestEodReferenceDate: state.date, dataIdentity: identity(state.date, state), publicationReady: true });
     if (url.includes("/api/home-dashboard")) return jsonResponse({ referenceDate: state.date, dataIdentity: identity(state.date, state), publicationReady: state.homeReady ?? true });
     if (url.includes("/api/daily-production-status")) {
-      round += 1;
       return jsonResponse({ siteApiReferenceDate: state.date, dataIdentity: identity(state.date, state), publicationReady: true, publicationStatus: state.publicationStatus ?? "published" });
     }
     return jsonResponse({}, 404);
   };
 }
 
+const delayedCalls = [];
 const delayed = await waitForDailyProductionDeployment({
   siteUrl: "https://example.test",
   expectedReferenceDate: "2026-10-07", expectedSnapshotHash, expectedCommitSha,
-  fetchImpl: deploymentFetch([{ date: "2026-10-06" }, { date: "2026-10-07" }]),
+  fetchImpl: deploymentFetch([{ date: "2026-10-06" }, { date: "2026-10-07" }], delayedCalls),
   sleep: async () => {}, maxAttempts: 3, delayMs: 0, now: () => "2026-10-08T00:00:00.000Z",
 });
 assert.equal(delayed.status, "VERIFIED", "Vercel 배포 지연 뒤 API가 최신 기준일을 반환하면 성공합니다.");
 assert.equal(delayed.attemptCount, 2);
+assert.deepEqual(delayedCalls, ["/api/model-performance", "/api/model-performance", "/api/top-stocks", "/api/home-dashboard", "/api/daily-production-status"]);
 
 const failed = await waitForDailyProductionDeployment({
   siteUrl: "https://example.test",
@@ -39,13 +42,14 @@ assert.equal(failed.status, "FAILED", "Vercel/API가 끝까지 오래된 기준�
 assert.equal(failed.reason, "REFERENCE_DATE_NOT_DEPLOYED");
 
 let networkAttempts = 0;
+const healthyAfterRetry = deploymentFetch([{ date: "2026-10-07" }]);
 const recoveredNetwork = await waitForDailyProductionDeployment({
   siteUrl: "https://example.test",
   expectedReferenceDate: "2026-10-07", expectedSnapshotHash, expectedCommitSha,
   fetchImpl: async (url) => {
     networkAttempts += 1;
-    if (networkAttempts <= 4) throw new TypeError("fetch failed");
-    return deploymentFetch([{ date: "2026-10-07" }])(url);
+    if (networkAttempts === 1) throw new TypeError("fetch failed");
+    return healthyAfterRetry(url);
   },
   sleep: async () => {}, maxAttempts: 2, delayMs: 0, now: () => "2026-10-08T00:00:00.000Z",
 });

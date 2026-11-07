@@ -32,7 +32,6 @@ export default function ModelPerformanceResearchPanel() {
     });
     return () => controller.abort();
   }, [query, revision]);
-  useEffect(() => { const timer = setInterval(() => setRevision((value) => value + 1), 120000); return () => clearInterval(timer); }, []);
 
   return <div className="mt-4 min-w-0" aria-labelledby="execution-research-heading">
     <h3 id="execution-research-heading" className="text-lg font-semibold text-slate-950">실행 수익률 연구</h3>
@@ -99,7 +98,7 @@ export default function ModelPerformanceResearchPanel() {
           <ul className="mt-2 list-disc space-y-1 pl-4 text-xs">{cohort.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
         </details>
       </section>)}</div>
-      <details className="mt-4 rounded-lg border border-slate-200/70 p-3 text-xs text-slate-700"><summary className="cursor-pointer font-medium">연구 계약·재현 기준 자세히 보기</summary><dl className="mt-2 space-y-2">{Object.entries(data.contract).map(([key, value]) => <div key={key}><dt className="font-medium">{key}</dt><dd className="break-words">{value}</dd></div>)}</dl><p className="mt-2 break-all">입력 hash {data.provenance.inputHash} · 계산 버전 {data.researchVersion} · 평가시각 {data.asOf}</p><p className="mt-1">배포된 공식 파일을 읽기 전용으로 다시 참조하며 2분마다 갱신합니다. 신규 발행 근거·품질 인증이 없으면 자동으로 집계에서 제외됩니다. 기존 Daily/LIVE 수집과 outcome 정의는 바뀌지 않습니다.</p><p className="mt-1">비용 근거 {data.filter.cost.basis ?? "없음 / 연구 기본 시나리오"} · 기준일 {data.filter.cost.basisDate ?? "미지정"} · 연구 조건 변경 이력에 따른 데이터 스누핑 주의</p></details>
+      <details className="mt-4 rounded-lg border border-slate-200/70 p-3 text-xs text-slate-700"><summary className="cursor-pointer font-medium">연구 계약·재현 기준 자세히 보기</summary><dl className="mt-2 space-y-2">{Object.entries(data.contract).map(([key, value]) => <div key={key}><dt className="font-medium">{key}</dt><dd className="break-words">{value}</dd></div>)}</dl><p className="mt-2 break-all">입력 hash {data.provenance.inputHash} · 계산 버전 {data.researchVersion} · 평가시각 {data.asOf}</p><p className="mt-1">화면을 열거나 연구 조건을 적용할 때 배포된 공식 자료로 계산합니다. 신규 발행 근거·품질 인증이 없으면 자동으로 집계에서 제외됩니다. 기존 Daily/LIVE 수집과 outcome 정의는 바뀌지 않습니다.</p><p className="mt-1">비용 근거 {data.filter.cost.basis ?? "없음 / 연구 기본 시나리오"} · 기준일 {data.filter.cost.basisDate ?? "미지정"} · 연구 조건 변경 이력에 따른 데이터 스누핑 주의</p></details>
     </>}
   </div>;
 }

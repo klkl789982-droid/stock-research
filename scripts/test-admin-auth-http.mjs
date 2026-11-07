@@ -1,6 +1,6 @@
 // Actual Next.js + HTTP test; ephemeral synthetic secrets, isolated build/store.
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import http from "node:http";
 import { writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
@@ -18,8 +18,11 @@ const password = "Abcdef12", username = "local-test-admin"; // Synthetic eight-c
 const token = randomBytes(32).toString("base64url"), fixture = await redisFixtureServer(token);
 const machine = randomBytes(32).toString("base64url");
 const deploySha = "a".repeat(40);
-const env = { ...process.env, VERCEL_GIT_COMMIT_SHA: deploySha, NODE_ENV: "development", TB_AUTH_TEST_BUILD: "1", TB_ADMIN_USERNAME: username, TB_ADMIN_PASSWORD_HASH: await hashAdminPassword(password), TB_SESSION_SECRET: randomBytes(32).toString("base64url"), TB_AUTH_ORIGIN: origin, TB_AUTH_REDIS_URL: fixture.url, TB_AUTH_REDIS_TOKEN: token, TB_AUTOMATION_READ_TOKEN: machine };
+const env = { ...process.env, VERCEL_GIT_COMMIT_SHA: deploySha, NODE_ENV: "development", TB_AUTH_TEST_BUILD: "1", PRIVATE_LIVE_DELIVERY_READ_ENABLED: "false", TB_ADMIN_USERNAME: username, TB_ADMIN_PASSWORD_HASH: await hashAdminPassword(password), TB_SESSION_SECRET: randomBytes(32).toString("base64url"), TB_AUTH_ORIGIN: origin, TB_AUTH_REDIS_URL: fixture.url, TB_AUTH_REDIS_TOKEN: token, TB_AUTOMATION_READ_TOKEN: machine };
 // Next.js may update its tsconfig. Keep that generated state out of the repository's config.
+for (const file of ["prepare-model-performance.mjs", "prepare-home-dashboard.mjs"]) {
+  execFileSync(process.execPath, [`scripts/${file}`], { env, stdio: "pipe", windowsHide: true });
+}
 await writeFile("tsconfig.auth-test.json", JSON.stringify({ extends: "./tsconfig.json", include: ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.mts"], exclude: ["node_modules"] }));
 const child = spawn(process.execPath, ["node_modules/next/dist/bin/next", "dev", "-p", String(port), "-H", "127.0.0.1"], { env, stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
 let exited = false, startupFailed = false;
@@ -33,7 +36,7 @@ try {
   let ready = false;
   for (let i = 0; i < 120 && !exited; i++) { try { ready = (await request("/login")).ok; if (ready) break; } catch {} await wait(500); }
   assert.ok(ready && !startupFailed, "isolated Next.js server must start");
-  for (const path of ["/", "/?view=models", "/?stock=005930", "/?view=screener", "/data/history/2026-10-07.json", "/.env", "/_next/image?url=%2Fapi%2Fprice&w=64&q=75"]) { const r = await request(path); assert.equal(r.status, 307, path); assert.equal(new URL(r.headers.get("location"), origin).pathname, "/login"); }
+  for (const path of ["/", "/?view=models", "/?stock=005930", "/?view=screener", "/data/history/2026-10-07.json", "/build/private-model-performance/report.json", "/.env", "/_next/image?url=%2Fapi%2Fprice&w=64&q=75"]) { const r = await request(path); assert.equal(r.status, 307, path); assert.equal(new URL(r.headers.get("location"), origin).pathname, "/login"); }
   assert.equal((await request("/", { headers: { RSC: "1", "x-middleware-subrequest": "proxy:proxy:proxy:proxy:proxy" } })).status, 307);
   const apis = ["backtests/rank", "company-analysis", "daily-production-status", "financial", "home-dashboard", "intraday-market-analysis", "intraday-model-top", "investor", "kis-eod-top-stocks", "market-analysis", "model-performance", "model-performance/research", "price", "private-live-execution", "realtime", "screener", "stock", "top-stocks"];
   for (const api of apis) { const r = await request(`/api/${api}`); assert.equal(r.status, 401, api); assert.ok(r.headers.get("cache-control").includes("no-store")); }
@@ -46,22 +49,23 @@ try {
   const cookie = success.headers.get("set-cookie").split(";")[0];
   assert.match(success.headers.get("set-cookie"), /HttpOnly/); assert.match(success.headers.get("set-cookie"), /SameSite=Lax/);
   const headers = { Cookie: cookie };
+  assert.equal((await request("/build/private-model-performance/report.json", { headers })).status, 404);
   assert.equal((await request("/api/auth/session", { headers })).status, 200);
   const homeResponse = await request("/", { headers });
   assert.equal(homeResponse.status, 200);
   const homeHtml = await homeResponse.text();
-  assert.match(homeHtml, /시장 요약/u);
+  assert.match(homeHtml, /id="home-dashboard-heading"/u);
   assert.match(homeHtml, /id="home-source-LIVE" aria-selected="true"/u);
   assert.match(homeHtml, /14:00 LIVE/u);
   assert.match(homeHtml, /Daily EOD로 자동 대체하지 않습니다/u);
   assert.equal((await request("/api/model-performance", { headers })).status, 200);
   const research = await request("/api/screener?tab=transition&rules=directional-v2&sort=evidence", { headers });
   assert.equal(research.status, 200); assert.equal((await research.json()).evidencePolicy.version, "transition-evidence-research-v1");
-  const liveQuery = "tab=transition&mode=LIVE&pair=5-20&state=candidates&nearPercent=1";
+  const liveQuery = "tab=transition&mode=LIVE&profile=1430&pair=5-20&state=candidates&nearPercent=1";
   const liveResponse = await request(`/api/screener?${liveQuery}`, { headers });
   const liveBody = await liveResponse.json();
   let expectedLive, expectedFailure;
-  try { expectedLive = await createLiveTransitionStore()(); } catch (error) { expectedFailure = error.message; }
+  try { expectedLive = await createLiveTransitionStore({ archive: true })(); } catch (error) { expectedFailure = error.message; }
   if (expectedLive) {
     assert.equal(liveResponse.status, 200);
     const screened = screenLiveTransitions(expectedLive.rows, parseLiveTransitionFilters(new URLSearchParams(liveQuery)));
@@ -76,19 +80,11 @@ try {
     const query = new URLSearchParams({ tab: "transition", mode: "LIVE", pair, state: "all", nearPercent: "1" });
     const response = await request(`/api/screener?${query}`, { headers });
     const body = await response.json();
-    if (expectedLive) {
-      assert.equal(response.status, 200);
-      assert.deepEqual(body.results, screenLiveTransitions(expectedLive.rows, parseLiveTransitionFilters(query)).results);
-      assert.equal(body.source.signalContentHash, expectedLive.source.signalContentHash);
-      assert.equal(body.source.seedContentHash, expectedLive.source.seedContentHash);
-      assert.equal(body.pair, pair);
-    } else {
-      assert.equal(response.status, 503);
-      assert.equal(body.error.diagnostic, expectedFailure);
-    }
+    assert.equal(response.status, 503);
+    assert.equal(body.error.diagnostic, "LIVE_SOURCE_MISSING", "14:00 cannot silently fall back to the 14:30 archive");
     return body;
   }));
-  if (expectedLive) assert.equal(homeLive[0].source.signalContentHash, homeLive[1].source.signalContentHash);
+  assert.equal(homeLive.length, 2);
   console.log("HOME HTTP integration passed: actual default LIVE markup and both all-status pair requests");
   assert.ok(liveResponse.headers.get("cache-control").includes("private"));
   assert.ok(liveResponse.headers.get("cache-control").includes("no-store"));

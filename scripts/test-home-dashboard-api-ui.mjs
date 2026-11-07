@@ -21,7 +21,7 @@ const require = (name) => {
   if (name === "next/server") return { NextResponse: { json: (body, init) => ({ body, status: init?.status ?? 200, headers: init?.headers }) } };
   if (name === "node:path") return path;
   if (name === "node:fs/promises") return { readFile: async () => JSON.stringify({ status: "FAILED", reason: "private-path-secret", runStartedAt: "must-not-leak", signalDate: "2026-10-08", updatedAt: "2026-10-08T12:00:00Z", credential: "must-not-leak" }) };
-  if (name === "@/lib/home-dashboard-store.mjs") return { getHomeDashboard: async (topN) => { calls += 1; if (fail) throw new Error("private-path-secret"); return { models: { topN }, transitions: null }; } };
+  if (name === "@/lib/prepared-home-dashboard.mjs") return { getHomeDashboard: async (topN) => { calls += 1; if (fail) throw new Error("private-path-secret"); return { models: { topN }, transitions: null }; } };
   throw new Error(name);
 };
 new Function("require", "exports", compile(source))(require, exports);
@@ -83,9 +83,11 @@ new Function("require","exports",compile(await readFile(new URL("../components/P
   if(name==="react/jsx-runtime")return jsx;if(name==="react")return React;if(name==="../lib/home-presentation.mjs")return presentation;throw Error(name);
 },deliveryPanel);
 const render = (data = dashboard, failedPerformance = false, operationsInput = operations, failedHome = false, relay = {delivery:null}, run = null, publishedPerformance = null, selectedModel = relay?.delivery?.models?.[0]?.modelVersion?.[0] ?? data?.models?.models?.[0]?.modelVersion?.[0] ?? "A") => {
-  const resources = [{ url: "/api/home-dashboard?topN=5", data, error: failedHome }, { url: "/api/model-performance", data: failedPerformance ? null : performance, error: failedPerformance }, { url: "/api/daily-production-status", data: operationsInput, error: false }, { url: "/api/intraday-model-top?model=B&limit=1", data: null, error: true }];
-  resources.push({url:"/api/private-live-execution",data:run,error:!run});
-  resources.push({url:"/api/model-performance/live",data:publishedPerformance,error:false});
+  const eodVersion = data ? JSON.stringify([data.referenceDate, data.dataIdentity?.snapshotHash, data.dataIdentity?.commitSha]) : failedHome ? "unverified" : null;
+  const resources = [{ url: "/api/home-dashboard?topN=5", version: "", data, error: failedHome }, { url: "/api/model-performance?view=home", version: eodVersion, data: failedPerformance ? null : performance, error: failedPerformance }, { url: "/api/daily-production-status", version: "", data: operationsInput, error: false }];
+  resources.push({url:"/api/private-live-execution",version:"",data:run,error:!run});
+  resources.push({url:"/api/intraday-model-top?model=B&limit=1&profile=1430",version:"",data:null,error:true});
+  resources.push({url:"/api/model-performance/live",version:JSON.stringify([eodVersion, relay?.deliveryHash ?? relay?.delivery?.deliveryHash ?? null]),data:publishedPerformance,error:false});
   let index = 0;
   const uiExports = {};
   const requireUi = (name) => {
@@ -118,6 +120,12 @@ const selectedPerformance = homePerformance(publishedPerformance);
 for(const value of ["14:00 LIVE · TOP5 선정 성과 · 5거래일","-2.75%","확정 관측 4/5건","잠정 게시 1일 제외","2026.11.03","확정 표본 축적 중"]) assert.ok(selectedPerformance.includes(value),value);
 assert.ok(!homePerformance({...publishedPerformance,daily:[{signalDate:"2026-11-03"}]}).includes("-2.75%"));
 assert.ok(!homePerformance({...publishedPerformance,layer:"INTRADAY_1430_LIVE"}).includes("-2.75%"));
+const polledRelay = {status:"AVAILABLE",servedAt:"2026-11-03T07:00:00Z",source:"privateLiveRelay",deliveryHash:"new-revision",delivery:null};
+const laggingReport = render(dashboard,false,operations,false,polledRelay,null,publishedPerformance);
+assert.match(laggingReport,/최근 발행본과 일치하는 성과를 확인 중/);
+assert.ok(!laggingReport.includes("-2.75%"));
+const currentReport = {...publishedPerformance,publications:publishedPerformance.publications.map((row,i)=>({...row,deliveryHash:i?"new-revision":"older-date"}))};
+assert.ok(render(dashboard,false,operations,false,polledRelay,null,currentReport).includes("-2.75%"));
 const codes = ["000011","000012","000013","000014","009450"];
 const omitted = codes.map(ticker => ({ticker,reason:"LIVE_CLOUD_RATE_EVIDENCE_INVALID"}));
 const coverage = {status:"WITHHELD",targetCount:508,validCount:503,missing:omitted,universeHash:"a".repeat(64)};

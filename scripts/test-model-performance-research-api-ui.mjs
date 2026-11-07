@@ -57,6 +57,8 @@ test("render real research panel with repository diagnostics; no fake zero / no 
   if (data.cohorts.every((c) => c.stockMetrics.observationCount === 0)) assert.doesNotMatch(html, /0\.00%/, "excluded observations are not 0% performance");
   assert.match(existingPanel, /performanceLayer === "RESEARCH" \? <ModelPerformanceResearchPanel/);
   assert.match(panelSource, /AbortController/); assert.match(panelSource, /controller\.signal\.aborted/);
+  assert.doesNotMatch(panelSource, /setInterval/);
+  assert.match(panelSource, /setQuery\(parameters\.toString\(\)\); setRevision\(/, "resubmitting the same conditions still refreshes the research report");
   assert.match(panelSource, /grid-cols-2/); assert.match(panelSource, /sm:grid-cols-3/); assert.match(panelSource, /lg:grid-cols-6/);
   assert.doesNotMatch(routeSource, /GITHUB_TOKEN|KIS_OBSERVATION_STORE_TOKEN|kis-eod-private|intraday-signals/);
 });

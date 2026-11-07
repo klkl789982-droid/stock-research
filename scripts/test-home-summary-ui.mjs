@@ -64,18 +64,18 @@ assert.equal(stockOpens.length, 20); assert.equal(stockOpens[0].code, "000000");
 const source = await read("components/HomeDashboard.tsx");
 let slot = 0; const updates = [];
 const resources = [
-  { url: "/api/home-dashboard?topN=5", data: { referenceDate: "2026-10-16", models: { referenceDate: "2026-10-16", models } }, error: false },
-  { url: "/api/model-performance", data: null, error: false },
-  { url: "/api/daily-production-status", data: null, error: true },
-  { url: "/api/intraday-model-top?model=B&limit=1", data: null, error: true },
-  { url: "/api/private-live-execution", data: null, error: true },
+  { url: "/api/home-dashboard?topN=5", version: "", data: { referenceDate: "2026-10-16", models: { referenceDate: "2026-10-16", models } }, error: false },
+  { url: "/api/model-performance?view=home", version: JSON.stringify(["2026-10-16",null,null]), data: null, error: false },
+  { url: "/api/daily-production-status", version: "", data: null, error: true },
+  { url: "/api/private-live-execution", version: "", data: null, error: true },
 ];
-const state = { ...React, useEffect: () => {}, useRef: value => ({ current: value }), useState: initial => { const id = slot++; return [id < 5 ? resources[id] : initial, value => updates.push({ id, value })]; } };
-const dashboard = compile(source, { react: state, "../lib/home-dashboard.mjs": helpers, "../lib/home-presentation.mjs": dates,
+const state = { ...React, useEffect: () => {}, useRef: value => ({ current: value }), useState: initial => { const id = slot++; return [id < resources.length ? resources[id] : initial, value => updates.push({ id, value })]; } };
+const homeDependencies = { react: state, "../lib/home-dashboard.mjs": helpers, "../lib/home-presentation.mjs": dates,
   "./HomeMarketFlow": () => null, "./HomeModelRankings": { __esModule: true, default: ranking }, "./HomeTransitionCard": { __esModule: true, default: () => React.createElement("h2",null,"전환 신호") },
   "./HomeCloudExecutionStatus": { __esModule: true, ...execution },
   "./PrivateLiveDeliveryPanel": { usePrivateLiveDelivery: () => ({ data: { delivery: null }, failed: true, disabled: false }), PrivateLiveDeliveryView: () => null },
-}).default;
+};
+const dashboard = compile(source, homeDependencies).default;
 const tree = dashboard({ ...props, onOpenPerformance: () => {}, onOpenTransition: () => {} });
 const tabs = find(tree, node => node.props.role === "tab");
 assert.equal(tabs[0].props["aria-selected"], true); assert.equal(tabs[1].props["aria-selected"], false);
@@ -90,7 +90,7 @@ const savedDocument = globalThis.document; const focused = [];
 try {
   globalThis.document = { getElementById: id => ({ focus: () => focused.push(id) }) };
   find(tree, node => node.props.role === "tablist")[0].props.onKeyDown({ key: "ArrowRight", preventDefault() {} });
-  assert.deepEqual(updates.at(-1), { id: 5, value: "EOD" }); assert.deepEqual(focused, ["home-source-EOD"]);
+  assert.deepEqual(updates.at(-1), { id: resources.length, value: "EOD" }); assert.deepEqual(focused, ["home-source-EOD"]);
 } finally { if (savedDocument === undefined) delete globalThis.document; else globalThis.document = savedDocument; }
 const modelSelectors = find(tree, node => node.props["aria-label"] === "모델 선택")[0];
 const modelButtons = React.Children.toArray(modelSelectors.props.children);
@@ -103,4 +103,40 @@ find(tree, node => node.type === "button" && node.props.children === "전체 순
 assert.equal(modelOpens.at(-1), "A-v1");
 assert.match(markup, /전환 신호/);
 assert.ok(!source.includes("setArchiveOpen"), "the transition action is present without expanding history");
+// Exercise the real transport effect without a browser or live endpoint.
+const originalFetch = globalThis.fetch, originalWindow = globalThis.window, originalNow = Date.now;
+const requests = [], timers = new Set(), visibility = new Set(), effects = [];
+let clock = 0;
+try {
+  globalThis.document = { hidden: true, addEventListener: (_,fn) => visibility.add(fn), removeEventListener: (_,fn) => visibility.delete(fn) };
+  globalThis.window = { setInterval: fn => { timers.add(fn); return fn; }, clearInterval: fn => timers.delete(fn) };
+  Date.now = () => clock;
+  globalThis.fetch = async (url, options) => { requests.push([url,options.signal]); return { ok:true, json: async () => ({}) }; };
+  const renderRequest = compile(source + "\nexport {useResource};", { ...homeDependencies, react: {
+    ...state, useEffect: fn => effects.push(fn), useState: () => [null, () => {}],
+  }}).useResource;
+  const mount = (url, interval, version) => { renderRequest(url, interval, version); return effects.pop()(); };
+  const visible = () => { document.hidden = false; for (const listener of visibility) listener(); };
+  const settle = () => new Promise(resolve => setImmediate(resolve));
+  assert.equal(mount("/archive",0,null), undefined, "collapsed archive has no fetch or timer");
+  const staticCleanup = mount("/performance",0,"snapshot-date-hash-commit");
+  const liveCleanup = mount("/live",60_000,"");
+  assert.equal(requests.length,0, "first paint in a hidden tab is idle");
+  visible(); await settle();
+  visible(); await settle();
+  for (let i=0; i<60; i++) { clock += 60_000; for (const fn of timers) fn(); await settle(); }
+  assert.equal(requests.filter(([url])=>url==="/performance").length,1, "unchanged input has one read per home visit");
+  assert.equal(requests.filter(([url])=>url==="/live").length,61, "initial head plus one per visible minute");
+  document.hidden=true; clock+=60_000; for (const fn of timers) fn(); await settle();
+  assert.equal(requests.length,62);
+  visible(); await settle(); assert.equal(requests.length,63, "foreground after a missed heartbeat refreshes the live head");
+  staticCleanup(); assert.equal(requests[0][1].aborted,true);
+  const revisedCleanup = mount("/performance",0,"next-deployment");
+  await settle(); assert.equal(requests.filter(([url])=>url==="/performance").length,2);
+  revisedCleanup(); liveCleanup(); assert.equal(timers.size,0); assert.equal(visibility.size,0);
+} finally {
+  globalThis.fetch=originalFetch; Date.now=originalNow;
+  if (savedDocument === undefined) delete globalThis.document; else globalThis.document=savedDocument;
+  if (originalWindow === undefined) delete globalThis.window; else globalThis.window=originalWindow;
+}
 console.log("Home summary: all four selectable stored models, Live5 / EOD3, verified rank changes, navigation, freshness guard and primary transition action passed");

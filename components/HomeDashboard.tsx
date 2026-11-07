@@ -12,36 +12,42 @@ type Stock = { code: string; name: string; market?: string };
 type Ranked = Stock & { rank: number; score: number; previousRank?: number | null; rankChange?: number | null };
 type Model = { modelVersion: string; rankingUniverseCount: number; top: Ranked[]; comparisonStatus?: string; previousDate?: string | null };
 type LiveStatus = { status: string; signalDate: string | null; runStartedAt?: string | null; runnerFirstStepAt?: string | null; scheduledAt?: string | null; nextScheduledAt?: string | null; lastSuccessAt?: string | null; lastGoodDate?: string | null; storedAt?: string | null };
-type Dashboard = { referenceDate: string | null; models: { referenceDate: string; models: Model[] } | null; transitions: HomeEodTransitions | null; calendar: { today: string; time: string; dayStatus: string; expectedTradingDate: string | null } | null; liveStatus: LiveStatus | null };
+type Dashboard = { referenceDate: string | null; dataIdentity?: { snapshotHash: string; commitSha: string | null }; models: { referenceDate: string; models: Model[] } | null; transitions: HomeEodTransitions | null; calendar: { today: string; time: string; dayStatus: string; expectedTradingDate: string | null } | null; liveStatus: LiveStatus | null };
 type PerformanceRow = { modelVersion: string; horizon: string; topN: number; signalDate: string; targetTradingDate: string | null; observationCount: number; meanReturn: number | null; positiveRate: number | null };
 type Performance = { daily: PerformanceRow[]; live?: { daily: PerformanceRow[] } };
 type PublishedReport = {
   layer: string; executionPolicyId: string; daily: PerformanceRow[];
-  publications: {signalDate: string; status: string; evaluation: string}[];
+  publications: {signalDate: string; deliveryHash: string; status: string; evaluation: string}[];
   summary: {modelVersion: string; groups: {topN: number; horizons: {horizon: string; observationCount: number; meanReturn: number | null;
     evaluatedSignalDates: number; expectedObservationCount: number; coverageRate: number | null}[]}[]}[];
 };
 type Verification = { referenceDate: string; verifiedAt: string | null; runUrl: string; commitSha: string; snapshotHash: string };
 type Operations = { latestAttempt?: { status: string; conclusion: string | null; stage: string | null; startedAt: string; completedAt: string | null; runUrl: string } | null; lastAutomaticRunAt?: string | null; lastAutomaticRunConclusion?: string | null; lastSuccessAt?: string | null; lastGoodStoredReferenceDate?: string | null; siteApiReferenceDate?: string | null; publishedReferenceDate?: string | null; latestConfirmedTradingDate?: string | null; latestCollectedReferenceDate?: string | null; latestValidatedReferenceDate?: string | null; lastSourceCheckAt?: string | null; sourceStatus?: string; recentFailureReason?: string | null; freshnessStatus?: string; repositoryPublicationStatus?: string; repositoryStatusAvailable?: boolean; siteApiMatchesPublished?: boolean; runStatus?: string; lagTradingDays?: number | null; deployment?: { state: string; reason: string | null; lastVerified: Verification | null; verification?: Verification | null; checkedAt?: string | null; intendedIdentity?: { referenceDate: string; snapshotHash: string; commitSha: string } | null } };
 type OperationEvidence = Operations & { lastFailureAt?: string | null; lastAttemptAt?: string | null };
-function useResource<T>(url: string) {
-  const [state, setState] = useState<{ url: string; data: T | null; error: boolean } | null>(null);
+function useResource<T>(url: string, intervalMs = 0, version: string | null = "") {
+  const [state, setState] = useState<{ url: string; version: string; data: T | null; error: boolean } | null>(null);
   const sequence = useRef(0);
   useEffect(() => {
+    if (version === null) return;
     let controller: AbortController | null = null;
-    const load = () => {
-      controller?.abort(); controller = new AbortController();
+    let startedAt: number | null = null, busy = false, failed = false;
+    const refresh = () => {
+      if (document.hidden || busy) return;
+      if (startedAt !== null && (intervalMs ? Date.now() - startedAt < intervalMs : !failed)) return;
+      startedAt = Date.now(); busy = true; failed = false; controller = new AbortController();
       const signal = controller.signal, id = ++sequence.current;
       void fetch(url, { cache: "no-store", signal }).then(async (response) => {
         if (!response.ok) throw new Error("UNAVAILABLE"); return response.json() as Promise<T>;
-      }).then((data) => { if (!signal.aborted && id === sequence.current) setState({ url, data, error: false }); })
-        .catch(() => { if (!signal.aborted && id === sequence.current) setState({ url, data: null, error: true }); });
+      }).then((data) => { if (!signal.aborted && id === sequence.current) setState({ url, version, data, error: false }); })
+        .catch(() => { failed = true; if (!signal.aborted && id === sequence.current) setState({ url, version, data: null, error: true }); })
+        .finally(() => { busy = false; });
     };
-    load(); const refresh = () => { if (!document.hidden) load(); };
-    const timer = window.setInterval(refresh, 60_000); document.addEventListener("visibilitychange", refresh);
-    return () => { controller?.abort(); window.clearInterval(timer); document.removeEventListener("visibilitychange", refresh); };
-  }, [url]);
-  return state?.url === url ? state : { url, data: null, error: false };
+    refresh();
+    const timer = intervalMs ? window.setInterval(refresh, intervalMs) : null;
+    document.addEventListener("visibilitychange", refresh);
+    return () => { controller?.abort(); if (timer !== null) window.clearInterval(timer); document.removeEventListener("visibilitychange", refresh); };
+  }, [url, intervalMs, version]);
+  return state?.url === url && state.version === version ? state : { url, data: null, error: false };
 }
 const labels: Record<string, string> = { VERIFIED: "실제 사이트 확인 완료", SOURCE_WAITING: "원본 대기", COLLECTED_VALIDATED: "수집·검증 완료", DEPLOYING: "배포 중", PUBLICATION_FAILED: "저장소 게시 실패", DEPLOYMENT_FAILED: "배포 실패", VERIFICATION_FAILED: "사이트 확인 실패", UNVERIFIED: "사이트 미확인", DELAYED: "새 원본 반영 지연", FAILED: "수집·검증 실패", UNKNOWN: "확인 불가" };
 const pct = (v: number | null) => Number.isFinite(v) ? (Number(v) > 0 ? "+" : "") + Number(v).toFixed(2) + "%" : "미확인";
@@ -63,33 +69,52 @@ export function PublishedSelectionSummary({ report, failed = false }: { report: 
   </div>{partials.length > 0 && <p className="mt-2 text-xs text-slate-600">잠정 게시 {partials.length}일 제외 · 최근 {homeDate(partials.at(-1)?.signalDate)}</p>}</>;
 }
 
-function HomePublishedSelection() {
-  const result = useResource<PublishedReport>("/api/model-performance/live");
+function HomePublishedSelection({ version, deliveryHash }: { version: string | null; deliveryHash: string | null }) {
+  const [retriedVersion, setRetriedVersion] = useState("");
+  const result = useResource<PublishedReport>("/api/model-performance/live", 0, version && retriedVersion === version ? version + "/retry" : version);
+  const mismatch = Boolean(result.data && deliveryHash && !result.data.publications.some(row => row.deliveryHash === deliveryHash));
+  useEffect(() => {
+    // The report store has a 60s cache. A just-published revision can lead it by one read.
+    if (!mismatch || !version || retriedVersion === version) return;
+    const timer = window.setTimeout(() => setRetriedVersion(version), 65_000);
+    return () => window.clearTimeout(timer);
+  }, [mismatch, version, retriedVersion]);
   return <div className="mt-4"><h3 className="font-medium">14:00 LIVE · TOP5 선정 성과 · 5거래일</h3>
     <p className="text-xs text-slate-600">확정 게시 후 다음 거래일 공식 시가에 진입해 진입일 포함 다섯 번째 거래일 종가에 청산한 비용 차감 전 평균입니다.</p>
-    <PublishedSelectionSummary report={result.data} failed={result.error}/></div>;
+    {mismatch ? <p role="status" className="text-sm">{retriedVersion === version ? <>최근 발행본과 일치하는 성과를 확인할 수 없습니다. <button type="button" className="tb-focus underline" onClick={() => setRetriedVersion("")}>다시 조회</button></> : "최근 발행본과 일치하는 성과를 확인 중입니다."}</p> : <PublishedSelectionSummary report={result.data} failed={result.error}/>}</div>;
 }
 
 export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerformance, onOpenTransition }: {
   onSelectStock: (stock: Stock) => void | Promise<void>; onOpenModel: (model: string, source?: "LIVE" | "EOD") => void; onOpenPerformance: () => void;
   onOpenTransition: HomeTransitionNavigation;
 }) {
-  const dashboard = useResource<Dashboard>("/api/home-dashboard?topN=5");
-  const performance = useResource<Performance>("/api/model-performance");
-  const operations = useResource<OperationEvidence>("/api/daily-production-status");
+  const dashboard = useResource<Dashboard>("/api/home-dashboard?topN=5", 600_000);
+  const eodVersion = dashboard.data ? JSON.stringify([dashboard.data.referenceDate, dashboard.data.dataIdentity?.snapshotHash, dashboard.data.dataIdentity?.commitSha]) : dashboard.error ? "unverified" : null;
+  const performance = useResource<Performance>("/api/model-performance?view=home", 0, eodVersion);
+  const operations = useResource<OperationEvidence>("/api/daily-production-status", 600_000);
   const privateRelay = usePrivateLiveDelivery();
-  const live = useResource<{ signalDate: string; collectionCompletedAt: string }>("/api/intraday-model-top?model=B&limit=1&profile=1430");
-  const execution = useResource<CloudExecutionResponse>("/api/private-live-execution");
+  const execution = useResource<CloudExecutionResponse>("/api/private-live-execution", 60_000);
   const [source, setSource] = useState<"LIVE" | "EOD">("LIVE");
   const [operationsOpen, setOperationsOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState("A");
+  const [archiveRequested, setArchiveRequested] = useState(false);
+  const live = useResource<{ signalDate: string; collectionCompletedAt: string }>("/api/intraday-model-top?model=B&limit=1&profile=1430", 0, archiveRequested ? "" : null);
   const operationsButton = useRef<HTMLButtonElement | null>(null);
   const data = dashboard.data, transitions = data?.transitions;
   const delivery = privateRelay.data?.delivery;
   const fixture = privateRelay.data?.source === "privateRelayFixture";
   const publication = delivery?.publication;
   const publicationTimes = privateRelay.data?.publicationTimes;
+  const deliveryHash = privateRelay.data?.deliveryHash ?? delivery?.deliveryHash ?? null;
+  // Recheck the API's trading-calendar freshness rule at each 14:00 KST boundary,
+  // even when the previous publication remains the head.
+  const servedAt = Date.parse(privateRelay.data?.servedAt ?? "");
   const executionRecord = execution.data?.record;
+  const liveViewKey = (!privateRelay.data && !privateRelay.failed && !privateRelay.disabled) || eodVersion === null ? null
+    : deliveryHash && Number.isFinite(servedAt) && !fixture
+      ? JSON.stringify([deliveryHash, eodVersion, execution.data?.targetDate, executionRecord?.recordHash, execution.error, Math.floor((servedAt - 5 * 3_600_000) / 86_400_000)]) : undefined;
+  const livePerformanceVersion = eodVersion !== null && (privateRelay.data || privateRelay.failed || privateRelay.disabled)
+    ? JSON.stringify([eodVersion, deliveryHash]) : null;
   const blocked = executionRecord?.status === "GLOBAL_BLOCKED";
   const newerPublication = publication && delivery?.signalDate === executionRecord?.signalDate
     && publication.universeHash === executionRecord?.coverage?.universeHash
@@ -188,7 +213,7 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
       <details className="home-ranking-note"><summary className="tb-focus rounded">모델 점수 해석과 주의사항</summary><p>모델 점수는 100점 만점입니다.</p><p>장세별 설명은 산식의 특성에 따른 구분이며, 수익률 우위가 검증된 것은 아닙니다.</p><p>하락장에서는 네 모델 모두 신규 매수 판단에 주의가 필요합니다. 모델 점수는 상승 확률이나 매수 추천이 아닙니다.</p></details>
     </section>
 
-    <HomeTransitionCard transitions={transitions ?? null} eodError={dashboard.error} onSelectStock={onSelectStock} onOpenTransition={onOpenTransition} />
+    <HomeTransitionCard transitions={transitions ?? null} eodError={dashboard.error} liveViewKey={liveViewKey} deliveryHash={liveViewKey ? deliveryHash ?? undefined : undefined} onSelectStock={onSelectStock} onOpenTransition={onOpenTransition} />
     </div>
 
     <div className={"home-status-line " + (warning || privateRelay.failed ? "home-status-warning" : "")} aria-label="데이터 최신성 요약" role="status">
@@ -203,12 +228,12 @@ export default function HomeDashboard({ onSelectStock, onOpenModel, onOpenPerfor
       <h3 className="mt-4 font-medium">Daily 1D · 최신 확정 단면</h3>
       {renderPerformance("daily")}
       <details className="home-detail"><summary className="tb-focus rounded">평가 기간·진입/종료 기준</summary><p>Daily EOD · 신호일 공식 종가 → 다음 거래일 공식 종가. 실제 매수 체결 수익률이 아닙니다.</p><p>14:00 TOP5는 확정 선정 종목을 동일비중으로 관측한 성과입니다. 스윙 예측 장부와 실계좌 수익률은 별도로 평가합니다.</p><p>신호일별 최신 확정 단면 · 독립 표본 아님 · 모델 우열 판정 없음</p><button type="button" onClick={onOpenPerformance} className="tb-focus home-text-action mt-2">5D / 20D 성과 →</button></details>
-      <HomePublishedSelection />
+      <HomePublishedSelection version={livePerformanceVersion} deliveryHash={fixture ? null : deliveryHash} />
     </section>
 
     <section className="home-surface home-archive" aria-labelledby="home-archive-heading"><h2 id="home-archive-heading" className="text-lg font-semibold">과거 기록</h2>
       <details><summary className="tb-focus rounded">과거 14:30 LIVE 성과 · 기존 별도 기준</summary><p className="mt-3 text-sm text-slate-600">14:30 동결 신호 → 다음 거래일 공식 시가 진입 → 해당 평가 거래일 종가. 1D는 진입일 종가 기준이며, 실제 체결·비용·슬리피지를 반영한 실현 성과가 아닙니다.</p>{renderPerformance("live")}<button type="button" onClick={onOpenPerformance} className="tb-focus home-text-action mt-3">성과 상세 (Daily·14:30) →</button></details>
-      <details><summary className="tb-focus rounded">과거 14:30 실행 기록 · 운영 종료</summary><dl className="home-facts">
+      <details onToggle={event => { if (event.currentTarget.open) setArchiveRequested(true); }}><summary className="tb-focus rounded">과거 14:30 실행 기록 · 운영 종료</summary><dl className="home-facts">
         <div><dt>예약 / runner 첫 단계 시작</dt><dd>{time(data?.liveStatus?.scheduledAt)} / {time(data?.liveStatus?.runnerFirstStepAt)}</dd></div>
         <div><dt>수집 스크립트 시작</dt><dd>{time(data?.liveStatus?.runStartedAt)}</dd></div>
         <div><dt>이전 GitHub 예약 정보 (현재 비활성)</dt><dd>{time(data?.liveStatus?.nextScheduledAt)}</dd></div>

@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
     typescript: { tsconfigPath: "tsconfig.auth-test.json" },
   } : {}),
   outputFileTracingIncludes: {
+    "/api/model-performance": ["./build/private-model-performance/*.json"],
+    "/api/home-dashboard": ["./build/private-home-dashboard/*.json"],
     "/api/watchlist": ["./data/history/*.json", "./data/trading-calendar/status.json"],
     "/api/market-overview": ["./data/model-history/*.json", "./data/market-prices/*.json", "./data/trading-calendar/status.json"],
     "/api/model-performance/live": ["./data/market-prices/*.json", "./data/trading-calendar/status.json"],
@@ -15,7 +17,7 @@ const nextConfig: NextConfig = {
     "/api/kis-eod-top-stocks": ["./data/kis-eod-published/*.json", "./data/history/*.json"],
   },
   outputFileTracingExcludes: {
-    "/*": ["./.runtime/kis-eod/**/*"],
+    "/*": ["./.runtime/kis-eod/**/*", "./build/auth-test/**/*"],
   },
 };
 

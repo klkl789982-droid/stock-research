@@ -2,7 +2,7 @@ import { withAdminAccess } from "@/lib/admin-access";
 import { NextRequest, NextResponse } from "next/server";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { getHomeDashboard } from "@/lib/home-dashboard-store.mjs";
+import { getHomeDashboard } from "@/lib/prepared-home-dashboard.mjs";
 const timestamp = (value: unknown) => typeof value === "string" && Number.isFinite(Date.parse(value)) ? value : null;
 
 async function handleGet(request: NextRequest) {

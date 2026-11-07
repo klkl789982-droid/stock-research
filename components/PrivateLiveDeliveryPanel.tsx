@@ -87,9 +87,10 @@ export function usePrivateLiveDelivery(enabled = true) {
   const [state, setState] = useState<PrivateRelayState>({ data: null, failed: false, disabled: false });
   useEffect(() => {
     if (!enabled) return;
-    const controller = new AbortController(); let busy = false;
+    const controller = new AbortController(); let busy = false, lastStartedAt: number | null = null;
     async function load() {
-      if (busy) return; busy = true;
+      if (document.hidden || busy || (lastStartedAt !== null && Date.now() - lastStartedAt < 60_000)) return;
+      busy = true; lastStartedAt = Date.now();
       try {
         const response = await fetch("/api/private-live-delivery", { cache: "no-store", signal: controller.signal });
         if (!response.ok) { if (!controller.signal.aborted) setState({ data: null, failed: response.status !== 404, disabled: response.status === 404 }); return; }
@@ -98,8 +99,9 @@ export function usePrivateLiveDelivery(enabled = true) {
       } catch { if (!controller.signal.aborted) setState({ data: null, failed: true, disabled: false }); }
       finally { busy = false; }
     }
-    void load(); const timer = setInterval(() => void load(), 60000);
-    return () => { controller.abort(); clearInterval(timer); };
+    void load(); const timer = setInterval(load, 60_000);
+    document.addEventListener("visibilitychange", load);
+    return () => { controller.abort(); clearInterval(timer); document.removeEventListener("visibilitychange", load); };
   }, [enabled]);
   return state;
 }

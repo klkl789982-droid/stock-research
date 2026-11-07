@@ -82,6 +82,10 @@ const eod = { referenceDate: "2026-10-12", indicatorCoverage: 508, totalUniverse
   { direction: "dead", state: "CONFIRMED", count: 93, examples: [] },
 ] })) };
 assert.deepEqual(card.validateHomeLiveTransitionResponses(responses), responses);
+const delivered = responses.map(row => ({...row, source: {...row.source, deliveryHash: "current-head"}}));
+assert.deepEqual(card.validateHomeLiveTransitionResponses(delivered, "current-head"), delivered);
+assert.throws(() => card.validateHomeLiveTransitionResponses([delivered[0], responses[1]], "current-head"));
+assert.throws(() => card.validateHomeLiveTransitionResponses(delivered, "newer-head"));
 for (const [name, mutate] of [
   ["signal hash", (r) => { r[1].source.signalContentHash = "different"; }],
   ["missing signal hash", (r) => { delete r[0].source.signalContentHash; delete r[1].source.signalContentHash; }],
@@ -121,11 +125,10 @@ assert.ok(opens.some((args) => args[1] === "CONFIRMED" && args[2] === "dead" && 
 // Render the actual HomeDashboard with its actual new card, rather than only
 // testing the stock-detail card that missed the user's screenshot previously.
 const resources = [
-  { url: "/api/home-dashboard?topN=5", data: { referenceDate: "2026-10-12", models: null, transitions: eod, calendar: null, liveStatus: null }, error: false },
-  { url: "/api/model-performance", data: null, error: false },
-  { url: "/api/daily-production-status", data: null, error: false },
-  { url: "/api/intraday-model-top?model=B&limit=1", data: null, error: false },
-  { url: "/api/private-live-execution", data: null, error: true },
+  { url: "/api/home-dashboard?topN=5", version: "", data: { referenceDate: "2026-10-12", models: null, transitions: eod, calendar: null, liveStatus: null }, error: false },
+  { url: "/api/model-performance?view=home", version: JSON.stringify(["2026-10-12",null,null]), data: null, error: false },
+  { url: "/api/daily-production-status", version: "", data: null, error: false },
+  { url: "/api/private-live-execution", version: "", data: null, error: true },
 ];
 const dashboardDependencies = { "../lib/home-presentation.mjs": presentation,
   "./HomeModelRankings": compile(await read("components/HomeModelRankings.tsx"), { "../lib/home-presentation.mjs": presentation }),
@@ -144,6 +147,18 @@ const archiveHtml = dashboardHtml;
 assert.match(archiveHtml, /LIVE · 14:00 저장 관측/u);
 assert.match(archiveHtml, /과거 14:30 LIVE 성과/u);
 assert.ok(refreshCalls.includes(true), "homepage uses the shared freshness revalidation hook");
+function homeTransitionAt(servedAt, deliveryHash) {
+  const relay = {data: {servedAt, delivery: {signalDate: "2026-10-13", deliveryHash, models: []}}, failed: false, disabled: false};
+  const bindings = {...dashboardDependencies, react: harness(resources).hooks, "./PrivateLiveDeliveryPanel": {PrivateLiveDeliveryView: () => null, usePrivateLiveDelivery: () => relay}};
+  const tree = compile(dashboardSource, bindings).default({...callbacks, onOpenModel: noOp, onOpenPerformance: noOp});
+  return find(tree, n => n.props.liveViewKey !== undefined)[0].props;
+}
+const first = homeTransitionAt("2026-10-14T04:57:00Z", "saved-head");
+assert.equal(homeTransitionAt("2026-10-14T04:59:59Z", "saved-head").liveViewKey, first.liveViewKey, "ordinary poll must not rerun two whole-universe requests");
+assert.notEqual(homeTransitionAt("2026-10-14T05:00:00Z", "saved-head").liveViewKey, first.liveViewKey, "14:00 KST must recheck freshness even if a scheduled run failed to replace the head");
+assert.notEqual(homeTransitionAt("2026-10-14T04:58:00Z", "new-head").liveViewKey, first.liveViewKey, "PARTIAL and COMPLETE revisions must recheck");
+card.default(first);
+assert.equal(refreshCalls.at(-1), false, "publisher-head polling already revalidates this home card");
 
 // Transport can resolve after abort; discarded HOME requests cannot publish
 // stale data or fall back to the available EOD summary.

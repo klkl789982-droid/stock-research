@@ -9,7 +9,7 @@ type Stock = { code: string; name: string; market?: string };
 type TransitionState = { direction?: string; state: string; count: number | null; examples: Stock[] };
 export type HomeEodTransitions = { referenceDate: string; indicatorCoverage: number; totalUniverse: number; sourceQualityGrade: string; pairs: { pair: string; states: TransitionState[]; directionalStates?: TransitionState[] }[] };
 export type HomeTransitionNavigation = (pair: string, state: string, direction?: string, mode?: TransitionMode) => void;
-export type HomeLiveTransitionPair = LiveTransitionResponse & { pair: "5-20" | "20-60"; source: { signalContentHash: string; seedContentHash: string; normalizedInputHash: string; isRealtime: false } };
+export type HomeLiveTransitionPair = LiveTransitionResponse & { pair: "5-20" | "20-60"; source: { deliveryHash?: string; signalContentHash: string; seedContentHash: string; normalizedInputHash: string; isRealtime: false } };
 type Actions = { onSelectStock: (stock: Stock) => void | Promise<void>; onOpenTransition: HomeTransitionNavigation };
 const PAIRS = ["5-20", "20-60"] as const;
 const STATUSES: LiveTransitionStatus[] = ["CROSS_OCCURRED", "APPROACHING", "ALREADY_ABOVE", "NONE"];
@@ -23,7 +23,7 @@ const finite = (value: unknown): value is number => typeof value === "number" &&
 
 // Validate response identity only. Signal math and status classification remain
 // owned by the existing LIVE screener API.
-export function validateHomeLiveTransitionResponses(value: unknown): [HomeLiveTransitionPair, HomeLiveTransitionPair] {
+export function validateHomeLiveTransitionResponses(value: unknown, expectedDeliveryHash?: string): [HomeLiveTransitionPair, HomeLiveTransitionPair] {
   if (!Array.isArray(value) || value.length !== PAIRS.length) throw new Error(INVALID_RESPONSE);
   for (const [index, input] of value.entries()) {
     const response = record(input), source = record(response?.source), exclusions = record(response?.exclusions);
@@ -53,6 +53,7 @@ export function validateHomeLiveTransitionResponses(value: unknown): [HomeLiveTr
   const [first, second] = responses;
   if (["referenceDate", "previousOfficialDate", "modelReferenceDate", "snapshotTime", "collectionStartedAt", "collectionCompletedAt", "ruleVersion"]
     .some((key) => first[key as keyof HomeLiveTransitionPair] !== second[key as keyof HomeLiveTransitionPair])
+    || (expectedDeliveryHash && (first.source.deliveryHash !== expectedDeliveryHash || second.source.deliveryHash !== expectedDeliveryHash))
     || first.source.signalContentHash !== second.source.signalContentHash || first.source.seedContentHash !== second.source.seedContentHash
     || first.source.normalizedInputHash !== second.source.normalizedInputHash) throw new Error(MIXED_RESPONSE);
   return responses;
@@ -62,23 +63,25 @@ function StockButton({ stock, onSelectStock }: { stock: Stock; onSelectStock: Ac
   return <button type="button" onClick={() => void onSelectStock({ code: stock.code, name: stock.name, market: stock.market })} className="tb-focus min-w-0 rounded text-left hover:text-[var(--tb-blue)]"><span className="block truncate font-medium">{stock.name}</span><span className="text-xs text-slate-600">{stock.code}</span></button>;
 }
 
-export default function HomeTransitionCard({ transitions, onSelectStock, onOpenTransition, eodError = false }: Actions & { transitions: HomeEodTransitions | null; eodError?: boolean }) {
+export default function HomeTransitionCard({ transitions, onSelectStock, onOpenTransition, eodError = false, deliveryHash, liveViewKey }: Actions & { transitions: HomeEodTransitions | null; eodError?: boolean; deliveryHash?: string; liveViewKey?: string | null }) {
   const [mode, setMode] = useState<TransitionMode>("LIVE");
-  const { rootRef, refreshVersion } = useLiveTransitionRevalidation(mode === "LIVE");
+  const [retry, setRetry] = useState(0);
+  const { rootRef, refreshVersion } = useLiveTransitionRevalidation(mode === "LIVE" && liveViewKey === undefined);
   return <section ref={rootRef} className="tb-card min-w-0 p-4 sm:p-5" aria-labelledby="home-transition-heading">
     <h2 id="home-transition-heading" className="text-lg font-bold">전환 신호</h2>
     <div className="mt-3"><TransitionModeSelector mode={mode} onChange={setMode} label="홈 전환 신호 데이터 기준" /></div>
     {mode === "LIVE" ? <>
       <p className="mt-3 text-xs leading-relaxed text-amber-800">14:00 저장 관측 · 장중 잠정</p>
 
-      <HomeLiveTransitionResults key={refreshVersion} onSelectStock={onSelectStock} onOpenTransition={onOpenTransition} />
+      {liveViewKey === null ? <p role="status" className="py-4 text-xs text-slate-600">저장된 LIVE 관측 자료 확인 중</p> :
+        <HomeLiveTransitionResults key={JSON.stringify([liveViewKey, refreshVersion, retry])} deliveryHash={deliveryHash} onRetry={() => setRetry(v => v + 1)} onSelectStock={onSelectStock} onOpenTransition={onOpenTransition} />}
       <LiveTransitionRules nearPercent={1} />
     </> : <HomeEodTransitionSummary transitions={transitions} eodError={eodError} onSelectStock={onSelectStock} onOpenTransition={onOpenTransition} />}
     <button type="button" className="tb-focus mt-4 w-full rounded-xl bg-[#eaf2ff] px-3 py-3 text-sm font-semibold text-[var(--tb-blue)]" onClick={() => onOpenTransition("5-20", "all", "golden", mode)}>스크리닝 열기 →</button>
   </section>;
 }
 
-export function HomeLiveTransitionResults({ onSelectStock, onOpenTransition }: Actions) {
+export function HomeLiveTransitionResults({ onSelectStock, onOpenTransition, deliveryHash, onRetry }: Actions & { deliveryHash?: string; onRetry?: () => void }) {
   const [responses, setResponses] = useState<[HomeLiveTransitionPair, HomeLiveTransitionPair] | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -93,7 +96,7 @@ export function HomeLiveTransitionResults({ onSelectStock, onOpenTransition }: A
       }
       return body;
     })).then((body) => {
-      if (!controller.signal.aborted) setResponses(validateHomeLiveTransitionResponses(body));
+      if (!controller.signal.aborted) setResponses(validateHomeLiveTransitionResponses(body, deliveryHash));
     }).catch((caught: unknown) => {
       if (!controller.signal.aborted) {
         setError(caught instanceof Error ? caught.message : "LIVE 전환 신호를 불러오지 못했습니다.");
@@ -101,8 +104,8 @@ export function HomeLiveTransitionResults({ onSelectStock, onOpenTransition }: A
       }
     });
     return () => controller.abort();
-  }, []);
-  if (error) return <div role="alert" className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-900"><p className="font-semibold">LIVE 조회 불가</p><p className="mt-1">{error}</p><p className="mt-2">위의 EOD · 확정 일봉 비교에서 별도로 확인할 수 있습니다.</p></div>;
+  }, [deliveryHash]);
+  if (error) return <div role="alert" className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-900"><p className="font-semibold">LIVE 조회 불가</p><p className="mt-1">{error}</p><p className="mt-2">위의 EOD · 확정 일봉 비교에서 별도로 확인할 수 있습니다.</p>{onRetry && <button type="button" className="tb-focus mt-2 underline" onClick={onRetry}>다시 조회</button>}</div>;
   if (!responses) return <p role="status" className="py-4 text-xs text-slate-600">두 이평선 조합의 저장된 LIVE 관측 자료 확인 중</p>;
   return <HomeLiveTransitionSummary responses={responses} onSelectStock={onSelectStock} onOpenTransition={onOpenTransition} />;
 }

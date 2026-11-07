@@ -6,7 +6,7 @@ import * as jsxRuntime from "react/jsx-runtime";
 import { renderToStaticMarkup } from "react-dom/server";
 
 const panel = await readFile(new URL("../components/ModelTopPerformancePanel.tsx", import.meta.url), "utf8");
-const route = await readFile(new URL("../app/api/model-performance/route.ts", import.meta.url), "utf8");
+const route = await readFile(new URL("./prepare-model-performance.mjs", import.meta.url), "utf8");
 const topStocksPanel = await readFile(new URL("../components/TopStocksPanel.tsx", import.meta.url), "utf8");
 const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
 assert.match(panel, /\/api\/model-performance/);

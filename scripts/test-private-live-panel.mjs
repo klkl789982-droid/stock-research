@@ -32,8 +32,31 @@ const revised=render({data:{source:"privateLiveRelay",status:"AVAILABLE",servedA
  signalDate:"2026-11-03",exportedAt:"2026-11-03T07:00:00Z",models:fixture.models,deliveryHash:"b".repeat(64),sourceHash:"c".repeat(64),
  publication:{status:"PARTIAL",revision:2,firstIssuedAt:"2026-11-03T05:10:00Z",previousDeliveryHash:"a".repeat(64),
  targetCount:508,validCount:507,universeHash:"d".repeat(64),missing:[{ticker:"009450",reason:"LIVE_CLOUD_RATE_EVIDENCE_INVALID"}]}}}});
-for(const label of ["잠정 순위 · PARTIAL","정상 507 · 대상 508 · 미반영 1","009450 · 요청·응답 시각 검증 실패 · LIVE_CLOUD_RATE_EVIDENCE_INVALID","발행 버전 r2","수정 게시 2026.11.03 16:29:00 KST","직전 발행 해시"])assert.ok(revised.includes(label),label);
+for(const label of ["잠정 순위","정상 507 · 대상 508 · 미반영 1","009450 · 요청·응답 시각 검증 실패","발행 버전 r2","수정 게시 2026.11.03 16:29:00 KST","직전 발행 해시"])assert.ok(revised.includes(label),label);
+assert.doesNotMatch(revised,/LIVE_CLOUD_RATE_EVIDENCE_INVALID|잠정 순위 · PARTIAL/);
 const completeCoverage=renderToStaticMarkup(React.createElement(panelExports.LiveCoverageSummary,{coverage:{status:"COMPLETE",validCount:508,targetCount:508,missing:[],universeHash:"a".repeat(64)}}));
-assert.match(completeCoverage,/확정 순위 · COMPLETE/);
+assert.match(completeCoverage,/확정 순위/); assert.doesNotMatch(completeCoverage,/COMPLETE/);
 const integrity=render({data:{source:"privateLiveRelay",delivery:{deliveryHash:"b".repeat(64)}},integrityOnly:true});
 assert.match(integrity,/<details[^>]*\bopen=""/);assert.ok(integrity.includes("SHA256 "+"b".repeat(64)));
+
+const fixtureApi = {}, listeners = new Set(), requests = [];
+let effect, interval, elapsed = 0;
+new Function("require","exports",compiled)(name => name === "react" ? {...React, useState: () => [null, () => {}], useEffect: fn => { effect = fn; }} : name === "react/jsx-runtime" ? jsx : homePresentation, fixtureApi);
+const originals = { document: globalThis.document, fetch: globalThis.fetch, setInterval: globalThis.setInterval, clearInterval: globalThis.clearInterval, now: Date.now };
+try {
+  globalThis.document = {hidden: true, addEventListener: (_,fn) => listeners.add(fn), removeEventListener: (_,fn) => listeners.delete(fn)};
+  globalThis.fetch = async (url,options) => {requests.push([url,options.signal]);return {ok:true,json:async()=>({})};};
+  globalThis.setInterval = (fn,ms) => {assert.equal(ms,60_000);interval=fn;return 1;};
+  globalThis.clearInterval = () => {interval=null;};
+  Date.now=()=>elapsed;
+  fixtureApi.usePrivateLiveDelivery(); const cleanup=effect();
+  await interval(); assert.equal(requests.length,0);
+  document.hidden=false; for (const fn of listeners) await fn();
+  assert.equal(requests.length,1); await interval(); assert.equal(requests.length,1);
+  elapsed+=60_000; await interval(); assert.equal(requests.length,2);
+  document.hidden=true; elapsed+=60_000; await interval(); assert.equal(requests.length,2);
+  cleanup(); assert.equal(listeners.size,0); assert.equal(interval,null); assert.ok(requests.every(([,signal])=>signal.aborted));
+} finally {
+  if (originals.document===undefined) delete globalThis.document; else globalThis.document=originals.document;
+  globalThis.fetch=originals.fetch; globalThis.setInterval=originals.setInterval; globalThis.clearInterval=originals.clearInterval; Date.now=originals.now;
+}
