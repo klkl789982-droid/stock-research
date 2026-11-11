@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "dataset": "model-maturity-coverage-report",
-  "coverageAsOfDate": "2026-11-09",
+  "coverageAsOfDate": "2026-11-10",
   "observationDefinition": "one ranked ticker in one model snapshot on one signalDate; repeated tickers on different signal dates are independent observations",
   "coverageSource": "daily-outcome-coverage",
   "models": {
@@ -10,11 +10,11 @@
       "selectionDefinition": "finiteScoreAndIntegerRank",
       "horizons": {
         "1D": {
-          "totalSignals": 15293,
-          "MATURE": 14231,
+          "totalSignals": 15801,
+          "MATURE": 14739,
           "PENDING": 508,
           "DATA_MISSING": 554,
-          "matureRate": 93.0556,
+          "matureRate": 93.2789,
           "dataMissingReasons": {
             "targetDateNotReturned": 188,
             "requestHttp": 365,
@@ -22,11 +22,11 @@
           }
         },
         "5D": {
-          "totalSignals": 15293,
-          "MATURE": 11181,
-          "PENDING": 2542,
+          "totalSignals": 15801,
+          "MATURE": 11690,
+          "PENDING": 2541,
           "DATA_MISSING": 1570,
-          "matureRate": 73.1119,
+          "matureRate": 73.9827,
           "dataMissingReasons": {
             "calendarunchecked": 553,
             "calendarMissing": 1016,
@@ -34,11 +34,11 @@
           }
         },
         "20D": {
-          "totalSignals": 15293,
-          "MATURE": 3555,
+          "totalSignals": 15801,
+          "MATURE": 4063,
           "PENDING": 10168,
           "DATA_MISSING": 1570,
-          "matureRate": 23.2459,
+          "matureRate": 25.7136,
           "dataMissingReasons": {
             "calendarunchecked": 553,
             "calendarMissing": 1016,
@@ -46,9 +46,9 @@
           }
         },
         "60D": {
-          "totalSignals": 15293,
+          "totalSignals": 15801,
           "MATURE": 0,
-          "PENDING": 13724,
+          "PENDING": 14232,
           "DATA_MISSING": 1569,
           "matureRate": 0,
           "dataMissingReasons": {
@@ -63,41 +63,41 @@
       "selectionDefinition": "finiteScoreAndIntegerRank",
       "horizons": {
         "1D": {
-          "totalSignals": 14740,
-          "MATURE": 14231,
+          "totalSignals": 15248,
+          "MATURE": 14739,
           "PENDING": 508,
           "DATA_MISSING": 1,
-          "matureRate": 96.5468,
+          "matureRate": 96.6619,
           "dataMissingReasons": {
             "symbolNotExecutable": 1
           }
         },
         "5D": {
-          "totalSignals": 14740,
-          "MATURE": 11181,
-          "PENDING": 2542,
+          "totalSignals": 15248,
+          "MATURE": 11690,
+          "PENDING": 2541,
           "DATA_MISSING": 1017,
-          "matureRate": 75.8548,
+          "matureRate": 76.6658,
           "dataMissingReasons": {
             "calendarMissing": 1016,
             "symbolNotExecutable": 1
           }
         },
         "20D": {
-          "totalSignals": 14740,
-          "MATURE": 3555,
+          "totalSignals": 15248,
+          "MATURE": 4063,
           "PENDING": 10168,
           "DATA_MISSING": 1017,
-          "matureRate": 24.118,
+          "matureRate": 26.6461,
           "dataMissingReasons": {
             "calendarMissing": 1016,
             "symbolNotExecutable": 1
           }
         },
         "60D": {
-          "totalSignals": 14740,
+          "totalSignals": 15248,
           "MATURE": 0,
-          "PENDING": 13724,
+          "PENDING": 14232,
           "DATA_MISSING": 1016,
           "matureRate": 0,
           "dataMissingReasons": {
@@ -111,11 +111,11 @@
       "selectionDefinition": "finiteScoreAndIntegerRank",
       "horizons": {
         "1D": {
-          "totalSignals": 15293,
-          "MATURE": 14231,
+          "totalSignals": 15801,
+          "MATURE": 14739,
           "PENDING": 508,
           "DATA_MISSING": 554,
-          "matureRate": 93.0556,
+          "matureRate": 93.2789,
           "dataMissingReasons": {
             "targetDateNotReturned": 188,
             "requestHttp": 365,
@@ -123,11 +123,11 @@
           }
         },
         "5D": {
-          "totalSignals": 15293,
-          "MATURE": 11181,
-          "PENDING": 2542,
+          "totalSignals": 15801,
+          "MATURE": 11690,
+          "PENDING": 2541,
           "DATA_MISSING": 1570,
-          "matureRate": 73.1119,
+          "matureRate": 73.9827,
           "dataMissingReasons": {
             "calendarunchecked": 553,
             "calendarMissing": 1016,
@@ -135,11 +135,11 @@
           }
         },
         "20D": {
-          "totalSignals": 15293,
-          "MATURE": 3555,
+          "totalSignals": 15801,
+          "MATURE": 4063,
           "PENDING": 10168,
           "DATA_MISSING": 1570,
-          "matureRate": 23.2459,
+          "matureRate": 25.7136,
           "dataMissingReasons": {
             "calendarunchecked": 553,
             "calendarMissing": 1016,
@@ -147,9 +147,9 @@
           }
         },
         "60D": {
-          "totalSignals": 15293,
+          "totalSignals": 15801,
           "MATURE": 0,
-          "PENDING": 13724,
+          "PENDING": 14232,
           "DATA_MISSING": 1569,
           "matureRate": 0,
           "dataMissingReasons": {
@@ -164,11 +164,11 @@
       "selectionDefinition": "finiteScoreAndIntegerRank",
       "horizons": {
         "1D": {
-          "totalSignals": 15728,
-          "MATURE": 14651,
+          "totalSignals": 16251,
+          "MATURE": 15174,
           "PENDING": 523,
           "DATA_MISSING": 554,
-          "matureRate": 93.1523,
+          "matureRate": 93.3727,
           "dataMissingReasons": {
             "targetDateNotReturned": 188,
             "requestHttp": 365,
@@ -176,11 +176,11 @@
           }
         },
         "5D": {
-          "totalSignals": 15728,
-          "MATURE": 11511,
-          "PENDING": 2617,
+          "totalSignals": 16251,
+          "MATURE": 12035,
+          "PENDING": 2616,
           "DATA_MISSING": 1600,
-          "matureRate": 73.1879,
+          "matureRate": 74.057,
           "dataMissingReasons": {
             "calendarunchecked": 553,
             "calendarMissing": 1046,
@@ -188,11 +188,11 @@
           }
         },
         "20D": {
-          "totalSignals": 15728,
-          "MATURE": 3660,
+          "totalSignals": 16251,
+          "MATURE": 4183,
           "PENDING": 10468,
           "DATA_MISSING": 1600,
-          "matureRate": 23.2706,
+          "matureRate": 25.74,
           "dataMissingReasons": {
             "calendarunchecked": 553,
             "calendarMissing": 1046,
@@ -200,9 +200,9 @@
           }
         },
         "60D": {
-          "totalSignals": 15728,
+          "totalSignals": 16251,
           "MATURE": 0,
-          "PENDING": 14129,
+          "PENDING": 14652,
           "DATA_MISSING": 1599,
           "matureRate": 0,
           "dataMissingReasons": {
@@ -217,11 +217,11 @@
       "selectionDefinition": "finiteScoreAndIntegerRank",
       "horizons": {
         "1D": {
-          "totalSignals": 15293,
-          "MATURE": 14231,
+          "totalSignals": 15801,
+          "MATURE": 14739,
           "PENDING": 508,
           "DATA_MISSING": 554,
-          "matureRate": 93.0556,
+          "matureRate": 93.2789,
           "dataMissingReasons": {
             "targetDateNotReturned": 188,
             "requestHttp": 365,
@@ -229,11 +229,11 @@
           }
         },
         "5D": {
-          "totalSignals": 15293,
-          "MATURE": 11181,
-          "PENDING": 2542,
+          "totalSignals": 15801,
+          "MATURE": 11690,
+          "PENDING": 2541,
           "DATA_MISSING": 1570,
-          "matureRate": 73.1119,
+          "matureRate": 73.9827,
           "dataMissingReasons": {
             "calendarunchecked": 553,
             "calendarMissing": 1016,
@@ -241,11 +241,11 @@
           }
         },
         "20D": {
-          "totalSignals": 15293,
-          "MATURE": 3555,
+          "totalSignals": 15801,
+          "MATURE": 4063,
           "PENDING": 10168,
           "DATA_MISSING": 1570,
-          "matureRate": 23.2459,
+          "matureRate": 25.7136,
           "dataMissingReasons": {
             "calendarunchecked": 553,
             "calendarMissing": 1016,
@@ -253,9 +253,9 @@
           }
         },
         "60D": {
-          "totalSignals": 15293,
+          "totalSignals": 15801,
           "MATURE": 0,
-          "PENDING": 13724,
+          "PENDING": 14232,
           "DATA_MISSING": 1569,
           "matureRate": 0,
           "dataMissingReasons": {
@@ -269,124 +269,128 @@
   "sourceCoverageArtifacts": [
     {
       "signalDate": "2026-08-13",
-      "contentHash": "bb269d8c66c0d628bf6e70c388e79d0390483d9fb96799684994524d0faf0380"
+      "contentHash": "e77a1686b2a23e620b603b58cb8e3bec01a604555133b6b1eaefd25ba8f82c35"
     },
     {
       "signalDate": "2026-09-22",
-      "contentHash": "989f46c824ded04a8543165e0dcd1cc86cbd381caea330a9fc7bb0364abaf0d1"
+      "contentHash": "ac88d9e82e15586fc024821720c13ea2f9844b07182d74f790afb7dc22f994e4"
     },
     {
       "signalDate": "2026-09-28",
-      "contentHash": "17fc646c3c872d9af4cc01cc5835c7509ff4218cecc0ac95ba421d7e0b14f792"
+      "contentHash": "af15d7cae64f7ead30c25fd1f86446aadb9d66ebc002b17fcfb10edb4aa261f0"
     },
     {
       "signalDate": "2026-09-30",
-      "contentHash": "8bd8ffbcaad129afa3acf0904b2a62ed7a2e5c50077d0b638b042fd82ebfcb2b"
+      "contentHash": "f3fc94d2e8ddf63d30fb290cfb84426c84e21ede5149f0efc758228de5ce2fd9"
     },
     {
       "signalDate": "2026-10-01",
-      "contentHash": "2fa7592efff9586cda1ffa189ca01b9e9e583e8e3cacb1d6bf97e71d70919efd"
+      "contentHash": "b550490976a5440ba3a66f6ad520b875aa6ffcfeed486bea7051374f4d7c1659"
     },
     {
       "signalDate": "2026-10-02",
-      "contentHash": "362e0145719c23d855d38672a2601143242a14cae7fe89f79d66f9d8df5bfe96"
+      "contentHash": "20d3937d5a9c9fdabf796b488337b827d4b5043e147a52123edf772256bb8842"
     },
     {
       "signalDate": "2026-10-06",
-      "contentHash": "16a2a654320c4e1ce8729e1cb88c42cea429f8fc5a360eeab39d56159d5a558a"
+      "contentHash": "f5127ab4dec90e3ec3e292b7cf74c4c6e286756a750ef3fff843416c13692ac5"
     },
     {
       "signalDate": "2026-10-07",
-      "contentHash": "e7a868b87fc4763d76ce4df48055b3e84836fd7aed514ff8f256d684fc6ca790"
+      "contentHash": "9b9bd02b6e49a602a34bd1adb84c7bf86406893f0304fcde1ee41236076765d1"
     },
     {
       "signalDate": "2026-10-08",
-      "contentHash": "8d225141ff27d7afb7ffd95b74f812e95f854918d9974589c7bbb512b5631cff"
+      "contentHash": "00f415c6cddf19c89d50293f5dcf18a58794652d96860453f2e1985b7c3d2a63"
     },
     {
       "signalDate": "2026-10-12",
-      "contentHash": "95205aff09c5d5b975e34455fc899c9966c1595759726e0a76608c2dfad512ea"
+      "contentHash": "711118bd31814149e249c88af212f5f7d5e140d08ce209711acb52bbb4b4ffe7"
     },
     {
       "signalDate": "2026-10-13",
-      "contentHash": "e7f58e37f9c7df731c44093046ecda7924fe4bab9307dc57a93e89f39bbd46af"
+      "contentHash": "add429922b23e543b6db17dc69be3d1843e70211aca7a4210f0822cbb535702e"
     },
     {
       "signalDate": "2026-10-14",
-      "contentHash": "4da324300fe933f0be4f0d573bfe7d0d063c7af9447cfa6706fd13b001e7634d"
+      "contentHash": "1df784ec4b9109973d7077cd92ca934c61357b629f6294f1f51e2f40a6a3e61e"
     },
     {
       "signalDate": "2026-10-15",
-      "contentHash": "82d4854a79d023c690d81ee8dacab8958281b4284373d159735f2a036ef2d8dc"
+      "contentHash": "0159ad9ff43bda1011702c36714127a8f1e96f5ccb4d68522a8207852a3542aa"
     },
     {
       "signalDate": "2026-10-16",
-      "contentHash": "83a5dd9f12206249e26045ef8409633ec95045521d99a7d41a867baa06b6eb7a"
+      "contentHash": "1b0f8b1ef4075b39d00b9e54fc312409063165bf866319b7ea6a8b1de919c343"
     },
     {
       "signalDate": "2026-10-19",
-      "contentHash": "473147984aa4bbed267b9e459cccc565b7eb47afebf09d69d5dd05978bd5d1e7"
+      "contentHash": "48469445e9cf6b539e1fda4e89481ab399124b783f7c923be39ae59ae8e64dec"
     },
     {
       "signalDate": "2026-10-20",
-      "contentHash": "1255181361274a70fd80e17b2a50a6142d7b07fe9bf3b69c97cbda96e8fc4acf"
+      "contentHash": "21f02b3770a8c1bfb09b5d0a6eea46f8cecdac989397c62718d21e8667f3f5dc"
     },
     {
       "signalDate": "2026-10-21",
-      "contentHash": "2b9d51f476a00a9d3cd2e9bf08c5bb9f14a9937fceb6aa432441b9994fca629d"
+      "contentHash": "0dbddfae7e81eb1af829a2e7717a226c2fdb7380d51186cedd48b85ff3f3db62"
     },
     {
       "signalDate": "2026-10-22",
-      "contentHash": "a270ede56a0ad517ae40e70e7396e2ee44569dfaf9072e7469a84bff17442b5d"
+      "contentHash": "88de94da9a1ee3bb5ebf9eca7f450135a35d5f1c22fb1950f37aad00998e0a36"
     },
     {
       "signalDate": "2026-10-23",
-      "contentHash": "937baadf4a6b8574d0ab16355d15f765d922b1d0de78144d27f98fd6dc9894f0"
+      "contentHash": "4b8855dd89cef2b3234de7bed5aa814ddc39c206b4f393db2a57f5a70afaf837"
     },
     {
       "signalDate": "2026-10-26",
-      "contentHash": "2219faef327ed878749ba7efa846dc11ee44d825d278175bea9d6e1fb83cdede"
+      "contentHash": "7e35ebcd9212ab6edf2ef38f74bf87bd56162c5691012a2ba5a47a59e9112300"
     },
     {
       "signalDate": "2026-10-27",
-      "contentHash": "da9766a2ab45e33ba8b636d88d8c752675554590f18c6cc5a161e2fa8f90b410"
+      "contentHash": "2956c516ab5138c146348f61a67c54afe704dde587937e7258e6c6ad81f2826f"
     },
     {
       "signalDate": "2026-10-28",
-      "contentHash": "671a7d0bee1a2f739fdc0108797b3acd4c68671aadec238ec87f01858e5e7e7c"
+      "contentHash": "97fabba68b7fdca29133de876187e089b75df182a49b7983394cdbc6f7ebbf3e"
     },
     {
       "signalDate": "2026-10-29",
-      "contentHash": "1ee4cd9df4be2f9195dd9102a97a929b43cb58f20ca58e9d1170ce1c67c3bae1"
+      "contentHash": "6689b85030d8de0ccaf3db1f49091b8cde34f346998d157307b6ccc1508b2342"
     },
     {
       "signalDate": "2026-10-30",
-      "contentHash": "c35ad39103f3d7935078170c14044e0b1a6f0aaa1e3c142f7286ad174b8b70cb"
+      "contentHash": "f7e4d119e25605b2fc4b0789ddd8db3b2f9aa074d7fd743c17227c050172d63d"
     },
     {
       "signalDate": "2026-11-02",
-      "contentHash": "2e38d4aca66d37bfe4000a30be35a45b780f135f980a6ca2065dbb2e6fef4e9e"
+      "contentHash": "913a801cf0931552c8df29a1665c4a19d47cc859feb640dfdedf9276a2df80d1"
     },
     {
       "signalDate": "2026-11-03",
-      "contentHash": "1dd537ce7a701841e9339ed3ce6c0e6d7521ba571a79b2bf717a0e3c56c4b424"
+      "contentHash": "e66572e9643169333c0028cecc97da4b008a7e5b8ca9b4dd34f8e2d67e354b25"
     },
     {
       "signalDate": "2026-11-04",
-      "contentHash": "1b4a4c73b05429339b6ba3f2c845f4628df7a3ac5ddb70522ceecbe467bb9256"
+      "contentHash": "390106a122175ea9a20e84ba09972c8c0a32c750b92d6a83354acce76420c45d"
     },
     {
       "signalDate": "2026-11-05",
-      "contentHash": "107e7b0cb710c489e0730dcec0beeb13dd3f127cd75ff28b44d68b2e8d65e439"
+      "contentHash": "37cc9e7caf02c68760496317bd61353c201996cc5394e3ae471739e3b5e251f6"
     },
     {
       "signalDate": "2026-11-06",
-      "contentHash": "99104cbbbdb62da9c83fafe41163beb864b3813f9aab239cb7f153ce501380d1"
+      "contentHash": "9352c907c3a351b3396ac0dfb41966309abf36bbac0075ac199f6ef716e5c128"
     },
     {
       "signalDate": "2026-11-09",
-      "contentHash": "4acb111fe44041e9b9e80e0fcac7ade78c785541f8f1f50a3701429e939b5c1a"
+      "contentHash": "086dcf0d5dcac794b1c7b1fd165b46793da1bc48c1b210b6f2d175d1b3a47e61"
+    },
+    {
+      "signalDate": "2026-11-10",
+      "contentHash": "f9c6c6e2a005a0515c945d7786f6eccc058f2088275c92832a5513e9b26d7ae9"
     }
   ],
-  "contentHash": "61f18cd012c340b46fcf2663126e6e371ec16c3c793688bc3b4272d40528b196"
+  "contentHash": "0784af7ad7afef3f879b49a47d47ced11eb186070c1f65f83917dbf41e1ea8fd"
 }
