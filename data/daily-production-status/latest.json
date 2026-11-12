@@ -10,13 +10,13 @@
   "freshnessStatus": "fresh",
   "freshnessReason": "sameReferenceDate",
   "runStatus": "NO_NEW_OFFICIAL_EOD",
-  "updatedAt": "2026-11-12T15:11:11.325Z",
-  "lastAttemptAt": "2026-11-12T15:11:11.325Z",
+  "updatedAt": "2026-11-12T15:41:16.669Z",
+  "lastAttemptAt": "2026-11-12T15:41:16.669Z",
   "lastAutomaticRunAt": "2026-11-12T13:03:05.722Z",
   "lastSuccessAt": "2026-11-12T04:01:46.802Z",
   "lastOfficialEodDate": "2026-11-11",
   "lastKnownOfficialEodDate": "2026-11-11",
-  "lastSourceCheckAt": "2026-11-12T15:11:11.325Z",
+  "lastSourceCheckAt": "2026-11-12T15:41:16.669Z",
   "latestCollectedReferenceDate": "2026-11-11",
   "latestValidatedReferenceDate": "2026-11-11",
   "sourceStatus": "NO_NEW_DATA",
@@ -35,8 +35,8 @@
       "source": "공공데이터포털",
       "operation": "getStockPriceInfoLatestProbe",
       "referenceDate": "2026-11-11",
-      "requestedAt": "2026-11-12T15:11:07.352Z",
-      "observedAt": "2026-11-12T15:11:11.213Z",
+      "requestedAt": "2026-11-12T15:41:12.884Z",
+      "observedAt": "2026-11-12T15:41:16.558Z",
       "sourceTimestamp": "20261111",
       "sourceTimestampSemantics": "marketDateBasDt",
       "minObservedBasDt": "20261111",
@@ -50,5 +50,5 @@
       "outcome": "success"
     }
   ],
-  "contentHash": "961d288fcacd543c258a00371c9d831fed4a442da89839a2c791f597ff5fd524"
+  "contentHash": "6a6263723beaa360da9d1022b7d084b916b0985a6db8e143724425213c889d4a"
 }
