@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "dataset": "daily-outcome-coverage",
   "signalDate": "2026-10-20",
-  "coverageAsOfDate": "2026-11-17",
-  "sourceSnapshotHash": "723e7239fd8658f44aabfe9d0580cdca2739590f0a6fbad0f18651c73641a671",
+  "coverageAsOfDate": "2026-11-18",
+  "sourceSnapshotHash": "ac11a08584e44ff42d4958ca4aad6e6d136d2f440d6bd326319bb2903f6af119",
   "trackingUniverse": {
     "count": 553,
     "codesHash": "3672e61b8593b2dbebb3e36babd5e0f333a7a33992ea30f9c2f15655e30b3d68"
   },
-  "calendarMaximumCheckedDate": "2026-11-17",
+  "calendarMaximumCheckedDate": "2026-11-18",
   "calendarEvidence": {
     "contentHash": "a91d73571932bcc8beca5180a3525afbdfcd20c26ee7256425e2204bfe0b8109",
     "derivedDateCount": 1
@@ -25475,5 +25475,5 @@
       }
     }
   ],
-  "contentHash": "2146cd4dde024eccfcef3e05887fe3b09fbfcc264a5fecca0b78c203ba0e0de6"
+  "contentHash": "901abf13ff0fedd8b2abceff90a3f674bd6c939372fddb3aae1ebe51ebb09c6d"
 }
